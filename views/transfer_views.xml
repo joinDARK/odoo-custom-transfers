@@ -37,6 +37,7 @@
                         <field name="receiver_payer_id"/>
                         <field name="amount"/>
                         <field name="date"/>
+                        <field name="execute_automation"/>
                     </group>
                 </sheet>
             </form>
