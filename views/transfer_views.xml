@@ -18,7 +18,7 @@
                 type="object" 
                 name="log_transfer_data" 
                 class="btn-primary"
-                attrs="{'invisible': [('execute_automation', '=', False)]}"
+                invisible="not execute_automation"
             />
             </list>
         </field>
