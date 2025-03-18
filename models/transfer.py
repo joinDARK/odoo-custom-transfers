@@ -29,3 +29,6 @@ class Transfer(models.Model):
             for key, value in data.items():
                 print(f"{key}: {value}")
             print("=======================\n")
+            
+            # Сбрасываем флаг, чтобы кнопка исчезла
+            record.write({'execute_automation': False})
