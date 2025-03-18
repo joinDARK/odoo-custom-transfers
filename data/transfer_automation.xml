@@ -17,6 +17,6 @@
         <field name="trigger">on_write</field>
         <field name="active" eval="True"/>
         <field name="filter_pre_domain" eval="[('execute_automation', '=', True)]"/>
-        <field name="action_server_id" ref="action_log_transfer_data"/>
+        <field name="action_ids" eval="[(6, 0, [ref('action_log_transfer_data')])]"/>
     </record>
 </odoo>
