@@ -12,8 +12,8 @@ class Transfer(models.Model):
     amount = fields.Float(string='Сумма', required=True)
     date = fields.Date(string='Дата', default=fields.Date.today)
 
-        # Поле для выполнения автоматизации
-    exec_automation = fields.Boolean(string="Выполнить автоматизацию")
+    # Поле для выполнения автоматизации
+    execute_automation = fields.Boolean(string="Выполнить автоматизацию")
 
     def log_transfer_data(self):
         for record in self:
