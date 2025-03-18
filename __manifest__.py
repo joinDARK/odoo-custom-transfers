@@ -6,7 +6,7 @@
     'description': 'Модуль для управления переводами с контрагентами и плательщиками',
     'author': 'Miras',
     'category': 'Custom',
-    'depends': ['base'],
+    'depends': ['base', 'base_automation'],
     'data': [
         'security/ir.model.access.csv',
         'views/contragent_views.xml',
