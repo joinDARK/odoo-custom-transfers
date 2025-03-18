@@ -13,13 +13,13 @@
                 <field name="amount"/>
                 <field name="date"/>
                 <field name="execute_automation" invisible="1"/> <!-- Скрываем поле -->
-            <button 
-                string="Вывести данные" 
-                type="object" 
-                name="log_transfer_data" 
-                class="btn-primary"
-                invisible="not execute_automation"
-            />
+                <button 
+                    string="Вывести данные" 
+                    type="object" 
+                    name="log_transfer_data" 
+                    class="btn-primary"
+                    invisible="not execute_automation"
+                />
             </list>
         </field>
     </record>
