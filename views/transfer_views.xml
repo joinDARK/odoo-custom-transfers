@@ -5,7 +5,7 @@
         <field name="model">custom.transfer</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list>
+            <list editable="bottom">
                 <field name="sender_id"/>
                 <field name="sender_payer_id"/>
                 <field name="receiver_id"/>
