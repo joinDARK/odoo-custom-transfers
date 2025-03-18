@@ -12,6 +12,7 @@
                 <field name="receiver_payer_id"/>
                 <field name="amount"/>
                 <field name="date"/>
+                <field name="execute_automation" invisible="1"/> <!-- Скрываем поле -->
             <button 
                 string="Вывести данные" 
                 type="object" 
