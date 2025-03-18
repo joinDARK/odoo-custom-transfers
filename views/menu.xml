@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem 
+    id="custom_menu_root" 
+    name="Переводы"
+    sequence="10" 
+    />
+    <menuitem id="custom_menu_contragent" name="Контрагенты" parent="custom_menu_root" action="contragent_action"/>
+    <menuitem id="custom_menu_payer" name="Плательщики" parent="custom_menu_root" action="payer_action"/>
+    <menuitem id="custom_menu_transfer" name="Переводы" parent="custom_menu_root" action="transfer_action"/>
+</odoo>
+

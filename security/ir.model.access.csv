@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_custom_contragent,custom.contragent,model_custom_contragent,base.group_user,1,1,1,0
+access_custom_payer,custom.payer,model_custom_payer,base.group_user,1,1,1,0
+access_custom_transfer,custom.transfer,model_custom_transfer,base.group_user,1,1,1,0
