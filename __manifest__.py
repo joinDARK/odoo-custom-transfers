@@ -1,10 +1,11 @@
 {
     'name': 'Amanat: Переводы',
-    'version': '1.2',
+    'version': '2.0',
     'summary': 'Amanat',
-    'description': 'Модуль для переводов проекта Amanat',
+    'module': 'amanat',
+    'description': 'Модуль проекта Amanat',
     'author': 'IncubeAI (Мирас)',
-    'category': 'Custom, Amanat',
+    'category': 'Amanat',
     'depends': ['base', 'mail'],
     'data': [
         # 1) Сначала объявляем группы

@@ -1,23 +1,23 @@
 from odoo import models, fields, api
-from .base_model import CustomBaseModel
+from .base_model import AmanatBaseModel
 
-class Transfer(models.Model, CustomBaseModel):
-    _name = 'custom.transfer'
+class Transfer(models.Model, AmanatBaseModel):
+    _name = 'amanat.transfer'
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _description = 'Перевод'
     
-    sender_id = fields.Many2one('custom.contragent', string='Отправитель', required=True, tracking=True)
+    sender_id = fields.Many2one('amanat.contragent', string='Отправитель', required=True, tracking=True)
     sender_payer_id = fields.Many2one(
-        'custom.payer',
+        'amanat.payer',
         string='Плательщик отправителя',
         compute='_compute_payers',
         store=True,
         readonly=False,  # Позволяет редактировать поле вручную
         tracking=True
     )
-    receiver_id = fields.Many2one('custom.contragent', string='Получатель', required=True, tracking=True)
+    receiver_id = fields.Many2one('amanat.contragent', string='Получатель', required=True, tracking=True)
     receiver_payer_id = fields.Many2one(
-        'custom.payer',
+        'amanat.payer',
         string='Плательщик получателя',
         compute='_compute_payers',
         store=True,

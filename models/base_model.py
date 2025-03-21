@@ -2,8 +2,8 @@
 from odoo import models, api, fields
 from odoo.tools import html_escape
 
-class CustomBaseModel(models.AbstractModel):
-    _name = 'custom.base.model'
+class AmanatBaseModel(models.AbstractModel):
+    _name = 'amanat.base.model'
     _description = 'Base Model for Logging'
 
     inherit_abstract = fields.Boolean()
@@ -29,7 +29,7 @@ class CustomBaseModel(models.AbstractModel):
                     'id': record.id,
                 }
 
-            self.env['custom.activity'].sudo().create({
+            self.env['amanat.activity'].sudo().create({
                 'action': action,
                 'model_name': record._name,
                 'record_id': record.id,
@@ -61,7 +61,7 @@ class CustomBaseModel(models.AbstractModel):
             for field, value in vals.items():
                 old_value = getattr(record, field, None)
                 changes.append(f"{field}: {old_value} → {value}")
-            super(CustomBaseModel, record).write(vals)
+            super(AmanatBaseModel, record).write(vals)
             record._log_activity('update', "\n".join(changes))
         return True
 
@@ -84,7 +84,7 @@ class CustomBaseModel(models.AbstractModel):
         
         # Логируем удаление с сохраненными данными
         for data in log_data:
-            self.env['custom.activity'].sudo().create({
+            self.env['amanat.activity'].sudo().create({
                 'action': 'delete',
                 'model_name': data['model'],
                 'record_id': data['id'],

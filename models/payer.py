@@ -1,9 +1,9 @@
 # crm_amanat/models/payer.py
 from odoo import models, fields
-from .base_model import CustomBaseModel
+from .base_model import AmanatBaseModel
 
-class Payer(models.Model, CustomBaseModel):
-    _name = 'custom.payer'
+class Payer(models.Model, AmanatBaseModel):
+    _name = 'amanat.payer'
     _description = 'Плательщик'
     _inherit = ["mail.thread", "mail.activity.mixin"]
 

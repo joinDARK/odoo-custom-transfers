@@ -2,43 +2,43 @@
 <odoo>
     <!-- Корневое меню -->
     <menuitem 
-        id="custom_menu_root" 
+        id="amanat_menu_root" 
         name="Amanat"
         sequence="10"
     />
 
     <!-- Меню для контрагентов -->
     <menuitem 
-        id="custom_menu_contragent" 
+        id="amanat_menu_contragent" 
         name="Контрагенты" 
-        parent="custom_menu_root" 
+        parent="amanat_menu_root" 
         action="contragent_action"
-        groups="base.group_system,custom_transfers.group_custom_admin,custom_transfers.group_custom_senior_manager,custom_transfers.group_custom_manager,custom_transfers.group_custom_inspector"
+        groups="base.group_system,amanat_transfers.group_amanat_admin,amanat_transfers.group_amanat_senior_manager,amanat_transfers.group_amanat_manager,amanat_transfers.group_amanat_inspector"
     />
 
     <!-- Меню для плательщиков -->
     <menuitem 
-        id="custom_menu_payer" 
+        id="amanat_menu_payer" 
         name="Плательщики" 
-        parent="custom_menu_root" 
+        parent="amanat_menu_root" 
         action="payer_action"
-        groups="base.group_system,custom_transfers.group_custom_admin,custom_transfers.group_custom_senior_manager,custom_transfers.group_custom_manager,custom_transfers.group_custom_inspector"
+        groups="base.group_system,amanat_transfers.group_amanat_admin,amanat_transfers.group_amanat_senior_manager,amanat_transfers.group_amanat_manager,amanat_transfers.group_amanat_inspector"
     />
 
     <!-- Меню для переводов -->
     <menuitem 
-        id="custom_menu_transfer" 
+        id="amanat_menu_transfer" 
         name="Переводы" 
-        parent="custom_menu_root" 
+        parent="amanat_menu_root" 
         action="transfer_action"
-        groups="base.group_system,custom_transfers.group_custom_admin,custom_transfers.group_custom_senior_manager,custom_transfers.group_custom_manager,custom_transfers.group_custom_inspector"
+        groups="base.group_system,amanat_transfers.group_amanat_admin,amanat_transfers.group_amanat_senior_manager,amanat_transfers.group_amanat_manager,amanat_transfers.group_amanat_inspector"
     />
 
     <!-- Меню для логгов -->
     <menuitem 
-        id="custom_menu_activity" 
+        id="amanat_menu_activity" 
         name="Логи" 
-        parent="custom_menu_root" 
+        parent="amanat_menu_root" 
         action="activity_action"
     />
 </odoo>
