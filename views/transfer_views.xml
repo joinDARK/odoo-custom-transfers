@@ -7,12 +7,11 @@
         <field name="arch" type="xml">
             <list>
                 <field name="sender_id"/>
-                <field name="sender_payer_id"/>
+                <field name="sender_payer_id" force_save="1"/>
                 <field name="receiver_id"/>
-                <field name="receiver_payer_id"/>
+                <field name="receiver_payer_id" force_save="1"/>
                 <field name="amount"/>
                 <field name="date"/>
-                <field name="execute_automation"/> <!-- Скрываем поле -->
                 <button 
                     string="Вывести данные" 
                     type="object" 
@@ -36,9 +35,14 @@
                         <field name="receiver_payer_id"/>
                         <field name="amount"/>
                         <field name="date"/>
-                        <field name="execute_automation"/>
                     </group>
                 </sheet>
+                <!-- Виджет трекинга -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
             </form>
         </field>
     </record>

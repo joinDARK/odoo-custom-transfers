@@ -1,12 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Корневое меню -->
     <menuitem 
-    id="custom_menu_root" 
-    name="Переводы"
-    sequence="10" 
+        id="custom_menu_root" 
+        name="Amanat"
+        sequence="10"
     />
-    <menuitem id="custom_menu_contragent" name="Контрагенты" parent="custom_menu_root" action="contragent_action"/>
-    <menuitem id="custom_menu_payer" name="Плательщики" parent="custom_menu_root" action="payer_action"/>
-    <menuitem id="custom_menu_transfer" name="Переводы" parent="custom_menu_root" action="transfer_action"/>
-</odoo>
 
+    <!-- Меню для контрагентов -->
+    <menuitem 
+        id="custom_menu_contragent" 
+        name="Контрагенты" 
+        parent="custom_menu_root" 
+        action="contragent_action"
+        groups="base.group_system,custom_transfers.group_custom_admin,custom_transfers.group_custom_senior_manager,custom_transfers.group_custom_manager,custom_transfers.group_custom_inspector"
+    />
+
+    <!-- Меню для плательщиков -->
+    <menuitem 
+        id="custom_menu_payer" 
+        name="Плательщики" 
+        parent="custom_menu_root" 
+        action="payer_action"
+        groups="base.group_system,custom_transfers.group_custom_admin,custom_transfers.group_custom_senior_manager,custom_transfers.group_custom_manager,custom_transfers.group_custom_inspector"
+    />
+
+    <!-- Меню для переводов -->
+    <menuitem 
+        id="custom_menu_transfer" 
+        name="Переводы" 
+        parent="custom_menu_root" 
+        action="transfer_action"
+        groups="base.group_system,custom_transfers.group_custom_admin,custom_transfers.group_custom_senior_manager,custom_transfers.group_custom_manager,custom_transfers.group_custom_inspector"
+    />
+
+    <!-- Меню для логгов -->
+    <menuitem 
+        id="custom_menu_activity" 
+        name="Логи" 
+        parent="custom_menu_root" 
+        action="activity_action"
+    />
+</odoo>

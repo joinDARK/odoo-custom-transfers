@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_custom_admin" model="res.groups">
+        <field name="name">Custom Administrator</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_system'))]"/>
+        <field name="category_id" ref="base.module_category_custom"/>
+    </record>
+
+    <!-- Группа для старших менеджеров -->
+    <record id="group_custom_senior_manager" model="res.groups">
+        <field name="name">Senior Manager</field>
+        <field name="category_id" ref="base.module_category_custom"/>
+        <field name="implied_ids" eval="[(4, ref('custom_transfers.group_custom_manager'))]"/>
+    </record>
+
+    <!-- Группа для менеджеров -->
+    <record id="group_custom_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="category_id" ref="base.module_category_custom"/>
+    </record>
+
+    <!-- Группа для проверяющих -->
+    <record id="group_custom_inspector" model="res.groups">
+        <field name="name">Inspector</field>
+        <field name="category_id" ref="base.module_category_custom"/>
+    </record>
+</odoo>

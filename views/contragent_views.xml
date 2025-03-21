@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
+                <field name="payer_id"/>
                 <field name="address"/>
                 <field name="phone"/>
             </list>
@@ -22,10 +23,17 @@
                 <sheet>
                     <group>
                         <field name="name"/>
+                        <field name="payer_id"/>
                         <field name="address"/>
                         <field name="phone"/>
                     </group>
                 </sheet>
+                <!-- Виджет трекинга -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
             </form>
         </field>
     </record>

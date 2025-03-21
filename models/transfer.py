@@ -1,34 +1,80 @@
-# custom_transfers/models/transfer.py
-from odoo import models, fields
+from odoo import models, fields, api
+from .base_model import CustomBaseModel
 
-class Transfer(models.Model):
+class Transfer(models.Model, CustomBaseModel):
     _name = 'custom.transfer'
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _description = 'Перевод'
+    
+    sender_id = fields.Many2one('custom.contragent', string='Отправитель', required=True, tracking=True)
+    sender_payer_id = fields.Many2one(
+        'custom.payer',
+        string='Плательщик отправителя',
+        compute='_compute_payers',
+        store=True,
+        readonly=False,  # Позволяет редактировать поле вручную
+        tracking=True
+    )
+    receiver_id = fields.Many2one('custom.contragent', string='Получатель', required=True, tracking=True)
+    receiver_payer_id = fields.Many2one(
+        'custom.payer',
+        string='Плательщик получателя',
+        compute='_compute_payers',
+        store=True,
+        readonly=False,
+        tracking=True
+    )
+    amount = fields.Float(string='Сумма', required=True, tracking=True)
+    date = fields.Date(string='Дата', default=fields.Date.today, tracking=True)
 
-    sender_id = fields.Many2one('custom.contragent', string='Отправитель', required=True)
-    sender_payer_id = fields.Many2one('custom.payer', string='Плательщик отправителя', required=True)
-    receiver_id = fields.Many2one('custom.contragent', string='Получатель', required=True)
-    receiver_payer_id = fields.Many2one('custom.payer', string='Плательщик получателя', required=True)
-    amount = fields.Float(string='Сумма', required=True)
-    date = fields.Date(string='Дата', default=fields.Date.today)
-
-    # Поле для выполнения автоматизации
-    execute_automation = fields.Boolean(string="Выполнить автоматизацию")
+    manager_id = fields.Many2one('res.users', string='Manager', tracking=True)
+    inspector_id = fields.Many2one('res.users', string='Inspector', tracking=True)
 
     def log_transfer_data(self):
         for record in self:
             data = {
                 "ID": record.id,
                 "Отправитель": record.sender_id.name,
+                "Плательщик отправителя": record.sender_payer_id.name,
                 "Получатель": record.receiver_id.name,
+                "Плательщик получателя": record.receiver_payer_id.name,
                 "Сумма": record.amount,
-                "Дата": record.date
+                "Дата": record.date,
+                "Менеджер": record.manager_id.name or "",
+                "Проверяющий": record.inspector_id.name or "",
             }
-            # Вывод в консоль сервера
             print("\n=== Данные перевода ===")
             for key, value in data.items():
                 print(f"{key}: {value}")
             print("=======================\n")
-            
-            # Сбрасываем флаг, чтобы кнопка исчезла
-            record.write({'execute_automation': False})
+
+    # Переопределяем метод create
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)  # Сначала создаем записи
+        records.log_transfer_data()          # Затем логируем
+        return records
+    
+    @api.depends('sender_id', 'receiver_id')
+    def _compute_payers(self):
+        for record in self:
+            # Для отправителя
+            if record.sender_id and record.sender_id.payer_id:
+                record.sender_payer_id = record.sender_id.payer_id
+            else:
+                record.sender_payer_id = False
+
+            # Для получателя
+            if record.receiver_id and record.receiver_id.payer_id:
+                record.receiver_payer_id = record.receiver_id.payer_id
+            else:
+                record.receiver_payer_id = False
+
+    # Добавьте onchange для обновления в интерфейсе
+    @api.onchange('sender_id')
+    def _onchange_sender_id(self):
+        self.sender_payer_id = self.sender_id.payer_id if self.sender_id else False
+
+    @api.onchange('receiver_id')
+    def _onchange_receiver_id(self):
+        self.receiver_payer_id = self.receiver_id.payer_id if self.receiver_id else False

@@ -1,19 +1,32 @@
-# custom_transfers/__manifest__.py
 {
-    'name': 'Custom Transfers',
-    'version': '1.1',
-    'summary': 'Управление переводами',
-    'description': 'Модуль для управления переводами с контрагентами и плательщиками',
-    'author': 'Miras',
-    'category': 'Custom',
-    'depends': ['base', 'base_automation'],
+    'name': 'Amanat: Переводы',
+    'version': '1.2',
+    'summary': 'Amanat',
+    'description': 'Модуль для переводов проекта Amanat',
+    'author': 'IncubeAI (Мирас)',
+    'category': 'Custom, Amanat',
+    'depends': ['base', 'mail'],
     'data': [
+        # 1) Сначала объявляем группы
+        'security/security_groups.xml',
+
+        # 2) Затем прописываем права на модели
         'security/ir.model.access.csv',
+
+        # 3) Затем создаём/обновляем меню (поскольку оно ссылается на группы)
+        'views/menu.xml',
+
+        # 4) Затем правила доступа (record rules). Можно до или после menu.xml, 
+        #    главное, чтобы security_groups.xml был до него.
+        'security/record_rules.xml',
+
+        # 5) Остальные представления
         'views/contragent_views.xml',
+        'views/activity_views.xml',
         'views/payer_views.xml',
         'views/transfer_views.xml',
-        'views/menu.xml',
-        'data/transfer_automation.xml',
+
+        # 6) Данные
     ],
     'installable': True,
     'application': True,

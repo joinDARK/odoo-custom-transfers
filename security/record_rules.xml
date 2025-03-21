@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Правило для менеджеров: видят только свои записи (manager_id = user.id) -->
+    <record id="custom_transfer_manager_rule" model="ir.rule">
+        <field name="name">Доступ к переводам менеджера</field>
+        <field name="model_id" ref="model_custom_transfer"/>
+        <field name="domain_force">[('manager_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('custom_transfers.group_custom_manager'))]"/>
+    </record>
+
+    <!-- Правило для проверяющих: видят только записи, где они указаны как проверяющие -->
+    <record id="custom_transfer_inspector_rule" model="ir.rule">
+        <field name="name">Доступ к переводам проверяющего</field>
+        <field name="model_id" ref="model_custom_transfer"/>
+        <field name="domain_force">[('inspector_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('custom_transfers.group_custom_inspector'))]"/>
+    </record>
+
+    <!-- Старшему менеджеру разрешим видеть все записи. -->
+    <record id="custom_transfer_senior_rule" model="ir.rule">
+        <field name="name">Старший менеджер видит все переводы</field>
+        <field name="model_id" ref="model_custom_transfer"/>
+        <!-- Пустой domain_force => видит все. -->
+        <field name="domain_force">[]</field>
+        <field name="groups" eval="[(4, ref('custom_transfers.group_custom_senior_manager'))]"/>
+    </record>
+</odoo>
