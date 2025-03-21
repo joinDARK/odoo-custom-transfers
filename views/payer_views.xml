@@ -1,44 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Корневое меню -->
-    <menuitem 
-        id="amanat_menu_root" 
-        name="Amanat"
-        sequence="10"
-    />
+    <record id="payer_list_view" model="ir.ui.view">
+        <field name="name">payer.list</field>
+        <field name="model">amanat.payer</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="bank_account"/>
+            </list>
+        </field>
+    </record>
+    <record id="payer_form_view" model="ir.ui.view">
+        <field name="name">payer.form</field>
+        <field name="model">amanat.payer</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="bank_account"/>
+                    </group>
+                </sheet>
 
-    <!-- Меню для контрагентов -->
-    <menuitem 
-        id="amanat_menu_contragent" 
-        name="Контрагенты" 
-        parent="amanat_menu_root" 
-        action="contragent_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
-    />
+                <!-- Виджет трекинга -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
 
-    <!-- Меню для плательщиков -->
-    <menuitem 
-        id="amanat_menu_payer" 
-        name="Плательщики" 
-        parent="amanat_menu_root" 
-        action="payer_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
-    />
-
-    <!-- Меню для переводов -->
-    <menuitem 
-        id="amanat_menu_transfer" 
-        name="Переводы" 
-        parent="amanat_menu_root" 
-        action="transfer_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
-    />
-
-    <!-- Меню для логгов -->
-    <menuitem 
-        id="amanat_menu_activity" 
-        name="Логи" 
-        parent="amanat_menu_root" 
-        action="activity_action"
-    />
+    <record id="payer_action" model="ir.actions.act_window">
+        <field name="name">Плательщики</field>
+        <field name="res_model">amanat.payer</field>
+        <field name="view_mode">list,form</field>
+    </record>
 </odoo>
