@@ -6,6 +6,24 @@ class Transfer(models.Model, AmanatBaseModel):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _description = 'Перевод'
     
+    state = fields.Selection(
+        [('open', 'Открыта'), ('archive', 'Архив'), ('close', 'Закрыта')],
+        string='Статус',
+        default='open',
+        tracking=True
+    )
+    date = fields.Date(string='Дата', default=fields.Date.today, tracking=True)
+    currency = fields.Selection(
+        [
+            ('rub', 'RUB'), ('rub_cashe', 'RUB КЭШ'), ('usd', 'USD'), ('usd_cashe', 'USD КЭШ'), ('usdt', 'USDT'), ('euro', 'EURO'),
+            ('euro_cashe', 'EURO КЭШ'), ('cny', 'CNY'), ('cny_cashe', 'CNY КЭШ'), ('aed', 'AED'), ('aed_cashe', 'AED КЭШ'),
+            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ'),
+        ],
+        string='Статус',
+        default='open',
+        tracking=True
+    )
+    amount = fields.Float(string='Сумма', required=True, tracking=True)
     sender_id = fields.Many2one('amanat.contragent', string='Отправитель', required=True, tracking=True)
     sender_payer_id = fields.Many2one(
         'amanat.payer',
@@ -24,8 +42,6 @@ class Transfer(models.Model, AmanatBaseModel):
         readonly=False,
         tracking=True
     )
-    amount = fields.Float(string='Сумма', required=True, tracking=True)
-    date = fields.Date(string='Дата', default=fields.Date.today, tracking=True)
 
     manager_id = fields.Many2one('res.users', string='Manager', tracking=True)
     inspector_id = fields.Many2one('res.users', string='Inspector', tracking=True)
@@ -34,12 +50,14 @@ class Transfer(models.Model, AmanatBaseModel):
         for record in self:
             data = {
                 "ID": record.id,
+                "Статус": record.state,
+                "Дата": record.date,
+                "Валюта": record.currency,
+                "Сумма": record.amount,
                 "Отправитель": record.sender_id.name,
                 "Плательщик отправителя": record.sender_payer_id.name,
                 "Получатель": record.receiver_id.name,
                 "Плательщик получателя": record.receiver_payer_id.name,
-                "Сумма": record.amount,
-                "Дата": record.date,
                 "Менеджер": record.manager_id.name or "",
                 "Проверяющий": record.inspector_id.name or "",
             }

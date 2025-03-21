@@ -6,12 +6,14 @@
         <field name="type">list</field>
         <field name="arch" type="xml">
             <list>
+                <field name="state"/>
+                <field name="date"/>
+                <field name="currency"/>
+                <field name="amount"/>
                 <field name="sender_id"/>
                 <field name="sender_payer_id" force_save="1"/>
                 <field name="receiver_id"/>
                 <field name="receiver_payer_id" force_save="1"/>
-                <field name="amount"/>
-                <field name="date"/>
                 <button 
                     string="Вывести данные" 
                     type="object" 
@@ -29,12 +31,14 @@
             <form>
                 <sheet>
                     <group>
+                        <field name="state"/>
+                        <field name="date"/>
+                        <field name="currency"/>
+                        <field name="amount"/>
                         <field name="sender_id"/>
                         <field name="sender_payer_id"/>
                         <field name="receiver_id"/>
                         <field name="receiver_payer_id"/>
-                        <field name="amount"/>
-                        <field name="date"/>
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->
