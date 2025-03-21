@@ -13,7 +13,7 @@
         name="Контрагенты" 
         parent="amanat_menu_root" 
         action="contragent_action"
-        groups="base.group_system,amanat_transfers.group_amanat_admin,amanat_transfers.group_amanat_senior_manager,amanat_transfers.group_amanat_manager,amanat_transfers.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для плательщиков -->
@@ -22,7 +22,7 @@
         name="Плательщики" 
         parent="amanat_menu_root" 
         action="payer_action"
-        groups="base.group_system,amanat_transfers.group_amanat_admin,amanat_transfers.group_amanat_senior_manager,amanat_transfers.group_amanat_manager,amanat_transfers.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для переводов -->
@@ -31,7 +31,7 @@
         name="Переводы" 
         parent="amanat_menu_root" 
         action="transfer_action"
-        groups="base.group_system,amanat_transfers.group_amanat_admin,amanat_transfers.group_amanat_senior_manager,amanat_transfers.group_amanat_manager,amanat_transfers.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для логгов -->

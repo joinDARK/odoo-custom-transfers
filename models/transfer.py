@@ -19,8 +19,8 @@ class Transfer(models.Model, AmanatBaseModel):
             ('euro_cashe', 'EURO КЭШ'), ('cny', 'CNY'), ('cny_cashe', 'CNY КЭШ'), ('aed', 'AED'), ('aed_cashe', 'AED КЭШ'),
             ('thb', 'THB'), ('thb_cashe', 'THB КЭШ'),
         ],
-        string='Статус',
-        default='open',
+        string='Валюта',
+        default='rub',
         tracking=True
     )
     amount = fields.Float(string='Сумма', required=True, tracking=True)
@@ -72,7 +72,7 @@ class Transfer(models.Model, AmanatBaseModel):
         records = super().create(vals_list)  # Сначала создаем записи
         records.log_transfer_data()          # Затем логируем
         return records
-    
+
     @api.depends('sender_id', 'receiver_id')
     def _compute_payers(self):
         for record in self:

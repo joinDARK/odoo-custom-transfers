@@ -6,8 +6,6 @@ class AmanatBaseModel(models.AbstractModel):
     _name = 'amanat.base.model'
     _description = 'Base Model for Logging'
 
-    inherit_abstract = fields.Boolean()
-
     def _log_activity(self, action, changes=None):
         if self.env.context.get('no_log'):
             return
@@ -52,6 +50,14 @@ class AmanatBaseModel(models.AbstractModel):
                 # 'field1': record.field1,
             }
             record._log_activity('create', changes=str(data))
+
+        for vals in vals_list:
+            user = self.env.user
+            if user.has_group('amanat.group_manager'):
+                vals['manager_id'] = user.id  # Менеджер автоматически назначается
+            if user.has_group('amanat.group_inspector'):
+                vals['inspector_id'] = user.id  # Проверяющий автоматически назначается
+
         return records
 
     def write(self, vals):

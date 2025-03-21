@@ -7,6 +7,13 @@
         <field name="category_id" ref="base.module_category_amanat"/>
     </record>
 
+    <!-- Группа для менеджеров -->
+    <record id="group_amanat_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="category_id" ref="base.module_category_amanat"/>
+    </record>
+
+    
     <!-- Группа для старших менеджеров -->
     <record id="group_amanat_senior_manager" model="res.groups">
         <field name="name">Senior Manager</field>
@@ -15,11 +22,6 @@
         <field name="implied_ids" eval="[(4, ref('amanat.group_amanat_manager'))]"/>
     </record>
 
-    <!-- Группа для менеджеров -->
-    <record id="group_amanat_manager" model="res.groups">
-        <field name="name">Manager</field>
-        <field name="category_id" ref="base.module_category_amanat"/>
-    </record>
 
     <!-- Группа для проверяющих -->
     <record id="group_amanat_inspector" model="res.groups">

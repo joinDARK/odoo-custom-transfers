@@ -2,7 +2,6 @@
     'name': 'Amanat: Переводы',
     'version': '2.0',
     'summary': 'Amanat',
-    'module': 'amanat',
     'description': 'Модуль проекта Amanat',
     'author': 'IncubeAI (Мирас)',
     'category': 'Amanat',
@@ -26,8 +25,6 @@
         'views/activity_views.xml',
         'views/payer_views.xml',
         'views/transfer_views.xml',
-
-        # 6) Данные
     ],
     'installable': True,
     'application': True,
