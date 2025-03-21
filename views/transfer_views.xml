@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="transfer_list_view" model="ir.ui.view">
+        <field name="name">transfer.list</field>
+        <field name="model">amanat.transfer</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="state"/>
+                <field name="date"/>
+                <field name="currency"/>
+                <field name="amount"/>
+                <field name="sender_id"/>
+                <field name="sender_payer_id" force_save="1"/>
+                <field name="receiver_id"/>
+                <field name="receiver_payer_id" force_save="1"/>
+                <button 
+                    string="Вывести данные" 
+                    type="object" 
+                    name="log_transfer_data" 
+                    class="btn-primary"
+                />
+            </list>
+        </field>
+    </record>
+
+    <record id="transfer_form_view" model="ir.ui.view">
+        <field name="name">transfer.form</field>
+        <field name="model">amanat.transfer</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="state"/>
+                        <field name="date"/>
+                        <field name="currency"/>
+                        <field name="amount"/>
+                        <field name="sender_id"/>
+                        <field name="sender_payer_id"/>
+                        <field name="receiver_id"/>
+                        <field name="receiver_payer_id"/>
+                    </group>
+                </sheet>
+                <!-- Виджет трекинга -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <record id="transfer_action" model="ir.actions.act_window">
+        <field name="name">Переводы</field>
+        <field name="res_model">amanat.transfer</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
+

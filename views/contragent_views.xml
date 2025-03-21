@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="contragent_list_view" model="ir.ui.view">
+        <field name="name">contragent.list</field>
+        <field name="model">amanat.contragent</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="payer_id"/>
+                <field name="address"/>
+                <field name="phone"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="contragent_form_view" model="ir.ui.view">
+        <field name="name">contragent.form</field>
+        <field name="model">amanat.contragent</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="payer_id"/>
+                        <field name="address"/>
+                        <field name="phone"/>
+                    </group>
+                </sheet>
+                <!-- Виджет трекинга -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <record id="contragent_action" model="ir.actions.act_window">
+        <field name="name">Контрагенты</field>
+        <field name="res_model">amanat.contragent</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
+

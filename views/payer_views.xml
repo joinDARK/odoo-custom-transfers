@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Корневое меню -->
+    <menuitem 
+        id="amanat_menu_root" 
+        name="Amanat"
+        sequence="10"
+    />
+
+    <!-- Меню для контрагентов -->
+    <menuitem 
+        id="amanat_menu_contragent" 
+        name="Контрагенты" 
+        parent="amanat_menu_root" 
+        action="contragent_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
+    />
+
+    <!-- Меню для плательщиков -->
+    <menuitem 
+        id="amanat_menu_payer" 
+        name="Плательщики" 
+        parent="amanat_menu_root" 
+        action="payer_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
+    />
+
+    <!-- Меню для переводов -->
+    <menuitem 
+        id="amanat_menu_transfer" 
+        name="Переводы" 
+        parent="amanat_menu_root" 
+        action="transfer_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
+    />
+
+    <!-- Меню для логгов -->
+    <menuitem 
+        id="amanat_menu_activity" 
+        name="Логи" 
+        parent="amanat_menu_root" 
+        action="activity_action"
+    />
+</odoo>

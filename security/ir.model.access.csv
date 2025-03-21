@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_amanat_contragent_admin,amanat.contragent,model_amanat_contragent,group_amanat_admin,1,1,1,1
+access_amanat_contragent_senior_manager,amanat.contragent,model_amanat_contragent,group_amanat_senior_manager,1,1,1,1
+access_amanat_contragent_manager,amanat.contragent,model_amanat_contragent,group_amanat_manager,1,1,1,0
+access_amanat_contragent_inspector,amanat.contragent,model_amanat_contragent,group_amanat_inspector,1,0,0,0
+access_amanat_payer_admin,amanat.payer,model_amanat_payer,group_amanat_admin,1,1,1,1
+access_amanat_payer_senior_manager,amanat.payer,model_amanat_payer,group_amanat_senior_manager,1,1,1,1
+access_amanat_payer_manager,amanat.payer,model_amanat_payer,group_amanat_manager,1,1,1,0
+access_amanat_payer_inspector,amanat.payer,model_amanat_payer,group_amanat_inspector,1,0,0,0
+access_amanat_transfer_admin,amanat.transfer,model_amanat_transfer,group_amanat_admin,1,1,1,1
+access_amanat_transfer_senior_manager,amanat.transfer,model_amanat_transfer,group_amanat_senior_manager,1,1,1,1
+access_amanat_transfer_manager,amanat.transfer,model_amanat_transfer,group_amanat_manager,1,1,1,0
+access_amanat_transfer_inspector,amanat.transfer,model_amanat_transfer,group_amanat_inspector,1,0,0,0
+access_amanat_activity_admin,amanat.activity,model_amanat_activity,group_amanat_admin,1,1,1,1
+access_amanat_activity_senior_manager,amanat.activity,model_amanat_activity,group_amanat_senior_manager,1,1,1,1
+access_amanat_activity_manager,amanat.activity,model_amanat_activity,group_amanat_manager,1,0,0,0
+access_amanat_activity_inspector,amanat.activity,model_amanat_activity,group_amanat_inspector,1,0,0,0
