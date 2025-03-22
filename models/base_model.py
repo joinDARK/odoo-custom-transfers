@@ -39,6 +39,7 @@ class AmanatBaseModel(models.AbstractModel):
 
     @api.model_create_multi
     def create(self, vals_list):
+        print("executed model_create_multi")
         records = super().create(vals_list)
         for record in records:
             # Собираем данные созданной записи
@@ -53,10 +54,17 @@ class AmanatBaseModel(models.AbstractModel):
 
         for vals in vals_list:
             user = self.env.user
-            if user.has_group('amanat.group_manager'):
+            if user.has_group('amanat.group_amanat_manager'):
+                print("user.id manager exist")
                 vals['manager_id'] = user.id  # Менеджер автоматически назначается
-            if user.has_group('amanat.group_inspector'):
+            else:
+                print("user.id manager doesnt exist")
+
+            if user.has_group('amanat.group_amanat_inspector'):
+                print("user.id inspector exist")
                 vals['inspector_id'] = user.id  # Проверяющий автоматически назначается
+            else:
+                print("user.id inspector doesnt exist")
 
         return records
 
