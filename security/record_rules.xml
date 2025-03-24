@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Правило для менеджеров -->
-    <record id="amanat_transfer_manager_rule" model="ir.rule">
-        <field name="name">Доступ к переводам менеджера</field>
-        <field name="model_id" ref="model_amanat_transfer"/>
-        <field name="domain_force">[('manager_id', '=', user.id)]</field>
-        <!-- Исправлено: amanat_transfers → amanat -->
-        <field name="groups" eval="[(4, ref('amanat.group_amanat_manager'))]"/>
-    </record>
+    <data>
+        <!-- Правило для менеджеров -->
+        <record id="amanat_transfer_manager_rule" model="ir.rule">
+            <field name="name">Доступ к переводам менеджера</field>
+            <field name="model_id" ref="model_amanat_transfer"/>
+            <!-- <field name="domain_force">['|', ('manager_id', '=', user.id), ('manager_id', '=', False)]</field> -->
+            <field name="domain_force">[('manager_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_manager'))]"/>
+        </record>
 
-    <!-- Правило для проверяющих -->
-    <record id="amanat_transfer_inspector_rule" model="ir.rule">
-        <field name="name">Доступ к переводам проверяющего</field>
-        <field name="model_id" ref="model_amanat_transfer"/>
-        <field name="domain_force">[('inspector_id', '=', user.id)]</field>
-        <!-- Исправлено: amanat_transfers → amanat -->
-        <field name="groups" eval="[(4, ref('amanat.group_amanat_inspector'))]"/>
-    </record>
+        <!-- Правило для проверяющих -->
+        <record id="amanat_transfer_inspector_rule" model="ir.rule">
+            <field name="name">Доступ к переводам проверяющего</field>
+            <field name="model_id" ref="model_amanat_transfer"/>
+            <field name="domain_force">['|', ('inspector_id', '=', user.id), ('inspector_id', '=', False)]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_inspector'))]"/>
+        </record>
 
-    <!-- Правило для старшего менеджера -->
-    <record id="amanat_transfer_senior_rule" model="ir.rule">
-        <field name="name">Старший менеджер видит все переводы</field>
-        <field name="model_id" ref="model_amanat_transfer"/>
-        <field name="domain_force">[]</field>
-        <!-- Исправлено: amanat_transfers → amanat -->
-        <field name="groups" eval="[(4, ref('amanat.group_amanat_senior_manager'))]"/>
-    </record>
+        <!-- Правило для старшего менеджера -->
+        <record id="amanat_transfer_senior_rule" model="ir.rule">
+            <field name="name">Старший менеджер видит все переводы</field>
+            <field name="model_id" ref="model_amanat_transfer"/>
+            <field name="domain_force">[]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_senior_manager'))]"/>
+        </record>
+    </data>
 </odoo>

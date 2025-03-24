@@ -1,4 +1,4 @@
-# crm_amanat/models/activity.py
+# models/activity.py
 from odoo import models, fields, api
 
 class Activity(models.Model):
