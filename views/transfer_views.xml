@@ -6,20 +6,18 @@
         <field name="type">list</field>
         <field name="arch" type="xml">
             <list>
+                <field name="name"/>
                 <field name="state"/>
                 <field name="date"/>
                 <field name="currency"/>
                 <field name="amount"/>
                 <field name="sender_id"/>
                 <field name="sender_payer_id" force_save="1"/>
+                <field name="sender_wallet_id"/>
                 <field name="receiver_id"/>
                 <field name="receiver_payer_id" force_save="1"/>
-                <button 
-                    string="Вывести данные" 
-                    type="object" 
-                    name="log_transfer_data" 
-                    class="btn-primary"
-                />
+                <field name="receiver_wallet_id"/>
+                <field name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
             </list>
         </field>
     </record>
@@ -29,16 +27,42 @@
         <field name="model">amanat.transfer</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <h1><field name="name" readonly="1"/></h1>
+                </header>
                 <sheet>
                     <group>
-                        <field name="state"/>
-                        <field name="date"/>
-                        <field name="currency"/>
-                        <field name="amount"/>
-                        <field name="sender_id"/>
-                        <field name="sender_payer_id"/>
-                        <field name="receiver_id"/>
-                        <field name="receiver_payer_id"/>
+                        <group>
+                            <field name="state"/>
+                            <field name="date"/>
+                            <field name="currency"/>
+                            <field name="amount"/>
+                        </group>
+                        <group>
+                            <field name="sender_id"/>
+                            <field name="sender_payer_id"/>
+                            <field name="sender_wallet_id"/>
+                        </group>
+                        <group>
+                            <field name="receiver_id"/>
+                            <field name="receiver_payer_id"/>
+                            <field name="receiver_wallet_id"/>
+                        </group>
+                        <group>
+                            <field name="is_complex"/>
+                            <field name="intermediary_1_id" invisible="not is_complex"/>
+                            <field name="intermediary_1_payer_id" invisible="not is_complex"/>
+                            <field name="intermediary_1_wallet_id" invisible="not is_complex"/>
+                            <field name="intermediary_1_sum" invisible="not is_complex"/>
+
+                            <field name="intermediary_2_id" invisible="not is_complex"/>
+                            <field name="intermediary_2_payer_id" invisible="not is_complex"/>
+                            <field name="intermediary_2_wallet_id" invisible="not is_complex"/>
+                            <field name="intermediary_2_sum" invisible="not is_complex"/>
+                        </group>
+                        <group>
+                            <field name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                        </group>
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->

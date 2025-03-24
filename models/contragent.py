@@ -1,4 +1,4 @@
-# crm_amanat/models/contragent.py
+# models/contragent.py
 from odoo import models, fields
 from .base_model import AmanatBaseModel
 

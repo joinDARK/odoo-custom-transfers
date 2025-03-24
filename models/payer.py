@@ -1,4 +1,4 @@
-# crm_amanat/models/payer.py
+# models/payer.py
 from odoo import models, fields
 from .base_model import AmanatBaseModel
 
