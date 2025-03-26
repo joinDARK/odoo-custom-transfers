@@ -59,7 +59,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
     sum_aed_cashe = fields.Float(string='Сумма AED КЭШ', tracking=True)
     sum_thb_cashe = fields.Float(string='Сумма THB КЭШ', tracking=True)
 
-    rate = fields.Float(string='Курс', tracking=True) # Lookup от Ордера
+    rate = fields.Float(string='Курс', related='order_id.rate', store=True, tracking=True)
     award = fields.Float(string='За операцию (from Ордер)', related='order_id.operation_percent', store=True, tracking=True)
     rko = fields.Float(string='РКО (from Ордер)', related='order_id.rko', store=True, tracking=True)
     our_percent = fields.Float(string='Наш процент (from Ордер)', related='order_id.our_percent', store=True, tracking=True)
@@ -68,7 +68,6 @@ class Reconciliation(models.Model, AmanatBaseModel):
     exchange = fields.Float(string='К выдаче', tracking=True)
     order_id = fields.Many2one('amanat.order', string='Ордер', tracking=True)
     order_comment = fields.Text(string='Комментарий (from Ордер)', related='order_id.comment', store=True, tracking=True)
-    comment = fields.Text(string='Комментарий', tracking=True) # Удалить
     unload = fields.Boolean(string='Выгрузить', default=False, tracking=True)
 
     range = fields.Many2one('amanat.ranges', string='Диапазон', tracking=True)
@@ -103,15 +102,15 @@ class Reconciliation(models.Model, AmanatBaseModel):
         tracking=True
     )
 
-    # Добавить поле Курсы
-    # Добавить поле euro (from Курсы)
-    # Добавить поле cny (from Курсы)
-    # Добавить поле rub (from Курсы)
-    # Добавить поле aed (from Курсы)
-    # Добавить поле thb (from Курсы)
-    # Добавить поле usd (from Курсы)
-    # Добавить поле usdt (from Курсы)
-    # Добавить поле Эквивалент $
+    rate_id = fields.Many2one('amanat.rates', string='Курсы', tracking=True)
+    rate_euro = fields.Float(string='euro (from Курсы)', related='rate_id.euro', store=True, tracking=True)
+    rate_cny = fields.Float(string='cny (from Курсы)', related='rate_id.cny', store=True, tracking=True)
+    rate_rub = fields.Float(string='rub (from Курсы)', related='rate_id.rub', store=True, tracking=True)
+    rate_aed = fields.Float(string='aed (from Курсы)', related='rate_id.aed', store=True, tracking=True)
+    rate_thb = fields.Float(string='thb (from Курсы)', related='rate_id.thb', store=True, tracking=True)
+    rate_usd = fields.Float(string='usd (from Курсы)', related='rate_id.usd', store=True, tracking=True)
+    rate_usdt = fields.Float(string='usdt (from Курсы)', related='rate_id.usdt', store=True, tracking=True)
+    equivalent = fields.Float(string='Эквивалент $', tracking=True)
 
     amount = fields.Float(string='Сумма', required=True, tracking=True)
     create_Reconciliation = fields.Boolean(string='Создать', default=False, tracking=True)

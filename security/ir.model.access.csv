@@ -35,3 +35,12 @@ access_amanat_ranges_admin,amanat.ranges,model_amanat_ranges,group_amanat_admin,
 access_amanat_ranges_senior_manager,amanat.ranges,model_amanat_ranges,group_amanat_senior_manager,1,1,1,1
 access_amanat_ranges_manager,amanat.ranges,model_amanat_ranges,group_amanat_manager,1,0,0,0
 access_amanat_ranges_inspector,amanat.ranges,model_amanat_ranges,group_amanat_inspector,1,0,0,0
+access_amanat_rates_admin,amanat.rates,model_amanat_rates,group_amanat_admin,1,1,1,1
+access_amanat_rates_senior_manager,amanat.rates,model_amanat_rates,group_amanat_senior_manager,1,1,1,1
+access_amanat_rates_manager,amanat.rates,model_amanat_rates,group_amanat_manager,1,0,0,0
+access_amanat_rates_inspector,amanat.rates,model_amanat_rates,group_amanat_inspector,1,0,0,0
+
+access_amanat_writeoff_admin,amanat.writeoff,model_amanat_writeoff,group_amanat_admin,1,1,1,1
+access_amanat_writeoff_senior_manager,amanat.writeoff,model_amanat_writeoff,group_amanat_senior_manager,1,1,1,1
+access_amanat_writeoff_manager,amanat.writeoff,model_amanat_writeoff,group_amanat_manager,1,0,0,0
+access_amanat_writeoff_inspector,amanat.writeoff,model_amanat_writeoff,group_amanat_inspector,1,0,0,0
