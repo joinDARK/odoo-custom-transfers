@@ -7,9 +7,39 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
-                <field name="payer_id"/>
-                <field name="address"/>
-                <field name="phone"/>
+
+                <field width="200" name="recon_Balance_0"/>
+                <field width="200" name="recon_Balance_1"/>
+                <field width="200" name="recon_Balance_2"/>
+                <field width="200" name="recon_cash_rub"/>
+                <field width="200" name="recon_usdt"/>
+                <field width="200" name="recon_usd"/>
+                <field width="200" name="recon_cash_usd"/>
+                <field width="200" name="recon_euro"/>
+                <field width="200" name="recon_cash_euro"/>
+                <field width="200" name="recon_cny"/>
+                <field width="200" name="recon_cash_cny"/>
+                <field width="200" name="recon_aed"/>
+                <field width="200" name="recon_cash_aed"/>
+                <field width="200" name="recon_eq_dollar"/>
+                <field width="250" name="recon_eq_compare_1"/>
+                <field width="250" name="recon_eq_compare_2"/>
+                <field width="200" name="cont_rub"/>
+                <field width="200" name="cont_usd"/>
+                <field width="200" name="cont_usdt"/>
+                <field width="200" name="cont_aed"/>
+                <field width="200" name="cont_euro"/>
+                <field width="200" name="cont_cny"/>
+                <field width="200" name="cash_cny"/>
+                <field width="200" name="cash_aed"/>
+                <field width="200" name="cash_rub"/>
+                <field width="200" name="cash_euro"/>
+                <field width="200" name="cash_usd"/>
+                <field width="200" name="payer_id"/>
+                <field width="200" name="payer_inn"/>
+                <field width="200" name="inn"/>
+                <field width="200" name="date_start"/>
+                <field width="200" name="date_end"/>
             </list>
         </field>
     </record>
@@ -23,9 +53,40 @@
                 <sheet>
                     <group>
                         <field name="name"/>
+                        <field name="recon_Balance_0"/>
+                        <field name="recon_Balance_1"/>
+
+                        <field name="recon_Balance_2"/>
+                        <field name="recon_cash_rub"/>
+                        <field name="recon_usdt"/>
+                        <field name="recon_usd"/>
+                        <field name="recon_cash_usd"/>
+                        <field name="recon_euro"/>
+                        <field name="recon_cash_euro"/>
+                        <field name="recon_cny"/>
+                        <field name="recon_cash_cny"/>
+                        <field name="recon_aed"/>
+                        <field name="recon_cash_aed"/>
+                        <field name="recon_eq_dollar"/>
+                        <field name="recon_eq_compare_1"/>
+                        <field name="recon_eq_compare_2"/>
+                        <field name="cont_rub"/>
+                        <field name="cont_usd"/>
+                        <field name="cont_usdt"/>
+                        <field name="cont_aed"/>
+                        <field name="cont_euro"/>
+                        <field name="cont_cny"/>
+                        <field name="cash_cny"/>
+                        <field name="cash_aed"/>
+                        <field name="cash_rub"/>
+                        <field name="cash_euro"/>
+                        <field name="cash_usd"/>
                         <field name="payer_id"/>
-                        <field name="address"/>
-                        <field name="phone"/>
+                        <field name="payer_inn"/>
+                        <field name="inn"/>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->

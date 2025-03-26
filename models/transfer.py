@@ -31,26 +31,42 @@ class Transfer(models.Model, AmanatBaseModel):
         tracking=True
     )
     amount = fields.Float(string='Сумма', required=True, tracking=True)
-    sender_id = fields.Many2one('amanat.contragent', string='Отправитель', required=True, tracking=True)
+
+    sender_id = fields.Many2one(
+        'amanat.contragent', 
+        string='Отправитель',
+        compute='_compute_sender_id',  # Делаем поле вычисляемым
+        store=True,
+        tracking=True, 
+    )
     sender_payer_id = fields.Many2one(
         'amanat.payer',
         string='Плательщик отправителя',
-        compute='_compute_payers',
-        store=True,
-        readonly=False,  # Позволяет редактировать поле вручную
+        required=True,  # Делаем обязательным, так как выбор начинается с плательщика
         tracking=True
     )
     sender_wallet_id = fields.Many2one('amanat.wallet', string='Кошелек отправителя', required=True, tracking=True)
-    receiver_id = fields.Many2one('amanat.contragent', string='Получатель', required=True, tracking=True)
+
+    receiver_id = fields.Many2one(
+        'amanat.contragent', 
+        string='Получатель',
+        compute='_compute_receiver_id',  # Делаем поле вычисляемым
+        store=True,
+        tracking=True, 
+    )
     receiver_payer_id = fields.Many2one(
         'amanat.payer',
         string='Плательщик получателя',
-        compute='_compute_payers',
-        store=True,
-        readonly=False,
+        required=True,  # Делаем обязательным
         tracking=True
     )
     receiver_wallet_id = fields.Many2one('amanat.wallet', string='Кошелек получателя', required=True, tracking=True)
+
+    #royalti
+    royalti_Transfer = fields.Boolean(string='Провести роялти', default=False, tracking=True)
+    delete_Transfer = fields.Boolean(string='Удалить поле', default=False, tracking=True)
+
+    #create
     create_order = fields.Boolean(string='Создать', default=False, tracking=True)
     is_complex = fields.Boolean(string='Сложный перевод', default=False, tracking=True)
     intermediary_1_id = fields.Many2one('amanat.contragent', string='Посредник 1', tracking=True)
@@ -92,6 +108,23 @@ class Transfer(models.Model, AmanatBaseModel):
                 print(f"{key}: {value}")
             print("=======================\n")
 
+    @api.depends('sender_payer_id', 'sender_payer_id.contragent_id')
+    def _compute_sender_id(self):
+        for record in self:
+            if record.sender_payer_id and record.sender_payer_id.contragent_id:
+                record.sender_id = record.sender_payer_id.contragent_id.id
+            else:
+                record.sender_id = False
+
+    @api.depends('receiver_payer_id', 'receiver_payer_id.contragent_id')
+    def _compute_receiver_id(self):
+        for record in self:
+            if record.receiver_payer_id and record.receiver_payer_id.contragent_id:
+                record.receiver_id = record.receiver_payer_id.contragent_id.id
+            else:
+                record.receiver_id = False
+
+    # Автоматизация "Перевод"
     # Главный метод логики перевода
     def create_transfer_orders(self):
         for record in self:
@@ -117,7 +150,6 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_2_id': record.receiver_payer_id.id,
             'currency': record.currency,
             'amount': record.amount,
-            'commission': record.sending_commission_percent,
         })
         # создаем контейнеры и сверки (аналогично Airtable-логике)
         self._create_money_and_reconciliation(order, record.sender_wallet_id, record.sender_id, -record.amount)
@@ -142,30 +174,6 @@ class Transfer(models.Model, AmanatBaseModel):
             'order_id': order.id,
             'wallet_id': wallet.id,
         })
-
-    @api.depends('sender_id', 'receiver_id')
-    def _compute_payers(self):
-        for record in self:
-            # Для отправителя
-            if record.sender_id and record.sender_id.payer_id:
-                record.sender_payer_id = record.sender_id.payer_id
-            else:
-                record.sender_payer_id = False
-
-            # Для получателя
-            if record.receiver_id and record.receiver_id.payer_id:
-                record.receiver_payer_id = record.receiver_id.payer_id
-            else:
-                record.receiver_payer_id = False
-
-    # Добавьте onchange для обновления в интерфейсе
-    @api.onchange('sender_id')
-    def _onchange_sender_id(self):
-        self.sender_payer_id = self.sender_id.payer_id if self.sender_id else False
-
-    @api.onchange('receiver_id')
-    def _onchange_receiver_id(self):
-        self.receiver_payer_id = self.receiver_id.payer_id if self.receiver_id else False
     
     # Логика автоматизации при установке create_order=True
     @api.onchange('create_order')

@@ -1,16 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Представление списка -->
     <record id="payer_list_view" model="ir.ui.view">
         <field name="name">payer.list</field>
         <field name="model">amanat.payer</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name"/>
-                <field name="bank_account"/>
+                <field width="200" name="name"/>
+                <field name="contragent_id"/>
+                <field name="inn"/>
+                <field width="200" name="contragents_ids"/>
+                <field name="order_ids"/>
+                <field name="reconciliation"/>
+                <field name="transfer"/>
+                <field width="200" name="currency_reserve"/>
+                <field width="200" name="conversion"/>
+                <field width="200" name="investment"/>
+                <field width="200" name="gold_partners"/>
+                <field name="deductions"/>
+                <field name="applications"/>
+                <field width="320" name="pricelist_conduct"/>
+                <field width="250" name="pricelist_profit"/>
             </list>
         </field>
     </record>
+
+    <!-- Представление формы -->
     <record id="payer_form_view" model="ir.ui.view">
         <field name="name">payer.form</field>
         <field name="model">amanat.payer</field>
@@ -20,10 +36,22 @@
                 <sheet>
                     <group>
                         <field name="name"/>
-                        <field name="bank_account"/>
+                        <field name="contragent_id"/>
+                        <field name="inn"/>
+                        <field name="contragents_ids"/>
+                        <field name="order_ids"/>
+                        <field name="reconciliation"/>
+                        <field name="transfer"/>
+                        <field name="currency_reserve"/>
+                        <field name="conversion"/>
+                        <field name="investment"/>
+                        <field name="gold_partners"/>
+                        <field name="deductions"/>
+                        <field name="applications"/>
+                        <field name="pricelist_conduct"/>
+                        <field name="pricelist_profit"/>
                     </group>
                 </sheet>
-
                 <!-- Виджет трекинга -->
                 <chatter>
                     <field name="message_follower_ids"/>
@@ -34,6 +62,7 @@
         </field>
     </record>
 
+    <!-- Действие -->
     <record id="payer_action" model="ir.actions.act_window">
         <field name="name">Плательщики</field>
         <field name="res_model">amanat.payer</field>
