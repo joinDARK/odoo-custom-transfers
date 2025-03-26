@@ -1,0 +1,58 @@
+<!-- amanat/views/writeoff_views.xml -->
+<odoo>
+    <!-- 1) Дерево (list) -->
+    <record id="writeoff_list_view" model="ir.ui.view">
+        <field name="name">writeoff.list</field>
+        <field name="model">amanat.writeoff</field>
+        <field name="arch" type="xml">
+            <list>
+                <!-- Если хотите видеть системный ID, можно добавить -->
+                <field name="id_spisaniya"/>
+                <field name="date"/>
+                <field name="amount"/>
+                <field name="money_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- 2) Форма (form) -->
+    <record id="writeoff_form_view" model="ir.ui.view">
+        <field name="name">writeoff.form</field>
+        <field name="model">amanat.writeoff</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <!-- То же самое: если нужно id, можно добавить <field name="id" readonly="1"/> -->
+                        <field name="id_spisaniya"/>
+                        <field name="date"/>
+                        <field name="amount"/>
+                        <field name="money_id"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- 3) Поиск (search) -->
+    <record id="writeoff_search_view" model="ir.ui.view">
+        <field name="name">writeoff.search</field>
+        <field name="model">amanat.writeoff</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="id_spisaniya"/>
+                <field name="date"/>
+                <field name="amount"/>
+                <field name="money_id"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- 4) Действие (Act Window), чтобы открыть список Списаний -->
+    <record id="writeoff_action" model="ir.actions.act_window">
+        <field name="name">Списания</field>
+        <field name="res_model">amanat.writeoff</field>
+        <field name="view_mode">list,form,search</field>
+        <field name="view_id" ref="writeoff_list_view"/>
+    </record>
+</odoo>

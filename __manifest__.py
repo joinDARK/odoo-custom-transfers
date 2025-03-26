@@ -28,6 +28,8 @@
         'views/money_views.xml',
         'views/reconciliation_views.xml',
         'views/ranges_views.xml',
+        'views/rates_views.xml',
+        'views/writeoff_views.xml',
 
         # 5) Затем создаём/обновляем меню (поскольку оно ссылается на группы)
         'views/menu.xml',
@@ -36,7 +38,9 @@
         # 'static/src/xml/templates.xml',
 
         # 6) Остальные файлы
-        'data/transfer_sequence.xml'
+        'data/transfer_sequence.xml',
+        'data/ranges_sequence.xml',
+        'data/rates_sequence.xml',
     ],
     # 'assets': {
     #     'web.assets_backend': [

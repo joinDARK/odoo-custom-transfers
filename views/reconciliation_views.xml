@@ -34,7 +34,6 @@
                 <field name="exchange"/>
                 <field name="order_id"/>
                 <field name="order_comment"/>
-                <field name="comment"/>
                 <field name="unload"/>
                 <field name="range"/>
                 <field name="range_reconciliation_date_1"/>
@@ -47,6 +46,15 @@
                 <field name="range_date_start"/>
                 <field name="range_date_end"/>
                 <field name="status_range"/>
+                <field name="rate"/>
+                <field name="rate_euro"/>
+                <field name="rate_cny"/>
+                <field name="rate_rub"/>
+                <field name="rate_aed"/>
+                <field name="rate_thb"/>
+                <field name="rate_usd"/>
+                <field name="rate_usdt"/>
+                <field name="equivalent"/>
                 <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
                 <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
             </list>
@@ -64,10 +72,52 @@
                         <field name="wallet_id"/>
                         <field name="date"/>
                         <field name="sender_id"/>
+                        <field name="sender_contragent"/>
                         <field name="receiver_id"/>
+                        <field name="receiver_contragent"/>
                         <field name="currency"/>
                         <field name="sum"/>
+                        <field name="sum_rub"/>
+                        <field name="sum_usd"/>
+                        <field name="sum_usdt"/>
+                        <field name="sum_cny"/>
+                        <field name="sum_euro"/>
+                        <field name="sum_aed"/>
+                        <field name="sum_thb"/>
+                        <field name="sum_rub_cashe"/>
+                        <field name="sum_usd_cashe"/>
+                        <field name="sum_cny_cashe"/>
+                        <field name="sum_euro_cashe"/>
+                        <field name="sum_aed_cashe"/>
+                        <field name="sum_thb_cashe"/>
+                        <field name="rate"/>
+                        <field name="award"/>
+                        <field name="rko"/>
+                        <field name="our_percent"/>
+                        <field name="exchange"/>
                         <field name="order_id"/>
+                        <field name="order_comment"/>
+                        <field name="unload"/>
+                        <field name="range"/>
+                        <field name="range_reconciliation_date_1"/>
+                        <field name="range_reconciliation_date_2"/>
+                        <field name="range_date_reconciliation"/>
+                        <field name="compare_balance_date_1"/>
+                        <field name="compare_balance_date_2"/>
+                        <field name="status_comparison_1"/>
+                        <field name="status_comparison_2"/>
+                        <field name="range_date_start"/>
+                        <field name="range_date_end"/>
+                        <field name="status_range"/>
+                        <field name="rate"/>
+                        <field name="rate_euro"/>
+                        <field name="rate_cny"/>
+                        <field name="rate_rub"/>
+                        <field name="rate_aed"/>
+                        <field name="rate_thb"/>
+                        <field name="rate_usd"/>
+                        <field name="rate_usdt"/>
+                        <field name="equivalent"/>
                         <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
                         <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
                     </group>

@@ -22,6 +22,14 @@ class Money(models.Model, AmanatBaseModel):
         default='rub',
         tracking=True
     )
+    
+    # Списания, связанные по money_id
+    writeoff_ids = fields.One2many(
+        comodel_name='amanat.writeoff',
+        inverse_name='money_id',
+        string="Списания"
+    )
+
     amount = fields.Float(string='Сумма', tracking=True)
     order_id = fields.Many2one('amanat.order', string='Заявка', tracking=True)
     state = fields.Selection([('debt', 'Долг'), ('positive', 'Положительный')], string='Состояние', tracking=True)

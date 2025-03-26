@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rates_list_view" model="ir.ui.view">
+        <field name="name">rates.list</field>
+        <field name="model">amanat.rates</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="id"/>
+                <field name="euro"/>
+                <field name="cny"/>
+                <field name="rub"/>
+                <field name="aed"/>
+                <field name="thb"/>
+                <field name="usd"/>
+                <field name="usdt"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="rates_form_view" model="ir.ui.view">
+        <field name="name">rates.form</field>
+        <field name="model">amanat.rates</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <h1><field name="id" readonly="1"/></h1>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="euro"/>
+                        <field name="cny"/>
+                        <field name="rub"/>
+                        <field name="aed"/>
+                        <field name="thb"/>
+                        <field name="usd"/>
+                        <field name="usdt"/>
+                    </group>
+                </sheet>
+                <!-- Виджет трекинга -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <record id="rates_action" model="ir.actions.act_window">
+        <field name="name">Курс к доллару</field>
+        <field name="res_model">amanat.rates</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="rates_list_view"/>
+    </record>
+</odoo>
