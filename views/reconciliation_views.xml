@@ -5,20 +5,103 @@
         <field name="model">amanat.reconciliation</field>
         <field name="arch" type="xml">
             <list>
-                <field name="date"/>
                 <field name="partner_id"/>
-                <field name="currency"/>
-                <field name="amount"/>
                 <field name="wallet_id"/>
+                <field name="date"/>
+                <field name="sender_id"/>
+                <field name="sender_contragent"/>
+                <field name="receiver_id"/>
+                <field name="receiver_contragent"/>
+                <field name="currency"/>
+                <field name="sum"/>
+                <field name="sum_rub"/>
+                <field name="sum_usd"/>
+                <field name="sum_usdt"/>
+                <field name="sum_cny"/>
+                <field name="sum_euro"/>
+                <field name="sum_aed"/>
+                <field name="sum_thb"/>
+                <field name="sum_rub_cashe"/>
+                <field name="sum_usd_cashe"/>
+                <field name="sum_cny_cashe"/>
+                <field name="sum_euro_cashe"/>
+                <field name="sum_aed_cashe"/>
+                <field name="sum_thb_cashe"/>
+                <field name="rate"/>
+                <field name="award"/>
+                <field name="rko"/>
+                <field name="our_percent"/>
+                <field name="exchange"/>
                 <field name="order_id"/>
+                <field name="order_comment"/>
+                <field name="comment"/>
+                <field name="unload"/>
+                <field name="range"/>
+                <field name="range_reconciliation_date_1"/>
+                <field name="range_reconciliation_date_2"/>
+                <field name="range_date_reconciliation"/>
+                <field name="compare_balance_date_1"/>
+                <field name="compare_balance_date_2"/>
+                <field name="status_comparison_1"/>
+                <field name="status_comparison_2"/>
+                <field name="range_date_start"/>
+                <field name="range_date_end"/>
+                <field name="status_range"/>
+                <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
             </list>
+        </field>
+    </record>
+
+    <record id="reconciliation_form_view" model="ir.ui.view">
+        <field name="name">reconciliation.form</field>
+        <field name="model">amanat.reconciliation</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="wallet_id"/>
+                        <field name="date"/>
+                        <field name="sender_id"/>
+                        <field name="receiver_id"/>
+                        <field name="currency"/>
+                        <field name="sum"/>
+                        <field name="order_id"/>
+                        <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                        <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                    </group>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <record id="reconciliation_search_view" model="ir.ui.view">
+        <field name="name">reconciliation.search</field>
+        <field name="model">amanat.reconciliation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="date" string="Дата"/>
+                <field name="partner_id" string="Партнер"/>
+                <field name="currency" string="Валюта"/>
+
+                <field name="wallet_id" string="Кошелек"/>
+                <field name="order_id" string="Заявка"/>
+                <filter name="filter_create_true" string="Только Create=TRUE" domain="[('create_Reconciliation','=',True)]"/>
+                <filter name="filter_royalti_true" string="Только Royalti=TRUE" domain="[('royalti_Reconciliation','=',True)]"/>
+            </search>
         </field>
     </record>
 
     <record id="reconciliation_action" model="ir.actions.act_window">
         <field name="name">Сверки</field>
         <field name="res_model">amanat.reconciliation</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">list,form,search</field>
+        <field name="view_id" ref="reconciliation_list_view"/>
     </record>
 </odoo>
-

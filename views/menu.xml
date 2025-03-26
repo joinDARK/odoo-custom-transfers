@@ -42,8 +42,6 @@
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
-    
-
     <!-- Меню для ордеров -->
     <menuitem 
         id="amanat_menu_order" 
@@ -68,12 +66,20 @@
         action="reconciliation_action"
     />
 
+        <!-- Меню для диапазон -->
+    <menuitem 
+        id="amanat_menu_ranges" 
+        name="Диапазоны"
+        parent="amanat_menu_root" 
+        action="ranges_action"
+    />
+
     <!-- Меню для автоматизаций -->
     <menuitem
-        id="menu_automation"
+        id="menu_automation_for_amanat"
         name="Автоматизации"
         parent="amanat_menu_root"
-        action="automation_action"
+        action="action_automation_for_amanat"
     />
 
     <!-- Меню для логгов -->

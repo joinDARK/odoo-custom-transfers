@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ranges_list_view" model="ir.ui.view">
+        <field name="name">range.list</field>
+        <field name="model">amanat.ranges</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="range_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="date_start_copy"/>
+                <field name="data_end_copy"/>
+                <field name="compare_balance_date_1"/>
+                <field name="compare_balance_date_2"/>
+                <field name="reconciliation_date_1"/>
+                <field name="reconciliation_date_2"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="ranges_action" model="ir.actions.act_window">
+        <field name="name">Диапазоны</field>
+        <field name="res_model">amanat.ranges</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="ranges_list_view"/>
+    </record>
+</odoo>

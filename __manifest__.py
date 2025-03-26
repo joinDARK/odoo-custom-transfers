@@ -5,7 +5,7 @@
     'description': 'Модуль проекта Amanat',
     'author': 'IncubeAI (Мирас)',
     'category': 'Amanat',
-    'depends': ['base', 'mail'],
+    'depends': ['base', 'mail', 'base_automation', 'web'],
     'data': [
         # 1) Сначала объявляем группы
         'security/security_groups.xml',
@@ -27,13 +27,24 @@
         'views/order_views.xml',
         'views/money_views.xml',
         'views/reconciliation_views.xml',
+        'views/ranges_views.xml',
 
         # 5) Затем создаём/обновляем меню (поскольку оно ссылается на группы)
         'views/menu.xml',
 
+
+        # 'static/src/xml/templates.xml',
+
         # 6) Остальные файлы
         'data/transfer_sequence.xml'
     ],
+    # 'assets': {
+    #     'web.assets_backend': [
+    #         'amanat/static/src/js/amanat.js',
+    #         'amanat/static/src/css/amanat.css',
+    #     ],
+    # },
+
     'installable': True,
     'application': True,
 }

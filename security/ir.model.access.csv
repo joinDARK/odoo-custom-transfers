@@ -31,10 +31,7 @@ access_amanat_reconciliation_admin,amanat.reconciliation,model_amanat_reconcilia
 access_amanat_reconciliation_senior_manager,amanat.reconciliation,model_amanat_reconciliation,group_amanat_senior_manager,1,1,1,1
 access_amanat_reconciliation_manager,amanat.reconciliation,model_amanat_reconciliation,group_amanat_manager,1,0,0,0
 access_amanat_reconciliation_inspector,amanat.reconciliation,model_amanat_reconciliation,group_amanat_inspector,1,0,0,0
-
-
-
-access_amanat_automation_admin,amanat.automation,model_amanat_automation,group_amanat_admin,1,1,1,1
-access_amanat_automation_senior_manager,amanat.automation,model_amanat_automation,group_amanat_senior_manager,1,1,1,1
-access_amanat_automation_manager,amanat.automation,model_amanat_automation,group_amanat_manager,1,1,1,0
-access_amanat_automation_inspector,amanat.automation,model_amanat_automation,group_amanat_inspector,1,0,0,0
+access_amanat_ranges_admin,amanat.ranges,model_amanat_ranges,group_amanat_admin,1,1,1,1
+access_amanat_ranges_senior_manager,amanat.ranges,model_amanat_ranges,group_amanat_senior_manager,1,1,1,1
+access_amanat_ranges_manager,amanat.ranges,model_amanat_ranges,group_amanat_manager,1,0,0,0
+access_amanat_ranges_inspector,amanat.ranges,model_amanat_ranges,group_amanat_inspector,1,0,0,0
