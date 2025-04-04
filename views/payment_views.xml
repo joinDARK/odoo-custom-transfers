@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Форма платежа -->
+    <record id="view_payment_form" model="ir.ui.view">
+        <field name="name">payment.form</field>
+        <field name="model">amanat.payment</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Платеж">
+                <sheet>
+                    <group>
+                        <field name="date"/>
+                        <field name="currency"/>
+                    </group>
+                    <group>
+                        <field name="wallet"/>
+                        <field name="sender"/>
+                        <field name="sender_payer"/>
+                    </group>
+                    <group>
+                        <field name="recipient"/>
+                        <field name="recipient_payer"/>
+                    </group>
+                    <group>
+                        <field name="amount"/>
+                        <field name="purpose"/>
+                    </group>
+                    <group>
+                        <field name="execute"/>
+                        <field name="status"/>
+                    </group>
+                    <group>
+                        <field name="actual_date"/>
+                        <field name="payment_status"/>
+                    </group>
+                    <group>
+                        <field name="money"/>
+                        <field name="deal"/>
+                        <field name="minus"/>
+                        <field name="plus"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Список платежей -->
+    <record id="view_payment_list" model="ir.ui.view">
+        <field name="name">payment</field>
+        <field name="model">amanat.payment</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list string="Платежи">
+                <field name="date"/>
+                <field name="currency"/>
+                <field name="wallet"/>
+                <field name="sender"/>
+                <field name="sender_payer"/>
+                <field name="recipient"/>
+                <field name="recipient_payer"/>
+                <field name="amount"/>
+                <field name="purpose"/>
+                <field name="execute"/>
+                <field name="status"/>
+                <field name="actual_date"/>
+                <field name="payment_status"/>
+                <field name="money"/>
+                <field name="deal"/>
+                <field name="minus"/>
+                <field name="plus"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Действие для открытия списка платежей -->
+    <record id="payment_action" model="ir.actions.act_window">
+        <field name="name">Платежи</field>
+        <field name="res_model">amanat.payment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

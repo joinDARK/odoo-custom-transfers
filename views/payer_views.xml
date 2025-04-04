@@ -22,6 +22,7 @@
                 <field name="applications"/>
                 <field width="320" name="pricelist_conduct"/>
                 <field width="250" name="pricelist_profit"/>
+                <field width="320" name="price_list_profit_id"/>
             </list>
         </field>
     </record>
@@ -50,6 +51,7 @@
                         <field name="applications"/>
                         <field name="pricelist_conduct"/>
                         <field name="pricelist_profit"/>
+                        <field name="price_list_profit_id"/>
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->

@@ -19,7 +19,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
         default='rub',
         tracking=True
     )
-    sum = fields.Float(string='Сумма', tracking=True)
+    sum = fields.Float(string='Сумма', tracking=True, required=True)
     wallet_id = fields.Many2one('amanat.wallet', string='Кошелек', tracking=True)
     sender_id = fields.Many2one(
         'amanat.payer',
@@ -112,6 +112,5 @@ class Reconciliation(models.Model, AmanatBaseModel):
     rate_usdt = fields.Float(string='usdt (from Курсы)', related='rate_id.usdt', store=True, tracking=True)
     equivalent = fields.Float(string='Эквивалент $', tracking=True)
 
-    amount = fields.Float(string='Сумма', required=True, tracking=True)
     create_Reconciliation = fields.Boolean(string='Создать', default=False, tracking=True)
     royalti_Reconciliation = fields.Boolean(string='Провести роялти', default=False, tracking=True)

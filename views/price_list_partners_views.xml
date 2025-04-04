@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="price_list_partners_list_view" model="ir.ui.view">
+        <field name="name">price_list_partners.list</field>
+        <field name="model">amanat.price_list_partners</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="payer_partner"/>
+                <field name="counterparties"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="today_date"/>
+                <field name="period_days"/>
+                <field name="type_binding"/>
+                <field name="accrual_percentage"/>
+                <field name="fixed_deal_fee"/>
+                <field name="min_application_amount"/>
+                <field name="bind_field"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="price_list_partners_action" model="ir.actions.act_window">
+        <field name="name">Прайс лист партнеры</field>
+        <field name="res_model">amanat.price_list_partners</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

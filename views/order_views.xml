@@ -8,49 +8,109 @@
                 <field name="name"/>
                 <field name="date"/>
                 <field name="type"/>
-                <field width="200px" name="partner_1_id"/>
-                <field width="200px" name="payer_1_id"/>
+                <field width="200" name="partner_1_id"/>
+                <field width="200" name="payer_1_id"/>
                 <field name="wallet_1_id"/>
-                <field width="200px" name="partner_2_id"/>
-                <field width="200px" name="payer_2_id"/>
+                <field width="200" name="partner_2_id"/>
+                <field width="200" name="payer_2_id"/>
                 <field name="wallet_2_id"/>
                 <field name="currency"/>
                 <field name="amount"/>
                 <field name="rate"/>
-                <field width="200px" name="operation_percent"/>
+                <field width="200" name="operation_percent"/>
                 <field name="rko"/>
                 <field name="amount_1"/>
-                <field width="200px" name="our_percent"/>
+                <field width="200" name="our_percent"/>
                 <field name="rko_2"/>
                 <field name="amount_2"/>
                 <field name="total"/>
-                <field width="200px" name="comment"/>
-                <field width="200px" name="is_confirmed"/>
+                <field width="200" name="comment"/>
+                <field width="200" name="is_confirmed"/>
                 <field name="status"/>
                 <field name="money"/>
-                <field width="200px" name="reserve_1"/>
-                <field width="200px" name="converted_amount"/>
+                <field width="200" name="reserve_1"/>
+                <field width="200" name="converted_amount"/>
                 <field name="investment"/>
                 <field name="gold"/>
-                <field width="200px" name="cross_from"/>
-                <field width="200px" name="cross_rate"/>
-                <field width="200px" name="cross_currency_from"/>
-                <field width="200px" name="cross_currency_to"/>
-                <field width="200px" name="cross_calc"/>
-                <field width="200px" name="cross_converted"/>
+                <field width="200" name="cross_from"/>
+                <field width="200" name="cross_rate"/>
+                <field width="200" name="cross_currency_from"/>
+                <field width="200" name="cross_currency_to"/>
+                <field width="200" name="cross_calc"/>
+                <field width="200" name="cross_converted"/>
                 <field name="partner_gold"/>
                 <field name="write_off"/>
-                <field width="200px" name="rollup_write_off"/>
+                <field width="200" name="rollup_write_off"/>
                 <field name="reconciliation"/>
-                <field width="200px" name="remaining_debt"/>
+                <field width="200" name="remaining_debt"/>
             </list>
+        </field>
+    </record>
+
+    <record id="order_form_view" model="ir.ui.view">
+        <field name="name">order.form</field>
+        <field name="model">amanat.order</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <h1><field name="name" readonly="1"/></h1>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="date"/>
+                        <field name="type"/>
+                        <field name="partner_1_id"/>
+                        <field name="payer_1_id"/>
+                        <field name="wallet_1_id"/>
+                        <field name="partner_2_id"/>
+                        <field name="payer_2_id"/>
+                        <field name="wallet_2_id"/>
+                        <field name="currency"/>
+                        <field name="amount"/>
+                        <field name="rate"/>
+                        <field name="operation_percent"/>
+                        <field name="rko"/>
+                        <field name="amount_1"/>
+                        <field name="our_percent"/>
+                        <field name="rko_2"/>
+                        <field name="amount_2"/>
+                        <field name="total"/>
+                        <field name="comment"/>
+                        <field name="is_confirmed"/>
+                        <field name="status"/>
+                        <field name="money"/>
+                        <field name="reserve_1"/>
+                        <field name="converted_amount"/>
+                        <field name="investment"/>
+                        <field name="gold"/>
+                        <field name="cross_from"/>
+                        <field name="cross_rate"/>
+                        <field name="cross_currency_from"/>
+                        <field name="cross_currency_to"/>
+                        <field name="cross_calc"/>
+                        <field name="cross_converted"/>
+                        <field name="partner_gold"/>
+                        <field name="write_off"/>
+                        <field name="rollup_write_off"/>
+                        <field name="reconciliation"/>
+                        <field name="remaining_debt"/>
+                    </group>
+                </sheet>
+                <!-- Виджет трекинга -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
         </field>
     </record>
 
     <record id="order_action" model="ir.actions.act_window">
         <field name="name">Ордер</field>
         <field name="res_model">amanat.order</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">list,form</field>
     </record>
 </odoo>
 

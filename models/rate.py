@@ -9,10 +9,9 @@ class Rates(models.Model, AmanatBaseModel):
 
     id = fields.Char(
         string='id',
+        default=lambda self: self.env['ir.sequence'].next_by_code('amanat.rates.sequence'),
         required=True,
-        copy=False,
         readonly=True,
-        default=lambda self: 'Новый курс'
     )
     euro = fields.Float(string='euro', tracking=True)
     cny = fields.Float(string='cny', tracking=True)
@@ -21,9 +20,3 @@ class Rates(models.Model, AmanatBaseModel):
     thb = fields.Float(string='thb', tracking=True)
     usd = fields.Float(string='usd', tracking=True)
     usdt = fields.Float(string='usdt', tracking=True)
-
-    @api.model
-    def create(self, vals):
-        if vals.get('id', 'Новый курс') == 'Новый курс':
-            vals['id'] = self.env['ir.sequence'].next_by_bycode('amanat.rates.sequence') or 'Новый курс'
-        return super(Rates, self).create(vals)

@@ -24,4 +24,4 @@ class Wallet(models.Model, AmanatBaseModel):
     transfer_3 = fields.Float(string='Перевод 3', tracking=True)
     write_offs = fields.Float(string='Списания', tracking=True)
     partner_gold = fields.Float(string='Партнеры золото', tracking=True)
-    bank_match = fields.Float(string='Выписка разнос', tracking=True)
+    bank_match = fields.Float(string='Выписка разнос', tracking=True) 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="amanat_zayavka_sequence" model="ir.sequence">
+            <field name="name">Последовательность Номеров Заявок</field>
+            <field name="code">amanat.zayavka.sequence</field>
+            <field name="prefix">Заявка № </field>
+            <field name="padding">1</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+    </data>
+</odoo>

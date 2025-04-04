@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List (tree) view -->
+    <record id="price_list_payer_profit_list_view" model="ir.ui.view">
+        <field name="name">price.list.payer.profit.list</field>
+        <field name="model">amanat.price_list_payer_profit</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="period_days"/>
+                <field name="percent_accrual"/>
+                <field name="fixed_fee"/>
+                <field name="min_zayavka_amount"/>
+                <field name="max_zayavka_amount"/>
+                <field name="is_bound"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form view -->
+    <record id="price_list_payer_profit_form_view" model="ir.ui.view">
+        <field name="name">price.list.payer.profit.form</field>
+        <field name="model">amanat.price_list_payer_profit</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="payer_subagent_ids"/>
+                        <field name="contragent_ids" widget="many2many_tags"/>
+                    </group>
+                    <group>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                        <field name="period_days" readonly="1"/>
+                        <field name="today_date_str" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="percent_accrual"/>
+                        <field name="fixed_fee"/>
+                    </group>
+                    <group>
+                        <field name="min_zayavka_amount"/>
+                        <field name="max_zayavka_amount"/>
+                    </group>
+                    <group>
+                        <field name="is_bound"/>
+                    </group>
+                    <group>
+                        <field name="zayavka_ids"/>
+                    </group>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="price_list_payer_profit_action" model="ir.actions.act_window">
+        <field name="name">Прайс лист Плательщика Прибыль</field>
+        <field name="res_model">amanat.price_list_payer_profit</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

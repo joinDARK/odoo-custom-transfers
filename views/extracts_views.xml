@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- LIST VIEW -->
+    <record id="view_amanat_extracts_list" model="ir.ui.view">
+        <field name="name">amanat.extracts.list</field>
+        <field name="model">amanat.extracts</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="vypiska_ids"/>
+                <field name="raznesti"/>
+                <field name="extract_delivery_ids"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_amanat_extracts_form" model="ir.ui.view">
+        <field name="name">amanat.extracts.form</field>
+        <field name="model">amanat.extracts</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="extracts">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="vypiska_ids"/>
+                        <field name="raznesti"/>
+                        <field name="extract_delivery_ids"/>
+                    </group>
+                </sheet>
+                <!-- Виджет чата -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Действие для открытия списка записей модели "extracts" -->
+    <record id="action_amanat_extracts" model="ir.actions.act_window">
+        <field name="name">Выписки</field>
+        <field name="res_model">amanat.extracts</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

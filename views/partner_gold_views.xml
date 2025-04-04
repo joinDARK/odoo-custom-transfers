@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- List view -->
+  <record id="partner_gold_list_view" model="ir.ui.view">
+    <field name="name">partner.gold.list</field>
+    <field name="model">amanat.partner_gold</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="name"/>
+        <field name="deal_date"/>
+        <field name="partner_id"/>
+        <field name="payer_id"/>
+        <field name="amount_rub"/>
+        <field name="purchase_amount_dollar"/>
+      </list>
+    </field>
+  </record>
+
+  <!-- Form view -->
+  <record id="partner_gold_form_view" model="ir.ui.view">
+    <field name="name">partner.gold.form</field>
+    <field name="model">amanat.partner_gold</field>
+    <field name="arch" type="xml">
+      <form>
+        <sheet>
+          <group>
+            <field name="name"/>
+            <field name="deal_date"/>
+            <field name="partner_id"/>
+            <field name="payer_id"/>
+          </group>
+          <group>
+            <field name="price_per_oz"/>
+            <field name="discount_premium"/>
+            <field name="bank_rate"/>
+          </group>
+          <group>
+            <field name="pure_weight"/>
+            <field name="purchase_price_rub_per_gram"/>
+            <field name="amount_rub" readonly="1"/>
+          </group>
+          <group>
+            <field name="dollar_rate"/>
+            <field name="dollar_rate_formula" readonly="1"/>
+            <field name="purchase_amount_dollar" readonly="1"/>
+          </group>
+          <group>
+            <field name="sale_date"/>
+            <field name="initial_price_per_oz"/>
+            <field name="sale_discount_per_oz"/>
+            <field name="sale_price_per_oz" readonly="1"/>
+          </group>
+          <group>
+            <field name="aed_rate"/>
+            <field name="sale_amount_aed" readonly="1"/>
+            <field name="usdt_rate"/>
+            <field name="purchase_usdt" readonly="1"/>
+          </group>
+          <group>
+            <field name="bank_percent"/>
+            <field name="bank_amount" readonly="1"/>
+            <field name="service_percent"/>
+            <field name="service_amount" readonly="1"/>
+          </group>
+          <group>
+            <field name="bank_kb_percent"/>
+            <field name="bank_kb_amount" readonly="1"/>
+            <field name="courier_percent"/>
+            <field name="courier_amount" readonly="1"/>
+          </group>
+          <group>
+            <field name="total_extra_expenses"/>
+            <field name="overall_pure_weight"/>
+            <field name="extra_expenses_computed" readonly="1"/>
+          </group>
+          <group>
+            <field name="gold_deal_ids" widget="many2many_tags"/>
+          </group>
+          <group>
+            <field name="total_expenses" readonly="1"/>
+            <field name="overall_amount" readonly="1"/>
+            <field name="profit" readonly="1"/>
+            <field name="deal_percentage" readonly="1"/>
+            <field name="final_rate" readonly="1"/>
+          </group>
+          <group>
+            <field name="has_royalty"/>
+            <field name="royalty_recipient_id"/>
+            <field name="first_percent"/>
+            <field name="royalty_amount_1" readonly="1"/>
+          </group>
+          <group>
+            <field name="payment_date"/>
+            <field name="conduct_gold_transfer"/>
+            <field name="wallet_id"/>
+          </group>
+          <group>
+            <field name="lookup_pure_weight" readonly="1"/>
+            <field name="lookup_invoice_amount" readonly="1"/>
+            <field name="partner_percentage" readonly="1"/>
+            <field name="partner_invoice_amount" readonly="1"/>
+          </group>
+        </sheet>
+        <chatter>
+          <field name="message_follower_ids"/>
+          <field name="activity_ids"/>
+          <field name="message_ids"/>
+        </chatter>
+      </form>
+    </field>
+  </record>
+
+  <!-- Action -->
+  <record id="partner_gold_action" model="ir.actions.act_window">
+    <field name="name">Партнеры золото</field>
+    <field name="res_model">amanat.partner_gold</field>
+    <field name="view_mode">list,form</field>
+  </record>
+</odoo>

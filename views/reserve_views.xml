@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="reserve_list_view" model="ir.ui.view">
+        <field name="name">reserve.list</field>
+        <field name="model">amanat.reserve</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="subagent_payer"/>
+                <field name="counterparties"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="period_days"/>
+                <field name="today_date"/>
+                <field name="accrual_percentage"/>
+                <field name="fixed_deal_fee"/>
+                <field name="min_application_amount"/>
+                <field name="max_application_amount"/>
+                <field name="bind_field"/>
+                <field name="applications"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="reserve_form_view" model="ir.ui.view">
+        <field name="name">reserve.form</field>
+        <field name="model">amanat.reserve</field>
+        <field name="arch" type="xml">
+            <form string="Валютный резерв 1">
+                <sheet>
+                    <group>
+                        <field name="subagent_payer"/>
+                        <field name="counterparties"/>
+                    </group>
+                    <group>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                        <field name="period_days" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="today_date"/>
+                        <field name="accrual_percentage"/>
+                        <field name="fixed_deal_fee"/>
+                    </group>
+                    <group>
+                        <field name="min_application_amount"/>
+                        <field name="max_application_amount"/>
+                    </group>
+                    <group>
+                        <field name="bind_field"/>
+                        <field name="applications"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="reserve_action" model="ir.actions.act_window">
+        <field name="name">Валютный резерв 1</field>
+        <field name="res_model">amanat.reserve</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
+
