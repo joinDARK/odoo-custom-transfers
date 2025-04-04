@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_task_kanban" model="ir.ui.view">
+        <field name="name">task.kanban</field>
+        <field name="model">amanat.task</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="status">
+                <field name="name"/>
+                <field name="status"/>
+                <field name="start_date"/>
+                <field name="deadline"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="oe_kanban_details">
+                                <strong><field name="name"/></strong><br/>
+                                <field name="start_date"/> - <field name="deadline"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_task_form" model="ir.ui.view">
+        <field name="name">task.form</field>
+        <field name="model">amanat.task</field>
+        <field name="arch" type="xml">
+            <form string="Задача">
+                <header><h1>Задача</h1></header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="status"/>
+                        </group>
+                        <group>
+                            <field name="start_date"/>
+                            <field name="deadline"/>
+                            <field name="completion_date"/>
+                            <field name="execution_cycle" readonly="1"/>
+                        </group>
+                        <notebook>
+                            <page string="Дополнительно">
+                                <group>
+                                    <field name="comment" string="Комментарий"/>
+                                    <field name="subtasks" string="Подзадачи"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </group>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <record id="task_action" model="ir.actions.act_window">
+        <field name="name">Задачник</field>
+        <field name="res_model">amanat.task</field>
+        <field name="view_mode">kanban,form</field>
+    </record>
+</odoo>

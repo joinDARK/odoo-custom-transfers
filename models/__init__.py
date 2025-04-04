@@ -11,3 +11,28 @@ from . import money
 from . import ranges
 from . import rate
 from . import writeoff
+from . import сonversion
+from . import extract_delivery
+from . import country
+from . import zayavka
+from . import reserve
+from . import kassa_ivan
+from . import kassa_2
+from . import kassa_3
+from . import price_list_partners
+from . import price_list_payer_profit
+from . import tasks
+from . import payment
+from . import gold_deal
+from . import partner_gold
+from . import investment
+from . import manager
+from . import extracts
+from . import sverka_files
+from . import period
+
+# sidebar
+from . import ir_http
+from . import res_users
+from . import res_company
+from . import res_config_settings

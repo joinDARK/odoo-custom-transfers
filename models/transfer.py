@@ -64,6 +64,8 @@ class Transfer(models.Model, AmanatBaseModel):
 
     #royalti
     royalti_Transfer = fields.Boolean(string='Провести роялти', default=False, tracking=True)
+
+    #delete
     delete_Transfer = fields.Boolean(string='Удалить поле', default=False, tracking=True)
 
     #create
@@ -80,6 +82,9 @@ class Transfer(models.Model, AmanatBaseModel):
     intermediary_2_sum = fields.Float(string='Сумма 2 посредника', tracking=True)
 
     sending_commission_percent = fields.Float(string='Процент комиссии по отправке', tracking=True)
+
+    order_ids = fields.One2many('amanat.order', 'transfer_id', string="Ордера")
+
 
     # manager_id = fields.Many2one('res.users', string='Manager', tracking=True)
     manager_id = fields.Many2one('res.users', string='Manager', tracking=True, default=lambda self: self.env.user.id)
@@ -124,18 +129,22 @@ class Transfer(models.Model, AmanatBaseModel):
             else:
                 record.receiver_id = False
 
-    # Автоматизация "Перевод"
-    # Главный метод логики перевода
+    # Автоматизация "Контейнеры 'Переводы'"
     def create_transfer_orders(self):
         for record in self:
+            # Удаляем старые ордера, а через каскад — контейнеры и сверки
+            if record.order_ids:
+                record.order_ids.unlink()
+
+            # Простая или сложная логика
             if record.is_complex:
-                # сложный перевод
                 if record.intermediary_1_id and not record.intermediary_2_id:
                     self._create_one_intermediary_transfer(record)
                 elif record.intermediary_1_id and record.intermediary_2_id:
                     self._create_two_intermediary_transfer(record)
+                else:
+                    self._create_simple_transfer(record)
             else:
-                # простой перевод
                 self._create_simple_transfer(record)
 
     def _create_simple_transfer(self, record):
@@ -150,13 +159,77 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_2_id': record.receiver_payer_id.id,
             'currency': record.currency,
             'amount': record.amount,
+            'operation_percent': record.sending_commission_percent,
+            'transfer_id': record.id,
         })
-        # создаем контейнеры и сверки (аналогично Airtable-логике)
-        self._create_money_and_reconciliation(order, record.sender_wallet_id, record.sender_id, -record.amount)
-        self._create_money_and_reconciliation(order, record.receiver_wallet_id, record.receiver_id, record.amount)
+        
+        amount_1, amount_2 = self._calculate_amounts(record.amount, record.sending_commission_percent)
 
-    # Пример реализации метода создания записей контейнеров и сверок
-    def _create_money_and_reconciliation(self, order, wallet, partner, amount):
+        self._create_money_and_reconciliation(order, record.sender_wallet_id, record.sender_id, -amount_1, record.sender_payer_id, record.receiver_payer_id)
+        self._create_money_and_reconciliation(order, record.receiver_wallet_id, record.receiver_id, amount_2, record.sender_payer_id, record.receiver_payer_id)
+
+    def _create_one_intermediary_transfer(self, record):
+        order_a = self.env['amanat.order'].create({
+            'date': record.date,
+            'type': 'transfer',
+            'partner_1_id': record.sender_id.id,
+            'partner_2_id': record.intermediary_1_id.id,
+            'wallet_1_id': record.sender_wallet_id.id,
+            'wallet_2_id': record.intermediary_1_wallet_id.id,
+            'payer_1_id': record.sender_payer_id.id,
+            'payer_2_id': record.intermediary_1_payer_id.id,
+            'currency': record.currency,
+            'amount': record.amount,
+            'operation_percent': record.sending_commission_percent,
+            'transfer_id': record.id,
+        })
+
+        a1, a2 = self._calculate_amounts(record.amount, record.sending_commission_percent)
+        self._create_money_and_reconciliation(order_a, record.sender_wallet_id, record.sender_id, -a1, record.sender_payer_id, record.intermediary_1_payer_id)
+        self._create_money_and_reconciliation(order_a, record.intermediary_1_wallet_id, record.intermediary_1_id, a2, record.sender_payer_id, record.intermediary_1_payer_id)
+
+        if record.intermediary_1_sum:
+            order_b = self.env['amanat.order'].create({
+                'date': record.date,
+                'type': 'transfer',
+                'partner_1_id': record.intermediary_1_id.id,
+                'partner_2_id': record.receiver_id.id,
+                'wallet_1_id': record.intermediary_1_wallet_id.id,
+                'wallet_2_id': record.receiver_wallet_id.id,
+                'payer_1_id': record.intermediary_1_payer_id.id,
+                'payer_2_id': record.receiver_payer_id.id,
+                'currency': record.currency,
+                'amount': record.intermediary_1_sum,
+                'operation_percent': record.sending_commission_percent,
+                'transfer_id': record.id,
+            })
+            self._create_money_and_reconciliation(order_b, record.intermediary_1_wallet_id, record.intermediary_1_id, -record.intermediary_1_sum, record.intermediary_1_payer_id, record.receiver_payer_id)
+            self._create_money_and_reconciliation(order_b, record.receiver_wallet_id, record.receiver_id, record.intermediary_1_sum, record.intermediary_1_payer_id, record.receiver_payer_id)
+
+    def _create_two_intermediary_transfer(self, record):
+        self._create_one_intermediary_transfer(record)  # A и B
+
+        if record.intermediary_2_sum:
+            order_c = self.env['amanat.order'].create({
+                'date': record.date,
+                'type': 'transfer',
+                'partner_1_id': record.intermediary_2_id.id,
+                'partner_2_id': record.receiver_id.id,
+                'wallet_1_id': record.intermediary_2_wallet_id.id,
+                'wallet_2_id': record.receiver_wallet_id.id,
+                'payer_1_id': record.intermediary_2_payer_id.id,
+                'payer_2_id': record.receiver_payer_id.id,
+                'currency': record.currency,
+                'amount': record.intermediary_2_sum,
+                'operation_percent': record.sending_commission_percent,
+                'transfer_id': record.id,
+            })
+            self._create_money_and_reconciliation(order_c, record.intermediary_2_wallet_id, record.intermediary_2_id, -record.intermediary_2_sum, record.intermediary_2_payer_id, record.receiver_payer_id)
+            self._create_money_and_reconciliation(order_c, record.receiver_wallet_id, record.receiver_id, record.intermediary_2_sum, record.intermediary_2_payer_id, record.receiver_payer_id)
+
+    def _create_money_and_reconciliation(self, order, wallet, partner, amount, sender_payer, receiver_payer):
+        currency_fields = self._get_currency_fields(order.currency, amount)
+
         self.env['amanat.money'].create({
             'date': order.date,
             'wallet_id': wallet.id,
@@ -164,19 +237,40 @@ class Transfer(models.Model, AmanatBaseModel):
             'currency': order.currency,
             'amount': amount,
             'order_id': order.id,
-            'state': 'positive' if amount > 0 else 'debt'
+            'state': 'positive' if amount > 0 else 'debt',
+            **currency_fields
         })
+
         self.env['amanat.reconciliation'].create({
             'date': order.date,
             'partner_id': partner.id,
             'currency': order.currency,
-            'amount': amount,
+            'sum': amount,
             'order_id': order.id,
             'wallet_id': wallet.id,
+            'sender_id': sender_payer.id if sender_payer else False,
+            'receiver_id': receiver_payer.id if receiver_payer else False,
+            **currency_fields
         })
+
+    def _get_currency_fields(self, currency, amount):
+        mapping = {
+            'rub': 'sum_rub', 'usd': 'sum_usd', 'usdt': 'sum_usdt', 'cny': 'sum_cny', 'euro': 'sum_euro', 'aed': 'sum_aed', 'thb': 'sum_thb',
+            'rub_cashe': 'sum_rub_cashe', 'usd_cashe': 'sum_usd_cashe', 'euro_cashe': 'sum_euro_cashe',
+            'cny_cashe': 'sum_cny_cashe', 'aed_cashe': 'sum_aed_cashe', 'thb_cashe': 'sum_thb_cashe'
+        }
+        field = mapping.get(currency)
+        return {field: amount} if field else {}
+
+    def _calculate_amounts(self, amount, percent):
+        amount_1 = amount
+        amount_2 = amount - (amount * percent / 100) if percent else amount
+        return amount_1, amount_2
     
     # Логика автоматизации при установке create_order=True
-    @api.onchange('create_order')
-    def _onchange_create_order(self):
-        if self.create_order:
-            self.create_transfer_orders()
+    def write(self, vals):
+        for rec in self:
+            # Проверяем: флаг create_order встает в True, а раньше был False
+            if vals.get('create_order') is True and not rec.create_order and rec.state == 'open':
+                rec.create_transfer_orders()
+        return super().write(vals)

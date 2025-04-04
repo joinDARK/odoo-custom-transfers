@@ -55,8 +55,8 @@
                 <field name="rate_usd"/>
                 <field name="rate_usdt"/>
                 <field name="equivalent"/>
-                <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" width="100"/>
+                <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" width="120"/>
             </list>
         </field>
     </record>

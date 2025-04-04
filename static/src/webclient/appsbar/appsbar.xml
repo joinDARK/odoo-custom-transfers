@@ -1,0 +1,20 @@
+<t t-name="amanat.AppsBar">
+    <t t-if="state.isAmanat">
+        <div class="mk_apps_sidebar_panel">
+            <div class="mk_apps_sidebar">
+                <ul class="mk_apps_sidebar_menu">
+                    <li class="nav-item">
+                        <a href="#" t-on-click.prevent="openAutomations" class="nav-link" role="menuitem">
+                            <span class="mk_apps_sidebar_name">Автоматизации</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" t-on-click.prevent="openLogs" class="nav-link" role="menuitem">
+                            <span class="mk_apps_sidebar_name">Логи</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </t>
+</t>

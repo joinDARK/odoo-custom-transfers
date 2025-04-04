@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_amanat_zayavka_form" model="ir.ui.view">
+    <field name="name">amanat.zayavka.form</field>
+    <field name="model">amanat.zayavka</field>
+    <field name="arch" type="xml">
+      <form string="Заявки">
+        <header>
+          <h1><field name="zayavka_id" readonly="1"/></h1>
+        </header>
+        <sheet>
+          <group>
+            <field name="status"/>
+            <field name="zayavka_num"/>
+            <field name="date_placement"/>
+            <field name="taken_in_work_date"/>
+          </group>
+          <group>
+            <field name="contragent_id"/>
+            <field name="agent_id"/>
+            <field name="client_id"/>
+          </group>
+          <group>
+            <field name="inn"/>
+            <field name="client_inn"/>
+          </group>
+          <group>
+            <field name="exporter_importer_name"/>
+            <field name="bank_swift"/>
+          </group>
+          <group>
+            <field name="country_id"/>
+            <field name="payment_conditions"/>
+            <field name="deal_type"/>
+          </group>
+          <group>
+            <field name="instruction_number"/>
+            <field name="instruction_signed_date"/>
+          </group>
+          <group>
+            <field name="usd_equivalent"/>
+            <field name="jess_rate"/>
+          </group>
+          <group>
+            <field name="currency"/>
+            <field name="is_cross"/>
+            <field name="currency_pair"/>
+          </group>
+          <group>
+            <field name="cross_rate_usd_rub"/>
+            <field name="cross_rate_pair"/>
+          </group>
+          <group>
+            <field name="xe_rate"/>
+            <field name="conversion_expenses_rub"/>
+          </group>
+          <group>
+            <field name="conversion_expenses_currency"/>
+            <field name="xe_rate_auto"/>
+          </group>
+          <group>
+            <field name="real_cross_rate"/>
+            <field name="amount"/>
+          </group>
+          <group>
+            <field name="vip_conditions"/>
+            <field name="price_list_profit_id"/>
+          </group>
+          <notebook>
+            <page string="Дополнительные данные">
+              <group>
+                <field name="vip_commission"/>
+                <field name="hidden_commission"/>
+                <field name="bank_commission"/>
+                <field name="accreditation_commission"/>
+                <field name="escrow_commission"/>
+              </group>
+              <group>
+                <field name="rate_field"/>
+                <field name="hidden_rate"/>
+              </group>
+              <group>
+                <field name="conversion_percent"/>
+                <field name="bank_cross_rate"/>
+              </group>
+              <group>
+                <field name="plus_dollar"/>
+                <field name="dollar_cross_rate"/>
+              </group>
+              <group>
+                <field name="plus_currency"/>
+                <field name="invoice_plus_percent"/>
+                <field name="reward_percent"/>
+              </group>
+              <!-- При необходимости можно добавить другие вычисляемые поля -->
+            </page>
+          </notebook>
+        </sheet>
+        <chatter>
+          <field name="message_follower_ids"/>
+          <field name="activity_ids"/>
+          <field name="message_ids"/>
+        </chatter>
+      </form>
+    </field>
+  </record>
+
+  <record id="zayavka_list_view" model="ir.ui.view">
+    <field name="name">zayavka.list</field>
+    <field name="model">amanat.zayavka</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="zayavka_id"/>
+        <field name="status"/>
+        <field name="zayavka_num"/>
+        <field name="date_placement"/>
+        <field name="taken_in_work_date"/>
+        <field name="contragent_id"/>
+        <field name="agent_id"/>
+        <field name="client_id"/>
+        <field name="inn"/>
+        <field name="client_inn"/>
+        <field name="exporter_importer_name"/>
+        <field name="bank_swift"/>
+        <field name="country_id"/>
+        <field name="payment_conditions"/>
+        <field name="deal_type"/>
+        <field name="instruction_number"/>
+        <field name="instruction_signed_date"/>
+        <field name="usd_equivalent"/>
+        <field name="jess_rate"/>
+        <field name="currency"/>
+        <field name="is_cross"/>
+        <field name="currency_pair"/>
+        <field name="cross_rate_usd_rub"/>
+        <field name="cross_rate_pair"/>
+        <field name="xe_rate"/>
+        <field name="conversion_expenses_rub"/>
+        <field name="conversion_expenses_currency"/>
+        <field name="xe_rate_auto"/>
+        <field name="real_cross_rate"/>
+        <field name="amount"/>
+        <field name="vip_conditions"/>
+        <field name="vip_commission"/>
+        <field name="hidden_commission"/>
+        <field name="bank_commission"/>
+        <field name="accreditation_commission"/>
+        <field name="escrow_commission"/>
+        <field name="rate_field"/>
+        <field name="hidden_rate"/>
+        <field name="conversion_percent"/>
+        <field name="bank_cross_rate"/>
+        <field name="plus_dollar"/>
+        <field name="dollar_cross_rate"/>
+        <field name="plus_currency"/>
+        <field name="invoice_plus_percent"/>
+        <field name="reward_percent"/>
+        <field name="sovok_reward"/>
+        <field name="sber_reward"/>
+        <field name="client_reward"/>
+        <field name="our_sovok_reward"/>
+        <field name="our_sber_reward"/>
+        <field name="our_client_reward"/>
+        <field name="non_our_sber_reward"/>
+        <field name="non_our_client_reward"/>
+        <field name="total_sovok"/>
+        <field name="total_sovok_management"/>
+        <field name="total_sber"/>
+        <field name="total_sber_management"/>
+        <field name="total_client"/>
+        <field name="total_client_management"/>
+        <field name="total_fact"/>
+        <field name="calculated_percent"/>
+        <field name="overall_sovok_percent"/>
+        <field name="overall_sber_percent"/>
+        <field name="rate_rub"/>
+        <field name="sum_from_extracts"/>
+        <field name="rate_real"/>
+        <field name="rate_real_sber"/>
+        <field name="agent_reward"/>
+        <field name="actual_reward"/>
+        <field name="non_agent_reward"/>
+        <field name="agent_our_reward"/>
+        <field name="total_reward"/>
+        <field name="total_amount"/>
+        <field name="with_accreditive"/>
+        <field name="received_initial_docs"/>
+        <field name="invoice_date"/>
+        <field name="agent_contract_date"/>
+        <field name="bank_registration_date"/>
+        <field name="accreditive_open_date"/>
+        <field name="supplier_currency_paid_date"/>
+        <field name="payment_date"/>
+        <field name="supplier_currency_received_date"/>
+        <field name="client_ruble_paid_date"/>
+        <field name="accreditive_revealed_date"/>
+        <field name="act_report_signed_date"/>
+        <field name="deal_closed_date"/>
+        <field name="deal_cycle_days"/>
+        <field name="payment_purpose"/>
+        <field name="subagent_ids"/>
+        <field name="subagent_payer_ids"/>
+        <field name="application_sequence"/>
+        <field name="subagent_docs_prepared_date"/>
+        <field name="swift_received_date"/>
+        <field name="swift_103_requested_date"/>
+        <field name="swift_199_requested_date"/>
+        <field name="swift_103_received_date"/>
+        <field name="swift_199_received_date"/>
+        <field name="return_requested_date"/>
+        <field name="return_money_received_date"/>
+        <field name="swift_status"/>
+        <field name="price_list_profit_id"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="zayavka_action" model="ir.actions.act_window">
+    <field name="name">Заявки</field>
+    <field name="res_model">amanat.zayavka</field>
+    <field name="view_mode">list,form</field>
+  </record>
+</odoo>

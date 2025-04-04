@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="extract_delivery_list_view" model="ir.ui.view">
+        <field name="name">extract_delivery.list</field>
+        <field name="model">amanat.extract_delivery</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="amount"/>
+                <field name="payer"/>
+                <field name="payer_inn"/>
+                <field name="recipient"/>
+                <field name="recipient_inn"/>
+                <field name="payment_purpose"/>
+                <field name="document_id"/>
+                <field name="assign_bulinan"/>
+                <field name="create_transfer_bulinan"/>
+                <field name="dds_article"/>
+                <field name="direction_choice"/>
+                <field name="applications"/>
+                <field name="currency_reserve"/>
+                <field name="transfer_ids"/>
+                <field name="conversion"/>
+                <field name="investment"/>
+                <field name="gold_deal"/>
+                <field name="counterparty1"/>
+                <field name="counterparty2"/>
+                <field name="wallet1"/>
+                <field name="wallet2"/>
+                <field name="percent"/>
+                <field name="fragment_statement"/>
+                <field name="statement_part_1"/>
+                <field name="statement_part_2"/>
+                <field name="statement_part_3"/>
+                <field name="statement_part_4"/>
+                <field name="statement_part_5"/>
+                <field name="statement_part_6"/>
+                <field name="statement_part_7"/>
+                <field name="statement_part_8"/>
+                <field name="statement_part_9"/>
+                <field name="statement_part_10"/>
+                <field name="statement_part_11"/>
+                <field name="statement_part_12"/>
+                <field name="statement_part_13"/>
+                <field name="statement_part_14"/>
+                <field name="statement_part_15"/>
+                <field name="statement_part_16"/>
+                <field name="statement_part_17"/>
+                <field name="statement_part_18"/>
+                <field name="statement_part_19"/>
+                <field name="statement_part_20"/>
+                <field name="remaining_statement"/>
+                <field name="range_field"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="range_status"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="extract_delivery_form_view" model="ir.ui.view">
+        <field name="name">extract_delivery.form</field>
+        <field name="model">amanat.extract_delivery</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="date"/>
+                        <field name="amount"/>
+                        <field name="payer"/>
+                        <field name="payer_inn"/>
+                        <field name="recipient"/>
+                        <field name="recipient_inn"/>
+                        <field name="payment_purpose"/>
+                        <field name="document_id"/>
+                        <field name="assign_bulinan"/>
+                        <field name="create_transfer_bulinan"/>
+                        <field name="dds_article"/>
+                        <field name="direction_choice"/>
+                        <field name="applications"/>
+                        <field name="currency_reserve"/>
+                        <field name="conversion"/>
+                        <field name="investment"/>
+                        <field name="gold_deal"/>
+                        <field name="counterparty1"/>
+                        <field name="counterparty2"/>
+                        <field name="wallet1"/>
+                        <field name="wallet2"/>
+                        <field name="percent"/>
+                        <field name="fragment_statement"/>
+                        <field name="remaining_statement"/>
+                        <field name="range_field"/>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                        <field name="range_status"/>
+                    </group>
+                </sheet>
+                <!-- Виджет трекинга -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <record id="extract_delivery_action" model="ir.actions.act_window">
+        <field name="name">Выписка разнос</field>
+        <field name="res_model">amanat.extract_delivery</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
+

@@ -37,8 +37,8 @@ class Contragent(models.Model, AmanatBaseModel):
     cash_euro = fields.Float(string='Баланс EURO КЕШ', tracking=True)
     cash_usd = fields.Float(string='Баланс USD КЕШ', tracking=True)
 
-    payer_id = fields.Many2one('amanat.payer', string='Плательщики', required=False, tracking=True, ondelete='restrict')
-    payer_inn = fields.Char(string='ИНН (from Плательщики)', tracking=True)
+    payer_id = fields.Many2one('amanat.payer', string='Плательщики', required=False, tracking=True, ondelete='set null')
+    payer_inn = fields.Char(string='ИНН (from Плательщики)', tracking=True, related='payer_id.inn', store=True)
     inn = fields.Char(string='ИНН', tracking=True)
     date_start = fields.Date(string='дата начало', tracking=True)
     date_end = fields.Date(string='дата конец', tracking=True)

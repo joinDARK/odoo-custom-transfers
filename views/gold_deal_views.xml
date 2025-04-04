@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- List view -->
+  <record id="gold_deal_list_view" model="ir.ui.view">
+    <field name="name">gold.deal.list</field>
+    <field name="model">amanat.gold_deal</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="name"/>
+        <field name="status"/>
+        <field name="comment"/>
+        <field name="date"/>
+        <field name="partner_ids"/>
+        <field name="pure_weight_sum"/>
+        <field name="purchase_total_rub"/>
+        <field name="purchase_total_dollar"/>
+        <field name="expenses"/>
+        <field name="service"/>
+        <field name="bank_sum"/>
+        <field name="bank_kb"/>
+        <field name="courier"/>
+        <field name="total_amount"/>
+        <field name="sale_amount_aed"/>
+        <field name="sale_amount_usdt"/>
+        <field name="extra_expenses"/>
+        <field name="final_rate"/>
+        <field name="conduct_in"/>
+        <field name="conduct_out"/>
+        <field name="vita_posting"/>
+        <field name="reconciliation"/>
+        <field name="reposting"/>
+        <field name="mark_for_deletion"/>
+        <field name="invoice_amount"/>
+        <field name="difference"/>
+        <field name="bank"/>
+        <field name="order_ids"/>
+        <field name="buyer_id"/>
+        <field name="hash_flag" width="80"/>
+      </list>
+    </field>
+  </record>
+
+  <!-- Form view -->
+  <record id="gold_deal_form_view" model="ir.ui.view">
+    <field name="name">gold.deal.form</field>
+    <field name="model">amanat.gold_deal</field>
+    <field name="arch" type="xml">
+      <form>
+        <sheet>
+          <group>
+            <field name="name"/>
+            <field name="status"/>
+            <field name="date"/>
+            <field name="comment"/>
+          </group>
+          <group>
+            <field name="buyer_id"/>
+            <field name="invoice_amount"/>
+            <field name="difference" readonly="1"/>
+          </group>
+          <notebook>
+            <page string="Партнеры">
+              <field name="partner_ids">
+                <list editable="bottom">
+                  <field name="name"/>
+                  <field name="partner_id"/>
+                  <field name="pure_weight"/>
+                  <field name="amount_rub"/>
+                </list>
+              </field>
+            </page>
+          </notebook>
+        </sheet>
+        <chatter>
+          <field name="message_follower_ids"/>
+          <field name="activity_ids"/>
+          <field name="message_ids"/>
+        </chatter>
+      </form>
+    </field>
+  </record>
+
+  <!-- Action -->
+  <record id="gold_deal_action" model="ir.actions.act_window">
+    <field name="name">Золото сделка</field>
+    <field name="res_model">amanat.gold_deal</field>
+    <field name="view_mode">list,form</field>
+  </record>
+</odoo>

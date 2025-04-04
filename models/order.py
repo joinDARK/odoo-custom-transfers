@@ -7,7 +7,7 @@ class Order(models.Model, AmanatBaseModel):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _description = 'Ордер'
 
-    name = fields.Char(string='ID ордера', readonly=True, default=lambda self: self.env['ir.sequence'].next_by_code('amanat.order'), copy=False)
+    name = fields.Char(string='ID ордера', readonly=True, default=lambda self: self.env['ir.sequence'].next_by_code('amanat.order.sequence'), copy=False)
 
     date = fields.Date(string='Дата', tracking=True, required=True)
     type = fields.Selection(
@@ -17,13 +17,17 @@ class Order(models.Model, AmanatBaseModel):
         required=True
     )
 
+    transfer_id = fields.Many2one('amanat.transfer', string="Перевод")
+    money_ids = fields.One2many('amanat.money', 'order_id', string="Деньги")
+    sverka_ids = fields.One2many('amanat.reconciliation', 'order_id', string="Сверка")
+
     # Участники
     partner_1_id = fields.Many2one('amanat.contragent', string='Контрагент 1', tracking=True)
-    payer_1_id = fields.Many2one('amanat.payer', string='Плательщик 1', tracking=True)
+    payer_1_id = fields.Many2one('amanat.payer', string='Плательщик 1', tracking=True) # Нужно разобраться с выбором только связанных контрагентов в таблице Ордер
     wallet_1_id = fields.Many2one('amanat.wallet', string='Кошелек 1', tracking=True)
 
     partner_2_id = fields.Many2one('amanat.contragent', string='Контрагент 2', tracking=True)
-    payer_2_id = fields.Many2one('amanat.payer', string='Плательщик 2', tracking=True)
+    payer_2_id = fields.Many2one('amanat.payer', string='Плательщик 2', tracking=True) # Нужно разобраться с выбором только связанных контрагентов в таблице Ордер
     wallet_2_id = fields.Many2one('amanat.wallet', string='Кошелек 2', tracking=True)
 
     # Финансы

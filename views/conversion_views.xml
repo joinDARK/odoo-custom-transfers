@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_amanat_conversion_form" model="ir.ui.view">
+    <field name="name">amanat.conversion.form</field>
+    <field name="model">amanat.conversion</field>
+    <field name="arch" type="xml">
+      <form string="Конвертация валют">
+        <sheet>
+          <group>
+            <field name="name" readonly="1"/>
+            <field name="state"/>
+            <field name="date"/>
+            <field name="amount"/>
+          </group>
+          <group>
+            <field name="currency"/>
+            <field name="conversion_currency"/>
+          </group>
+          <group>
+            <field name="sender_id"/>
+            <field name="sender_payer_id"/>
+          </group>
+          <group>
+            <field name="receiver_id"/>
+            <field name="receiver_payer_id"/>
+          </group>
+          <group>
+            <field name="rate"/>
+            <field name="order_id"/>
+          </group>
+          <group>
+            <field name="create_Conversion1"/>
+            <field name="contragent_count"/>
+          </group>
+          <group>
+            <field name="create_Conversion"/>
+            <field name="update_Conversion"/>
+            <field name="delete_Conversion"/>
+          </group>
+        </sheet>
+        <!-- Виджет трекинга -->
+        <chatter>
+            <field name="message_follower_ids"/>
+            <field name="activity_ids"/>
+            <field name="message_ids"/>
+        </chatter>
+      </form>
+    </field>
+  </record>
+
+  <!-- Список (List View) -->
+  <record id="conversion_list_view" model="ir.ui.view">
+    <field name="name">conversion.list</field>
+    <field name="model">amanat.conversion</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="name"/>
+        <field name="state"/>
+        <field name="date"/>
+        <field name="amount"/>
+        <field name="currency"/>
+        <field name="conversion_currency"/>
+        <field name="sender_id"/>
+        <field name="receiver_id"/>
+      </list>
+    </field>
+  </record>
+
+  <!-- Поиск (Search View) -->
+  <record id="conversion_search_view" model="ir.ui.view">
+    <field name="name">conversion.search</field>
+    <field name="model">amanat.conversion</field>
+    <field name="arch" type="xml">
+      <search string="Поиск конвертации">
+        <field name="name"/>
+        <field name="state"/>
+        <field name="date"/>
+        <field name="currency"/>
+        <field name="conversion_currency"/>
+        <filter name="filter_open" string="Открыта" domain="[('state', '=', 'open')]"/>
+        <filter name="filter_archive" string="Архив" domain="[('state', '=', 'archive')]"/>
+        <filter name="filter_close" string="Закрыта" domain="[('state', '=', 'close')]"/>
+      </search>
+    </field>
+  </record>
+
+  <!-- Действие (Act Window) для открытия списка конвертаций -->
+  <record id="conversion_action" model="ir.actions.act_window">
+    <field name="name">Конвертация валют</field>
+    <field name="res_model">amanat.conversion</field>
+    <field name="view_mode">list,form,search</field>
+  </record>
+</odoo>
