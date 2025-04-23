@@ -4,7 +4,8 @@
         <field name="name">kassa.ivan.list</field>
         <field name="model">amanat.kassa_ivan</field>
         <field name="arch" type="xml">
-            <list>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name"/>
                 <field name="contragent_id"/>
             </list>
@@ -35,5 +36,6 @@
         <field name="name">Касса Иван</field>
         <field name="res_model">amanat.kassa_ivan</field>
         <field name="view_mode">list,form</field>
+        <field name="target">main</field>
     </record>
 </odoo>

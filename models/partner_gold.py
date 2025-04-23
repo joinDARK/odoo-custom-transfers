@@ -2,7 +2,7 @@ from odoo import models, fields, api
 
 class PartnerGold(models.Model):
     _name = 'amanat.partner_gold'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Партнеры золото'
 
     # 1. ID Партнера – формируется с помощью последовательности с префиксом "Партнер №"

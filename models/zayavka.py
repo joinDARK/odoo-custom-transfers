@@ -4,7 +4,7 @@ from .base_model import AmanatBaseModel
 class Zayavka(models.Model, AmanatBaseModel):
     _name = 'amanat.zayavka'
     _description = 'Заявки'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
 
     zayavka_id = fields.Char(
         string='ID заявки',

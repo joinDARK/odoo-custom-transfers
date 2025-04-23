@@ -5,36 +5,37 @@
     <field name="name">gold.deal.list</field>
     <field name="model">amanat.gold_deal</field>
     <field name="arch" type="xml">
-      <list>
-        <field name="name"/>
-        <field name="status"/>
-        <field name="comment"/>
-        <field name="date"/>
-        <field name="partner_ids"/>
-        <field name="pure_weight_sum"/>
-        <field name="purchase_total_rub"/>
-        <field name="purchase_total_dollar"/>
-        <field name="expenses"/>
-        <field name="service"/>
-        <field name="bank_sum"/>
-        <field name="bank_kb"/>
-        <field name="courier"/>
-        <field name="total_amount"/>
-        <field name="sale_amount_aed"/>
-        <field name="sale_amount_usdt"/>
-        <field name="extra_expenses"/>
-        <field name="final_rate"/>
-        <field name="conduct_in"/>
-        <field name="conduct_out"/>
-        <field name="vita_posting"/>
-        <field name="reconciliation"/>
-        <field name="reposting"/>
-        <field name="mark_for_deletion"/>
-        <field name="invoice_amount"/>
-        <field name="difference"/>
-        <field name="bank"/>
-        <field name="order_ids"/>
-        <field name="buyer_id"/>
+      <list editable="top">
+        <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+        <field width="200" name="name"/>
+        <field width="200" name="status"/>
+        <field width="200" name="comment"/>
+        <field width="200" name="date"/>
+        <field width="200" name="partner_ids"/>
+        <field width="200" name="pure_weight_sum"/>
+        <field width="200" name="purchase_total_rub"/>
+        <field width="200" name="purchase_total_dollar"/>
+        <field width="200" name="expenses"/>
+        <field width="200" name="service"/>
+        <field width="200" name="bank_sum"/>
+        <field width="200" name="bank_kb"/>
+        <field width="200" name="courier"/>
+        <field width="200" name="total_amount"/>
+        <field width="200" name="sale_amount_aed"/>
+        <field width="200" name="sale_amount_usdt"/>
+        <field width="200" name="extra_expenses"/>
+        <field width="200" name="final_rate"/>
+        <field width="200" name="conduct_in"/>
+        <field width="200" name="conduct_out"/>
+        <field width="200" name="vita_posting"/>
+        <field width="200" name="reconciliation"/>
+        <field width="200" name="reposting"/>
+        <field width="200" name="mark_for_deletion"/>
+        <field width="200" name="invoice_amount"/>
+        <field width="200" name="difference"/>
+        <field width="200" name="bank"/>
+        <field width="200" name="order_ids"/>
+        <field width="200" name="buyer_id"/>
         <field name="hash_flag" width="80"/>
       </list>
     </field>
@@ -85,5 +86,6 @@
     <field name="name">Золото сделка</field>
     <field name="res_model">amanat.gold_deal</field>
     <field name="view_mode">list,form</field>
+    <field name="target">main</field>
   </record>
 </odoo>

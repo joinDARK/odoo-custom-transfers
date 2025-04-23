@@ -4,7 +4,8 @@
         <field name="name">order.list</field>
         <field name="model">amanat.order</field>
         <field name="arch" type="xml">
-            <list>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name"/>
                 <field name="date"/>
                 <field name="type"/>
@@ -17,10 +18,10 @@
                 <field name="currency"/>
                 <field name="amount"/>
                 <field name="rate"/>
-                <field width="200" name="operation_percent"/>
+                <field width="200" name="operation_percent" widget="percentage" options="{'rounding': 2}"/>
                 <field name="rko"/>
                 <field name="amount_1"/>
-                <field width="200" name="our_percent"/>
+                <field width="200" name="our_percent" widget="percentage" options="{'rounding': 2}"/>
                 <field name="rko_2"/>
                 <field name="amount_2"/>
                 <field name="total"/>
@@ -28,16 +29,17 @@
                 <field width="200" name="is_confirmed"/>
                 <field name="status"/>
                 <field name="money"/>
-                <field width="200" name="reserve_1"/>
+                <field width="200" name="reserve_ids" widget="many2many_tags"/>
+                <field width="200" name="conversion_ids" widget="many2many_tags"/>
                 <field width="200" name="converted_amount"/>
                 <field name="investment"/>
                 <field name="gold"/>
                 <field width="200" name="cross_from"/>
                 <field width="200" name="cross_rate"/>
-                <field width="200" name="cross_currency_from"/>
-                <field width="200" name="cross_currency_to"/>
+                <field width="200" name="currency_to_copy"/>
                 <field width="200" name="cross_calc"/>
-                <field width="200" name="cross_converted"/>
+                <field width="200" name="amount_after_conv"/>
+                <field width="200" name="currency_from_conv"/>
                 <field name="partner_gold"/>
                 <field name="write_off"/>
                 <field width="200" name="rollup_write_off"/>
@@ -57,39 +59,55 @@
                     <h1><field name="name" readonly="1"/></h1>
                 </header>
                 <sheet>
+                    <!-- Ряд 1: Основаная информация о ордере -->
+                    <header>
+                        <h2>Основаная информация о ордере</h2>
+                    </header>
                     <group>
-                        <field name="date"/>
-                        <field name="type"/>
+                        <group>
+                            <field name="amount"/>
+                            <field name="type"/>
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="currency"/>
+                        </group>
+                    </group>
+                    <group>
                         <field name="partner_1_id"/>
                         <field name="payer_1_id"/>
                         <field name="wallet_1_id"/>
                         <field name="partner_2_id"/>
                         <field name="payer_2_id"/>
                         <field name="wallet_2_id"/>
-                        <field name="currency"/>
-                        <field name="amount"/>
+                        <field name="comment"/>
+                        <field name="status"/>
+                        <field name="is_confirmed"/>
+                    </group>
+                    <header>
+                        <h2>Оcтальные поля</h2>
+                    </header>
+                    <group>
                         <field name="rate"/>
-                        <field name="operation_percent"/>
+                        <field name="operation_percent" widget="percentage" options="{'rounding': 2}"/>
                         <field name="rko"/>
                         <field name="amount_1"/>
-                        <field name="our_percent"/>
+                        <field name="our_percent" widget="percentage" options="{'rounding': 2}"/>
                         <field name="rko_2"/>
                         <field name="amount_2"/>
                         <field name="total"/>
-                        <field name="comment"/>
-                        <field name="is_confirmed"/>
-                        <field name="status"/>
                         <field name="money"/>
-                        <field name="reserve_1"/>
+                        <field name="reserve_ids"/>
+                        <field name="conversion_ids" widget="many2many_tags"/>
                         <field name="converted_amount"/>
                         <field name="investment"/>
                         <field name="gold"/>
                         <field name="cross_from"/>
                         <field name="cross_rate"/>
-                        <field name="cross_currency_from"/>
-                        <field name="cross_currency_to"/>
+                        <field name="currency_to_copy"/>
                         <field name="cross_calc"/>
-                        <field name="cross_converted"/>
+                        <field name="amount_after_conv"/>
+                        <field name="currency_from_conv"/>
                         <field name="partner_gold"/>
                         <field name="write_off"/>
                         <field name="rollup_write_off"/>
@@ -111,6 +129,7 @@
         <field name="name">Ордер</field>
         <field name="res_model">amanat.order</field>
         <field name="view_mode">list,form</field>
+        <field name="target">main</field>
     </record>
 </odoo>
 

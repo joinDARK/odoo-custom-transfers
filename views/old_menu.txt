@@ -3,7 +3,7 @@
     <!-- Корневое меню -->
     <menuitem 
         id="amanat_menu_root" 
-        name="ТДК"
+        name="Amanat"
         sequence="10"
     />
 
@@ -172,7 +172,7 @@
     <!-- Меню для резерва -->
     <menuitem 
         id="amanat_menu_reserve"
-        name="Валютный резерв"
+        name="Валютный резерв 1"
         parent="amanat_menu_root"
         action="reserve_action"
     />
@@ -218,12 +218,12 @@
     />
 
     <!-- Меню для Прайс лист Плательщика за проведение -->
-    <!-- <menuitem 
+    <menuitem 
         id="price_list_payer_carrying_out_views" 
         name="Прайс лист Плательщика Прибыль"
         parent="amanat_menu_root"
         action="action_price_list_payer_carrying_out"
-    /> -->
+    />
 
     <!-- Меню для Задачника-->
     <menuitem 

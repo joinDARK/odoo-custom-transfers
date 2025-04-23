@@ -3,7 +3,7 @@ from datetime import date
 
 class PriceListPayerProfit(models.Model):
     _name = 'amanat.price_list_payer_profit'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Прайс лист Плательщика Прибыль'
 
     # Наименование — вводится пользователем (single line text)

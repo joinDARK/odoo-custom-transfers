@@ -4,57 +4,58 @@
         <field name="name">reconciliation.list</field>
         <field name="model">amanat.reconciliation</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="partner_id"/>
-                <field name="wallet_id"/>
-                <field name="date"/>
-                <field name="sender_id"/>
-                <field name="sender_contragent"/>
-                <field name="receiver_id"/>
-                <field name="receiver_contragent"/>
-                <field name="currency"/>
-                <field name="sum"/>
-                <field name="sum_rub"/>
-                <field name="sum_usd"/>
-                <field name="sum_usdt"/>
-                <field name="sum_cny"/>
-                <field name="sum_euro"/>
-                <field name="sum_aed"/>
-                <field name="sum_thb"/>
-                <field name="sum_rub_cashe"/>
-                <field name="sum_usd_cashe"/>
-                <field name="sum_cny_cashe"/>
-                <field name="sum_euro_cashe"/>
-                <field name="sum_aed_cashe"/>
-                <field name="sum_thb_cashe"/>
-                <field name="rate"/>
-                <field name="award"/>
-                <field name="rko"/>
-                <field name="our_percent"/>
-                <field name="exchange"/>
-                <field name="order_id"/>
-                <field name="order_comment"/>
-                <field name="unload"/>
-                <field name="range"/>
-                <field name="range_reconciliation_date_1"/>
-                <field name="range_reconciliation_date_2"/>
-                <field name="range_date_reconciliation"/>
-                <field name="compare_balance_date_1"/>
-                <field name="compare_balance_date_2"/>
-                <field name="status_comparison_1"/>
-                <field name="status_comparison_2"/>
-                <field name="range_date_start"/>
-                <field name="range_date_end"/>
-                <field name="status_range"/>
-                <field name="rate"/>
-                <field name="rate_euro"/>
-                <field name="rate_cny"/>
-                <field name="rate_rub"/>
-                <field name="rate_aed"/>
-                <field name="rate_thb"/>
-                <field name="rate_usd"/>
-                <field name="rate_usdt"/>
-                <field name="equivalent"/>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <field width="200" name="partner_id"/>
+                <field width="200" name="wallet_id"/>
+                <field width="200" name="date"/>
+                <field width="200" name="sender_id" widget="many2many_tags"/>
+                <field width="200" name="sender_contragent" widget="many2many_tags"/>
+                <field width="200" name="receiver_id" widget="many2many_tags"/>
+                <field width="200" name="receiver_contragent" widget="many2many_tags"/>
+                <field width="200" name="currency"/>
+                <field width="200" name="sum"/>
+                <field width="200" name="sum_rub"/>
+                <field width="200" name="sum_usd"/>
+                <field width="200" name="sum_usdt"/>
+                <field width="200" name="sum_cny"/>
+                <field width="200" name="sum_euro"/>
+                <field width="200" name="sum_aed"/>
+                <field width="200" name="sum_thb"/>
+                <field width="200" name="sum_rub_cashe"/>
+                <field width="200" name="sum_usd_cashe"/>
+                <field width="200" name="sum_cny_cashe"/>
+                <field width="200" name="sum_euro_cashe"/>
+                <field width="200" name="sum_aed_cashe"/>
+                <field width="200" name="sum_thb_cashe"/>
+                <field width="200" name="rate"/>
+                <field width="200" name="award" widget="percentage" options="{'rounding': 2}"/>
+                <field width="200" name="rko"/>
+                <field width="200" name="our_percent" widget="percentage" options="{'rounding': 2}"/>
+                <field width="200" name="exchange"/>
+                <field width="200" name="order_id" widget="many2many_tags"/>
+                <field width="200" name="order_comment"/>
+                <field width="200" name="unload"/>
+                <field width="200" name="range"/>
+                <field width="200" name="range_reconciliation_date_1"/>
+                <field width="200" name="range_reconciliation_date_2"/>
+                <field width="200" name="range_date_reconciliation"/>
+                <field width="200" name="compare_balance_date_1"/>
+                <field width="200" name="compare_balance_date_2"/>
+                <field width="200" name="status_comparison_1"/>
+                <field width="200" name="status_comparison_2"/>
+                <field width="200" name="range_date_start"/>
+                <field width="200" name="range_date_end"/>
+                <field width="200" name="status_range"/>
+                <field width="200" name="rate"/>
+                <field width="200" name="rate_euro"/>
+                <field width="200" name="rate_cny"/>
+                <field width="200" name="rate_rub"/>
+                <field width="200" name="rate_aed"/>
+                <field width="200" name="rate_thb"/>
+                <field width="200" name="rate_usd"/>
+                <field width="200" name="rate_usdt"/>
+                <field width="200" name="equivalent"/>
                 <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" width="100"/>
                 <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" width="120"/>
             </list>
@@ -91,9 +92,9 @@
                         <field name="sum_aed_cashe"/>
                         <field name="sum_thb_cashe"/>
                         <field name="rate"/>
-                        <field name="award"/>
+                        <field name="award" widget="percentage" options="{'rounding': 2}"/>
                         <field name="rko"/>
-                        <field name="our_percent"/>
+                        <field name="our_percent" widget="percentage" options="{'rounding': 2}"/>
                         <field name="exchange"/>
                         <field name="order_id"/>
                         <field name="order_comment"/>
@@ -153,5 +154,6 @@
         <field name="res_model">amanat.reconciliation</field>
         <field name="view_mode">list,form,search</field>
         <field name="view_id" ref="reconciliation_list_view"/>
+        <field name="target">main</field>
     </record>
 </odoo>

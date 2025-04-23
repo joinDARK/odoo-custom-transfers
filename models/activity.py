@@ -4,6 +4,7 @@ from odoo import models, fields, api
 class Activity(models.Model):
     _name = "amanat.activity"
     _description = "Activity Log"
+    _inherit = ['amanat.base.model']
     _order = "timestamp DESC"
 
     # Поля модели

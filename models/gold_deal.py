@@ -2,7 +2,7 @@ from odoo import models, fields, api
 
 class GoldDeal(models.Model):
     _name = 'amanat.gold_deal'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Золото сделка'
 
     # 1. ID – формируется с помощью последовательности с префиксом "Сделка №"

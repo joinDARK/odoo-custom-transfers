@@ -50,24 +50,25 @@
         <field name="model">amanat.payment</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list string="Платежи">
-                <field name="date"/>
-                <field name="currency"/>
-                <field name="wallet"/>
-                <field name="sender"/>
-                <field name="sender_payer"/>
-                <field name="recipient"/>
-                <field name="recipient_payer"/>
-                <field name="amount"/>
-                <field name="purpose"/>
-                <field name="execute"/>
-                <field name="status"/>
-                <field name="actual_date"/>
-                <field name="payment_status"/>
-                <field name="money"/>
-                <field name="deal"/>
-                <field name="minus"/>
-                <field name="plus"/>
+            <list string="Платежи" editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <field width="200" name="date"/>
+                <field width="200" name="currency"/>
+                <field width="200" name="wallet"/>
+                <field width="200" name="sender"/>
+                <field width="200" name="sender_payer"/>
+                <field width="200" name="recipient"/>
+                <field width="200" name="recipient_payer"/>
+                <field width="200" name="amount"/>
+                <field width="200" name="purpose"/>
+                <field width="200" name="execute"/>
+                <field width="200" name="status"/>
+                <field width="200" name="actual_date"/>
+                <field width="200" name="payment_status"/>
+                <field width="200" name="money"/>
+                <field width="200" name="deal"/>
+                <field width="200" name="minus"/>
+                <field width="200" name="plus"/>
             </list>
         </field>
     </record>
@@ -77,5 +78,6 @@
         <field name="name">Платежи</field>
         <field name="res_model">amanat.payment</field>
         <field name="view_mode">list,form</field>
+        <field name="target">main</field>
     </record>
 </odoo>

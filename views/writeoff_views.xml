@@ -5,7 +5,8 @@
         <field name="name">writeoff.list</field>
         <field name="model">amanat.writeoff</field>
         <field name="arch" type="xml">
-            <list>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <!-- Если хотите видеть системный ID, можно добавить -->
                 <field name="id_spisaniya"/>
                 <field name="date"/>
@@ -27,7 +28,7 @@
                         <field name="id_spisaniya"/>
                         <field name="date"/>
                         <field name="amount"/>
-                        <field name="money_id"/>
+                        <field name="money_id" widget="many2many_tags"/>
                     </group>
                 </sheet>
             </form>
@@ -54,5 +55,6 @@
         <field name="res_model">amanat.writeoff</field>
         <field name="view_mode">list,form,search</field>
         <field name="view_id" ref="writeoff_list_view"/>
+        <field name="target">main</field>
     </record>
 </odoo>

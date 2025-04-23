@@ -4,7 +4,7 @@ from .base_model import AmanatBaseModel
 
 class Reconciliation(models.Model, AmanatBaseModel):
     _name = 'amanat.reconciliation'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Сверки'
 
     date = fields.Date(string='Дата', tracking=True)
@@ -21,25 +21,28 @@ class Reconciliation(models.Model, AmanatBaseModel):
     )
     sum = fields.Float(string='Сумма', tracking=True, required=True)
     wallet_id = fields.Many2one('amanat.wallet', string='Кошелек', tracking=True)
-    sender_id = fields.Many2one(
+    sender_id = fields.Many2many(
         'amanat.payer',
         string='Отправитель',
         tracking=True
     )
-    sender_contragent = fields.Many2one(
+    sender_contragent = fields.Many2many(
         'amanat.contragent',
-        related='sender_id.contragent_id',
+        related='sender_id.contragents_ids',
         string='Отправитель (from Контрагент)',
         tracking=True
     )
-    receiver_id = fields.Many2one(
+    receiver_id = fields.Many2many(
         'amanat.payer',
+        'amanat_reconciliation_payer_rel',
+        'reconciliation_id',
+        'payer_id',
         string='Получатель',
         tracking=True
     )
-    receiver_contragent = fields.Many2one(
+    receiver_contragent = fields.Many2many(
         'amanat.contragent',
-        related='receiver_id.contragent_id',
+        related='receiver_id.contragents_ids',
         string='Получатель (from Контрагент)',
         tracking=True
     )
@@ -66,7 +69,14 @@ class Reconciliation(models.Model, AmanatBaseModel):
     rko_2 = fields.Float(string='РКО 2 (from Ордер)', related='order_id.rko_2', store=True, tracking=True)
     
     exchange = fields.Float(string='К выдаче', tracking=True)
-    order_id = fields.Many2one('amanat.order', string='Ордер', tracking=True)
+    order_id = fields.Many2many(
+        'amanat.order',
+        'amanat_order_reconciliation_rel',
+        'order_id', 
+        'reconciliation_id',
+        string='Ордер', 
+        tracking=True
+    )
     order_comment = fields.Text(string='Комментарий (from Ордер)', related='order_id.comment', store=True, tracking=True)
     unload = fields.Boolean(string='Выгрузить', default=False, tracking=True)
 
@@ -114,3 +124,4 @@ class Reconciliation(models.Model, AmanatBaseModel):
 
     create_Reconciliation = fields.Boolean(string='Создать', default=False, tracking=True)
     royalti_Reconciliation = fields.Boolean(string='Провести роялти', default=False, tracking=True)
+    

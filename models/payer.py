@@ -1,52 +1,58 @@
+# models/payer.py
 from odoo import models, fields
 from .base_model import AmanatBaseModel
 
 class Payer(models.Model, AmanatBaseModel):
     _name = 'amanat.payer'
     _description = 'Плательщик'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
 
     name = fields.Char(string='Наименование', required=True, tracking=True)
-    contragent_id = fields.Many2one(
-        'amanat.contragent',
-        string='Контрагент',
-        required=True,
-        tracking=True
-    )
     inn = fields.Char(string='ИНН', tracking=True)
     
-    # Новые поля:
-    contragents_ids = fields.Many2many( # Используется в _computed_subagent_contragents_id или как-то так
+    # Связь многие ко многим с Контрагентами
+    contragents_ids = fields.Many2many(
         'amanat.contragent',
-        string='КонтрАгенты',
-        tracking=True
+        'amanat_payer_contragent_rel',  # Имя таблицы-связи
+        'payer_id',  # Поле-ссылка на эту модель
+        'contragent_id',  # Поле-ссылка на модель Контрагент
+        string='Контрагенты',
+        tracking=True,
+        ondelete='cascade',
     )
-    order_ids = fields.One2many( # Нужно разобраться с выбором только связанных контрагентов в таблице Ордер
+    order_ids = fields.One2many(
         'amanat.order',
         string='Ордеры (участие)',
         compute='_compute_order_ids',
         store=False  # Не сохраняем в БД, просто отображаем
     )
-    reconciliation = fields.Char(string='Сверка', tracking=True)
+    reconciliation = fields.Many2many(
+        'amanat.reconciliation',
+        'amanat_reconciliation_payer_rel',
+        'payer_id',
+        'reconciliation_id',
+        string='Сверка',
+        tracking=True,
+    )
     transfer = fields.Char(string='Перевод', tracking=True)
-    currency_reserve = fields.Char(string='Валютный резерв', tracking=True)
-    conversion = fields.Char(string='Конвертация', tracking=True)
-    investment = fields.Char(string='Инвестиция', tracking=True)
+    currency_reserve = fields.Char(string='Валютный резерв', tracking=True) # Исправить связь
+    conversion = fields.Char(string='Конвертация', tracking=True) # Исправить связь
+    investment = fields.Char(string='Инвестиция', tracking=True) # Исправить связь
     gold_partners = fields.Many2many(
         'res.partner',
         string='Партнеры золото',
         tracking=True
-    )
-    deductions = fields.Char(string='Списания', tracking=True)
-    applications = fields.Char(string='Заявки', tracking=True)
-    pricelist_conduct = fields.Char(string='Прайс лист Плательщика За проведение', tracking=True)
-    pricelist_profit = fields.Char(string='Прайс лист Плательщика Прибыль', tracking=True)
+    ) # Исправить связь
+    deductions = fields.Char(string='Списания', tracking=True) # Исправить связь
+    applications = fields.Char(string='Заявки', tracking=True) # Исправить связь
+    pricelist_conduct = fields.Char(string='Прайс лист Плательщика За проведение', tracking=True) # Исправить связь
+    pricelist_profit = fields.Char(string='Прайс лист Плательщика Прибыль', tracking=True) # Исправить связь
 
     price_list_profit_id = fields.Many2one(
         'amanat.price_list_payer_profit',
         string='Прайс лист Плательщика Прибыль',
         tracking=True
-    )
+    ) # Исправить связь
 
     def _compute_order_ids(self):
         for payer in self:

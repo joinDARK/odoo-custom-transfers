@@ -6,6 +6,15 @@ class AmanatBaseModel(models.AbstractModel):
     _name = 'amanat.base.model'
     _description = 'Base Model for Logging'
 
+    def open_form(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'view_mode': 'form',
+            'res_id': self.id,
+            'target': 'current',
+        }
+
     def _log_activity(self, action, changes=None):
         if self.env.context.get('no_log'):
             return
@@ -39,16 +48,11 @@ class AmanatBaseModel(models.AbstractModel):
 
     @api.model_create_multi
     def create(self, vals_list):
-        print("executed model_create_multi")
         user = self.env.user
-        print(f"Current user: {user.name}, Groups: {user.groups_id.mapped('name')}")
         
         for vals in vals_list:
             if user.has_group('amanat.group_amanat_manager'):
-                print("user.id manager exist")
                 vals['manager_id'] = user.id  # Менеджер автоматически назначается
-            else:
-                print("user.id manager doesnt exist")
         
         return super().create(vals_list)
 

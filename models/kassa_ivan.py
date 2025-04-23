@@ -3,7 +3,7 @@ from .base_model import AmanatBaseModel
 
 class KassaIvan(models.Model, AmanatBaseModel):
     _name = 'amanat.kassa_ivan'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Касса Иван'
 
     name = fields.Char(

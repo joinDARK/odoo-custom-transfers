@@ -3,7 +3,7 @@
     'version': '2.0',
     'summary': 'Amanat',
     'description': 'Модуль проекта Amanat',
-    'author': 'IncubeAI (Мирас)',
+    'author': 'IncubeAI (Мирас, Комрад и Эдуард)',
     'category': 'Amanat',
     'depends': ['base', 'mail', 'base_automation', 'web', 'base_setup'],
     'data': [
@@ -73,6 +73,7 @@
         'data/partner_gold_sequence.xml',
         'data/order_sequence.xml',
         'data/conversion_sequence.xml',
+        'data/reserve_sequence.xml',
     ],
 
     'assets': {
@@ -113,6 +114,7 @@
             'amanat/static/src/webclient/webclient.scss',
             'amanat/static/src/webclient/appsbar/appsbar.xml',
             'amanat/static/src/webclient/appsbar/appsbar.scss',
+            'amanat/static/src/css/style.css',
         ],
     },
 

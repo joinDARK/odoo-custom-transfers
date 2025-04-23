@@ -4,7 +4,7 @@ from .base_model import AmanatBaseModel
 
 class Price_list_partners(models.Model, AmanatBaseModel):
     _name = 'amanat.price_list_partners'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Прайс лист партнеры'
 
     name = fields.Char(string="Наименование")
