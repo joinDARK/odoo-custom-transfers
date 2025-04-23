@@ -5,7 +5,8 @@
         <field name="model">amanat.investment</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="id" width="70"/>
                 <field name="status" width="100"/>
                 <field name="date" width="100"/>
@@ -133,5 +134,6 @@
         <field name="name">Инвестиции</field>
         <field name="res_model">amanat.investment</field>
         <field name="view_mode">list,form</field>
+        <field name="target">main</field>
     </record>
 </odoo>

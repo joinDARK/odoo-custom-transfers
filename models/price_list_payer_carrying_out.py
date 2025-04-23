@@ -3,7 +3,7 @@ from .base_model import AmanatBaseModel
 
 class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
     _name = 'amanat.price_list_payer_carrying_out'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Прайс лист: Плательщик-Исполнение'
 
     name = fields.Char(string="Наименования", tracking=True)

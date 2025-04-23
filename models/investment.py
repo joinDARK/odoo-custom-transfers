@@ -6,7 +6,7 @@ from .base_model import AmanatBaseModel
 class Investment(models.Model, AmanatBaseModel):
     _name = 'amanat.investment'
     _description = 'Инвестиции'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
 
     id = fields.Char(string='ID', readonly=True)  # Был Integer
     status = fields.Selection(

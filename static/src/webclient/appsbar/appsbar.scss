@@ -1,67 +1,106 @@
 .mk_apps_sidebar_panel {
     @include mk-disable-scrollbar();
     background-color: $mk-appbar-background;
-	min-width: 200px;
+    min-width: 200px;
     width: 50%;
     overflow-y: auto;
+    transition: width 0.3s ease;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+    overflow: auto;
+    white-space: nowrap;
+
+    .mk_apps_sidebar_toggle {
+        padding: 8px;
+        cursor: pointer;
+        text-align: right;
+        color: $mk-appbar-color;
+        background: $mk-appbar-active;
+        transition: background 0.2s ease;
+
+        &:hover {
+            background: darken($mk-appbar-active, 5%);
+        }
+    }
+
+    &.mk_apps_sidebar_collapsed {
+        min-width: 50px;
+        width: 50px;
+
+        .mk_apps_sidebar_name {
+            display: none;
+        }
+    }
+
     .mk_apps_sidebar {
         height: 100%;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-	    white-space: nowrap;
-	    .mk_apps_sidebar_menu {
-	    	padding: 0;
-		    > li > a {
-		        cursor: pointer;
-	            font-size: 13px;
-	            font-weight: 300;
-	            overflow: hidden;
-	            padding: 8px 11px;
-	            text-decoration: none;
-	            color: $mk-appbar-color;
-	            text-overflow: ellipsis;
-	            .mk_apps_sidebar_icon {
-				    width: 22px;
-				    height: 22px;
-	    			margin-right: 5px;
-				}
-		    }
-	        > li.active > a {
-			    background: $mk-appbar-active;
-	        }
-	        > li:hover > a {
-			    background: $mk-appbar-active;
-	        }
-	    }
-	}
+        white-space: nowrap;
+
+        .mk_apps_sidebar_menu {
+            padding: 0;
+            margin: 0;
+
+            >li {
+                list-style: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+                >a {
+                    display: flex;
+                    align-items: center;
+                    cursor: pointer;
+                    font-size: 13px;
+                    font-weight: 300;
+                    overflow: hidden;
+                    padding: 8px 11px;
+                    text-decoration: none;
+                    color: $mk-appbar-color;
+                    text-overflow: ellipsis;
+                    transition: background 0.2s ease;
+
+                    &:hover {
+                        background: darken($mk-appbar-background, 10%);
+                    }
+                }
+
+                &.active>a {
+                    background: $mk-appbar-active;
+                }
+            }
+        }
+    }
 }
 
+// Стили для разных вариаций сайдбара
 .mk_sidebar_type_large {
-	--mk-sidebar-width: #{$mk-sidebar-large-width};
+    --mk-sidebar-width: #{$mk-sidebar-large-width};
 }
 
 .mk_sidebar_type_small {
-	--mk-sidebar-width: #{$mk-sidebar-small-width};
-	.mk_apps_sidebar_name {
-		display: none;
-	}
-	.mk_apps_sidebar_icon {
-		margin-right: 0 !important;
-	}
-   	.mk_apps_sidebar_logo {
-		display: none;
-	}
+    --mk-sidebar-width: #{$mk-sidebar-small-width};
+
+    .mk_apps_sidebar_name {
+        display: none;
+    }
+
+    .mk_apps_sidebar_icon {
+        margin-right: 0 !important;
+    }
+
+    .mk_apps_sidebar_logo {
+        display: none;
+    }
 }
 
 .mk_sidebar_type_invisible {
-	--mk-sidebar-width: 0;
+    --mk-sidebar-width: 0;
 }
 
 .editor_has_snippets_hide_backend_navbar,
 .o_home_menu_background,
 .o_fullscreen {
-	--mk-sidebar-width: 0;
+    --mk-sidebar-width: 0;
 }
 
 .editor_has_snippets_hide_backend_navbar .mk_apps_sidebar_panel {
@@ -69,22 +108,344 @@
 }
 
 @include media-breakpoint-only(md) {
-	.mk_sidebar_type_large {
-		--mk-sidebar-width: #{$mk-sidebar-small-width};
-		.mk_apps_sidebar_name {
-			display: none;
-		}
-		.mk_apps_sidebar_icon {
-			margin-right: 0 !important;
-		}
-	   	.mk_apps_sidebar_logo {
-			display: none;
-		}
-	}
+    .mk_sidebar_type_large {
+        --mk-sidebar-width: #{$mk-sidebar-small-width};
+
+        .mk_apps_sidebar_name {
+            display: none;
+        }
+
+        .mk_apps_sidebar_icon {
+            margin-right: 0 !important;
+        }
+
+        .mk_apps_sidebar_logo {
+            display: none;
+        }
+    }
 }
 
 @include media-breakpoint-down(md) {
-	.mk_sidebar_type_large, .mk_sidebar_type_small {
-		--mk-sidebar-width: 0;
-	}
+
+    .mk_sidebar_type_large,
+    .mk_sidebar_type_small {
+        --mk-sidebar-width: 0;
+    }
+}
+
+.sub-menu {
+    list-style: none;
+    margin: 0;
+    padding: 10px 10px;
+    background-color: darken($mk-appbar-background, 5%);
+
+    border-radius: 4px;
+    box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.2);
+
+    .sub-item {
+        font-size: 90%;
+        color: #fff;
+        padding: 6px 8px;
+        border-left: 2px solid transparent;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background-color: darken($mk-appbar-background, 20%);
+            border-left-color: lighten($mk-appbar-active, 10%);
+        }
+    }
+}
+
+// Стрелочки
+.arrow {
+    border: solid rgb(255, 255, 255);
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+}
+
+.right {
+    transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
+}
+
+.left {
+    transform: rotate(135deg);
+    -webkit-transform: rotate(135deg);
+}
+
+.up {
+    transform: rotate(-135deg);
+    -webkit-transform: rotate(-135deg);
+}
+
+.down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}
+
+.nav-link {
+    display: flex;
+    justify-content: space-between;
+
+    &:hover .arrow {
+        color: lighten($mk-appbar-color, 15%);
+    }
+}
+
+
+.nav-link {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    width: 100%;
+}
+
+// scroll-bar
+.mk_apps_sidebar_panel {
+    @include mk-disable-scrollbar();
+    background-color: $mk-appbar-background;
+    min-width: 200px;
+    width: 50%;
+    overflow-y: auto; // fallback
+    transition: width 0.3s ease;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+    overflow: auto;
+    white-space: nowrap;
+
+    // Добавим поддержку overlay, если браузер позволяет
+    @supports (overflow: overlay) {
+        overflow-y: overlay;
+    }
+
+    .mk_apps_sidebar_toggle {
+        padding: 8px;
+        cursor: pointer;
+        text-align: right;
+        color: $mk-appbar-color;
+        background: $mk-appbar-active;
+        transition: background 0.2s ease;
+
+        &:hover {
+            background: darken($mk-appbar-active, 5%);
+        }
+    }
+
+    &.mk_apps_sidebar_collapsed {
+        min-width: 50px;
+        width: 50px;
+
+        .mk_apps_sidebar_name {
+            display: none;
+        }
+    }
+
+    .mk_apps_sidebar {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        white-space: nowrap;
+
+        .mk_apps_sidebar_menu {
+            padding: 0;
+            margin: 0;
+
+            >li {
+                list-style: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+                >a {
+                    display: flex;
+                    align-items: center;
+                    cursor: pointer;
+                    font-size: 13px;
+                    font-weight: 300;
+                    overflow: hidden;
+                    padding: 8px 11px;
+                    text-decoration: none;
+                    color: $mk-appbar-color;
+                    text-overflow: ellipsis;
+                    transition: background 0.2s ease;
+
+                    &:hover {
+                        background: darken($mk-appbar-background, 10%);
+                    }
+                }
+
+                &.active>a {
+                    background: $mk-appbar-active;
+                }
+            }
+        }
+    }
+}
+
+// Стили для разных вариаций сайдбара
+.mk_sidebar_type_large {
+    --mk-sidebar-width: #{$mk-sidebar-large-width};
+}
+
+.mk_sidebar_type_small {
+    --mk-sidebar-width: #{$mk-sidebar-small-width};
+
+    .mk_apps_sidebar_name {
+        display: none;
+    }
+
+    .mk_apps_sidebar_icon {
+        margin-right: 0 !important;
+    }
+
+    .mk_apps_sidebar_logo {
+        display: none;
+    }
+}
+
+.mk_sidebar_type_invisible {
+    --mk-sidebar-width: 0;
+}
+
+.editor_has_snippets_hide_backend_navbar,
+.o_home_menu_background,
+.o_fullscreen {
+    --mk-sidebar-width: 0;
+}
+
+.editor_has_snippets_hide_backend_navbar .mk_apps_sidebar_panel {
+    transition: width 300ms;
+}
+
+@include media-breakpoint-only(md) {
+    .mk_sidebar_type_large {
+        --mk-sidebar-width: #{$mk-sidebar-small-width};
+
+        .mk_apps_sidebar_name {
+            display: none;
+        }
+
+        .mk_apps_sidebar_icon {
+            margin-right: 0 !important;
+        }
+
+        .mk_apps_sidebar_logo {
+            display: none;
+        }
+    }
+}
+
+@include media-breakpoint-down(md) {
+
+    .mk_sidebar_type_large,
+    .mk_sidebar_type_small {
+        --mk-sidebar-width: 0;
+    }
+}
+
+.sub-menu {
+    list-style: none;
+    margin: 0;
+    padding: 10px 10px;
+    background-color: darken($mk-appbar-background, 5%);
+    border-radius: 4px;
+    box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.2);
+
+    .sub-item {
+        font-size: 90%;
+        color: #fff;
+        padding: 6px 8px;
+        border-left: 2px solid transparent;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background-color: darken($mk-appbar-background, 20%);
+            border-left-color: lighten($mk-appbar-active, 10%);
+        }
+    }
+}
+
+// Стрелочки
+.arrow {
+    border: solid rgb(255, 255, 255);
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+}
+
+.right {
+    transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
+}
+
+.left {
+    transform: rotate(135deg);
+    -webkit-transform: rotate(135deg);
+}
+
+.up {
+    transform: rotate(-135deg);
+    -webkit-transform: rotate(-135deg);
+}
+
+.down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}
+
+.nav-link {
+    display: flex;
+    justify-content: space-between;
+
+    &:hover .arrow {
+        color: lighten($mk-appbar-color, 15%);
+    }
+}
+
+.nav-link {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    width: 100%;
+}
+
+// scroll-bar
+.scroll {
+    // Основной способ
+    overflow-y: auto; // fallback для браузеров без overlay
+    scrollbar-width: thin;
+    scrollbar-color: rgb(192, 192, 192) rgb(19, 19, 19);
+
+    // Поддержка overlay, если доступна
+    @supports (overflow: overlay) {
+        overflow-y: overlay;
+    }
+
+    --scrollbar-opacity: 0;
+    transition: --scrollbar-opacity 0.3s ease-in-out;
+}
+
+.scroll:hover {
+    --scrollbar-opacity: 1;
+}
+
+/* WebKit-специфичные стили scrollbar */
+.scroll::-webkit-scrollbar {
+    width: 6px;
+    opacity: var(--scrollbar-opacity);
+    transition: opacity 0.3s ease-in-out;
+}
+
+.scroll::-webkit-scrollbar-button {
+    display: none;
+}
+
+.scroll::-webkit-scrollbar-track {
+    background: rgb(19, 19, 19);
+}
+
+.scroll::-webkit-scrollbar-thumb {
+    background-color: rgb(192, 192, 192);
+    border-radius: 5px;
 }

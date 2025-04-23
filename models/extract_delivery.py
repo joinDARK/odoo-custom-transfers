@@ -4,7 +4,7 @@ from .base_model import AmanatBaseModel
 
 class Extract_delivery(models.Model, AmanatBaseModel):
     _name = 'amanat.extract_delivery'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Выписка разнос'
 
     name = fields.Char(string="Номер платежа", tracking=True, readonly=True, default=lambda self: self.env['ir.sequence'].next_by_code('amanat.extract_delivery.sequence'), copy=False)
@@ -52,7 +52,14 @@ class Extract_delivery(models.Model, AmanatBaseModel):
     applications = fields.Many2many('amanat.zayavka', string="Заявки", tracking=True)
     currency_reserve = fields.Many2many('amanat.reserve', string="Валютный резерв", tracking=True)
     transfer_ids = fields.Many2many('amanat.transfer', string="Перевод", tracking=True)
-    conversion = fields.Many2many('amanat.conversion', string="Конвертация", tracking=True)
+    conversion = fields.Many2many(
+        'amanat.conversion',
+        'amanat_conversion_extract_delivery_rel',
+        'extract_delivery',
+        'conversion_id',
+        string="Конвертация", 
+        tracking=True
+    )
     investment = fields.Many2many('amanat.investment', string="Инвестиция", tracking=True)
     gold_deal = fields.Many2many('amanat.gold_deal', string="Золото сделка", tracking=True)
 

@@ -5,16 +5,17 @@
         <field name="name">manager.list</field>
         <field name="model">amanat.manager</field>
         <field name="arch" type="xml">
-            <list editable="bottom">
-                <field name="name"/>
-                <field name="phone"/>
-                <field name="date"/>
-                <field name="applications"/>
-                <field name="checking"/>
-                <field name="task_manager"/>
-                <field name="total_applications"/>
-                <field name="wrong_applications"/>
-                <field name="efficiency"/>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <field width="200" name="name"/>
+                <field width="200" name="phone"/>
+                <field width="200" name="date"/>
+                <field width="200" name="applications"/>
+                <field width="200" name="checking"/>
+                <field width="200" name="task_manager"/>
+                <field width="200" name="total_applications"/>
+                <field width="200" name="wrong_applications"/>
+                <field width="200" name="efficiency"/>
             </list>
         </field>
     </record>
@@ -51,5 +52,6 @@
         <field name="name">Менеджеры</field>
         <field name="res_model">amanat.manager</field>
         <field name="view_mode">list,form</field>
+        <field name="target">main</field>
     </record>
 </odoo>

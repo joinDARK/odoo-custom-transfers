@@ -4,15 +4,16 @@
         <field name="name">rates.list</field>
         <field name="model">amanat.rates</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="id"/>
-                <field name="euro"/>
-                <field name="cny"/>
-                <field name="rub"/>
-                <field name="aed"/>
-                <field name="thb"/>
-                <field name="usd"/>
-                <field name="usdt"/>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <field width="200" name="id"/>
+                <field width="200" name="euro"/>
+                <field width="200" name="cny"/>
+                <field width="200" name="rub"/>
+                <field width="200" name="aed"/>
+                <field width="200" name="thb"/>
+                <field width="200" name="usd"/>
+                <field width="200" name="usdt"/>
             </list>
         </field>
     </record>
@@ -52,5 +53,6 @@
         <field name="res_model">amanat.rates</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="rates_list_view"/>
+        <field name="target">main</field>
     </record>
 </odoo>

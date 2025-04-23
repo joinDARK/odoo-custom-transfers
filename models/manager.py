@@ -4,7 +4,7 @@ from .base_model import AmanatBaseModel
 class Manager(models.Model, AmanatBaseModel):
     _name = 'amanat.manager'
     _description = 'Менеджеры'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
 
     name = fields.Char(string="Имя")
     phone = fields.Char(string="Телефон")

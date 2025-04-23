@@ -3,7 +3,7 @@ from dateutil.relativedelta import relativedelta
 
 class Task(models.Model):
     _name = 'amanat.task'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Task Management'
 
     name = fields.Char(string='Задача', required=True, tracking=True)

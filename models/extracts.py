@@ -3,7 +3,7 @@ from .base_model import AmanatBaseModel
 
 class AmanatExtracts(models.Model, AmanatBaseModel):
     _name = 'amanat.extracts'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'extracts'
 
     name = fields.Char(string='ID', tracking=True)

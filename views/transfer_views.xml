@@ -5,22 +5,36 @@
         <field name="model">amanat.transfer</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="name"/>
-                <field name="state"/>
-                <field name="date"/>
-                <field name="currency"/>
-                <field name="amount"/>
-                <field name="sender_payer_id"/>
-                <field name="sender_wallet_id"/>
-                <field name="sender_id"/>
-                <field name="sending_commission_percent"/>
-                <field name="receiver_payer_id"/>
-                <field name="receiver_wallet_id"/>
-                <field name="receiver_id"/>
-                <field name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                <field name="royalti_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                <field name="delete_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+            <list editable="top">
+                <button title="Кнопка формы" string="" type="object" name="open_form" icon="fa-external-link"/>
+                <field width="200" name="name"/>
+                <field width="200" name="state"/>
+                <field width="200" name="date"/>
+                <field width="200" name="hash"/>
+                <field width="200" name="currency"/>
+                <field width="200" name="amount"/>
+                <field width="200" name="sender_payer_id"/>
+                <field width="200" name="sender_wallet_id"/>
+                <field width="200" name="sender_id"/>
+                <field width="200" name="sending_commission_percent" widget="percentage" options="{'rounding': 2}"/>
+                <field width="200" name="receiver_payer_id"/>
+                <field width="200" name="receiver_wallet_id"/>
+                <field width="200" name="receiver_id"/>
+                <field width="200" name="order_ids" widget="many2many_tags"/>
+                <field width="200" name="is_complex"/>
+                <field width="200" name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                <field width="200" name="royalti_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                <field width="200" name="royalty_recipient_1"/>
+                <field width="200" name="royalty_recipient_2"/>
+                <field width="200" name="royalty_recipient_3"/>
+                <field width="200" name="royalty_recipient_4"/>
+                <field width="200" name="royalty_recipient_5"/>
+                <field width="200" name="royalty_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                <field width="200" name="royalty_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                <field width="200" name="royalty_percent_3" widget="percentage" options="{'rounding': 2}"/>
+                <field width="200" name="royalty_percent_4" widget="percentage" options="{'rounding': 2}"/>
+                <field width="200" name="royalty_percent_5" widget="percentage" options="{'rounding': 2}"/>
+                <field width="200" name="delete_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
             </list>
         </field>
     </record>
@@ -34,39 +48,99 @@
                     <h1><field name="name" readonly="1"/></h1>
                 </header>
                 <sheet>
+                    <!-- Ряд 1: Общая информация о переводе -->
+                    <header>
+                        <h2>Общая информация о переводе</h2>
+                    </header>
+                    <group>
+                        <div class="o-form-group">
+                            <group>
+                                <field name="state"/>
+                                <field name="amount"/>
+                            </group>
+                            <group>
+                                <field name="date"/>
+                                <field name="hash"/>
+                            </group>
+                            <group>
+                                <field name="currency"/>
+                                <field name="sending_commission_percent" widget="percentage" options="{'rounding': 2}"/>
+                            </group>
+                        </div>
+                        <field name="order_ids"/>
+                    </group>
+                    <!-- Ряд 2: Информация об отправителе и получателе -->
+                    <header>
+                        <h2>Информация об отправителе и получателе</h2>
+                    </header>
                     <group>
                         <group>
-                            <field name="state"/>
-                            <field name="date"/>
-                            <field name="currency"/>
-                            <field name="amount"/>
-                        </group>
-                        <group>
-                            <field name="sender_payer_id" required="1"/>
-                            <field name="sender_wallet_id"/>
                             <field name="sender_id"/>
+                            <field name="sender_payer_id"/>
+                            <field name="sender_wallet_id"/>
                         </group>
                         <group>
-                            <field name="receiver_payer_id" required="1"/>
-                            <field name="receiver_wallet_id"/>
                             <field name="receiver_id"/>
+                            <field name="receiver_payer_id"/>
+                            <field name="receiver_wallet_id"/>
                         </group>
+                    </group>
+                    <!-- Ряд 3: Сведения по посредникам (для комплексных переводов) -->
+                    <header>
+                        <h2>Сложные переводы</h2>
+                    </header>
+                    <group>
+                        <field name="is_complex"/>
                         <group>
-                            <field name="is_complex"/>
                             <field name="intermediary_1_id" invisible="not is_complex"/>
                             <field name="intermediary_1_payer_id" invisible="not is_complex"/>
                             <field name="intermediary_1_wallet_id" invisible="not is_complex"/>
+                            <field name="intermediary_1_commission_percent" widget="percentage" options="{'rounding': 2}" invisible="not is_complex"/>
                             <field name="intermediary_1_sum" invisible="not is_complex"/>
-
+                        </group>
+                        <group>
                             <field name="intermediary_2_id" invisible="not is_complex"/>
                             <field name="intermediary_2_payer_id" invisible="not is_complex"/>
                             <field name="intermediary_2_wallet_id" invisible="not is_complex"/>
+                            <field name="intermediary_2_commission_percent" widget="percentage" options="{'rounding': 2}" invisible="not is_complex"/>
                             <field name="intermediary_2_sum" invisible="not is_complex"/>
                         </group>
+                    </group>
+                    <!-- Ряд 4: Действия перевода -->
+                    <header>
+                        <h2>Действия перевода</h2>
+                    </header>
+                    <group>
+                        <div class="o-form-group">
+                            <group>
+                                <field name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                            </group>
+                            <group>
+                                <field name="royalti_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                            </group>
+                            <group>
+                                <field name="delete_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                            </group>
+                        </div>
+                    </group>
+                    <!-- Ряд 5: Роялти -->
+                    <header>
+                        <h2>Роялти</h2>
+                    </header>
+                    <group>
                         <group>
-                            <field name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                            <field name="royalti_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                            <field name="delete_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                            <field name="royalty_recipient_1"/>
+                            <field name="royalty_recipient_2"/>
+                            <field name="royalty_recipient_3"/>
+                            <field name="royalty_recipient_4"/>
+                            <field name="royalty_recipient_5"/>
+                        </group>
+                        <group>
+                            <field name="royalty_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                            <field name="royalty_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                            <field name="royalty_percent_3" widget="percentage" options="{'rounding': 2}"/>
+                            <field name="royalty_percent_4" widget="percentage" options="{'rounding': 2}"/>
+                            <field name="royalty_percent_5" widget="percentage" options="{'rounding': 2}"/>
                         </group>
                     </group>
                 </sheet>
@@ -84,6 +158,6 @@
         <field name="name">Переводы</field>
         <field name="res_model">amanat.transfer</field>
         <field name="view_mode">list,form</field>
+        <field name="target">main</field>
     </record>
 </odoo>
-

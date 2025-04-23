@@ -4,19 +4,24 @@ from odoo import models, fields
 
 class WriteOff(models.Model):
     _name = 'amanat.writeoff'
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Списания'
 
     # Пользовательское поле-идентификатор «Id Списания» (вместо name)
     # Если хотите назвать его name, переименуйте соответственно.
-    id_spisaniya = fields.Char(string="Id Списания")
+    id_spisaniya = fields.Char(string="Id Списания", tracking=True)
 
-    date = fields.Date(string="Дата")
-    amount = fields.Float(string="Сумма")
+    date = fields.Date(string="Дата", tracking=True)
+    amount = fields.Float(string="Сумма", tracking=True)
 
     # Ссылка на модель "amanat.money" (Контейнер)
-    money_id = fields.Many2one(
-        comodel_name='amanat.money',
+    money_id = fields.Many2many(
+        'amanat.money',
+        'amanat_money_writeoff_rel', 
+        'money_id', 
+        'writeoff_id',
         string="Контейнер",
+        tracking=True,
         ondelete='cascade'  # при удалении контейнера можно удалять и списания
     )
 

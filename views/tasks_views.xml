@@ -64,5 +64,6 @@
         <field name="name">Задачник</field>
         <field name="res_model">amanat.task</field>
         <field name="view_mode">kanban,form</field>
+        <field name="target">main</field>
     </record>
 </odoo>

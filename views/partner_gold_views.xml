@@ -5,13 +5,14 @@
     <field name="name">partner.gold.list</field>
     <field name="model">amanat.partner_gold</field>
     <field name="arch" type="xml">
-      <list>
-        <field name="name"/>
-        <field name="deal_date"/>
-        <field name="partner_id"/>
-        <field name="payer_id"/>
-        <field name="amount_rub"/>
-        <field name="purchase_amount_dollar"/>
+      <list editable="top">
+        <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+        <field width="200" name="name"/>
+        <field width="200" name="deal_date"/>
+        <field width="200" name="partner_id"/>
+        <field width="200" name="payer_id"/>
+        <field width="200" name="amount_rub"/>
+        <field width="200" name="purchase_amount_dollar"/>
       </list>
     </field>
   </record>
@@ -115,5 +116,6 @@
     <field name="name">Партнеры золото</field>
     <field name="res_model">amanat.partner_gold</field>
     <field name="view_mode">list,form</field>
+    <field name="target">main</field>
   </record>
 </odoo>

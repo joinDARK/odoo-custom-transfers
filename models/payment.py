@@ -4,7 +4,7 @@ from .base_model import AmanatBaseModel
 
 class AmanatPayment(models.Model, AmanatBaseModel):
     _name = 'amanat.payment'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Платеж'
 
     # Поля модели (id создаётся автоматически)

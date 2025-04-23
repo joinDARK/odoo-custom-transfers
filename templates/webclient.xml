@@ -8,5 +8,9 @@
             <t t-set="body_classname" t-value="'%s %s' % (body_classname, body_sidebar_classname)"/>
         </xpath>
     </template>
+
+    <template xpath="//field[@name='currency_reserve']" inherit_id="web.assets_backend">
+        <attribute name="widget">custom_float</attribute>
+    </template>
     
 </odoo>

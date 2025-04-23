@@ -3,7 +3,7 @@ from .base_model import AmanatBaseModel
 
 class AmanatPeriod(models.Model, AmanatBaseModel):
     _name = 'amanat.period'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Период'
 
     name = fields.Char(string='Name', tracking=True)

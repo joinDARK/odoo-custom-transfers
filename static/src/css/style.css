@@ -1,0 +1,68 @@
+.o-form-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* Общие стили для формы */
+.o_form_view .o_form_sheet {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border: 1px solid #ddd;
+}
+
+/* Стандартизация числовых полей */
+.o_field_monetary {
+    text-align: right;
+    font-family: monospace;
+}
+
+/* Выделение меток */
+.o_form_label {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Подсветка обязательных полей */
+.o_field_required .o_form_label::after {
+    content: '*';
+    color: red;
+    margin-left: 5px;
+}
+
+/* Отступы между полями */
+.o_field_widget {
+    margin-bottom: 10px;
+}
+
+/* Визуальное группирование полей */
+.o_inner_group {
+    border: 1px solid #eee;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 10px;
+}
+
+.o_form_view:not(.o_field_highlight) .o_field_widget:not(.o_field_invalid):not(.o_field_highlight) .o_input:not(:hover):not(:focus) {
+    --o-input-border-color: rgba(0, 0, 0, 0.180);
+}
+
+.form-check-input {
+    border: 1px solid gray;
+}
+
+.form-check-input {
+    width: 1.1em;
+    height: 1.1em;
+}
+
+/* Logs */
+
+.o-mail-ChatterContainer,
+.o-mail-Form-chatter {
+    max-width: 450px;
+}
+
+/* 
+.o_menu_sections {
+    visibility: hidden;
+} */

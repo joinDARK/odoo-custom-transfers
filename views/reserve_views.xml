@@ -1,64 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="reserve_list_view" model="ir.ui.view">
-        <field name="name">reserve.list</field>
-        <field name="model">amanat.reserve</field>
-        <field name="type">list</field>
-        <field name="arch" type="xml">
-            <list>
-                <field name="subagent_payer"/>
-                <field name="counterparties"/>
-                <field name="date_start"/>
-                <field name="date_end"/>
-                <field name="period_days"/>
-                <field name="today_date"/>
-                <field name="accrual_percentage"/>
-                <field name="fixed_deal_fee"/>
-                <field name="min_application_amount"/>
-                <field name="max_application_amount"/>
-                <field name="bind_field"/>
-                <field name="applications"/>
-            </list>
-        </field>
-    </record>
-
-    <record id="reserve_form_view" model="ir.ui.view">
-        <field name="name">reserve.form</field>
+    <!-- Форма -->
+    <record id="view_reserve_form" model="ir.ui.view">
+        <field name="name">amanat.reserve.form</field>
         <field name="model">amanat.reserve</field>
         <field name="arch" type="xml">
-            <form string="Валютный резерв 1">
+            <form string="Валютный резерв">
+                <header>
+                    <h1>
+                        <field name="name" readonly="1"/>
+                    </h1>
+                </header>
                 <sheet>
-                    <group>
-                        <field name="subagent_payer"/>
-                        <field name="counterparties"/>
-                    </group>
-                    <group>
-                        <field name="date_start"/>
-                        <field name="date_end"/>
-                        <field name="period_days" readonly="1"/>
-                    </group>
-                    <group>
+                    <!-- Блок «Основная информация» -->
+                    <header>
+                        <h2>Основаная информация</h2>
+                    </header>
+                    <group colspan="2">
+                        <field name="status"/>
                         <field name="today_date"/>
-                        <field name="accrual_percentage"/>
-                        <field name="fixed_deal_fee"/>
+                        <field name="currency"/>
+                        <field name="amount"/>
                     </group>
-                    <group>
-                        <field name="min_application_amount"/>
-                        <field name="max_application_amount"/>
+
+                    <!-- Блок «Участники» -->
+                    <header>
+                        <h2>Участники</h2>
+                    </header>
+                    <group colspan="2" col="2">
+                        <group string="Отправитель">
+                            <field name="sender_id"/>
+                            <field name="sender_payer_id" domain="[('contragents_ids', 'in', sender_id)]"/>
+                            <field name="commision_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                        </group>
+                        <group string="Получатель">
+                            <field name="receiver_id"/>
+                            <field name="receiver_payer_id" domain="[('contragents_ids', 'in', receiver_id)]"/>
+                            <field name="commision_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                        </group>
                     </group>
-                    <group>
-                        <field name="bind_field"/>
-                        <field name="applications"/>
+
+                    <!-- Блок «Действия» -->
+                    <header>
+                        <h2>Действия</h2>
+                    </header>
+                    <group colspan="2" col="2">
+                        <group>
+                            <field name="commision_difference" widget="percentage" options="{'rounding': 2}"/>
+                            <field name="finally_result"/>
+                        </group>
+                        <group>
+                            <field name="create_reserve"/>
+                            <field name="delete_reserve"/>
+                        </group>
+                    </group>
+
+                    <!-- Блок «Роялти» -->
+                    <header>
+                        <h2>Роялти</h2>
+                    </header>
+                    <group colspan="2">
+                        <field name="has_royalti"/>
+                        <field name="make_royalti"/>
+
+                        <!-- Прячем поля роялти, если галка has_royalti не стоит -->
+                        <field name="royalty_recipient_1" invisible="not has_royalti"/>
+                        <field name="royalty_percent_1" widget="percentage" options="{'rounding': 2}" invisible="not has_royalti"/>
+                        <field name="royalty_amount_1" invisible="not has_royalti"/>
+                        <field name="royalty_recipient_2" invisible="not has_royalti"/>
+                        <field name="royalty_percent_2" widget="percentage" options="{'rounding': 2}" invisible="not has_royalti"/>
+                        <field name="royalty_amount_2" invisible="not has_royalti"/>
+                    </group>
+
+                    <!-- Блок «Ордеры -->
+                    <header>
+                        <h2>Ордеры</h2>
+                    </header>
+                    <group colspan="1" col="1">
+                        <group>
+                            <field name="order_ids" widget="many2many_tags"/>
+                        </group>
                     </group>
                 </sheet>
             </form>
         </field>
     </record>
 
+
+    <!-- Список -->
+    <record id="view_reserve_list" model="ir.ui.view">
+        <field name="name">amanat.reserve.list</field>
+        <field name="model">amanat.reserve</field>
+        <field name="arch" type="xml">
+            <list string="Список валютных резервов" editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <field name="name" width="150"/>
+                <field name="status"/>
+                <field name="today_date"/>
+                <field name="currency"/>
+                <field name="amount"/> <!-- Удалено дублирование и monetary -->
+                <field name="sender_id"/>
+                <field name="sender_payer_id"/>
+                <field name="commision_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                <field name="receiver_id"/>
+                <field name="receiver_payer_id"/>
+                <field name="commision_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                <field name="commision_difference" widget="percentage" options="{'rounding': 2}"/>
+                <field name="finally_result"/>
+                <field name="has_royalti" width="100"/>
+                <field name="make_royalti" width="100"/>
+                <field name="royalty_recipient_1"/>
+                <field name="royalty_recipient_2"/>
+                <field name="royalty_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                <field name="royalty_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                <field name="royalty_amount_1"/>
+                <field name="royalty_amount_2"/>
+                <field name="order_ids" widget="many2many_tags"/>
+                <field name="create_reserve" width="100"/>
+                <field name="delete_reserve" width="100"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Действие -->
     <record id="reserve_action" model="ir.actions.act_window">
-        <field name="name">Валютный резерв 1</field>
+        <field name="name">Валютные резервы</field>
         <field name="res_model">amanat.reserve</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Нажмите "Создать", чтобы добавить новый валютный резерв.
+            </p>
+        </field>
+        <field name="target">main</field>
     </record>
 </odoo>
-

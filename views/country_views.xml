@@ -6,7 +6,8 @@
         <field name="model">amanat.country</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name"/>
                 <field name="code"/>
                 <field name="full_name"/>
@@ -25,9 +26,9 @@
                 <sheet>
                     <group>
                         <field name="name"/>
-                        <fields name="code"/>
-                        <fields name="full_name"/>
-                        <fields name="zayavka_id"/>
+                        <field name="code"/>
+                        <field name="full_name"/>
+                        <field name="zayavka_id"/>
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->
@@ -45,5 +46,6 @@
         <field name="name">Страны</field>
         <field name="res_model">amanat.country</field>
         <field name="view_mode">list,form</field>
+        <field name="target">main</field>
     </record>
 </odoo>

@@ -109,108 +109,109 @@
     <field name="name">zayavka.list</field>
     <field name="model">amanat.zayavka</field>
     <field name="arch" type="xml">
-      <list>
+      <list editable="top">
+        <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
         <field name="zayavka_id"/>
-        <field name="status"/>
-        <field name="zayavka_num"/>
-        <field name="date_placement"/>
-        <field name="taken_in_work_date"/>
-        <field name="contragent_id"/>
-        <field name="agent_id"/>
-        <field name="client_id"/>
-        <field name="inn"/>
-        <field name="client_inn"/>
-        <field name="exporter_importer_name"/>
-        <field name="bank_swift"/>
-        <field name="country_id"/>
-        <field name="payment_conditions"/>
-        <field name="deal_type"/>
-        <field name="instruction_number"/>
-        <field name="instruction_signed_date"/>
-        <field name="usd_equivalent"/>
-        <field name="jess_rate"/>
-        <field name="currency"/>
-        <field name="is_cross"/>
-        <field name="currency_pair"/>
-        <field name="cross_rate_usd_rub"/>
-        <field name="cross_rate_pair"/>
-        <field name="xe_rate"/>
-        <field name="conversion_expenses_rub"/>
-        <field name="conversion_expenses_currency"/>
-        <field name="xe_rate_auto"/>
-        <field name="real_cross_rate"/>
-        <field name="amount"/>
-        <field name="vip_conditions"/>
-        <field name="vip_commission"/>
-        <field name="hidden_commission"/>
-        <field name="bank_commission"/>
-        <field name="accreditation_commission"/>
-        <field name="escrow_commission"/>
-        <field name="rate_field"/>
-        <field name="hidden_rate"/>
-        <field name="conversion_percent"/>
-        <field name="bank_cross_rate"/>
-        <field name="plus_dollar"/>
-        <field name="dollar_cross_rate"/>
-        <field name="plus_currency"/>
-        <field name="invoice_plus_percent"/>
-        <field name="reward_percent"/>
-        <field name="sovok_reward"/>
-        <field name="sber_reward"/>
-        <field name="client_reward"/>
-        <field name="our_sovok_reward"/>
-        <field name="our_sber_reward"/>
-        <field name="our_client_reward"/>
-        <field name="non_our_sber_reward"/>
-        <field name="non_our_client_reward"/>
-        <field name="total_sovok"/>
-        <field name="total_sovok_management"/>
-        <field name="total_sber"/>
-        <field name="total_sber_management"/>
-        <field name="total_client"/>
-        <field name="total_client_management"/>
-        <field name="total_fact"/>
-        <field name="calculated_percent"/>
-        <field name="overall_sovok_percent"/>
-        <field name="overall_sber_percent"/>
-        <field name="rate_rub"/>
-        <field name="sum_from_extracts"/>
-        <field name="rate_real"/>
-        <field name="rate_real_sber"/>
-        <field name="agent_reward"/>
-        <field name="actual_reward"/>
-        <field name="non_agent_reward"/>
-        <field name="agent_our_reward"/>
-        <field name="total_reward"/>
-        <field name="total_amount"/>
-        <field name="with_accreditive"/>
-        <field name="received_initial_docs"/>
-        <field name="invoice_date"/>
-        <field name="agent_contract_date"/>
-        <field name="bank_registration_date"/>
-        <field name="accreditive_open_date"/>
-        <field name="supplier_currency_paid_date"/>
-        <field name="payment_date"/>
-        <field name="supplier_currency_received_date"/>
-        <field name="client_ruble_paid_date"/>
-        <field name="accreditive_revealed_date"/>
-        <field name="act_report_signed_date"/>
-        <field name="deal_closed_date"/>
-        <field name="deal_cycle_days"/>
-        <field name="payment_purpose"/>
-        <field name="subagent_ids"/>
-        <field name="subagent_payer_ids"/>
-        <field name="application_sequence"/>
-        <field name="subagent_docs_prepared_date"/>
-        <field name="swift_received_date"/>
-        <field name="swift_103_requested_date"/>
-        <field name="swift_199_requested_date"/>
-        <field name="swift_103_received_date"/>
-        <field name="swift_199_received_date"/>
-        <field name="return_requested_date"/>
-        <field name="return_money_received_date"/>
-        <field name="swift_status"/>
-        <field name="price_list_profit_id"/>
+        <field width="200" name="status"/>
+        <field width="200" name="zayavka_num"/>
+        <field width="200" name="date_placement"/>
+        <field width="200" name="taken_in_work_date"/>
+        <field width="200" name="contragent_id"/>
+        <field width="200" name="agent_id"/>
+        <field width="200" name="client_id"/>
+        <field width="200" name="inn"/>
+        <field width="200" name="client_inn"/>
+        <field width="200" name="exporter_importer_name"/>
+        <field width="200" name="bank_swift"/>
+        <field width="200" name="country_id"/>
+        <field width="200" name="payment_conditions"/>
+        <field width="200" name="deal_type"/>
+        <field width="200" name="instruction_number"/>
+        <field width="200" name="instruction_signed_date"/>
+        <field width="200" name="usd_equivalent"/>
+        <field width="200" name="jess_rate"/>
+        <field width="200" name="currency"/>
+        <field width="200" name="is_cross"/>
+        <field width="200" name="currency_pair"/>
+        <field width="200" name="cross_rate_usd_rub"/>
+        <field width="200" name="cross_rate_pair"/>
+        <field width="200" name="xe_rate"/>
+        <field width="200" name="conversion_expenses_rub"/>
+        <field width="200" name="conversion_expenses_currency"/>
+        <field width="200" name="xe_rate_auto"/>
+        <field width="200" name="real_cross_rate"/>
+        <field width="200" name="amount"/>
+        <field width="200" name="vip_conditions"/>
+        <field width="200" name="vip_commission"/>
+        <field width="200" name="hidden_commission"/>
+        <field width="200" name="bank_commission"/>
+        <field width="200" name="accreditation_commission"/>
+        <field width="200" name="escrow_commission"/>
+        <field width="200" name="rate_field"/>
+        <field width="200" name="hidden_rate"/>
+        <field width="200" name="conversion_percent"/>
+        <field width="200" name="bank_cross_rate"/>
+        <field width="200" name="plus_dollar"/>
+        <field width="200" name="dollar_cross_rate"/>
+        <field width="200" name="plus_currency"/>
+        <field width="200" name="invoice_plus_percent"/>
+        <field width="200" name="reward_percent"/>
+        <field width="200" name="sovok_reward"/>
+        <field width="200" name="sber_reward"/>
+        <field width="200" name="client_reward"/>
+        <field width="200" name="our_sovok_reward"/>
+        <field width="200" name="our_sber_reward"/>
+        <field width="200" name="our_client_reward"/>
+        <field width="200" name="non_our_sber_reward"/>
+        <field width="200" name="non_our_client_reward"/>
+        <field width="200" name="total_sovok"/>
+        <field width="200" name="total_sovok_management"/>
+        <field width="200" name="total_sber"/>
+        <field width="200" name="total_sber_management"/>
+        <field width="200" name="total_client"/>
+        <field width="200" name="total_client_management"/>
+        <field width="200" name="total_fact"/>
+        <field width="200" name="calculated_percent"/>
+        <field width="200" name="overall_sovok_percent"/>
+        <field width="200" name="overall_sber_percent"/>
+        <field width="200" name="rate_rub"/>
+        <field width="200" name="sum_from_extracts"/>
+        <field width="200" name="rate_real"/>
+        <field width="200" name="rate_real_sber"/>
+        <field width="200" name="agent_reward"/>
+        <field width="200" name="actual_reward"/>
+        <field width="200" name="non_agent_reward"/>
+        <field width="200" name="agent_our_reward"/>
+        <field width="200" name="total_reward"/>
+        <field width="200" name="total_amount"/>
+        <field width="200" name="with_accreditive"/>
+        <field width="200" name="received_initial_docs"/>
+        <field width="200" name="invoice_date"/>
+        <field width="200" name="agent_contract_date"/>
+        <field width="200" name="bank_registration_date"/>
+        <field width="200" name="accreditive_open_date"/>
+        <field width="200" name="supplier_currency_paid_date"/>
+        <field width="200" name="payment_date"/>
+        <field width="200" name="supplier_currency_received_date"/>
+        <field width="200" name="client_ruble_paid_date"/>
+        <field width="200" name="accreditive_revealed_date"/>
+        <field width="200" name="act_report_signed_date"/>
+        <field width="200" name="deal_closed_date"/>
+        <field width="200" name="deal_cycle_days"/>
+        <field width="200" name="payment_purpose"/>
+        <field width="200" name="subagent_ids"/>
+        <field width="200" name="subagent_payer_ids"/>
+        <field width="200" name="application_sequence"/>
+        <field width="200" name="subagent_docs_prepared_date"/>
+        <field width="200" name="swift_received_date"/>
+        <field width="200" name="swift_103_requested_date"/>
+        <field width="200" name="swift_199_requested_date"/>
+        <field width="200" name="swift_103_received_date"/>
+        <field width="200" name="swift_199_received_date"/>
+        <field width="200" name="return_requested_date"/>
+        <field width="200" name="return_money_received_date"/>
+        <field width="200" name="swift_status"/>
+        <field width="200" name="price_list_profit_id"/>
       </list>
     </field>
   </record>
@@ -219,5 +220,6 @@
     <field name="name">Заявки</field>
     <field name="res_model">amanat.zayavka</field>
     <field name="view_mode">list,form</field>
+    <field name="target">main</field>
   </record>
 </odoo>

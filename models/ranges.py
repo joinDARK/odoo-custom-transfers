@@ -4,7 +4,7 @@ from .base_model import AmanatBaseModel
 
 class Ranges(models.Model, AmanatBaseModel):
     _name = 'amanat.ranges'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Диапазон'
 
     range_id = fields.Char(

@@ -1,15 +1,15 @@
 # models/contragent.py
-from odoo import models, fields
+from odoo import models, fields, api
 from .base_model import AmanatBaseModel
 
 class Contragent(models.Model, AmanatBaseModel):
     _name = 'amanat.contragent'
     _description = 'Контрагент'
-    _inherit = ["mail.thread", "mail.activity.mixin"]  
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]  
 
     name = fields.Char(string='Имя', required=True, tracking=True)
-    recon_Balance_0 = fields.Char(string='Баланс RUB сверка', tracking=True)
-    recon_Balance_1 = fields.Char(string='Баланс RUB сверка баланс 1', tracking=True)
+    recon_Balance_0 = fields.Float(string='Баланс RUB сверка', tracking=True)
+    recon_Balance_1 = fields.Float(string='Баланс RUB сверка баланс 1', tracking=True)
     recon_Balance_2 = fields.Float(string='Баланс RUB сверка баланс 2', tracking=True)
     recon_cash_rub = fields.Float(string='Баланс RUB сверка КЕШ', tracking=True)
     recon_usdt = fields.Float(string='Баланс USDT сверка', tracking=True)
@@ -37,10 +37,31 @@ class Contragent(models.Model, AmanatBaseModel):
     cash_euro = fields.Float(string='Баланс EURO КЕШ', tracking=True)
     cash_usd = fields.Float(string='Баланс USD КЕШ', tracking=True)
 
-    payer_id = fields.Many2one('amanat.payer', string='Плательщики', required=False, tracking=True, ondelete='set null')
-    payer_inn = fields.Char(string='ИНН (from Плательщики)', tracking=True, related='payer_id.inn', store=True)
+    # Связь многие ко многим с Плательщиками
+    payer_ids = fields.Many2many(
+        'amanat.payer',
+        'amanat_payer_contragent_rel',  # Общее имя таблицы-связи с моделью Payer
+        'contragent_id',  # Поле-ссылка на эту модель
+        'payer_id',  # Поле-ссылка на модель Плательщик
+        string='Плательщики',
+        tracking=True,
+        ondelete='cascade'
+    )
+    payer_inn = fields.Char(
+        string='ИНН (от Плательщиков)',
+        compute='_compute_payer_inn',
+        store=True,
+        tracking=True
+    )
     inn = fields.Char(string='ИНН', tracking=True)
     date_start = fields.Date(string='дата начало', tracking=True)
     date_end = fields.Date(string='дата конец', tracking=True)
+
+    @api.depends('payer_ids.inn')
+    def _compute_payer_inn(self):
+        for record in self:
+            # Фильтруем связанные записи, чтобы исключить несуществующие или пустые ИНН
+            valid_payers = record.payer_ids.filtered(lambda r: r.exists() and r.inn)
+            record.payer_inn = ", ".join(valid_payers.mapped('inn')) if valid_payers else ''
 
    

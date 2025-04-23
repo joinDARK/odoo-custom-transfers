@@ -1,18 +1,43 @@
 <t t-name="amanat.AppsBar">
     <t t-if="state.isAmanat">
-        <div class="mk_apps_sidebar_panel">
-            <div class="mk_apps_sidebar">
+        <div t-attf-class="mk_apps_sidebar_panel #{state.isCollapsed ? 'mk_apps_sidebar_collapsed' : ''}">
+            <div class="mk_apps_sidebar scroll">
                 <ul class="mk_apps_sidebar_menu">
-                    <li class="nav-item">
-                        <a href="#" t-on-click.prevent="openAutomations" class="nav-link" role="menuitem">
-                            <span class="mk_apps_sidebar_name">Автоматизации</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" t-on-click.prevent="openLogs" class="nav-link" role="menuitem">
-                            <span class="mk_apps_sidebar_name">Логи</span>
-                        </a>
-                    </li>
+                    <!-- Рендерим пункты меню -->
+                    <t t-foreach="menuData" t-as="menu" t-index="menu_index" t-key="menu_index">
+                        <li class="nav-item">
+                            <a href="#"
+                               class="nav-link"
+                               role="menuitem"
+                               t-on-click.prevent="() => this.handleMenuClick(menu, menu_index)"
+                            >
+                                <span class="mk_apps_sidebar_name">
+                                    <t t-esc="menu.name"/>
+                                </span>
+                                <t t-if="menu.items">
+                                    <span t-if="state.activeMenuIndex === menu_index" class="expanded"><i class="arrow up"></i></span>
+                                    <span t-else="" class="collapsed"><i class="arrow down"></i></span>
+                                </t>
+                            </a>
+
+                            <!-- Если есть items и пункт сейчас раскрыт -->
+                            <t t-if="menu.items and state.activeMenuIndex === menu_index">
+                                <ul class="sub-menu">
+                                    <t t-foreach="menu.items" t-as="subItem" t-index="subItem_index" t-key="subItem_index">
+                                        <li class="nav-item">
+                                            <a href="#"
+                                               class="nav-link sub-item"
+                                               role="menuitem"
+                                               t-on-click.prevent="() => this.openAction(subItem.action)"
+                                            >
+                                                <t t-esc="subItem.name"/>
+                                            </a>
+                                        </li>
+                                    </t>
+                                </ul>
+                            </t>
+                        </li>
+                    </t>
                 </ul>
             </div>
         </div>

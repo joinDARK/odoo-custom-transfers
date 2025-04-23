@@ -6,18 +6,18 @@
         <field name="model">amanat.payer</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="name"/>
-                <field name="contragent_id"/>
                 <field name="inn"/>
-                <field width="200" name="contragents_ids"/>
-                <field name="order_ids"/>
-                <field name="reconciliation"/>
+                <field width="200" name="contragents_ids" widget="many2many_tags"/>
+                <field name="order_ids" widget="many2many_tags"/>
+                <field name="reconciliation" widget="many2many_tags"/>
                 <field name="transfer"/>
                 <field width="200" name="currency_reserve"/>
                 <field width="200" name="conversion"/>
                 <field width="200" name="investment"/>
-                <field width="200" name="gold_partners"/>
+                <field width="200" name="gold_partners" widget="many2many_tags"/>
                 <field name="deductions"/>
                 <field name="applications"/>
                 <field width="320" name="pricelist_conduct"/>
@@ -34,11 +34,19 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <h1><field name="name"/></h1>
+                </header>
                 <sheet>
+                    <!-- Ряд 1: Основаная информация о плательщике -->
                     <group>
-                        <field name="name"/>
-                        <field name="contragent_id"/>
+                        <header>
+                            <h2>ИНН Плательщика</h2>
+                        </header>
                         <field name="inn"/>
+                        <header>
+                            <h2>Связанные значения</h2>
+                        </header>
                         <field name="contragents_ids"/>
                         <field name="order_ids"/>
                         <field name="reconciliation"/>
@@ -69,5 +77,6 @@
         <field name="name">Плательщики</field>
         <field name="res_model">amanat.payer</field>
         <field name="view_mode">list,form</field>
+        <field name="target">main</field>
     </record>
 </odoo>

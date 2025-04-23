@@ -4,7 +4,7 @@ from .base_model import AmanatBaseModel
 
 class Rates(models.Model, AmanatBaseModel):
     _name = 'amanat.rates'
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Курсы к доллару'
 
     id = fields.Char(

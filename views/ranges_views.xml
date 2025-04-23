@@ -4,16 +4,17 @@
         <field name="name">ranges.list</field>
         <field name="model">amanat.ranges</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="range_id"/>
-                <field name="date_start"/>
-                <field name="date_end"/>
-                <field name="date_start_copy"/>
-                <field name="data_end_copy"/>
-                <field name="compare_balance_date_1"/>
-                <field name="compare_balance_date_2"/>
-                <field name="reconciliation_date_1"/>
-                <field name="reconciliation_date_2"/>
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <field width="200" name="range_id"/>
+                <field width="200" name="date_start"/>
+                <field width="200" name="date_end"/>
+                <field width="200" name="date_start_copy"/>
+                <field width="200" name="data_end_copy"/>
+                <field width="200" name="compare_balance_date_1"/>
+                <field width="200" name="compare_balance_date_2"/>
+                <field width="200" name="reconciliation_date_1"/>
+                <field width="200" name="reconciliation_date_2"/>
             </list>
         </field>
     </record>
@@ -54,5 +55,6 @@
         <field name="res_model">amanat.ranges</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="ranges_list_view"/>
+        <field name="target">main</field>
     </record>
 </odoo>
