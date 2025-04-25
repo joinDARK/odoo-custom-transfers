@@ -74,6 +74,7 @@
         'data/order_sequence.xml',
         'data/conversion_sequence.xml',
         'data/reserve_sequence.xml',
+        'data/investment_sequence.xml',
     ],
 
     'assets': {
@@ -109,8 +110,16 @@
             (
                 'after',
                 'web/static/src/webclient/webclient.js',
-                'amanat/static/src/webclient/appsbar/appsbar.js',
+                'amanat/static/src/webclient/appsbar/appsbar.js'
             ),
+            # (
+            #     'before',
+            #     'web/static/src/webclient/webclient.js',
+            #     'amanat/static/src/webclient/separator/separator.js'
+            # ),
+
+            # 'amanat/static/src/webclient/separator/separator.js',
+
             'amanat/static/src/webclient/webclient.scss',
             'amanat/static/src/webclient/appsbar/appsbar.xml',
             'amanat/static/src/webclient/appsbar/appsbar.scss',

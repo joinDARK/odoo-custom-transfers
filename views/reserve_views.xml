@@ -81,6 +81,9 @@
                             <field name="order_ids" widget="many2many_tags"/>
                         </group>
                     </group>
+                    <group>
+                        <field name="comment"/>
+                    </group>
                 </sheet>
             </form>
         </field>
@@ -118,6 +121,7 @@
                 <field name="order_ids" widget="many2many_tags"/>
                 <field name="create_reserve" width="100"/>
                 <field name="delete_reserve" width="100"/>
+                <field name="comment"/>
             </list>
         </field>
     </record>

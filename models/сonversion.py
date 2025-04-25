@@ -93,16 +93,27 @@ class Conversion(models.Model, AmanatBaseModel):
         for rec in self:
             rec.royalty_amount_2 = rec.amount * rec.royalty_percent_2
 
+    @api.model
+    def _find_or_create_payer(self, name, contragent_id):
+        if not name:
+            return False
+        Payer = self.env['amanat.payer']
+        return Payer.search([('name', '=', name)], limit=1) or Payer.create({
+            'name': name,
+            'contragents_ids': [(4, contragent_id)],
+        })
+
     def write(self, vals):
         if self.env.context.get('skip_automation'):
             return super().write(vals)
         res = super().write(vals)
         for rec in self:
-        # Создание конверсии
             if vals.get('create_Conversion') or (not vals and rec.create_Conversion):
                 rec.action_execute_conversion()
                 rec.with_context(skip_automation=True).write({'create_Conversion': False})
-            # Удаление конверсии
+            if vals.get('make_royalti') and rec.has_royalti:
+                rec._create_royalti_entries()
+                rec.with_context(skip_automation=True).write({'make_royalti': False})
             if vals.get('delete_Conversion') or (not vals and rec.delete_Conversion):
                 rec.action_delete_conversion()
         return res
@@ -111,17 +122,23 @@ class Conversion(models.Model, AmanatBaseModel):
         self.ensure_one()
         if not self.wallet_id:
             raise UserError(_('Не указан кошелек для конвертации.'))
-        # Удаляем предыдущие записи
+        # Очищаем и создаем ордер + записи
+        self._clear_orders_money_recon()
+        self._create_conversion_order()
+        return True
+
+    def _clear_orders_money_recon(self):
         for order in self.order_id:
             self.env['amanat.reconciliation'].search([('order_id', '=', order.id)]).unlink()
             self.env['amanat.money'].search([('order_id', '=', order.id)]).unlink()
             order.unlink()
         self.order_id = [(5,)]
-        # Создаём новый ордер
+
+    def _create_conversion_order(self):
         comment = _('Конвертация: %s → %s, курс: %s') % (
             self.currency, self.conversion_currency, self.rate
         )
-        new_order = self.env['amanat.order'].create({
+        order = self.env['amanat.order'].create({
             'date': self.date,
             'type': 'transfer',
             'partner_1_id': self.sender_id.id,
@@ -135,118 +152,92 @@ class Conversion(models.Model, AmanatBaseModel):
             'rate': self.rate,
             'comment': comment,
         })
-        self.order_id = [(4, new_order.id)]
-        # Рассчитываем суммы
-        amt1, amt2 = new_order.amount_1, new_order.amount_after_conv
+        self.order_id = [(4, order.id)]
+        self._post_entries_for_order(order)
+
+    def _post_entries_for_order(self, order):
+        amt1, amt2 = order.amount_1, order.amount_after_conv
         Money = self.env['amanat.money']
         Recon = self.env['amanat.reconciliation']
         if self.contragent_count == '1':
-            # Списание исходной
-            money_vals = {
-                'date': self.date,
-                'partner_id': self.sender_id.id,
-                'currency': self.currency,
-                'amount': -amt1,
-                'state': 'debt',
-                'wallet_id': self.wallet_id.id,
-                'order_id': [(6, 0, [new_order.id])],
-                **self._currency_field_map(self.currency, -amt1)
-            }
-            Money.create(money_vals)
-            recon_vals = {
-                'date': self.date,
-                'partner_id': self.sender_id.id,
-                'currency': self.currency,
-                'sum': -amt1,
-                'wallet_id': self.wallet_id.id,
-                'order_id': [(6, 0, [new_order.id])],
-                'sender_id': [(6, 0, [self.sender_payer_id.id])],
-                'receiver_id': [(6, 0, [self.sender_payer_id.id])],
-                **self._currency_field_map(self.currency, -amt1)
-            }
-            Recon.create(recon_vals)
-            # Зчисление целевой
-            money_vals = {
-                'date': self.date,
-                'partner_id': self.sender_id.id,
-                'currency': self.conversion_currency,
-                'amount': amt2,
-                'state': 'positive',
-                'wallet_id': self.wallet_id.id,
-                'order_id': [(6, 0, [new_order.id])],
-                **self._currency_field_map(self.conversion_currency, amt2)
-            }
-            Money.create(money_vals)
-            recon_vals = {
-                'date': self.date,
-                'partner_id': self.sender_id.id,
-                'currency': self.conversion_currency,
-                'sum': amt2,
-                'wallet_id': self.wallet_id.id,
-                'order_id': [(6, 0, [new_order.id])],
-                'sender_id': [(6, 0, [self.sender_payer_id.id])],
-                'receiver_id': [(6, 0, [self.sender_payer_id.id])],
-                **self._currency_field_map(self.conversion_currency, amt2)
-            }
-            Recon.create(recon_vals)
+            lines = [
+                (self.currency, -amt1, self.sender_payer_id),
+                (self.conversion_currency, amt2, self.sender_payer_id)
+            ]
+            partners = [self.sender_id, self.sender_id]
         else:
-            for partner, curr, sign, s_payer, r_payer in [
-                (self.sender_id, self.currency, -amt1, self.sender_payer_id, self.receiver_payer_id),
-                (self.sender_id, self.conversion_currency, amt2, self.sender_payer_id, self.receiver_payer_id),
-                (self.receiver_id, self.currency, amt1, self.sender_payer_id, self.receiver_payer_id),
-                (self.receiver_id, self.conversion_currency, -amt2, self.sender_payer_id, self.receiver_payer_id),
-            ]:
-                money_vals = {
-                    'date': self.date,
-                    'partner_id': partner.id,
-                    'currency': curr,
-                    'amount': sign,
-                    'state': 'debt' if sign < 0 else 'positive',
-                    'wallet_id': self.wallet_id.id,
-                    'order_id': [(6, 0, [new_order.id])],
-                    **self._currency_field_map(curr, sign)
-                }
-                Money.create(money_vals)
-                recon_vals = {
-                    'date': self.date,
-                    'partner_id': partner.id,
-                    'currency': curr,
-                    'sum': sign,
-                    'wallet_id': self.wallet_id.id,
-                    'order_id': [(6, 0, [new_order.id])],
-                    'sender_id': [(6, 0, [s_payer.id])] if s_payer else [],
-                    'receiver_id': [(6, 0, [r_payer.id])] if r_payer else [],
-                    **self._currency_field_map(curr, sign)
-                }
-                Recon.create(recon_vals)
-        return True
+            lines = [
+                (self.currency, -amt1, self.sender_payer_id, self.receiver_payer_id),
+                (self.conversion_currency, amt2, self.sender_payer_id, self.receiver_payer_id),
+                (self.currency, amt1, self.sender_payer_id, self.receiver_payer_id),
+                (self.conversion_currency, -amt2, self.sender_payer_id, self.receiver_payer_id),
+            ]
+            partners = [self.sender_id, self.sender_id, self.receiver_id, self.receiver_id]
+        for idx, vals in enumerate(lines):
+            curr, sign = vals[0], vals[1]
+            pay1 = vals[2]
+            pay2 = vals[3] if len(vals) > 3 else pay1
+            partner = partners[idx]
+            money_vals = {
+                'date': self.date,
+                'partner_id': partner.id,
+                'currency': curr,
+                'amount': sign,
+                'state': 'debt' if sign < 0 else 'positive',
+                'wallet_id': self.wallet_id.id,
+                'order_id': [(6, 0, [order.id])],
+                **self._currency_field_map(curr, sign)
+            }
+            Money.create(money_vals)
+            Recon.create({
+                'date': self.date,
+                'partner_id': partner.id,
+                'currency': curr,
+                'sum': sign,
+                'wallet_id': self.wallet_id.id,
+                'order_id': [(6, 0, [order.id])],
+                'sender_id': [(6, 0, [pay1.id])],
+                'receiver_id': [(6, 0, [pay2.id])],
+                **self._currency_field_map(curr, sign)
+            })
 
-    def action_delete_conversion(self):
-        """
-        Удаляет все связанные ордера, контейнеры денег и записи сверки для конверсии.
-        """
-        self.ensure_one()
-        # Удаляем связанные ордера и финансовые записи
-        for order in self.order_id:
-            # Контейнеры денег
-            monies = self.env['amanat.money'].search([('order_id','in',[order.id])])
-            for money in monies:
-                if hasattr(money,'writeoff_ids') and money.writeoff_ids:
-                    money.writeoff_ids.unlink()
-                money.unlink()
-            # Сверки
-            self.env['amanat.reconciliation'].search([('order_id','=',order.id)]).unlink()
-            # Ордер
-            order.unlink()
-        # Сброс связи ордеров
-        self.order_id = [(5,)]
-        # Архивируем заявку (снимаем флаг и ставим статус)
-        super(Conversion,self).write({
-            'delete_Conversion': False,
-            'state': 'archive'
+    def _create_royalti_entries(self):
+        order = self.order_id and self.order_id[0]
+        if not order:
+            raise UserError(_('Нельзя создать роялти без созданного ордера.'))
+        amt = self.royalty_amount_1
+        curr = self.currency
+        payer = self._find_or_create_payer(
+            self.royalty_recipient_1.name,
+            self.royalty_recipient_1.id
+        )
+        Money = self.env['amanat.money']
+        Recon = self.env['amanat.reconciliation']
+        money_vals = {
+            'date': self.date,
+            'partner_id': self.royalty_recipient_1.id,
+            'currency': curr,
+            'amount': -amt,
+            'state': 'debt',
+            'wallet_id': self.wallet_id.id,
+            'order_id': [(6, 0, [order.id])],
+            **self._currency_field_map(curr, -amt)
+        }
+        Money.create(money_vals)
+        Recon.create({
+            'date': self.date,
+            'partner_id': self.royalty_recipient_1.id,
+            'currency': curr,
+            'sum': -amt,
+            'wallet_id': self.wallet_id.id,
+            'order_id': [(6, 0, [order.id])],
+            'sender_id': [(6, 0, [payer.id])],
+            'receiver_id': [(6, 0, [payer.id])],
+            **self._currency_field_map(curr, -amt)
         })
 
-        return True
+    def action_delete_conversion(self):
+        super().action_delete_conversion()
 
     @api.model
     def _currency_field_map(self, code, amount):

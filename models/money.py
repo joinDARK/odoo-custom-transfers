@@ -151,6 +151,15 @@ class Money(models.Model, AmanatBaseModel):
         store=True
     )
 
+    # Комментарий
+    comment = fields.Text(
+        related='order_id.comment',
+        string='Комментарии',
+        readonly=True,
+        store=True,
+        tracking=True
+    )
+
     @api.depends(
         'sum', 'sum_rub', 'sum_usd', 'sum_usdt', 'sum_cny', 'sum_euro', 'sum_aed',
         'sum_rub_cashe', 'sum_usd_cashe', 'sum_cny_cashe', 'sum_euro_cashe', 'sum_aed_cashe',

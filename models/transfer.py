@@ -132,6 +132,9 @@ class Transfer(models.Model, AmanatBaseModel):
         ondelete='cascade'
     )
 
+    # Комментарии
+    comment = fields.Text(string='Комментарии', tracking=True)
+
     manager_id = fields.Many2one('res.users', string='Manager', tracking=True, default=lambda self: self.env.user.id)
     inspector_id = fields.Many2one('res.users', string='Inspector', tracking=True)
 
@@ -216,6 +219,7 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_2_id': record.receiver_payer_id.id,
             'currency': record.currency,
             'amount': record.amount,
+            'comment': record.comment,
             'operation_percent': record.sending_commission_percent,
             # Используем команду для Many2many: (6, 0, [record.id])
             'transfer_id': [(6, 0, [record.id])],
@@ -254,6 +258,7 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_2_id': record.intermediary_1_payer_id.id,
             'currency': record.currency,
             'amount': record.amount,
+            'comment': record.comment,
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
@@ -281,6 +286,7 @@ class Transfer(models.Model, AmanatBaseModel):
                 'payer_2_id': record.receiver_payer_id.id,
                 'currency': record.currency,
                 'amount': record.intermediary_1_sum,
+                'comment': record.comment,
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
             })
@@ -316,6 +322,7 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_2_id': record.intermediary_1_payer_id.id,
             'currency': record.currency,
             'amount': record.amount,
+            'comment': record.comment,
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
@@ -342,6 +349,7 @@ class Transfer(models.Model, AmanatBaseModel):
                 'payer_2_id': record.intermediary_2_payer_id.id,
                 'currency': record.currency,
                 'amount': record.intermediary_1_sum,
+                'comment': record.comment,
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
             })
@@ -368,6 +376,7 @@ class Transfer(models.Model, AmanatBaseModel):
                 'payer_2_id': record.receiver_payer_id.id,
                 'currency': record.currency,
                 'amount': record.intermediary_2_sum,
+                'comment': record.comment,
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
             })
@@ -478,7 +487,7 @@ class Transfer(models.Model, AmanatBaseModel):
         royalty_contragent = self.env['amanat.contragent'].search([('name', '=', 'Роялти')], limit=1)
         royalty_payer = self.env['amanat.payer'].search([
             ('contragents_ids', 'in', royalty_contragent.id)
-        ], limit=1) if royalty_contragent else Famount
+        ], limit=1) if royalty_contragent else self.amount
         old_royalty_orders = self.env['amanat.order'].search([
             ('transfer_id', '=', self.id),
             ('type', '=', 'royalty')
@@ -509,6 +518,7 @@ class Transfer(models.Model, AmanatBaseModel):
                     'payer_1_id': royalty_payer.id if royalty_payer else False,
                     'payer_2_id': recipient_payer.id if recipient_payer else False,
                     'currency': self.currency,
+                    'comment': self.comment,
                     'amount': royalty_sum,
                     'transfer_id': [(6, 0, [self.id])],
                 })
@@ -551,4 +561,8 @@ class Transfer(models.Model, AmanatBaseModel):
             vals['sender_wallet_id'] = unmarked.id
         if not vals.get('receiver_wallet_id'):
             vals['receiver_wallet_id'] = unmarked.id
+        if not vals.get('intermediary_2_wallet_id'):
+            vals['intermediary_2_wallet_id'] = unmarked.id
+        if not vals.get('intermediary_1_wallet_id'):
+            vals['intermediary_1_wallet_id'] = unmarked.id
         return super(Transfer, self).create(vals)
