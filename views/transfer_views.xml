@@ -35,6 +35,7 @@
                 <field width="200" name="royalty_percent_4" widget="percentage" options="{'rounding': 2}"/>
                 <field width="200" name="royalty_percent_5" widget="percentage" options="{'rounding': 2}"/>
                 <field width="200" name="delete_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                <field width="200" name="comment"/>
             </list>
         </field>
     </record>
@@ -142,6 +143,9 @@
                             <field name="royalty_percent_4" widget="percentage" options="{'rounding': 2}"/>
                             <field name="royalty_percent_5" widget="percentage" options="{'rounding': 2}"/>
                         </group>
+                    </group>
+                    <group>
+                        <field name="comment"/>
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->

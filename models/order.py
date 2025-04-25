@@ -9,7 +9,11 @@ class Order(models.Model, AmanatBaseModel):
 
     name = fields.Char(string='ID ордера', readonly=True, default=lambda self: self.env['ir.sequence'].next_by_code('amanat.order.sequence'), copy=False)
 
-    date = fields.Date(string='Дата', tracking=True, required=True)
+    date = fields.Date(
+        string='Дата', 
+        tracking=True, 
+        default=fields.Date.today
+    )
     type = fields.Selection([
         ('transfer', 'Перевод'),
         ('payment', 'Оплата'),
@@ -17,7 +21,6 @@ class Order(models.Model, AmanatBaseModel):
         ],
         string='Тип',
         tracking=True,
-        required=True
     )
 
     transfer_id = fields.Many2many(
@@ -115,7 +118,16 @@ class Order(models.Model, AmanatBaseModel):
     converted_amount = fields.Float(string='Валюта(из заявки)', tracking=True)
 
     # Инвестиции
-    investment = fields.Float(string='Инвестиция', tracking=True)
+    investment = fields.Many2many(
+        'amanat.investment',
+        'amanat_order_investment_rel',
+        'order_id',
+        'investment_id',
+        string='Инвестиция', 
+        tracking=True
+    )
+
+    # Золото
     gold = fields.Float(string='Золото', tracking=True)
 
     # Конвертация

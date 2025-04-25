@@ -44,6 +44,7 @@
                 <field width="200" name="sum_remains"/>
                 <field width="200" name="order_id" widget="many2many_tags"/>
                 <field width="200" name="amount"/>
+                <field width="200" name="comment"/>
             </list>
         </field>
     </record>
@@ -94,6 +95,7 @@
                         <field name="sum_remains"/>
                         <field name="order_id" widget="many2many_tags"/>
                         <field name="amount"/>
+                        <field name="comment"/>
                     </group>
                 </sheet>
                 <chatter>

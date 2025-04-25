@@ -25,6 +25,16 @@ class WriteOff(models.Model):
         ondelete='cascade'  # при удалении контейнера можно удалять и списания
     )
 
+    # Ссылка на модель "amanat.investment"
+    investment_ids = fields.Many2many(
+        'amanat.investment',
+        'amanat_investment_writeoff_rel', 
+        'writeoff_id',
+        'investment_id',
+        string="Инвестиции",
+        tracking=True,
+    )
+
     # В Odoo автоматически есть поле id (Integer, Primary Key).
     # Если нужно вывести его во вьюшку, это делается через <field name="id" .../>,
     # но обычно этого не делают, т.к. id - это тех.ключ в БД.

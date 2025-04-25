@@ -16,7 +16,7 @@
                 <field width="200" name="payer_2_id"/>
                 <field name="wallet_2_id"/>
                 <field name="currency"/>
-                <field name="amount"/>
+                <field name="amount" widget="separator"/>
                 <field name="rate"/>
                 <field width="200" name="operation_percent" widget="percentage" options="{'rounding': 2}"/>
                 <field name="rko"/>
@@ -32,7 +32,7 @@
                 <field width="200" name="reserve_ids" widget="many2many_tags"/>
                 <field width="200" name="conversion_ids" widget="many2many_tags"/>
                 <field width="200" name="converted_amount"/>
-                <field name="investment"/>
+                <field name="investment" widget="many2many_tags"/>
                 <field name="gold"/>
                 <field width="200" name="cross_from"/>
                 <field width="200" name="cross_rate"/>
@@ -100,7 +100,7 @@
                         <field name="reserve_ids"/>
                         <field name="conversion_ids" widget="many2many_tags"/>
                         <field name="converted_amount"/>
-                        <field name="investment"/>
+                        <field name="investment" widget="many2many_tags"/>
                         <field name="gold"/>
                         <field name="cross_from"/>
                         <field name="cross_rate"/>

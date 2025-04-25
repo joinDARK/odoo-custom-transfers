@@ -69,6 +69,15 @@ class Reserve(models.Model, AmanatBaseModel):
     delete_reserve = fields.Boolean(string='Удалить', default=False, tracking=True)
     complete_reserve = fields.Boolean(string='Провести', default=False, tracking=True)
 
+    # Комментарий
+    comment = fields.Text(
+        related='order_ids.comment',
+        string='Комментарии',
+        readonly=True,
+        store=True,
+        tracking=True
+    )
+
     @api.onchange('sender_id')
     def _onchange_sender_id(self):
         self.sender_payer_id = self.env['amanat.payer'].search(
@@ -148,6 +157,7 @@ class Reserve(models.Model, AmanatBaseModel):
             'operation_percent': self.commision_percent_1,
             'our_percent': self.commision_percent_2,
             'reserve_ids': [(6, 0, [self.id])],
+            'comment': self.comment,
         })
         # Рассчитываем чистое списание и чистое зачисление
         amount_out, amount_in = self._calculate_amounts(
@@ -282,6 +292,7 @@ class Reserve(models.Model, AmanatBaseModel):
                     'currency': self.currency,
                     'amount': royalty_sum,
                     'reserve_ids': [(6, 0, [self.id])],
+                    'comment': self.comment,
                 })
                 fields = self._get_currency_fields(self.currency, royalty_sum)
                 self.env['amanat.money'].create({

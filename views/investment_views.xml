@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <list editable="top">
                 <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-                <field name="id" width="70"/>
+                <field name="name" width="70"/>
                 <field name="status" width="100"/>
                 <field name="date" width="100"/>
                 <field name="date_close" width="120"/>
@@ -15,7 +15,7 @@
                 <field name="payer_sender" width="180"/>
                 <field name="receiver" width="200"/>
                 <field name="payer_receiver" width="180"/>
-                <field name="percent" width="80"/>
+                <field name="percent" width="80" widget="percentage" options="{'rounding': 2}"/>
                 <field name="fixed_amount" width="160"/>
                 <field name="period" width="120"/>
                 <field name="amount" width="120"/>
@@ -23,8 +23,8 @@
                 <field name="principal" width="120"/>
                 <field name="calendar_days" width="110"/>
                 <field name="work_days" width="140"/>
-                <field name="orders" width="180"/>
-                <field name="write_offs" width="180"/>
+                <field name="orders" width="180" widget="many2many_tags"/>
+                <field name="write_offs" width="180" widget="many2many_tags"/>
                 <field name="rollup_write_offs" width="180"/>
                 <field name="rollup_amount" width="120"/>
                 <field name="create_action" width="100"/>
@@ -35,8 +35,16 @@
                 <field name="to_delete" width="100"/>
                 <field name="accrue" width="100"/>
                 <field name="has_royalty" width="110"/>
-                <field name="royalty_post" width="110"/>
-                <field name="royalty_receiver" width="180"/>
+                <field name="royalty_post" width="150"/>
+                <field name="royalty_recipient_1" width="200"/>
+                <field name="royalty_recipient_2" width="200"/>
+                <field name="royalty_recipient_3" width="200"/>
+                <field name="royalty_recipient_4" width="200"/>
+                <field name="royalty_recipient_5" width="200"/>
+                <field name="royalty_recipient_6" width="200"/>
+                <field name="royalty_recipient_7" width="200"/>
+                <field name="royalty_recipient_8" width="200"/>
+                <field name="royalty_recipient_9" width="200"/>
                 <field name="percent_1" width="90"/>
                 <field name="percent_2" width="90"/>
                 <field name="percent_3" width="90"/>
@@ -67,7 +75,7 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <h1><field name="id" readonly="1"/></h1>
+                    <h1><field name="name" readonly="1"/></h1>
                 </header>
                 <sheet>
                     <group>
@@ -78,7 +86,7 @@
                         <field name="payer_sender"/>
                         <field name="receiver"/>
                         <field name="payer_receiver"/>
-                        <field name="percent"/>
+                        <field name="percent" widget="percentage" options="{'rounding': 2}"/>
                         <field name="fixed_amount"/>
                         <field name="period"/>
                         <field name="amount"/>
@@ -86,8 +94,8 @@
                         <field name="principal"/>
                         <field name="calendar_days"/>
                         <field name="work_days"/>
-                        <field name="orders"/>
-                        <field name="write_offs"/>
+                        <field name="orders" widget="many2many_tags"/>
+                        <field name="write_offs" widget="many2many_tags"/>
                         <field name="rollup_write_offs"/>
                         <field name="rollup_amount"/>
                         <field name="create_action"/>
@@ -99,7 +107,15 @@
                         <field name="accrue"/>
                         <field name="has_royalty"/>
                         <field name="royalty_post"/>
-                        <field name="royalty_receiver"/>
+                        <field name="royalty_recipient_1"/>
+                        <field name="royalty_recipient_2"/>
+                        <field name="royalty_recipient_3"/>
+                        <field name="royalty_recipient_4"/>
+                        <field name="royalty_recipient_5"/>
+                        <field name="royalty_recipient_6"/>
+                        <field name="royalty_recipient_7"/>
+                        <field name="royalty_recipient_8"/>
+                        <field name="royalty_recipient_9"/>
                         <field name="percent_1"/>
                         <field name="percent_2"/>
                         <field name="percent_3"/>
