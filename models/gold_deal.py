@@ -1,4 +1,8 @@
 from odoo import models, fields, api
+import logging
+from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 class GoldDeal(models.Model):
     _name = 'amanat.gold_deal'
@@ -24,7 +28,7 @@ class GoldDeal(models.Model):
     comment = fields.Char(string='Комментарий', tracking=True)
 
     # 4. Дата
-    date = fields.Date(string='Дата', tracking=True)
+    date = fields.Date(string='Дата', tracking=True, default=fields.Date.today)
 
     # 5. Партнеры – связь один-ко-многим с моделью «Партнеры золото»
     partner_ids = fields.Many2many(
@@ -175,7 +179,8 @@ class GoldDeal(models.Model):
     extract_delivery_ids = fields.Many2many(
         'amanat.extract_delivery',
         string='Платежка',
-        tracking=True
+        tracking=True,
+        domain="[('direction_choice', '=', 'gold_deal')]"  # добавляем домен для фильтрации по золотым сделкам
     )
 
     # 29. Ордеры – связь с ордерами (многие ко многим)
@@ -261,3 +266,171 @@ class GoldDeal(models.Model):
     def _compute_difference(self):
         for rec in self:
             rec.difference = rec.purchase_total_rub - rec.invoice_amount
+
+    # "Золото вход" контейнеры
+    @api.model
+    def create(self, vals):
+        rec = super(GoldDeal, self).create(vals)
+        if vals.get('conduct_in') and rec.status == 'open':
+            rec._action_conduct_in()
+        if vals.get('mark_for_deletion'):
+            rec._action_delete()
+            rec.status = 'archived'
+        return rec
+
+    def write(self, vals):
+        res = super(GoldDeal, self).write(vals)
+        if vals.get('conduct_in'):
+            self._action_conduct_in()
+        if vals.get('mark_for_deletion'):
+            for rec in self:
+                print("Триггер сработал")
+                rec._action_delete()
+                rec.status = 'archived'
+        return res
+
+    def _action_conduct_in(self):
+        """
+        Автоматизация входа в сделку "Золото":
+        - Антидюп: удаляет старые ордера, контейнеры и сверки
+        - Создаёт новые ордера, контейнеры и сверки для каждого партнёра
+        - Создаёт финальный ордер «Золото → Вита»
+        """
+        for rec in self:
+            # === Антидюп: удаляем прошлые записи ===
+            existing_orders = rec.order_ids
+            if existing_orders:
+                for order in existing_orders:
+                    if order.sverka_ids:
+                        order.sverka_ids.unlink()
+                    if order.money_ids:
+                        order.money_ids.unlink()
+                existing_orders.unlink()
+            rec.order_ids = [(5, 0, 0)]
+            for partner in rec.partner_ids:
+                partner.order_ids = [(5, 0, 0)]
+
+            # === Справочные записи ===
+            Contr = self.env['amanat.contragent']
+            Pay = self.env['amanat.payer']
+            Wal = self.env['amanat.wallet']
+            gold_ctr = Contr.search([('name', '=', 'Золото')], limit=1)
+            vita_ctr = Contr.search([('name', '=', 'Вита')], limit=1)
+            # найдём или создадим «Золото» и «Вита»
+            gold_ctr = Contr.search([('name', '=', 'Золото')], limit=1)
+            if not gold_ctr:
+                gold_ctr = Contr.create({'name': 'Золото'})
+            vita_ctr = Contr.search([('name', '=', 'Вита')], limit=1)
+            if not vita_ctr:
+                vita_ctr = Contr.create({'name': 'Вита'})
+
+            gold_pay = Pay.search([('name', '=', 'Золото')], limit=1)
+            if not gold_pay:
+                gold_pay = Pay.create({'name': 'Золото'})
+            vita_pay = Pay.search([('name', '=', 'Вита')], limit=1)
+            if not vita_pay:
+                vita_pay = Pay.create({'name': 'Вита'})
+
+            gold_wal = Wal.search([('name', '=', 'Золото')], limit=1)
+
+            total_amt = 0.0
+            Order = self.env['amanat.order']
+            Money = self.env['amanat.money']
+            Recon = self.env['amanat.reconciliation']
+
+            # === Создаём ордера и связанные записи для каждого партнёра ===
+            for partner in rec.partner_ids:
+                ctr = partner.partner_id
+                pay = partner.payer_id or Pay.search([('contragents_ids', 'in', ctr.id)], limit=1)
+                amt = partner.partner_invoice_amount
+                if not (ctr and pay and amt):
+                    _logger.error('Пропускаем партнёра %s – недостаточно данных', partner.id)
+                    continue
+                ord = Order.create({
+                    'date': rec.date,
+                    'partner_1_id': ctr.id,
+                    'payer_1_id': pay.id,
+                    'partner_2_id': gold_ctr.id,
+                    'payer_2_id': gold_pay.id,
+                    'amount': amt,
+                    'currency': 'rub',
+                    'type': 'transfer',
+                    'comment': 'Вход в сделку Золото',
+                })
+                rec.order_ids |= ord
+                partner.order_ids |= ord
+                total_amt += amt
+
+                # Контейнер денег – положительный
+                Money.create({
+                    'date': rec.date,
+                    'partner_id': ctr.id,
+                    'currency': 'rub',
+                    'amount': amt,
+                    'sum_rub': amt,
+                    'state': 'positive',
+                    'wallet_id': gold_wal.id,
+                    'order_id': [(4, ord.id)],
+                })
+
+                if total_amt:
+                # финальная сверка – только если total_amt != 0 и payers найдены
+                    Recon.create({
+                        'date': rec.date,
+                        'partner_id': ctr.id,
+                        'currency': 'rub',
+                        'sum': amt,
+                        'sum_rub': amt,
+                        'sender_id': [(4, pay.id)],
+                        'receiver_id': [(4, gold_pay.id)],
+                        'wallet_id': gold_wal.id,
+                        'order_id': [(4, ord.id)],
+                    })
+
+            # === Финальный ордер Золото → Вита ===
+            ord_fin = Order.create({
+                'date': rec.date,
+                'partner_1_id': gold_ctr.id,
+                'payer_1_id': gold_pay.id,
+                'partner_2_id': vita_ctr.id,
+                'payer_2_id': vita_pay.id,
+                'amount': total_amt,
+                'currency': 'rub',
+                'type': 'transfer',
+                'comment': 'Вход в сделку Золото',
+            })
+            rec.order_ids |= ord_fin
+
+            # Контейнер денег – долг для Вита
+            Money.create({
+                'date': rec.date,
+                'partner_id': vita_ctr.id,
+                'currency': 'rub',
+                'amount': -total_amt,
+                'sum_rub': -total_amt,
+                'state': 'debt',
+                'wallet_id': gold_wal.id,
+                'order_id': [(4, ord_fin.id)],
+            })
+
+            # Сверка для Вита
+            Recon.create({
+                'date': rec.date,
+                'partner_id': vita_ctr.id,
+                'currency': 'rub',
+                'sum': -total_amt,
+                'sum_rub': -total_amt,
+                'sender_id': [(4, gold_pay.id)],
+                'receiver_id': [(4, vita_pay.id)],
+                'wallet_id': gold_wal.id,
+                'order_id': [(4, ord_fin.id)],
+            })
+
+    def _action_delete(self):
+        for rec in self:
+            for order in rec.order_ids:
+                order.money_ids.unlink()
+                order.sverka_ids.unlink()
+                order.unlink()
+            rec.order_ids = [(5, 0, 0)]
+            rec.mark_for_deletion = False

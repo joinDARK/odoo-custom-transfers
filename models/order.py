@@ -230,56 +230,49 @@ class Order(models.Model, AmanatBaseModel):
         'conversion_ids.conversion_currency',
         'amount', 'rate'
     )
+    
     def _compute_conversion_fields(self):
-        # набор валют для деления
         base_div = {'rub', 'rub_cashe', 'thb', 'thb_cashe', 'aed', 'aed_cashe'}
         target_div = {'usd', 'usd_cashe', 'euro', 'euro_cashe', 'usdt', 'cny', 'cny_cashe'}
-
         for rec in self:
-            # берём первую «кросс»-конвертацию, если есть
-            cross = rec.conversion_ids.filtered(lambda c: c.cross_envelope)
+            # первая кроссовая конверсия
+            cross = rec.conversion_ids.filtered('cross_envelope')
             if cross:
                 c = cross[0]
                 rec.cross_from = True
                 rec.cross_rate = c.cross_rate
                 rec.currency_from_conv = c.currency
                 rec.currency_to_copy = c.conversion_currency
-
-                # расчёт «Подсчет крос»
+                # расчёт cross_calc
                 if c.currency in base_div and c.conversion_currency in target_div:
                     rec.cross_calc = rec.amount / (c.cross_rate or 1.0)
                 else:
-                    rec.cross_calc = rec.amount * c.cross_rate
-
-                # расчёт «Сумма после конвертации» для кросс
-                # если нужно делить по основному курсу
+                    rec.cross_calc = rec.amount * (c.cross_rate or 1.0)
+                # расчёт amount_after_conv
                 if c.conversion_currency in base_div and c.currency in target_div:
                     rec.amount_after_conv = rec.cross_calc / (c.rate or 1.0)
                 else:
-                    rec.amount_after_conv = rec.cross_calc * c.rate
-
+                    rec.amount_after_conv = rec.cross_calc * (c.rate or 1.0)
             elif rec.conversion_ids:
-                # обычная (не-кросс) конвертация — берём первую запись
+                # обычная первая конверсия
                 c2 = rec.conversion_ids[0]
                 rec.cross_from = False
                 rec.cross_rate = 0.0
                 rec.currency_from_conv = c2.currency
                 rec.currency_to_copy = c2.conversion_currency
                 rec.cross_calc = rec.amount
-
-                # «Сумма после конвертации» без кросс
                 if c2.currency in base_div and c2.conversion_currency in target_div:
                     rec.amount_after_conv = rec.amount / (c2.rate or 1.0)
                 else:
-                    rec.amount_after_conv = rec.amount * c2.rate
+                    rec.amount_after_conv = rec.amount * (c2.rate or 1.0)
             else:
-                # нет конвертации
                 rec.cross_from = False
                 rec.cross_rate = 0.0
                 rec.currency_from_conv = False
                 rec.currency_to_copy = False
                 rec.cross_calc = 0.0
                 rec.amount_after_conv = 0.0
+
 
     @api.depends('amount', 'operation_percent', 'our_percent')
     def _compute_financials(self):

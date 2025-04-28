@@ -45,7 +45,22 @@ class PartnerGold(models.Model):
     bank_rate = fields.Float(string='Курс банка', tracking=True)
 
     # 8. Цена закупки, руб/гр – вводится вручную
-    purchase_price_rub_per_gram = fields.Float(string='Цена закупки, руб/гр', tracking=True)
+    purchase_price_rub_per_gram = fields.Float(
+        string='Цена закупки, руб/гр',
+        compute='_compute_purchase_price_rub_per_gram',
+        store=True,
+        tracking=True
+    )
+
+    @api.depends('price_per_oz', 'bank_rate', 'discount_premium')
+    def _compute_purchase_price_rub_per_gram(self):
+        for rec in self:
+            if rec.price_per_oz and rec.bank_rate:
+                rec.purchase_price_rub_per_gram = (
+                    rec.price_per_oz * (rec.bank_rate + (rec.bank_rate * rec.discount_premium))
+                ) / 31.1035
+            else:
+                rec.purchase_price_rub_per_gram = 0
 
     # 10. Чистый вес, гр
     pure_weight = fields.Float(string='Чистый вес, гр', tracking=True)
@@ -321,7 +336,7 @@ class PartnerGold(models.Model):
             rec.final_rate = rec.amount_rub / rec.overall_amount if rec.overall_amount else 0
 
     # 38. Ордеры – связь с ордерами (многие ко многим)
-    order_ids = fields.Many2many(
+    order_ids = fields.Many2many( # FIXME: возможно нужно будет исправить 
         'amanat.order',
         string='Ордеры',
         tracking=True
@@ -361,6 +376,18 @@ class PartnerGold(models.Model):
 
     # 45. Кошелек для перевода – связь с кошельками
     wallet_id = fields.Many2one('amanat.wallet', string='Кошелек для перевода', tracking=True)
+
+    @api.model
+    def create(self, vals):
+        # Найдём или создадим кошелёк «Неразмеченные»
+        Wallet = self.env['amanat.wallet']
+        unmarked = Wallet.search([('name', '=', 'Неразмеченные')], limit=1)
+        if not unmarked:
+            unmarked = Wallet.create({'name': 'Неразмеченные'})
+        # Если в vals не задан кошелёк отправителя/получателя — подставляем
+        if not vals.get('wallet_id'):
+            vals['wallet_id'] = unmarked.id
+        return super(PartnerGold, self).create(vals)
 
     # 46. Чистый вес, гр Rollup (Lookup из Золото сделка)
     lookup_pure_weight = fields.Float(
