@@ -131,7 +131,7 @@ class GoldDeal(models.Model):
     # 17. Дополнительные расходы
     extra_expenses = fields.Float(string='Дополнительные расходы', tracking=True)
 
-    # 18. Курс итог – вычисляется как Общая сумма покупки / Общая сумма
+    # 18. Курс итог – вычисляется как Общая сумма покупки / Общая сумм
     final_rate = fields.Float(
         string='Курс итог',
         compute='_compute_final_rate',
