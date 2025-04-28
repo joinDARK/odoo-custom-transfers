@@ -63,5 +63,4 @@ class Contragent(models.Model, AmanatBaseModel):
             # Фильтруем связанные записи, чтобы исключить несуществующие или пустые ИНН
             valid_payers = record.payer_ids.filtered(lambda r: r.exists() and r.inn)
             record.payer_inn = ", ".join(valid_payers.mapped('inn')) if valid_payers else ''
-
-   
+    

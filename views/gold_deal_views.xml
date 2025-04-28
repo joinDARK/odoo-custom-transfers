@@ -34,7 +34,7 @@
         <field width="200" name="invoice_amount"/>
         <field width="200" name="difference"/>
         <field width="200" name="bank"/>
-        <field width="200" name="order_ids"/>
+        <field width="200" name="order_ids" widget="many2many_tags"/>
         <field width="200" name="buyer_id"/>
         <field name="hash_flag" width="80"/>
       </list>
@@ -52,12 +52,33 @@
             <field name="name"/>
             <field name="status"/>
             <field name="date"/>
-            <field name="comment"/>
+            <field name="hash_flag"/>
+          </group>
+          <group>
+            <field name="pure_weight_sum"/>
+            <field name="sale_amount_aed"/>
+            <field name="sale_amount_usdt"/>
+            <field name="sale_amount_usdt"/>
+            <field name="expenses"/>
+            <field name="purchase_total_rub"/>
+            <field name="total_amount"/>
+            <field name="extra_expenses"/>
+            <field name="final_rate"/>
+            <field name="service"/>
+            <field name="bank_sum"/>
+            <field name="bank_kb"/>
+            <field name="courier"/>
           </group>
           <group>
             <field name="buyer_id"/>
             <field name="invoice_amount"/>
             <field name="difference" readonly="1"/>
+            <field name="order_ids" widget="many2many_tags"/>
+          </group>
+          <group>
+            <field name="conduct_in"/>
+            <field name="conduct_out"/>
+            <field name="mark_for_deletion"/>
           </group>
           <notebook>
             <page string="Партнеры">

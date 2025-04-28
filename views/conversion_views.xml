@@ -32,16 +32,16 @@
             <field name="contragent_count"/>
           </group>
           <group>
-            <field name="create_Conversion"/>
-            <field name="delete_Conversion"/>
+            <field name="create_conversion"/>
+            <field name="delete_conversion"/>
           </group>
           <!-- Блок «Роялти» -->
           <header>
               <h2>Роялти</h2>
           </header>
           <group colspan="2">
-              <field name="has_royalti"/>
-              <field name="make_royalti"/>
+              <field name="has_royalty"/>
+              <field name="make_royalty"/>
 
               <!-- Прячем поля роялти, если галка has_royalti не стоит -->
               <field name="royalty_recipient_1" invisible="not has_royalti"/>

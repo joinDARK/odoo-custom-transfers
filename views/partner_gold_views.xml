@@ -85,6 +85,9 @@
             <field name="final_rate" readonly="1"/>
           </group>
           <group>
+            <field name="order_ids" widget="many2many_tags"/>
+          </group>
+          <group>
             <field name="has_royalty"/>
             <field name="royalty_recipient_id"/>
             <field name="first_percent"/>
