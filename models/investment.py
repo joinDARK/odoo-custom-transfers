@@ -73,7 +73,7 @@ class Investment(models.Model, AmanatBaseModel):
     royalty_recipient_3 = fields.Many2one('amanat.contragent', string='Получатель роялти 3', tracking=True)
     royalty_recipient_4 = fields.Many2one('amanat.contragent', string='Получатель роялти 4', tracking=True)
     royalty_recipient_5 = fields.Many2one('amanat.contragent', string='Получатель роялти 5', tracking=True)
-    royalty_recipient_6 = fields.Many2one('amanat.contragent', string='Получатель роялти 6', tracking=True)
+    royalty_recipient_6 = fields.Many2one('amanat.contragent', string='Получтель роялти 6', tracking=True)
     royalty_recipient_7 = fields.Many2one('amanat.contragent', string='Получатель роялти 7', tracking=True)
     royalty_recipient_8 = fields.Many2one('amanat.contragent', string='Получатель роялти 8', tracking=True)
     royalty_recipient_9 = fields.Many2one('amanat.contragent', string='Получатель роялти 9', tracking=True)
