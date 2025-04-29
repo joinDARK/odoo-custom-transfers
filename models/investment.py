@@ -1,11 +1,39 @@
 from dateutil.relativedelta import relativedelta
-from datetime import date, timedelta
+from datetime import datetime, timedelta, date
 from odoo import models, fields, api, _
 from .base_model import AmanatBaseModel
 from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger(__name__)
+
+
+def _parse_date_from_string(date_str):
+    try:
+        d, m, y = map(int, date_str.split('.'))
+        return date(y, m, d)
+    except Exception:
+        return None
+
+def _days_between(d1, d2):
+    return (d2 - d1).days
+
+def _get_period_days(period, start_date):
+    if period == 'calendar_day':
+        return 1
+    if period == 'calendar_month':
+        # число дней в месяце
+        nxt = start_date + relativedelta(months=1)
+        return (nxt - start_date).days
+    if period == 'calendar_year':
+        nxt = start_date + relativedelta(years=1)
+        return (nxt - start_date).days
+    # для «work_day» будем считать 1 день, реальная логика — внутри цикла
+    return 1
+
+def _get_month_days(d):
+    nxt = d + relativedelta(months=1)
+    return (date(nxt.year, nxt.month, 1) - date(d.year, d.month, 1)).day
 
 class Investment(models.Model, AmanatBaseModel):
     _name = 'amanat.investment'
@@ -63,7 +91,7 @@ class Investment(models.Model, AmanatBaseModel):
     post = fields.Boolean(string='Провести', tracking=True)
     repost = fields.Boolean(string='Перепровести', tracking=True)
     close_investment = fields.Boolean(string='Закрытие инвестиций', tracking=True)
-    accrue = fields.Boolean(string='Начислить', tracking=True)
+    accrue = fields.Boolean(string='Начислить', tracking=True)git add 
 
     # Роялти
     has_royalty = fields.Boolean(string='Есть роялти?', tracking=True)
@@ -149,6 +177,165 @@ class Investment(models.Model, AmanatBaseModel):
             rec.royalty_amount_8 = (rec.amount or 0.0) * (rec.percent_8 or 0.0) / 100.0
             rec.royalty_amount_9 = (rec.amount or 0.0) * (rec.percent_9 or 0.0) / 100.0
 
+    @api.model
+    def _cron_accrue_interest(self):
+        """Ежедневная задача — начисление процентов и роялти."""
+        today = fields.Date.context_today(self)
+        # приводим к midnight
+        today_dt = datetime.combine(fields.Date.from_string(today), datetime.min.time())
+
+        invs = self.search([('status', '=', 'open')])
+        Money = self.env['amanat.money']
+        Writeoff = self.env['amanat.writeoff']
+
+        for inv in invs:
+            # --- 1. Определяем дату старта ---
+            start = inv.date
+            if isinstance(start, str):
+                parsed = _parse_date_from_string(start)
+                start = parsed or fields.Date.from_string(start)
+            # первый день начисления
+            first_interest = fields.Date.from_string(inv.orders and inv.orders[0].date or inv.date) + timedelta(days=1)
+            if first_interest > fields.Date.from_string(today):
+                continue
+
+            # --- 2. Находим контейнеры interest/royalty/principal ---
+            order = inv.orders and inv.orders[0]
+            if not order:
+                continue
+
+            # principal
+            principal_cont = Money.search([
+                ('order_id', 'in', order.id),
+                ('percent', '=', False),
+                ('royalty', '=', False),
+                ('state', '=', 'positive'),
+                ('wallet_id.name', '=', 'Инвестиции'),
+            ], limit=1)
+            if not principal_cont:
+                continue
+
+            interest_cont_send = Money.search([
+                ('order_id', 'in', order.id), ('percent', '=', True),
+                ('state', '=', 'debt'),
+            ], limit=1)
+            interest_cont_recv = Money.search([
+                ('order_id', 'in', order.id), ('percent', '=', True),
+                ('state', '=', 'positive'),
+            ], limit=1)
+            if not (interest_cont_send and interest_cont_recv):
+                continue
+
+            royalty_conts = Money.search([
+                ('order_id', 'in', order.id),
+                ('royalty', '=', True),
+                ('wallet_id.name', '=', 'Инвестиции'),
+            ])
+
+            # --- 3. Удаляем старые writeoff ---
+            to_unlink = (interest_cont_send.writeoff_ids |
+                         interest_cont_recv.writeoff_ids |
+                         royalty_conts.writeoff_ids)
+            if to_unlink:
+                _logger.info("Investment %s: удаляем %d старых списаний", inv.id, len(to_unlink))
+                to_unlink.unlink()
+
+            # --- 4. Генерируем новые списания по каждому дню ---
+            period = inv.period
+            days_total = _days_between(first_interest, fields.Date.from_string(today)) + 1
+            day_cursor = first_interest
+            writeoffs = []
+
+            for i in range(days_total):
+                dt = datetime.combine(fields.Date.from_string(day_cursor), datetime.min.time()) + timedelta(hours=20)
+                # пересчет principal с учётом досрочных списаний
+                principal = principal_cont.remains
+
+                # 4.1. начисляем interest
+                if inv.percent and principal > 0:
+                    # daily rate
+                    if period == 'calendar_month':
+                        md = _get_month_days(dt.date())
+                        rate = inv.percent/100.0/ md
+                    elif period == 'calendar_year':
+                        pd = _get_period_days(period, start)
+                        rate = inv.percent/100.0/ pd
+                    else:
+                        rate = inv.percent/100.0
+
+                    daily_int = principal * rate
+                    if daily_int:
+                        writeoffs.append({
+                            'date': dt.date(),
+                            'amount': -daily_int,
+                            'money_id': [(4, interest_cont_send.id)],
+                            'investment_ids': [(4, inv.id)],
+                        })
+                        writeoffs.append({
+                            'date': dt.date(),
+                            'amount': daily_int,
+                            'money_id': [(4, interest_cont_recv.id)],
+                            'investment_ids': [(4, inv.id)],
+                        })
+
+                # 4.2. начисляем royalty
+                if inv.has_royalty:
+                    for n in range(1,10):
+                        pct = getattr(inv, f'percent_{n}')
+                        recv = getattr(inv, f'royalty_recipient_{n}')
+                        if recv and pct and principal > 0:
+                            rc = royalty_conts.filtered(lambda m: m.partner_id == recv)
+                            if rc:
+                                daily_roy = principal * (pct/100.0)
+                                writeoffs.append({
+                                    'date': dt.date(),
+                                    'amount': daily_roy,
+                                    'money_id': [(4, rc.id)],
+                                    'investment_ids': [(4, inv.id)],
+                                })
+
+                day_cursor += timedelta(days=1)
+
+            # 5. Пакетно создаём
+            for vals in writeoffs:
+                Writeoff.create(vals)
+
+            _logger.info("Investment %s: создано %d списаний", inv.id, len(writeoffs))
+
+        return True
+
+    def action_create_writeoffs(self):
+        Money = self.env['amanat.money']
+        Writeoff = self.env['amanat.writeoff']
+
+        for inv in self:
+            # 1. Удаляем старые списания
+            old_writeoffs = inv.write_offs
+            if old_writeoffs:
+                old_writeoffs.unlink()
+
+            # 2. Создаем списания помесячно
+            start_date = inv.date
+            today = fields.Date.context_today(self)
+
+            cur_date = start_date.replace(day=1)
+
+            while cur_date <= today:
+                for ord in inv.orders:
+                    for money in ord.money_ids.filtered(lambda m: m.percent or m.royalty):
+                        monthly_amount = money.amount  # !!! здесь можно поставить свою формулу
+                        
+                        writeoff_vals = {
+                            'date': cur_date,
+                            'amount': monthly_amount,
+                            'money_id': [(6, 0, [money.id])],
+                            'investment_ids': [(4, inv.id)],
+                        }
+                        Writeoff.create(writeoff_vals)
+                # Переходим к следующему месяцу
+                cur_date += relativedelta(months=1)
+
+
     def action_sync_airtable(self):
         Money = self.env['amanat.money']
         Order = self.env['amanat.order']
@@ -223,9 +410,22 @@ class Investment(models.Model, AmanatBaseModel):
                     'order_id': [(4, new_ord.id)],
                 }
                 data['sum'] = amt
-                data[f'sum_{mapping.get(inv.currency)}'] = amt
-                Money.create(data)
+                field = f"sum_{mapping[inv.currency]}"
+                data[field] = amt
 
+                bal_field = f"remains_{mapping[inv.currency]}"
+                data[bal_field] = amt
+                data['remains'] = amt
+
+                # --- ДОБАВИТЬ правильную валюту ---
+                if mapping.get(inv.currency):
+                    field_name = f"sum_{mapping.get(inv.currency)}"
+                    data[field_name] = amt
+
+                money_obj = Money.create(data)
+            
+                return money_obj
+                
             # Долг и плюс
             mk(inv.sender, -inv.amount, debt=True)
             mk(inv.receiver, inv.amount)
@@ -247,6 +447,7 @@ class Investment(models.Model, AmanatBaseModel):
                         amt = (inv.amount or 0.0) * pct / 100.0
                         mk(recv, amt, roy=True)
 
+            inv.action_create_writeoffs()
             # Создаем сверки по месяцам
             cur = inv.date.replace(day=1)
             today = fields.Date.context_today(self)
@@ -266,9 +467,13 @@ class Investment(models.Model, AmanatBaseModel):
                         'partner_id': cont.partner_id.id,
                         'currency': mapping.get(inv.currency),
                         'sum': total,
+                        f"sum_{mapping.get(inv.currency)}": total,
                         'wallet_id': wallet.id,
                         'order_id': [(4, new_ord.id)],
                     }
+
+                    if mapping.get(inv.currency):
+                        recon_vals[f"sum_{mapping.get(inv.currency)}"] = total
                     # в нужное поле суммы по валюте
                     recon_vals[f"sum_{mapping.get(inv.currency)}"] = total
 
@@ -303,20 +508,121 @@ class Investment(models.Model, AmanatBaseModel):
             inv.orders=[(5,0,0)]; inv.status='archive'; inv.to_delete=False
         return True
 
+    def action_close_investment(self):
+        """Закрытие инвестиции: создание списаний по первому ордеру и долговых контейнеров."""
+        Writeoff = self.env['amanat.writeoff']
+        Money = self.env['amanat.money']
+
+        for inv in self:
+            # 1) Пропускаем уже закрытые
+            if inv.status == 'close':
+                _logger.info("Инвестиция %s уже закрыта, пропускаем", inv.id)
+                continue
+
+            # 2) Меняем статус и дату закрытия
+            inv.status = 'close'
+            inv.date_close = fields.Date.context_today(self)
+
+            # 3) Берём только первый связанный ордер
+            if not inv.orders:
+                _logger.warning("Инвестиция %s не имеет ордеров для закрытия", inv.id)
+                continue
+            linked_order = inv.orders[0]
+
+            # 4) Для каждого контейнера денег в ордере
+            for money in linked_order.money_ids:
+                initial_sum = money.amount or 0.0
+                current_remains = money.remains or 0.0
+
+                # только если изначальная сумма ≠ 0
+                if initial_sum != 0.0:
+                    # а) создаём основное списание
+                    wf_vals = {
+                        'date': inv.date_close or inv.date,
+                        'amount': initial_sum,
+                        'money_id': [(4, money.id)],
+                        'investment_ids': [(4, inv.id)],
+                    }
+                    Writeoff.create(wf_vals)
+                    _logger.info("Создали списание %s для контейнера %s", initial_sum, money.id)
+
+                    # б) рассчитываем остаток после списания
+                    new_remains = current_remains - initial_sum
+
+                    # в) если ушли в минус — создаём долговой контейнер и добор списания
+                    if new_remains < 0:
+                        debt_amount = new_remains  # отрицательное
+                        _logger.info("Контейнер %s в минусе (%s), создаём долг", money.id, new_remains)
+
+                        # создаём долг
+                        debt_container = Money.create({
+                            'date': inv.date_close or inv.date,
+                            'state': 'debt',
+                            'partner_id': money.partner_id.id,
+                            'currency': money.currency,
+                            'amount': debt_amount,
+                            'sum': debt_amount,
+                            'wallet_id': money.wallet_id.id,
+                            'order_id': [(4, linked_order.id)],
+                        })
+                        _logger.info("Долговой контейнер %s создан, сумма %s", debt_container.id, debt_amount)
+
+                        # дополнительное списание, чтобы обнулить исходный контейнер
+                        wf2_vals = {
+                            'date': inv.date_close or inv.date,
+                            'amount': debt_amount,
+                            'money_id': [(4, money.id)],
+                            'investment_ids': [(4, inv.id)],
+                        }
+                        Writeoff.create(wf2_vals)
+                        _logger.info("Дополнительное списание %s для контейнера %s", debt_amount, money.id)
+
+            # сбрасываем флаг
+            inv.close_investment = False
+
+        return True
+
     @api.model
     def create(self, vals):
-        rec=super().create(vals)
-        if rec.create_action: rec.action_sync_airtable(); rec.create_action=False
-        if rec.to_delete: rec.action_delete()
-        if rec.royalty_post: rec.action_sync_airtable(); rec.royalty_post=False
+        rec = super().create(vals)
+        if rec.create_action:
+            rec.action_sync_airtable()
+            rec.create_action = False
+        if rec.to_delete:
+            rec.action_delete()
+        if rec.royalty_post:
+            rec.action_sync_airtable()
+            rec.royalty_post = False
+        if rec.close_investment:
+            rec.action_close_investment()
+        if rec.accrue:
+            rec._cron_accrue_interest()
+            rec.accrue = False
         return rec
 
     def write(self, vals):
-        res=super().write(vals)
+        res = super().write(vals)
         if vals.get('create_action'):
-            for r in self.filtered('create_action'): r.action_sync_airtable(); r.create_action=False
+            for r in self.filtered('create_action'):
+                r.action_sync_airtable()
+                r.action_create_writeoffs()  # <<=== ДОБАВИЛИ
+                r.create_action = False
         if vals.get('to_delete'):
-            for r in self.filtered('to_delete'): r.action_delete()
+            for r in self.filtered('to_delete'):
+                r.action_delete()
         if vals.get('royalty_post'):
-            for r in self.filtered('royalty_post'): r.action_sync_airtable(); r.royalty_post=False
+            for r in self.filtered('royalty_post'):
+                r.action_sync_airtable()
+                r.action_create_writeoffs()  # <<=== ДОБАВИЛИ
+                r.royalty_post = False
+        if vals.get('close_investment'):
+            for r in self.filtered('close_investment'):
+                r.action_close_investment()
+                r.close_investment = False
+        if vals.get('accrue'):
+            for r in self.filtered('accrue'):
+                r._cron_accrue_interest()
+                r.accrue = False
         return res
+    
+

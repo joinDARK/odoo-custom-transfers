@@ -338,6 +338,7 @@ class PartnerGold(models.Model):
     # 38. Ордеры – связь с ордерами (многие ко многим)
     order_ids = fields.Many2many( # FIXME: возможно нужно будет исправить 
         'amanat.order',
+        
         string='Ордеры',
         tracking=True
     )

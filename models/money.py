@@ -64,91 +64,91 @@ class Money(models.Model, AmanatBaseModel):
         string='Остаток',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store = True
     )
     remains_rub = fields.Float(
         string='Остаток RUB',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_rub_cashe = fields.Float(
         string='Остаток RUB КЭШ',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_usd = fields.Float(
         string='Остаток USD',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_usd_cashe = fields.Float(
         string='Остаток USD КЭШ',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_usdt = fields.Float(
         string='Остаток USDT',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_cny = fields.Float(
         string='Остаток CNY',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_cny_cashe = fields.Float(
         string='Остаток CNY КЭШ',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_euro = fields.Float(
         string='Остаток EURO',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_euro_cashe = fields.Float(
         string='Остаток EURO КЭШ',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_aed = fields.Float(
         string='Остаток AED',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_aed_cashe = fields.Float(
         string='Остаток AED КЭШ',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_thb = fields.Float(
         string='Остаток THB',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     remains_thb_cashe = fields.Float(
         string='Остаток THB КЭШ',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
     sum_remains = fields.Float(
         string='Сумма списания',
         tracking=True,
         compute='_compute_remains_fields',
-        store=True
+        # store=True
     )
 
     # Комментарий

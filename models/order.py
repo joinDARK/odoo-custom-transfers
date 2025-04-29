@@ -282,3 +282,5 @@ class Order(models.Model, AmanatBaseModel):
             rec.rko_2 = rec.amount * rec.our_percent
             rec.amount_2 = rec.amount - rec.rko if rec.operation_percent < 0 else rec.amount - rec.rko_2
             rec.total = rec.amount - rec.rko
+
+    

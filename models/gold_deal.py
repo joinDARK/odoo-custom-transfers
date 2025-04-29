@@ -21,6 +21,7 @@ class GoldDeal(models.Model):
     status = fields.Selection(
         [('open', 'Открыта'), ('closed', 'Закрыта'), ('archived', 'Архив')],
         string='Статус',
+        default='open',
         tracking=True
     )
 
@@ -267,12 +268,49 @@ class GoldDeal(models.Model):
         for rec in self:
             rec.difference = rec.purchase_total_rub - rec.invoice_amount
 
+    @staticmethod
+    def _prepare_currency_fields(currency_name: str, amount: float):
+        """
+        Полная матрица полей-сумм по валютам,
+        возвращаем словарь для передачи ** в create().
+        """
+        data = {
+            'sum_rub': 0, 'sum_rub_cash': 0,
+            'sum_usd': 0, 'sum_usd_cash': 0,
+            'sum_usdt': 0,
+            'sum_cny': 0, 'sum_cny_cash': 0,
+            'sum_eur': 0, 'sum_eur_cash': 0,
+            'sum_aed': 0, 'sum_aed_cash': 0,
+            'sum_thb': 0, 'sum_thb_cash': 0,
+        }
+        mapping = {
+            'RUB': 'sum_rub',
+            'RUB_CASH': 'sum_rub_cash',
+            'USD': 'sum_usd',
+            'USD_CASH': 'sum_usd_cash',
+            'USDT': 'sum_usdt',
+            'CNY': 'sum_cny',
+            'CNY_CASH': 'sum_cny_cash',
+            'EUR': 'sum_eur',
+            'EUR_CASH': 'sum_eur_cash',
+            'AED': 'sum_aed',
+            'AED_CASH': 'sum_aed_cash',
+            'THB': 'sum_thb',
+            'THB_CASH': 'sum_thb_cash',
+        }
+        key = mapping.get(currency_name.upper())
+        if key:
+            data[key] = amount
+        return data
+
     # "Золото вход" контейнеры
     @api.model
     def create(self, vals):
         rec = super(GoldDeal, self).create(vals)
         if vals.get('conduct_in') and rec.status == 'open':
             rec._action_conduct_in()
+        if vals.get('conduct_out'):
+            rec._action_conduct_out()
         if vals.get('mark_for_deletion'):
             rec._action_delete()
             rec.status = 'archived'
@@ -280,13 +318,21 @@ class GoldDeal(models.Model):
 
     def write(self, vals):
         res = super(GoldDeal, self).write(vals)
+
+        # обрабатываем каждую записанную сделку
         if vals.get('conduct_in'):
-            self._action_conduct_in()
+            for rec in self:
+                rec._action_conduct_in()
+
+        if vals.get('conduct_out'):
+            for rec in self:
+                rec._action_conduct_out()
+
         if vals.get('mark_for_deletion'):
             for rec in self:
-                print("Триггер сработал")
                 rec._action_delete()
                 rec.status = 'archived'
+                
         return res
 
     def _action_conduct_in(self):
@@ -425,6 +471,122 @@ class GoldDeal(models.Model):
                 'wallet_id': gold_wal.id,
                 'order_id': [(4, ord_fin.id)],
             })
+
+            rec.conduct_in = False
+
+    def _action_conduct_out(self):
+        """
+        Перенос автоматизации «Золото → Вита» из Airtable.
+        Создаёт долговые/положительные контейнеры и сверку
+        по каждому ордеру, где Контрагент 2 = Вита.
+        """
+        Contr = self.env['amanat.contragent']
+        Order = self.env['amanat.order']
+        Money = self.env['amanat.money']
+        Recon = self.env['amanat.reconciliation']
+        Wallet = self.env['amanat.wallet']
+        Extract = self.env['amanat.extract_delivery']
+
+        # справочные записи
+        vita_ctr = Contr.search([('name', '=', 'Вита')], limit=1)
+        if not vita_ctr:
+            vita_ctr = Contr.create({'name': 'Вита'})
+
+        rub_wallet = Wallet.search([('name', '=', 'Золото')], limit=1)
+        if not rub_wallet:
+            raise UserError('Кошелёк "Золото" не найден, создайте его перед обработкой выхода.')
+
+        for rec in self:
+            # антидюп: если vita_posting уже true – выходим
+            if rec.vita_posting:
+                _logger.info('Сделка %s уже проведена (выход)', rec.name)
+                continue
+
+            # --- платежка ---
+            if not rec.extract_delivery_ids:
+                raise UserError('У сделки нет привязанной платежки.')
+            statement = rec.extract_delivery_ids[0]  # берём первую
+            if statement.recipient_id != vita_ctr:
+                _logger.info('Получатель платежки не Вита – выход не требуется.')
+                continue
+            if not statement.date:
+                raise UserError('В платежке не указана дата.')
+
+            amount = statement.amount
+            if not amount:
+                raise UserError('В платежке отсутствует сумма.')
+
+            # --- отбор ордеров Золото → Вита ---
+            domain = [
+                ('id', 'in', rec.order_ids.ids),
+                ('partner_2_id', '=', vita_ctr.id)
+            ]
+            rel_orders = Order.search(domain)
+            _logger.info('Сделка %s: найдено %s связанных ордеров для выхода.',
+                         rec.name, len(rel_orders))
+
+            for ord in rel_orders:
+                contr1 = ord.partner_1_id
+                if not contr1:
+                    _logger.warning('Ордер %s без Контрагента 1 – пропуск', ord.id)
+                    continue
+                wallet_1 = ord.wallet_1_id or rub_wallet  # поправьте, если поле называется иначе
+
+                # комментарий
+                ord.comment = 'Перевод денег на Виту по сделке Золото'
+
+                # --- Money контейнеры ---
+                Money.create({
+                    'date': statement.date,
+                    'partner_id': contr1.id,
+                    'currency': 'rub',
+                    'amount': -amount,
+                    'sum_rub': -amount,
+                    'state': 'debt',
+                    'wallet_id': wallet_1.id,
+                    'order_id': [(4, ord.id)],
+                })
+                Money.create({
+                    'date': statement.date,
+                    'partner_id': vita_ctr.id,
+                    'currency': 'rub',
+                    'amount': amount,
+                    'sum_rub': amount,
+                    'state': 'positive',
+                    'wallet_id': wallet_1.id,
+                    'order_id': [(4, ord.id)],
+                })
+
+                # --- Сверка ---
+                payer1 = ord.payer_1_id
+                payer2 = ord.payer_2_id
+                Recon.create({
+                    'date': statement.date,
+                    'partner_id': contr1.id,
+                    'currency': 'rub',
+                    'sum': -amount,
+                    **self._prepare_currency_fields('RUB', -amount),
+                    'sender_id': [(4, payer1.id)] if payer1 else False,
+                    'receiver_id': [(4, payer2.id)] if payer2 else False,
+                    'wallet_id': wallet_1.id,
+                    'order_id': [(4, ord.id)],
+                })
+                Recon.create({
+                    'date': statement.date,
+                    'partner_id': vita_ctr.id,
+                    'currency': 'rub',
+                    'sum': amount,
+                    **self._prepare_currency_fields('RUB', amount),
+                    'sender_id': [(4, payer1.id)] if payer1 else False,
+                    'receiver_id': [(4, payer2.id)] if payer2 else False,
+                    'wallet_id': wallet_1.id,
+                    'order_id': [(4, ord.id)],
+                })
+
+            # по окончании – сбрасываем флаг, помечаем, что проведено
+            rec.conduct_out = False
+            rec.vita_posting = True
+            _logger.info('Сделка %s: выход успешно проведён.', rec.name)
 
     def _action_delete(self):
         for rec in self:

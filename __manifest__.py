@@ -75,6 +75,7 @@
         'data/conversion_sequence.xml',
         'data/reserve_sequence.xml',
         'data/investment_sequence.xml',
+        'data/cron_accrue_interest.xml',
     ],
 
     'assets': {
