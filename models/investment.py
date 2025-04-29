@@ -91,7 +91,7 @@ class Investment(models.Model, AmanatBaseModel):
     post = fields.Boolean(string='Провести', tracking=True)
     repost = fields.Boolean(string='Перепровести', tracking=True)
     close_investment = fields.Boolean(string='Закрытие инвестиций', tracking=True)
-    accrue = fields.Boolean(string='Начислить', tracking=True)git add 
+    accrue = fields.Boolean(string='Начислить', tracking=True) 
 
     # Роялти
     has_royalty = fields.Boolean(string='Есть роялти?', tracking=True)
