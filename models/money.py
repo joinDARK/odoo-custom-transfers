@@ -24,25 +24,25 @@ class Money(models.Model, AmanatBaseModel):
     )
     
     # Списания, связанные по money_id
-    writeoff_ids = fields.Many2many(
+    writeoff_ids = fields.One2many(
         'amanat.writeoff',
-        'amanat_money_writeoff_rel', 
-        'writeoff_id',
-        'money_id', 
-        string="Списания",
-        tracking=True
+        'money_id',
+        string='Списания',
+        tracking=True,
     )
 
     amount = fields.Float(string='Сумма', tracking=True)
-    order_id = fields.Many2many(
-        'amanat.order', 
-        'amanat_order_money_rel', 
-        'order_id', 
-        'money_id',
-        string='Заявка', 
-        tracking=True
+    order_id = fields.Many2one(
+        'amanat.order',
+        string='Заявка',
+        tracking=True,
+        ondelete='cascade',
     )
-    state = fields.Selection([('debt', 'Долг'), ('positive', 'Положительный')], string='Состояние', tracking=True)
+    state = fields.Selection([
+        ('debt',      'Долг'),
+        ('positive', 'Положительный'),
+        ('empty',    'Пусто'),        # <-- новый вариант
+    ], string='Состояние', default='positive')
 
     sum = fields.Float(string='Сумма', tracking=True)
     sum_rub = fields.Float(string='Сумма RUB', tracking=True)

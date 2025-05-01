@@ -31,10 +31,8 @@ class Order(models.Model, AmanatBaseModel):
         string="Перевод",
         tracking=True,
     )
-    money_ids = fields.Many2many(
-        'amanat.money', 
-        'amanat_order_money_rel', 
-        'money_id',
+    money_ids = fields.One2many(
+        'amanat.money',
         'order_id',
         string="Деньги",
         tracking=True,

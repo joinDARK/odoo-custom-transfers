@@ -76,6 +76,7 @@
         'data/reserve_sequence.xml',
         'data/investment_sequence.xml',
         'data/cron_accrue_interest.xml',
+        'data/amanat_writeoff_sequence.xml',
     ],
 
     'assets': {

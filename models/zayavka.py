@@ -28,15 +28,26 @@ class Zayavka(models.Model, AmanatBaseModel):
             ('17_money_received', '17. деньги у получателя'),
             ('5_invoice_issued', '5. выставлен инвойс на плательщика'),
             ('3_payer_approval', '3. согласование плательщика'),
-            ('waiting_currency_export', 'ждём валюту (только для Экспорта)')
+            ('waiting_currency_export', 'ждём валюту (только для Экспорта)'),
+            ('9', '9. передано на оплату'),
+            ('17', '17`. ждём поступление валюты получателю'),
+            ('6', '6. зафиксирован курс'),
+            ('get_rub', 'получили рубли'),
+            ('recevier_rub', 'рубли у получателя (только для Экспорта)'),
+            ('13', '13. запрошен свифт 199'),
+            ('take_currency', 'получили валюту (только для Экспорта)'),
+            ('7', '7. Подписано поручение'),
+            ('send_payment_rub', 'передали на оплату рубли (только для Экспорта)'),
+            ('wait_send_payment', 'Ожидает передачи в оплату'),
+            ('get_pp', 'Получена пп'),
         ],
         string='Статус',
         default='close',
         tracking=True,
     )
     zayavka_num = fields.Char(string='№ заявки', tracking=True)
-    date_placement = fields.Date(string='Дата размещения', tracking=True, required=True)
-    taken_in_work_date = fields.Date(string='Взята в работу', tracking=True)
+    date_placement = fields.Date(string='Дата размещения', tracking=True, default=fields.Date.today)
+    taken_in_work_date = fields.Date(string='Взята в работу', tracking=True, default=fields.Date.today)
     contragent_id = fields.Many2one('amanat.contragent', string='Контрагент', tracking=True)
     agent_id = fields.Many2one('amanat.contragent', string='Агент', tracking=True)
     client_id = fields.Many2one('amanat.contragent', string='Клиент', tracking=True)
@@ -54,13 +65,11 @@ class Zayavka(models.Model, AmanatBaseModel):
         ],
         string='Условия расчета',
         tracking=True,
-        required=True
     )
     deal_type = fields.Selection(
         [('import', 'Импорт'), ('export', 'Экспорт')],
         string='Вид сделки',
         tracking=True,
-        required=True
     )
     instruction_number = fields.Char(string='Номер поручения', tracking=True)
     instruction_signed_date = fields.Date(string='Подписано поручение', tracking=True)
@@ -70,7 +79,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         tracking=True
     )
-    jess_rate = fields.Float(string='Курс Джесс', tracking=True)
+    jess_rate = fields.Float(string='Курс Джесс', tracking=True, digits=(16, 7))
     currency = fields.Selection(
         [
             ('rub', 'RUB'), ('rub_cashe', 'RUB КЭШ'),
@@ -100,9 +109,9 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Валютная пара',
         tracking=True
     )
-    cross_rate_usd_rub = fields.Float(string='Кросс-курс USD/RUB', tracking=True)
-    cross_rate_pair = fields.Float(string='Кросс-курс пары', tracking=True)
-    xe_rate = fields.Float(string='Курс XE', tracking=True)
+    cross_rate_usd_rub = fields.Float(string='Кросс-курс USD/RUB', tracking=True, digits=(16, 4))
+    cross_rate_pair = fields.Float(string='Кросс-курс пары', tracking=True, digits=(16, 8))
+    xe_rate = fields.Float(string='Курс XE', tracking=True, digits=(16, 8))
     conversion_expenses_rub = fields.Float(
         string='Расходы на конвертацию в рублях',
         compute='_compute_conversion_expenses',
@@ -125,12 +134,14 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Курс реальный (кросс)',
         compute='_compute_real_cross_rate',
         store=True,
+        digits=(16, 4),
         tracking=True
     )
-    amount = fields.Float(string='Сумма заявки', tracking=True, required=True)
+    amount = fields.Float(string='Сумма заявки', tracking=True)
     vip_conditions = fields.Char(string='Условия VIP', tracking=True)
     price_list_profit_id = fields.Many2one('amanat.price_list_payer_profit', string='Прайс лист Плательщика Прибыль', tracking=True)
 
+    # TODO добавить эти поля
     # Новые поля из Airtable
     # manager_ids = fields.Many2many(
     #     'amanat.manager',
@@ -156,6 +167,17 @@ class Zayavka(models.Model, AmanatBaseModel):
     rate_field = fields.Float(string='Курс', tracking=True)
     hidden_rate = fields.Float(string='Скрытый курс', tracking=True)
     conversion_percent = fields.Float(string='% Конвертации', tracking=True)
+    conversion_ratio = fields.Float(string="% Конвертации соотношение", tracking=True) # TODO сделать computed fields
+    profit_rate = fields.Selection(
+        [
+            ('bank', 'Курс Банка'),
+            ('xe', 'XE')
+        ],
+        string='Валютная пара',
+        tracking=True
+    ) # TODO сделать computed fields
+    # TODO добавить поля "Банка выгоднее" и "XE"
+    conversion_auto = fields.Float(string="% Конвертации авто", tracking=True) # TODO сделать computed fields
     bank_cross_rate = fields.Float(string='Кросс-курс банка', tracking=True)
     plus_dollar = fields.Float(string='Надбавка в $', tracking=True)
     dollar_cross_rate = fields.Float(string='Кросс-курс $ к Валюте заявки', tracking=True)

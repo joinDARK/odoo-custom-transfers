@@ -1,4 +1,8 @@
+import logging
 from odoo import models, fields, api
+from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 class PartnerGold(models.Model):
     _name = 'amanat.partner_gold'
@@ -378,18 +382,6 @@ class PartnerGold(models.Model):
     # 45. Кошелек для перевода – связь с кошельками
     wallet_id = fields.Many2one('amanat.wallet', string='Кошелек для перевода', tracking=True)
 
-    @api.model
-    def create(self, vals):
-        # Найдём или создадим кошелёк «Неразмеченные»
-        Wallet = self.env['amanat.wallet']
-        unmarked = Wallet.search([('name', '=', 'Неразмеченные')], limit=1)
-        if not unmarked:
-            unmarked = Wallet.create({'name': 'Неразмеченные'})
-        # Если в vals не задан кошелёк отправителя/получателя — подставляем
-        if not vals.get('wallet_id'):
-            vals['wallet_id'] = unmarked.id
-        return super(PartnerGold, self).create(vals)
-
     # 46. Чистый вес, гр Rollup (Lookup из Золото сделка)
     lookup_pure_weight = fields.Float(
         string='Чистый вес, гр (Lookup)',
@@ -441,3 +433,188 @@ class PartnerGold(models.Model):
     def _compute_partner_invoice_amount(self):
         for rec in self:
             rec.partner_invoice_amount = rec.lookup_invoice_amount * rec.partner_percentage / 100
+
+    @api.model
+    def create(self, vals):
+        # Автозаполнение кошелька «Неразмеченные»
+        Wallet = self.env['amanat.wallet']
+        unmarked = Wallet.search([('name', '=', 'Неразмеченные')], limit=1)
+        if not unmarked:
+            unmarked = Wallet.create({'name': 'Неразмеченные'})
+        if not vals.get('wallet_id'):
+            vals['wallet_id'] = unmarked.id
+        rec = super(PartnerGold, self).create(vals)
+        # Запуск автоматизации входа
+        if vals.get('conduct_gold_transfer'):
+            rec._action_conduct_gold_transfer()
+        return rec
+
+    def write(self, vals):
+        res = super(PartnerGold, self).write(vals)
+        if vals.get('conduct_gold_transfer'):
+            for rec in self:
+                rec._action_conduct_gold_transfer()
+        return res
+
+    # ----------------------------------------
+    # BUSINESS LOGIC
+    # ----------------------------------------
+    def _action_conduct_gold_transfer(self):
+        """
+        Создает переводы (RUB и USDT), контейнеры денег и сверки
+        по одной записи партнера.
+        """
+        Contr = self.env['amanat.contragent']
+        Pay = self.env['amanat.payer']
+        Wal = self.env['amanat.wallet']
+        Order = self.env['amanat.order']
+        Money = self.env['amanat.money']
+        Recon = self.env['amanat.reconciliation']
+
+        # Найти или создать справочные записи
+        gold_ctr = Contr.search([('name', '=', 'Золото')], limit=1) or Contr.create({'name': 'Золото'})
+        gold_pay = Pay.search([('name', '=', 'Золото')], limit=1) or Pay.create({'name': 'Золото'})
+        gold_wal = Wal.search([('name', '=', 'Золото')], limit=1)
+        if not gold_wal:
+            raise UserError('Кошелёк "Золото" не найден')
+
+        for rec in self:
+            partner = rec.partner_id
+            payer = rec.payer_id
+            date = rec.payment_date
+            amt_rub = rec.amount_rub
+            amt_usdt = rec.purchase_usdt
+            wallet = rec.wallet_id
+
+            if not (partner and payer and date and amt_rub and amt_usdt and wallet):
+                _logger.error('Недостаточно данных для партнера %s', rec.id)
+                continue
+
+            # --- RUB Order ---
+            ord_rub = Order.create({
+                'date': date,
+                'partner_1_id': partner.id,
+                'payer_1_id': payer.id,
+                'partner_2_id': gold_ctr.id,
+                'payer_2_id': gold_pay.id,
+                'amount': amt_rub,
+                'currency': 'rub',
+                'type': 'transfer',
+                'wallet_1_id': wallet.id,
+                'wallet_2_id': gold_wal.id,
+                'comment': 'Перевод денег партнера на золото',
+            })
+            rec.order_ids |= ord_rub
+
+            # Деньги: партнер (долг)
+            Money.create({
+                'date': date,
+                'partner_id': partner.id,
+                'currency': 'rub',
+                'amount': -amt_rub,
+                'sum_rub': -amt_rub,
+                'state': 'debt',
+                'wallet_id': wallet.id,
+                'order_id': ord_rub.id,
+            })
+            # Деньги: золото (положительный)
+            Money.create({
+                'date': date,
+                'partner_id': gold_ctr.id,
+                'currency': 'rub',
+                'amount': amt_rub,
+                'sum_rub': amt_rub,
+                'state': 'positive',
+                'wallet_id': gold_wal.id,
+                'order_id': ord_rub.id,
+            })
+
+            # Сверка RUB
+            Recon.create({
+                'date': date,
+                'partner_id': partner.id,
+                'currency': 'rub',
+                'sum': -amt_rub,
+                'sum_rub': -amt_rub,
+                'sender_id': [(4, payer.id)],
+                'receiver_id': [(4, gold_pay.id)],
+                'wallet_id': gold_wal.id,
+                'order_id': [(6, 0, [ord_rub.id])],
+            })
+            Recon.create({
+                'date': date,
+                'partner_id': gold_ctr.id,
+                'currency': 'rub',
+                'sum': amt_rub,
+                'sum_rub': amt_rub,
+                'sender_id': [(4, payer.id)],
+                'receiver_id': [(4, gold_pay.id)],
+                'wallet_id': gold_wal.id,
+                'order_id': [(6, 0, [ord_rub.id])],
+            })
+
+            # --- USDT Order ---
+            ord_usdt = Order.create({
+                'date': date,
+                'partner_1_id': gold_ctr.id,
+                'payer_1_id': gold_pay.id,
+                'partner_2_id': partner.id,
+                'payer_2_id': payer.id,
+                'amount': amt_usdt,
+                'currency': 'usdt',
+                'type': 'transfer',
+                'wallet_1_id': gold_wal.id,
+                'wallet_2_id': gold_wal.id,
+                'comment': 'Создаем обязательство на выход перед партнером',
+            })
+            rec.order_ids |= ord_usdt
+
+            # Деньги: золото (USDT)
+            Money.create({
+                'date': date,
+                'partner_id': gold_ctr.id,
+                'currency': 'usdt',
+                'amount': amt_usdt,
+                'sum_usdt': amt_usdt,
+                'state': 'positive',
+                'wallet_id': gold_wal.id,
+                'order_id': ord_usdt.id,
+            })
+            # Деньги: партнер (долг USDT)
+            Money.create({
+                'date': date,
+                'partner_id': partner.id,
+                'currency': 'usdt',
+                'amount': -amt_usdt,
+                'sum_usdt': -amt_usdt,
+                'state': 'debt',
+                'wallet_id': gold_wal.id,
+                'order_id': ord_usdt.id,
+            })
+
+            # Сверка USDT
+            Recon.create({
+                'date': date,
+                'partner_id': gold_ctr.id,
+                'currency': 'usdt',
+                'sum': amt_usdt,
+                'sum_usdt': amt_usdt,
+                'sender_id': [(4, gold_pay.id)],
+                'receiver_id': [(4, payer.id)],
+                'wallet_id': gold_wal.id,
+                'order_id': [(6, 0, [ord_usdt.id])],
+            })
+            Recon.create({
+                'date': date,
+                'partner_id': partner.id,
+                'currency': 'usdt',
+                'sum': -amt_usdt,
+                'sum_usdt': -amt_usdt,
+                'sender_id': [(4, gold_pay.id)],
+                'receiver_id': [(4, payer.id)],
+                'wallet_id': gold_wal.id,
+                'order_id': [(6, 0, [ord_usdt.id])],
+            })
+
+            # Сброс флага
+            rec.conduct_gold_transfer = False

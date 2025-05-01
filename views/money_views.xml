@@ -7,44 +7,45 @@
             <list editable="top">
                 <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="royalty" width="78"/>
-                <field name="percent" width="102" />
-                <field width="200" name="date"/>
-                <field width="200" name="state"/>
-                <field width="200" name="currency"/>
-                <field width="200" name="partner_id"/>
-                <field width="200" name="wallet_id"/>
-                <field width="200" name="remains"/>
-                <field width="200" name="remains_rub"/>
-                <field width="200" name="remains_rub_cashe"/>
-                <field width="200" name="remains_usd"/>
-                <field width="200" name="remains_usd_cashe"/>
-                <field width="200" name="remains_usdt"/>
-                <field width="200" name="remains_cny"/>
-                <field width="200" name="remains_cny_cashe"/>
-                <field width="200" name="remains_euro"/>
-                <field width="200" name="remains_euro_cashe"/>
-                <field width="200" name="remains_aed"/>
-                <field width="200" name="remains_aed_cashe"/>
-                <field width="200" name="remains_thb"/>
-                <field width="200" name="remains_thb_cashe"/>
-                <field width="200" name="sum"/>
-                <field width="200" name="sum_rub"/>
-                <field width="200" name="sum_usd"/>
-                <field width="200" name="sum_usdt"/>
-                <field width="200" name="sum_cny"/>
-                <field width="200" name="sum_euro"/>
-                <field width="200" name="sum_aed"/>
-                <field width="200" name="sum_thb"/>
-                <field width="200" name="sum_usd_cashe"/>
-                <field width="200" name="sum_euro_cashe"/>
-                <field width="200" name="sum_aed_cashe"/>
-                <field width="200" name="sum_cny_cashe"/>
-                <field width="200" name="sum_rub_cashe"/>
-                <field width="200" name="sum_thb_cashe"/>
-                <field width="200" name="sum_remains"/>
-                <field width="200" name="order_id" widget="many2many_tags"/>
-                <field width="200" name="amount"/>
-                <field width="200" name="comment"/>
+                <field name="percent" width="102"/>
+                <field name="date" width="200"/>
+                <field name="state" width="200"/>
+                <field name="currency" width="200"/>
+                <field name="partner_id" width="200"/>
+                <field name="wallet_id" width="200"/>
+                <field name="remains" width="200"/>
+                <field name="remains_rub" width="200"/>
+                <field name="remains_rub_cashe" width="200"/>
+                <field name="remains_usd" width="200"/>
+                <field name="remains_usd_cashe" width="200"/>
+                <field name="remains_usdt" width="200"/>
+                <field name="remains_cny" width="200"/>
+                <field name="remains_cny_cashe" width="200"/>
+                <field name="remains_euro" width="200"/>
+                <field name="remains_euro_cashe" width="200"/>
+                <field name="remains_aed" width="200"/>
+                <field name="remains_aed_cashe" width="200"/>
+                <field name="remains_thb" width="200"/>
+                <field name="remains_thb_cashe" width="200"/>
+                <field name="sum" width="200"/>
+                <field name="sum_rub" width="200"/>
+                <field name="sum_usd" width="200"/>
+                <field name="sum_usdt" width="200"/>
+                <field name="sum_cny" width="200"/>
+                <field name="sum_euro" width="200"/>
+                <field name="sum_aed" width="200"/>
+                <field name="sum_thb" width="200"/>
+                <field name="sum_usd_cashe" width="200"/>
+                <field name="sum_euro_cashe" width="200"/>
+                <field name="sum_aed_cashe" width="200"/>
+                <field name="sum_cny_cashe" width="200"/>
+                <field name="sum_rub_cashe" width="200"/>
+                <field name="sum_thb_cashe" width="200"/>
+                <field name="sum_remains" width="200"/>
+                <!-- Для Many2one используем стандартный виджет -->
+                <field name="order_id" width="200"/>
+                <field name="amount" width="200"/>
+                <field name="comment" width="200"/>
             </list>
         </field>
     </record>
@@ -93,7 +94,8 @@
                         <field name="sum_rub_cashe"/>
                         <field name="sum_thb_cashe"/>
                         <field name="sum_remains"/>
-                        <field name="order_id" widget="many2many_tags"/>
+                        <!-- Для Many2one используем стандартный виджет -->
+                        <field name="order_id"/>
                         <field name="amount"/>
                         <field name="comment"/>
                     </group>
@@ -114,4 +116,3 @@
         <field name="target">main</field>
     </record>
 </odoo>
-
