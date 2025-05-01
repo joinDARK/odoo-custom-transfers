@@ -596,3 +596,5 @@ class GoldDeal(models.Model):
                 order.unlink()
             rec.order_ids = [(5, 0, 0)]
             rec.mark_for_deletion = False
+
+    

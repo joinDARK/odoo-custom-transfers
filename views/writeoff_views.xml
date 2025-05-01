@@ -12,6 +12,7 @@
                 <field name="date"/>
                 <field name="amount"/>
                 <field name="money_id"/>
+                <field name="writeoff_investment"/>
             </list>
         </field>
     </record>
@@ -28,7 +29,8 @@
                         <field name="id_spisaniya"/>
                         <field name="date"/>
                         <field name="amount"/>
-                        <field name="money_id" widget="many2many_tags"/>
+                        <field name="money_id"/>
+                        <field name="writeoff_investment"/>
                     </group>
                 </sheet>
             </form>

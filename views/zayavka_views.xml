@@ -70,17 +70,17 @@
             <page string="Дополнительные данные">
               <group>
                 <field name="vip_commission"/>
-                <field name="hidden_commission"/>
-                <field name="bank_commission"/>
-                <field name="accreditation_commission"/>
-                <field name="escrow_commission"/>
+                <field name="hidden_commission" widget="percentage"/>
+                <field name="bank_commission" widget="percentage"/>
+                <field name="accreditation_commission" widget="percentage"/>
+                <field name="escrow_commission" widget="percentage"/>
               </group>
               <group>
                 <field name="rate_field"/>
                 <field name="hidden_rate"/>
               </group>
               <group>
-                <field name="conversion_percent"/>
+                <field name="conversion_percent" widget="percentage" options="{'rounding': 4}"/>
                 <field name="bank_cross_rate"/>
               </group>
               <group>
