@@ -403,7 +403,7 @@ class Transfer(models.Model, AmanatBaseModel):
             'partner_id': partner.id,
             'currency': order.currency,
             'amount': amount,
-            'order_id': [(6, 0, [order.id])],
+            'order_id': order.id,
             'state': 'positive' if amount > 0 else 'debt',
             **currency_fields
         })
@@ -485,9 +485,19 @@ class Transfer(models.Model, AmanatBaseModel):
         
     def _process_royalty_distribution(self):
         royalty_contragent = self.env['amanat.contragent'].search([('name', '=', 'Роялти')], limit=1)
+        if not royalty_contragent:
+            royalty_contragent = self.env['amanat.contragent'].create({'name': 'Роялти'})
+
         royalty_payer = self.env['amanat.payer'].search([
             ('contragents_ids', 'in', royalty_contragent.id)
-        ], limit=1) if royalty_contragent else self.amount
+        ], limit=1)
+
+        if not royalty_payer:
+            royalty_payer = self.env['amanat.payer'].create({
+                'name': 'Роялти',
+                'contragents_ids': [(6, 0, [royalty_contragent.id])]
+            })
+
         old_royalty_orders = self.env['amanat.order'].search([
             ('transfer_id', '=', self.id),
             ('type', '=', 'royalty')
@@ -532,7 +542,7 @@ class Transfer(models.Model, AmanatBaseModel):
                     'partner_id': recipient.id,
                     'currency': self.currency,
                     'amount': royalty_sum,
-                    'order_id': [(6, 0, [royalty_order.id])],
+                    'order_id': royalty_order.id,
                     'state': 'debt',
                     **currency_fields
                 })
@@ -565,4 +575,13 @@ class Transfer(models.Model, AmanatBaseModel):
             vals['intermediary_2_wallet_id'] = unmarked.id
         if not vals.get('intermediary_1_wallet_id'):
             vals['intermediary_1_wallet_id'] = unmarked.id
-        return super(Transfer, self).create(vals)
+
+        # Создание записи
+        record = super(Transfer, self).create(vals)
+
+        # Автоматически создать ордера, если установлен флаг
+        if record.create_order and record.state == 'open':
+            record.create_transfer_orders()
+            record.with_context(skip_automation=True).write({'create_order': False})
+
+        return record

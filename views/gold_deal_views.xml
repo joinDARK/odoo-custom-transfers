@@ -61,6 +61,7 @@
             <field name="sale_amount_usdt"/>
             <field name="expenses"/>
             <field name="purchase_total_rub"/>
+            <field name="purchase_total_dollar"/>
             <field name="total_amount"/>
             <field name="extra_expenses"/>
             <field name="final_rate"/>

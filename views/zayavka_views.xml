@@ -29,6 +29,17 @@
             <field name="bank_swift"/>
           </group>
           <group>
+            <field name="investing_rate"/>
+            <field name="cb_rate"/>
+            <field name="cross_rate"/>
+            <field name="exchange_rate_1"/>
+            <field name="exchange_rate_2"/>
+            <field name="exchange_rate_3"/>
+            <field name="best_rate_name"/>
+            <field name="best_rate"/>
+            <field name="investing_rate"/>
+          </group>
+          <group>
             <field name="country_id"/>
             <field name="payment_conditions"/>
             <field name="deal_type"/>
@@ -94,12 +105,24 @@
               </group>
               <!-- При необходимости можно добавить другие вычисляемые поля -->
             </page>
+            <page string="Нераспределенные">
+              <group>
+                <field name="conversion_ratio"/>
+                <field name="profit_rate"/>
+                <field name="client_payment_cost"/>
+                <field name="payment_cost_sovok"/>
+                <field name="conversion_auto"/>
+                <field name="hand_reward_percent"/>
+                <field name="export_agent_flag"/>
+              </group>
+            </page>
           </notebook>
         </sheet>
         <chatter>
           <field name="message_follower_ids"/>
           <field name="activity_ids"/>
           <field name="message_ids"/>
+          <field name="profit_rate"/>
         </chatter>
       </form>
     </field>
@@ -126,6 +149,19 @@
         <field width="200" name="country_id"/>
         <field width="200" name="payment_conditions"/>
         <field width="200" name="deal_type"/>
+        <field width="200" name="investing_rate"/>
+        <field width="200" name="cb_rate"/>
+        <field width="200" name="cross_rate"/>
+        <field width="200" name="exchange_rate_1"/>
+        <field width="200" name="exchange_rate_2"/>
+        <field width="200" name="exchange_rate_3"/>
+        <field width="200" name="best_rate_name"/>
+        <field width="200" name="best_rate"/>
+        <field width="200" name="client_payment_cost"/>
+        <field width="200" name="conversion_ratio"/>
+        <field width="200" name="profit_rate"/>
+        <field width="200" name="conversion_auto"/>
+        <field width="200" name="hand_reward_percent"/>
         <field width="200" name="instruction_number"/>
         <field width="200" name="instruction_signed_date"/>
         <field width="200" name="usd_equivalent"/>
@@ -157,6 +193,7 @@
         <field width="200" name="invoice_plus_percent"/>
         <field width="200" name="reward_percent"/>
         <field width="200" name="sovok_reward"/>
+        <field width="200" name="payment_cost_sovok"/>
         <field width="200" name="sber_reward"/>
         <field width="200" name="client_reward"/>
         <field width="200" name="our_sovok_reward"/>
@@ -164,6 +201,8 @@
         <field width="200" name="our_client_reward"/>
         <field width="200" name="non_our_sber_reward"/>
         <field width="200" name="non_our_client_reward"/>
+        <field width="200" name="export_agent_flag"/>
+        <field width="200" name="application_amount_rub_contract"/>
         <field width="200" name="total_sovok"/>
         <field width="200" name="total_sovok_management"/>
         <field width="200" name="total_sber"/>

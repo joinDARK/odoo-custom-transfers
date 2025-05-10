@@ -16,7 +16,7 @@
                 <field width="200" name="payer_2_id"/>
                 <field name="wallet_2_id"/>
                 <field name="currency"/>
-                <field name="amount" widget="separator"/>
+                <field name="amount"/>
                 <field name="rate"/>
                 <field width="200" name="operation_percent" widget="percentage" options="{'rounding': 2}"/>
                 <field name="rko"/>
@@ -40,6 +40,7 @@
                 <field width="200" name="cross_calc"/>
                 <field width="200" name="amount_after_conv"/>
                 <field width="200" name="currency_from_conv"/>
+                <field width="200" name="cross_currency"/>
                 <field name="partner_gold"/>
                 <field name="write_off"/>
                 <field width="200" name="rollup_write_off"/>
@@ -108,6 +109,7 @@
                         <field name="cross_calc"/>
                         <field name="amount_after_conv"/>
                         <field name="currency_from_conv"/>
+                        <field name="cross_currency"/>
                         <field name="partner_gold"/>
                         <field name="write_off"/>
                         <field name="rollup_write_off"/>
