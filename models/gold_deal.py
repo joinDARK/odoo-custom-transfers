@@ -280,6 +280,8 @@ class GoldDeal(models.Model):
         if vals.get("conduct_out"):
             _logger.info(f"Триггер 'Провести выход' активирован при создании для {rec.name}")
             rec._action_process_gold_deal_output_logic()
+            rec._action_process_gold_deal_distribution_logic()
+            rec._action_process_gold_deal_profit_distribution_logic()
             rec.conduct_out = False
         return rec
 
@@ -303,6 +305,8 @@ class GoldDeal(models.Model):
             if vals.get("conduct_out") and rec.conduct_out:
                 _logger.info(f"Триггер 'Провести выход' активирован для {rec.name}")
                 rec._action_process_gold_deal_output_logic()
+                rec._action_process_gold_deal_distribution_logic()
+                rec._action_process_gold_deal_profit_distribution_logic()
                 rec.conduct_out = False
 
         return res
@@ -316,6 +320,7 @@ class GoldDeal(models.Model):
             rec.order_ids = [(5, 0, 0)]
             rec.mark_for_deletion = False
 
+    # "Золото вход" контейнеры
     def _action_process_gold_deal_input_logic(self):
         self.ensure_one()  # Убедимся, что работаем с одной записью
         _logger.info(f"Начало обработки 'Вход в сделку Золото' для: {self.name}")
@@ -566,6 +571,7 @@ class GoldDeal(models.Model):
         _logger.info(f"Скрипт успешно завершён для сделки: {self.name}!")
         return True
 
+    # "Золото выход" контейнеры
     def _action_process_gold_deal_output_logic(self):
         self.ensure_one()  # Убедимся, что работаем с одной записью
         _logger.info(f"Начало обработки 'Выход из сделки Золото' для: {self.name}")
@@ -710,3 +716,731 @@ class GoldDeal(models.Model):
         
         _logger.info(f"Скрипт выхода из сделки успешно завершён для: {self.name}!")
         return True
+
+    def _action_process_gold_deal_distribution_logic(self):
+        """
+        Метод для распределения USDT между Услугой, Банк сумм, Банк КБ и Курьер
+        Выполняется после _action_process_gold_deal_output_logic
+        """
+        self.ensure_one()
+        _logger.info(f"Начало обработки 'Распределение USDT' для сделки: {self.name}")
+        
+        # Поиск необходимых моделей
+        ContragentModel = self.env["amanat.contragent"]
+        PayerModel = self.env["amanat.payer"]
+        WalletModel = self.env["amanat.wallet"]
+        OrderModel = self.env["amanat.order"]
+        MoneyModel = self.env["amanat.money"]
+        VerificationModel = self.env["amanat.reconciliation"]
+        
+        # Проверка наличия сумм
+        if not self.service or not self.bank_sum or not self.bank_kb or not self.courier:
+            _logger.warning(f"Отсутствуют одна или несколько сумм для распределения в сделке: {self.name}")
+            # Продолжаем с теми суммами, которые есть
+        
+        # Получаем дату продажи из первого партнера
+        sale_date = None
+        for partner in self.partner_ids:
+            if hasattr(partner, 'sale_date') and partner.sale_date:
+                sale_date = partner.sale_date
+                break
+        
+        if not sale_date:
+            # Если нет даты продажи, используем текущую дату
+            sale_date = fields.Date.today()
+        
+        # Получаем необходимые контрагенты и кошелек
+        gold_contragent = ContragentModel.search([("name", "=", "Золото")], limit=1)
+        service_contragent = ContragentModel.search([("name", "=", "Услуга")], limit=1)
+        bank_sum_contragent = ContragentModel.search([("name", "=", "Банк сумм")], limit=1)
+        bank_kb_contragent = ContragentModel.search([("name", "=", "Банк КБ")], limit=1)
+        courier_contragent = ContragentModel.search([("name", "=", "Курьер")], limit=1)
+        
+        if not gold_contragent:
+            raise UserError("Не найден контрагент 'Золото'")
+        
+        # Получаем плательщиков
+        gold_payer = PayerModel.search([("name", "=", "Золото")], limit=1)
+        service_payer = PayerModel.search([("name", "=", "Услуга")], limit=1)
+        bank_sum_payer = PayerModel.search([("name", "=", "Банк сумм")], limit=1)
+        bank_kb_payer = PayerModel.search([("name", "=", "Банк КБ")], limit=1)
+        courier_payer = PayerModel.search([("name", "=", "Курьер")], limit=1)
+        
+        if not gold_payer:
+            raise UserError("Не найден плательщик 'Золото'")
+        
+        # Получаем кошелек
+        gold_wallet = WalletModel.search([("name", "=", "Золото")], limit=1)
+        if not gold_wallet:
+            raise UserError("Не найден кошелек 'Золото'")
+        
+        # Валюта для всех операций - USDT
+        currency = "usdt"
+        created_orders = []
+        
+        # Обработка каждого контрагента и создание соответствующих ордеров
+        
+        # 1. Услуга
+        if service_contragent and service_payer and self.service:
+            try:
+                service_amount = self.service
+                
+                # Создаем ордер
+                order_vals = {
+                    "date": sale_date,
+                    "partner_1_id": gold_contragent.id,
+                    "payer_1_id": gold_payer.id,
+                    "wallet_1_id": gold_wallet.id,
+                    "partner_2_id": service_contragent.id,
+                    "payer_2_id": service_payer.id,
+                    "wallet_2_id": gold_wallet.id,
+                    "gold": [(6, 0, [self.id])],
+                    "currency": currency,
+                    "amount": service_amount,
+                    "type": "transfer",
+                    "comment": "Выход золото",
+                }
+                
+                service_order = OrderModel.create(order_vals)
+                created_orders.append(service_order.id)
+                _logger.info(f"Создан ордер Услуга: {service_order.name if hasattr(service_order, 'name') else service_order.id}")
+                
+                # Создаем долговой контейнер для Услуги
+                money_debt_vals = {
+                    "date": sale_date,
+                    "partner_id": service_contragent.id,
+                    "currency": currency,
+                    "amount": -service_amount,
+                    "state": "debt",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": service_order.id,
+                }
+                money_debt_vals.update(self._prepare_currency_fields("USDT", -service_amount))
+                MoneyModel.create(money_debt_vals)
+                _logger.info("Создан долговой контейнер для Услуги")
+                
+                # Создаем положительный контейнер для Золото
+                money_positive_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "amount": service_amount,
+                    "state": "positive",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": service_order.id,
+                }
+                money_positive_vals.update(self._prepare_currency_fields("USDT", service_amount))
+                MoneyModel.create(money_positive_vals)
+                _logger.info("Создан положительный контейнер для Золото (Услуга)")
+                
+                # Создаем сверку для контрагента (отрицательная)
+                verif_service_vals = {
+                    "date": sale_date,
+                    "partner_id": service_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [service_payer.id])],
+                    "order_id": [(6, 0, [service_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_service_vals.update(self._prepare_currency_fields("USDT", -service_amount))
+                VerificationModel.create(verif_service_vals)
+                _logger.info("Создана сверка для Услуги (отрицательная)")
+                
+                # Создаем сверку для Золото (положительная)
+                verif_gold_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [service_payer.id])],
+                    "order_id": [(6, 0, [service_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_gold_vals.update(self._prepare_currency_fields("USDT", service_amount))
+                VerificationModel.create(verif_gold_vals)
+                _logger.info("Создана сверка для Золото (положительная)")
+                
+            except Exception as e:
+                _logger.error(f"Ошибка при создании ордера Услуга: {e}")
+        
+        # 2. Банк сумм
+        if bank_sum_contragent and bank_sum_payer and self.bank_sum:
+            try:
+                bank_sum_amount = self.bank_sum
+                
+                # Создаем ордер
+                order_vals = {
+                    "date": sale_date,
+                    "partner_1_id": gold_contragent.id,
+                    "payer_1_id": gold_payer.id,
+                    "wallet_1_id": gold_wallet.id,
+                    "partner_2_id": bank_sum_contragent.id,
+                    "payer_2_id": bank_sum_payer.id,
+                    "wallet_2_id": gold_wallet.id,
+                    "gold": [(6, 0, [self.id])],
+                    "currency": currency,
+                    "amount": bank_sum_amount,
+                    "type": "transfer",
+                    "comment": "Выход золото",
+                }
+                
+                bank_sum_order = OrderModel.create(order_vals)
+                created_orders.append(bank_sum_order.id)
+                _logger.info(f"Создан ордер Банк сумм: {bank_sum_order.name if hasattr(bank_sum_order, 'name') else bank_sum_order.id}")
+                
+                # Создаем долговой контейнер для Банк сумм
+                money_debt_vals = {
+                    "date": sale_date,
+                    "partner_id": bank_sum_contragent.id,
+                    "currency": currency,
+                    "amount": -bank_sum_amount,
+                    "state": "debt",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": bank_sum_order.id,
+                }
+                money_debt_vals.update(self._prepare_currency_fields("USDT", -bank_sum_amount))
+                MoneyModel.create(money_debt_vals)
+                _logger.info("Создан долговой контейнер для Банк сумм")
+                
+                # Создаем положительный контейнер для Золото
+                money_positive_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "amount": bank_sum_amount,
+                    "state": "positive",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": bank_sum_order.id,
+                }
+                money_positive_vals.update(self._prepare_currency_fields("USDT", bank_sum_amount))
+                MoneyModel.create(money_positive_vals)
+                _logger.info("Создан положительный контейнер для Золото (Банк сумм)")
+                
+                # Создаем сверку для контрагента (отрицательная)
+                verif_bank_sum_vals = {
+                    "date": sale_date,
+                    "partner_id": bank_sum_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [bank_sum_payer.id])],
+                    "order_id": [(6, 0, [bank_sum_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_bank_sum_vals.update(self._prepare_currency_fields("USDT", -bank_sum_amount))
+                VerificationModel.create(verif_bank_sum_vals)
+                _logger.info("Создана сверка для Банк сумм (отрицательная)")
+                
+                # Создаем сверку для Золото (положительная)
+                verif_gold_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [bank_sum_payer.id])],
+                    "order_id": [(6, 0, [bank_sum_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_gold_vals.update(self._prepare_currency_fields("USDT", bank_sum_amount))
+                VerificationModel.create(verif_gold_vals)
+                _logger.info("Создана сверка для Золото (положительная)")
+                
+            except Exception as e:
+                _logger.error(f"Ошибка при создании ордера Банк сумм: {e}")
+        
+        # 3. Банк КБ
+        if bank_kb_contragent and bank_kb_payer and self.bank_kb:
+            try:
+                bank_kb_amount = self.bank_kb
+                
+                # Создаем ордер
+                order_vals = {
+                    "date": sale_date,
+                    "partner_1_id": gold_contragent.id,
+                    "payer_1_id": gold_payer.id,
+                    "wallet_1_id": gold_wallet.id,
+                    "partner_2_id": bank_kb_contragent.id,
+                    "payer_2_id": bank_kb_payer.id,
+                    "wallet_2_id": gold_wallet.id,
+                    "gold": [(6, 0, [self.id])],
+                    "currency": currency,
+                    "amount": bank_kb_amount,
+                    "type": "transfer",
+                    "comment": "Выход золото",
+                }
+                
+                bank_kb_order = OrderModel.create(order_vals)
+                created_orders.append(bank_kb_order.id)
+                _logger.info(f"Создан ордер Банк КБ: {bank_kb_order.name if hasattr(bank_kb_order, 'name') else bank_kb_order.id}")
+                
+                # Создаем долговой контейнер для Банк КБ
+                money_debt_vals = {
+                    "date": sale_date,
+                    "partner_id": bank_kb_contragent.id,
+                    "currency": currency,
+                    "amount": -bank_kb_amount,
+                    "state": "debt",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": bank_kb_order.id,
+                }
+                money_debt_vals.update(self._prepare_currency_fields("USDT", -bank_kb_amount))
+                MoneyModel.create(money_debt_vals)
+                _logger.info("Создан долговой контейнер для Банк КБ")
+                
+                # Создаем положительный контейнер для Золото
+                money_positive_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "amount": bank_kb_amount,
+                    "state": "positive",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": bank_kb_order.id,
+                }
+                money_positive_vals.update(self._prepare_currency_fields("USDT", bank_kb_amount))
+                MoneyModel.create(money_positive_vals)
+                _logger.info("Создан положительный контейнер для Золото (Банк КБ)")
+                
+                # Создаем сверку для контрагента (отрицательная)
+                verif_bank_kb_vals = {
+                    "date": sale_date,
+                    "partner_id": bank_kb_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [bank_kb_payer.id])],
+                    "order_id": [(6, 0, [bank_kb_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_bank_kb_vals.update(self._prepare_currency_fields("USDT", -bank_kb_amount))
+                VerificationModel.create(verif_bank_kb_vals)
+                _logger.info("Создана сверка для Банк КБ (отрицательная)")
+                
+                # Создаем сверку для Золото (положительная)
+                verif_gold_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [bank_kb_payer.id])],
+                    "order_id": [(6, 0, [bank_kb_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_gold_vals.update(self._prepare_currency_fields("USDT", bank_kb_amount))
+                VerificationModel.create(verif_gold_vals)
+                _logger.info("Создана сверка для Золото (положительная)")
+                
+            except Exception as e:
+                _logger.error(f"Ошибка при создании ордера Банк КБ: {e}")
+        
+        # 4. Курьер
+        if courier_contragent and courier_payer and self.courier:
+            try:
+                courier_amount = self.courier
+                
+                # Создаем ордер
+                order_vals = {
+                    "date": sale_date,
+                    "partner_1_id": gold_contragent.id,
+                    "payer_1_id": gold_payer.id,
+                    "wallet_1_id": gold_wallet.id,
+                    "partner_2_id": courier_contragent.id,
+                    "payer_2_id": courier_payer.id,
+                    "wallet_2_id": gold_wallet.id,
+                    "gold": [(6, 0, [self.id])],
+                    "currency": currency,
+                    "amount": courier_amount,
+                    "type": "transfer",
+                    "comment": "Выход золото",
+                }
+                
+                courier_order = OrderModel.create(order_vals)
+                created_orders.append(courier_order.id)
+                _logger.info(f"Создан ордер Курьер: {courier_order.name if hasattr(courier_order, 'name') else courier_order.id}")
+                
+                # Создаем долговой контейнер для Курьера
+                money_debt_vals = {
+                    "date": sale_date,
+                    "partner_id": courier_contragent.id,
+                    "currency": currency,
+                    "amount": -courier_amount,
+                    "state": "debt",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": courier_order.id,
+                }
+                money_debt_vals.update(self._prepare_currency_fields("USDT", -courier_amount))
+                MoneyModel.create(money_debt_vals)
+                _logger.info("Создан долговой контейнер для Курьера")
+                
+                # Создаем положительный контейнер для Золото
+                money_positive_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "amount": courier_amount,
+                    "state": "positive",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": courier_order.id,
+                }
+                money_positive_vals.update(self._prepare_currency_fields("USDT", courier_amount))
+                MoneyModel.create(money_positive_vals)
+                _logger.info("Создан положительный контейнер для Золото (Курьер)")
+                
+                # Создаем сверку для контрагента (отрицательная)
+                verif_courier_vals = {
+                    "date": sale_date,
+                    "partner_id": courier_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [courier_payer.id])],
+                    "order_id": [(6, 0, [courier_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_courier_vals.update(self._prepare_currency_fields("USDT", -courier_amount))
+                VerificationModel.create(verif_courier_vals)
+                _logger.info("Создана сверка для Курьера (отрицательная)")
+                
+                # Создаем сверку для Золото (положительная)
+                verif_gold_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [courier_payer.id])],
+                    "order_id": [(6, 0, [courier_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_gold_vals.update(self._prepare_currency_fields("USDT", courier_amount))
+                VerificationModel.create(verif_gold_vals)
+                _logger.info("Создана сверка для Золото (положительная)")
+                
+            except Exception as e:
+                _logger.error(f"Ошибка при создании ордера Курьер: {e}")
+        
+        # Добавляем созданные ордера к списку ордеров сделки
+        if created_orders:
+            if self.order_ids:
+                self.order_ids = [(4, order_id, 0) for order_id in created_orders]
+            else:
+                self.order_ids = [(6, 0, created_orders)]
+        
+        _logger.info(f"Скрипт распределения USDT успешно завершён для: {self.name}!")
+        return True
+
+    def _action_process_gold_deal_profit_distribution_logic(self):
+        """
+        Метод для распределения прибыли между партнерами золота
+        Выполняется после _action_process_gold_deal_output_logic и _action_process_gold_deal_distribution_logic
+        """
+        self.ensure_one()
+        _logger.info(f"Начало обработки 'Распределение прибыли' для сделки: {self.name}")
+        
+        # Поиск необходимых моделей
+        ContragentModel = self.env["amanat.contragent"]
+        PayerModel = self.env["amanat.payer"]
+        WalletModel = self.env["amanat.wallet"]
+        OrderModel = self.env["amanat.order"]
+        MoneyModel = self.env["amanat.money"]
+        VerificationModel = self.env["amanat.reconciliation"]
+        
+        # Проверка наличия партнеров
+        if not self.partner_ids:
+            _logger.warning(f"Отсутствуют партнеры для распределения прибыли в сделке: {self.name}")
+            return False
+        
+        # Получаем контрагент "Золото"
+        gold_contragent = ContragentModel.search([("name", "=", "Золото")], limit=1)
+        if not gold_contragent:
+            raise UserError("Не найден контрагент 'Золото'")
+        
+        # Получаем плательщика "Золото"
+        gold_payer = PayerModel.search([("name", "=", "Золото")], limit=1)
+        if not gold_payer:
+            raise UserError("Не найден плательщик 'Золото'")
+        
+        # Получаем кошелек "Золото"
+        gold_wallet = WalletModel.search([("name", "=", "Золото")], limit=1)
+        if not gold_wallet:
+            raise UserError("Не найден кошелек 'Золото'")
+        
+        created_orders = []
+        currency = "usdt"  # Валюта для всех операций
+        
+        # Обрабатываем каждого партнера
+        for partner in self.partner_ids:
+            # Проверяем наличие необходимых данных
+            if not hasattr(partner, 'sale_date') or not partner.sale_date:
+                _logger.warning(f"Не указана дата продажи для партнера {partner.name} в сделке {self.name}")
+                continue
+            
+            if not hasattr(partner, 'partner_id') or not partner.partner_id:
+                _logger.warning(f"Не указан контрагент для партнера {partner.name} в сделке {self.name}")
+                continue
+            
+            if not hasattr(partner, 'profit') or not partner.profit:
+                _logger.warning(f"Не указана прибыль для партнера {partner.name} в сделке {self.name}")
+                continue
+            
+            # Получаем необходимые данные
+            sale_date = partner.sale_date
+            partner_contragent = partner.partner_id
+            profit_amount = partner.profit
+            
+            # Получаем плательщика для партнера
+            partner_payer = None
+            if hasattr(partner, 'payer_id') and partner.payer_id:
+                partner_payer = partner.payer_id
+            else:
+                # Ищем плательщика по имени контрагента партнера
+                partner_payer = PayerModel.search([("name", "=", partner_contragent.name)], limit=1)
+            
+            if not partner_payer:
+                _logger.warning(f"Не найден плательщик для партнера {partner_contragent.name} в сделке {self.name}")
+                continue
+            
+            _logger.info(f"Обработка партнера {partner_contragent.name}: Дата продажи: {sale_date}, Сумма: {profit_amount} USDT")
+            
+            try:
+                # Создаем ордер "Золото -> Партнер"
+                order_vals = {
+                    "date": sale_date,
+                    "partner_1_id": gold_contragent.id,
+                    "payer_1_id": gold_payer.id,
+                    "wallet_1_id": gold_wallet.id,
+                    "partner_2_id": partner_contragent.id,
+                    "payer_2_id": partner_payer.id,
+                    "wallet_2_id": gold_wallet.id,
+                    "amount": profit_amount,
+                    "type": "transfer",
+                    "currency": currency,
+                    "gold": [(6, 0, [self.id])],  # Связь с текущей сделкой 'Золото'
+                    "partner_gold": [(6, 0, [partner.id])],  # Связь с записью 'Партнеры золото'
+                    "comment": "Выход золото",
+                }
+                
+                partner_order = OrderModel.create(order_vals)
+                created_orders.append(partner_order.id)
+                _logger.info(f"Создан ордер для партнера {partner_contragent.name}")
+                
+                # Создаем долговой контейнер для партнера (с отрицательной суммой)
+                money_debt_vals = {
+                    "date": sale_date,
+                    "partner_id": partner_contragent.id,
+                    "currency": currency,
+                    "amount": -profit_amount,
+                    "state": "debt",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": partner_order.id,
+                }
+                money_debt_vals.update(self._prepare_currency_fields("USDT", -profit_amount))
+                MoneyModel.create(money_debt_vals)
+                _logger.info(f"Создан долговой контейнер для партнера {partner_contragent.name}")
+                
+                # Создаем положительный контейнер для Золото (с положительной суммой)
+                money_positive_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "amount": profit_amount,
+                    "state": "positive",
+                    "wallet_id": gold_wallet.id,
+                    "order_id": partner_order.id,
+                }
+                money_positive_vals.update(self._prepare_currency_fields("USDT", profit_amount))
+                MoneyModel.create(money_positive_vals)
+                _logger.info(f"Создан положительный контейнер для Золото на сумму {profit_amount} USDT")
+                
+                # Создаем сверку для партнера (отрицательная)
+                verif_partner_vals = {
+                    "date": sale_date,
+                    "partner_id": partner_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [partner_payer.id])],
+                    "order_id": [(6, 0, [partner_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_partner_vals.update(self._prepare_currency_fields("USDT", -profit_amount))
+                VerificationModel.create(verif_partner_vals)
+                _logger.info(f"Создана сверка для партнера {partner_contragent.name} (отрицательная)")
+                
+                # Создаем сверку для Золото (положительная)
+                verif_gold_vals = {
+                    "date": sale_date,
+                    "partner_id": gold_contragent.id,
+                    "currency": currency,
+                    "sender_id": [(6, 0, [gold_payer.id])],
+                    "receiver_id": [(6, 0, [partner_payer.id])],
+                    "order_id": [(6, 0, [partner_order.id])],
+                    "wallet_id": gold_wallet.id,
+                }
+                verif_gold_vals.update(self._prepare_currency_fields("USDT", profit_amount))
+                VerificationModel.create(verif_gold_vals)
+                _logger.info(f"Создана сверка для Золото (положительная)")
+                
+            except Exception as e:
+                _logger.error(f"Ошибка при распределении прибыли для партнера {partner_contragent.name}: {e}")
+                continue
+        
+        # Добавляем созданные ордера к списку ордеров сделки
+        if created_orders:
+            if self.order_ids:
+                self.order_ids = [(4, order_id, 0) for order_id in created_orders]
+            else:
+                self.order_ids = [(6, 0, created_orders)]
+        
+        _logger.info(f"Скрипт распределения прибыли успешно завершён для: {self.name}!")
+        return True
+
+    # "Золото Вход" Платежка
+    @api.depends('extract_delivery_ids')
+    def _onchange_extract_delivery_ids(self):
+        for rec in self:
+            if rec.extract_delivery_ids:
+                _logger.info(f"Изменено поле 'Платежка' для сделки: {rec.name}")
+                # Вызываем метод обработки платежки только если флаг conduct_out не установлен
+                # Это предотвращает повторную обработку
+                if not rec.conduct_out:
+                    rec._action_process_gold_deal_payment_logic()
+    
+    def _action_process_gold_deal_payment_logic(self):
+        """
+        Метод для обработки платежки в сделке золота
+        Срабатывает при изменении поля extract_delivery_ids (Платежка)
+        """
+        self.ensure_one()
+        _logger.info(f"Начало обработки платежки для сделки: {self.name}")
+        
+        # Проверка, что платежка существует
+        if not self.extract_delivery_ids:
+            _logger.warning(f"Нет привязанной платежки для сделки: {self.name}")
+            return False
+        
+        # Берем первую платежку (в скрипте Airtable также использовалась первая привязанная платежка)
+        payment = self.extract_delivery_ids[0]
+        
+        # Проверка получателя в платежке
+        # В скрипте Airtable проверяется, что получатель - "Вита"
+        if not hasattr(payment, 'receiver_id') or not payment.receiver_id:
+            _logger.warning(f"Не указан получатель в платежке для сделки: {self.name}")
+            return False
+        
+        if payment.receiver_id.name != "Вита":
+            _logger.warning(f"Получатель платежки не 'Вита', завершаем обработку для сделки: {self.name}")
+            return False
+        
+        _logger.info(f"Проверка получателя платежки: 'Вита', продолжаем обработку")
+        
+        # Получаем дату из платежки
+        if not hasattr(payment, 'date') or not payment.date:
+            _logger.warning(f"Не указана дата в платежке для сделки: {self.name}")
+            return False
+        
+        payment_date = payment.date
+        payment_amount = payment.amount if hasattr(payment, 'amount') and payment.amount else 0
+        
+        # Поиск необходимых моделей
+        OrderModel = self.env["amanat.order"]
+        MoneyModel = self.env["amanat.money"]
+        VerificationModel = self.env["amanat.reconciliation"]
+        
+        # Находим связанные ордера, где Контрагент 2 - "Вита"
+        # В Odoo можно использовать domain для фильтрации
+        domain = [
+            ('gold', 'in', [self.id]),  # поле 'gold' содержит ID текущей сделки
+        ]
+        
+        related_orders = OrderModel.search(domain)
+        _logger.info(f"Найдено {len(related_orders)} связанных ордеров")
+        
+        processed_orders = []
+        
+        # Обрабатываем каждый ордер, где Контрагент 2 - Вита
+        for order in related_orders:
+            # Проверяем, что Контрагент 2 - Вита
+            if not order.partner_2_id or order.partner_2_id.name != "Вита":
+                _logger.info(f"Пропускаем ордер {order.name} - Контрагент 2 не 'Вита'")
+                continue
+            
+            try:
+                _logger.info(f"Обработка ордера с Вита {order.name}:")
+                _logger.info(f"- Контрагент 1: {order.partner_1_id.name}")
+                _logger.info(f"- Сумма: {payment_amount} RUB")
+                
+                # Обновляем комментарий ордера
+                order.write({"comment": "Перевод денег на Виту по сделке Золото"})
+                
+                # Проверяем наличие необходимых данных
+                if not order.partner_1_id or not order.wallet_1_id:
+                    _logger.warning(f"Пропущен ордер {order.name} - неполные данные")
+                    continue
+                
+                # Создаем долговой контейнер для Контрагента 1
+                money_debt_vals = {
+                    "date": payment_date,
+                    "partner_id": order.partner_1_id.id,
+                    "currency": "rub",
+                    "amount": -payment_amount,
+                    "state": "debt",
+                    "wallet_id": order.wallet_1_id.id,
+                    "order_id": order.id,
+                }
+                money_debt_vals.update(self._prepare_currency_fields("RUB", -payment_amount))
+                MoneyModel.create(money_debt_vals)
+                _logger.info(f"Создан долговой контейнер для {order.partner_1_id.name}")
+                
+                # Создаем положительный контейнер для Вита
+                money_positive_vals = {
+                    "date": payment_date,
+                    "partner_id": order.partner_2_id.id,
+                    "currency": "rub",
+                    "amount": payment_amount,
+                    "state": "positive",
+                    "wallet_id": order.wallet_1_id.id,
+                    "order_id": order.id,
+                }
+                money_positive_vals.update(self._prepare_currency_fields("RUB", payment_amount))
+                MoneyModel.create(money_positive_vals)
+                _logger.info(f"Создан положительный контейнер для Вита")
+                
+                # Создаем сверку для Контрагента 1 (отрицательная сумма)
+                verif_partner1_vals = {
+                    "date": payment_date,
+                    "partner_id": order.partner_1_id.id,
+                    "currency": "rub",
+                    "sender_id": [(6, 0, [order.payer_1_id.id])] if order.payer_1_id else [(6, 0, [])],
+                    "receiver_id": [(6, 0, [order.payer_2_id.id])] if order.payer_2_id else [(6, 0, [])],
+                    "order_id": [(6, 0, [order.id])],
+                    "wallet_id": order.wallet_1_id.id,
+                }
+                verif_partner1_vals.update(self._prepare_currency_fields("RUB", -payment_amount))
+                VerificationModel.create(verif_partner1_vals)
+                _logger.info(f"Создана сверка для {order.partner_1_id.name} с суммой -{payment_amount} RUB")
+                
+                # Создаем сверку для Контрагента 2 (Вита) (положительная сумма)
+                verif_partner2_vals = {
+                    "date": payment_date,
+                    "partner_id": order.partner_2_id.id,
+                    "currency": "rub",
+                    "sender_id": [(6, 0, [order.payer_1_id.id])] if order.payer_1_id else [(6, 0, [])],
+                    "receiver_id": [(6, 0, [order.payer_2_id.id])] if order.payer_2_id else [(6, 0, [])],
+                    "order_id": [(6, 0, [order.id])],
+                    "wallet_id": order.wallet_1_id.id,
+                }
+                verif_partner2_vals.update(self._prepare_currency_fields("RUB", payment_amount))
+                VerificationModel.create(verif_partner2_vals)
+                _logger.info(f"Создана сверка для {order.partner_2_id.name} с суммой +{payment_amount} RUB")
+                
+                processed_orders.append(order.id)
+                
+            except Exception as e:
+                _logger.error(f"Ошибка при обработке ордера {order.name}: {e}")
+        
+        if processed_orders:
+            _logger.info(f"Успешно обработано {len(processed_orders)} ордеров с Вита")
+        else:
+            _logger.warning("Не найдено ордеров с Вита для обработки")
+        
+        _logger.info(f"Скрипт обработки платежки успешно завершён для: {self.name}!")
+        return True
+    
+    
