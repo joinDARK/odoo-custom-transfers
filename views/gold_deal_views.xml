@@ -11,7 +11,7 @@
         <field width="200" name="status"/>
         <field width="200" name="comment"/>
         <field width="200" name="date"/>
-        <field width="200" name="partner_ids"/>
+        <field width="200" name="partner_ids" widget="many2many_tags"/>
         <field width="200" name="pure_weight_sum"/>
         <field width="200" name="purchase_total_rub"/>
         <field width="200" name="purchase_total_dollar"/>
