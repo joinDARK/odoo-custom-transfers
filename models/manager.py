@@ -10,9 +10,23 @@ class Manager(models.Model, AmanatBaseModel):
     phone = fields.Char(string="Телефон")
     date = fields.Date(string="Дата")
     # Предполагается, что модель заявок существует (например, manager.application)
-    applications = fields.Many2many('amanat.zayavka', string="Заявки")
+    applications = fields.Many2many(
+        'amanat.zayavka',
+        'amanat_zayavka_manager_rel',
+        'manager_id',
+        'zayavka_id',
+        string="Заявки",
+        tracking=True
+    )
     # Поле "Проверяю" можно реализовать как флаг (Boolean) или, при необходимости, как строковое поле
-    checking = fields.Boolean(string="Проверяю")
+    checking = fields.Many2many(
+        'amanat.zayavka',
+        'amanat_zayavka_checker_rel',
+        'checker_id',
+        'zayavka_id',
+        string="Проверяю",
+        tracking=True
+    )
     # Поле "Задачник" реализовано как ссылка на модель задач (например, manager.task)
     task_manager = fields.Many2one('amanat.tasks', string="Задачник")
     total_applications = fields.Integer(string="Количество заявок за менеджером")

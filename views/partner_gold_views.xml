@@ -11,8 +11,53 @@
         <field width="200" name="deal_date"/>
         <field width="200" name="partner_id"/>
         <field width="200" name="payer_id"/>
+        <field width="200" name="price_per_oz"/>
+        <field width="200" name="discount_premium" widget="percentage"/>
+        <field width="200" name="bank_rate"/>
+        <field width="200" name="purchase_price_rub_per_gram"/>
+        <field width="200" name="pure_weight"/>
         <field width="200" name="amount_rub"/>
+        <field width="200" name="pure_weight_oz"/>
+        <field width="200" name="dollar_rate_formula"/>
+        <field width="200" name="dollar_rate"/>
         <field width="200" name="purchase_amount_dollar"/>
+        <field width="200" name="sale_date"/>
+        <field width="200" name="initial_price_per_oz"/>
+        <field width="200" name="sale_discount_per_oz"/>
+        <field width="200" name="sale_price_per_oz"/>
+        <field width="200" name="aed_rate"/>
+        <field width="200" name="sale_amount_aed"/>
+        <field width="200" name="usdt_rate"/>
+        <field width="200" name="purchase_usdt"/>
+        <field width="200" name="bank_percent" widget="percentage"/>
+        <field width="200" name="bank_amount"/>
+        <field width="200" name="service_percent" widget="percentage"/>
+        <field width="200" name="service_amount"/>
+        <field width="200" name="bank_kb_percent" widget="percentage"/>
+        <field width="200" name="bank_kb_amount"/>
+        <field width="200" name="courier_percent" widget="percentage"/>
+        <field width="200" name="courier_amount"/>
+        <field width="200" name="total_extra_expenses"/>
+        <field width="200" name="overall_pure_weight"/>
+        <field width="200" name="extra_expenses_computed"/>
+        <field width="200" name="gold_deal_ids"/>
+        <field width="200" name="total_expenses"/>
+        <field width="200" name="overall_amount"/>
+        <field width="200" name="profit"/>
+        <field width="200" name="deal_percentage"/>
+        <field width="200" name="final_rate"/>
+        <field width="200" name="order_ids"/>
+        <field width="200" name="has_royalty"/>
+        <field width="200" name="royalty_recipient_id"/>
+        <field width="200" name="first_percent"/>
+        <field width="200" name="royalty_amount_1"/>
+        <field width="200" name="payment_date"/>
+        <field width="200" name="conduct_gold_transfer"/>
+        <field width="200" name="wallet_id"/>
+        <field width="200" name="lookup_pure_weight"/>
+        <field width="200" name="lookup_invoice_amount"/>
+        <field width="200" name="partner_percentage"/>
+        <field width="200" name="partner_invoice_amount"/>
       </list>
     </field>
   </record>
@@ -32,7 +77,8 @@
           </group>
           <group>
             <field name="price_per_oz"/>
-            <field name="discount_premium"/>
+            <field name="pure_weight_oz"/>
+            <field name="discount_premium" widget="percentage"/>
             <field name="bank_rate"/>
           </group>
           <group>
@@ -58,15 +104,15 @@
             <field name="purchase_usdt" readonly="1"/>
           </group>
           <group>
-            <field name="bank_percent"/>
+            <field name="bank_percent" widget="percentage"/>
             <field name="bank_amount" readonly="1"/>
-            <field name="service_percent"/>
+            <field name="service_percent" widget="percentage"/>
             <field name="service_amount" readonly="1"/>
           </group>
           <group>
-            <field name="bank_kb_percent"/>
+            <field name="bank_kb_percent" widget="percentage"/>
             <field name="bank_kb_amount" readonly="1"/>
-            <field name="courier_percent"/>
+            <field name="courier_percent" widget="percentage"/>
             <field name="courier_amount" readonly="1"/>
           </group>
           <group>

@@ -1,5 +1,5 @@
 # models/base_model.py
-from odoo import models, api, fields
+from odoo import models, api
 from odoo.tools import html_escape
 
 class AmanatBaseModel(models.AbstractModel):

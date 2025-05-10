@@ -19,7 +19,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
         default='rub',
         tracking=True
     )
-    sum = fields.Float(string='Сумма', tracking=True, required=True)
+    sum = fields.Float(string='Сумма', tracking=True)
     wallet_id = fields.Many2one('amanat.wallet', string='Кошелек', tracking=True)
     sender_id = fields.Many2many(
         'amanat.payer',

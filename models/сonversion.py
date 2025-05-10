@@ -72,6 +72,9 @@ class Conversion(models.Model, AmanatBaseModel):
     cross_rate = fields.Float(
         string='Кросс-курс', digits=(16, 6), tracking=True
     )
+    cross_conversion_currency = fields.Selection(
+        CURRENCY_SELECTION, string='Кросс-валюта', tracking=True
+    )
 
     sender_id = fields.Many2one(
         'amanat.contragent', string='Отправитель', tracking=True
@@ -108,6 +111,7 @@ class Conversion(models.Model, AmanatBaseModel):
         'amanat.order', 'amanat_order_conversion_rel', 'conversion_id', 'order_id',
         string='Ордеры', tracking=True
     )
+
     contragent_count = fields.Selection(
         [('1', '1'), ('2', '2')], string='Кол-во КА', default='1', tracking=True
     )
@@ -242,73 +246,74 @@ class Conversion(models.Model, AmanatBaseModel):
 
 
     def action_execute_conversion(self):
-        """Создает ордер конвертации, но НЕ присваивает его к текущей записи.
-        Не используется при нажатии на кнопку 'Создать конвертацию'.
-        """
+        """Создает ордер конвертации и все связанные записи."""
         self.ensure_one()
         if not self.wallet_id:
             raise UserError(_('Не указан кошелек для конвертации.'))
+        
+        # Формируем комментарий в стиле Airtable
+        comment_text = _('Конвертация: %s -> %s, курс: %s') % (
+            self.currency, self.conversion_currency, self.rate)
+        if self.cross_envelope:
+            comment_text += _(' курс-кросс (%s)') % (self.cross_rate)
 
+        # создаём сам ордер
         order = self.env['amanat.order'].create({
-            'date': self.date,
-            'type': 'transfer',
-            'partner_1_id': self.sender_id.id,
-            'partner_2_id': self.receiver_id.id,
-            'payer_1_id': self.sender_payer_id.id,
-            'payer_2_id': self.receiver_payer_id.id,
-            'wallet_1_id': self.wallet_id.id,
-            'wallet_2_id': self.wallet_id.id,
-            'currency': self.currency,
-            'amount': self.amount,
-            'rate': self.rate,
-            'comment': _('Конвертация %s→%s по курсу %s') % (self.currency, self.conversion_currency, self.rate),
+            'date':          self.date,
+            'type':          'transfer',
+            'partner_1_id':  self.sender_id.id,
+            'partner_2_id':  self.receiver_id.id,
+            'payer_1_id':    self.sender_payer_id.id,
+            'payer_2_id':    self.receiver_payer_id.id,
+            'wallet_1_id':   self.wallet_id.id,
+            'wallet_2_id':   self.wallet_id.id,
+            'currency':      self.currency,
+            'amount':        self.amount,
+            'rate':          self.rate,
+            'comment':       comment_text,
         })
 
+        # базовая сумма для конвертации — либо cross_rate, либо amount
         base_amount = self.cross_rate if self.cross_envelope else self.amount
-        converted_amount = self._convert_amount(base_amount, self.currency, self.conversion_currency, self.rate)
 
+        # считаем результат с учётом направления конвертации
+        converted_amount = self._convert_amount(
+            amount=base_amount,
+            from_currency=self.currency,
+            to_currency=self.conversion_currency,
+            rate=self.rate
+        )
 
-        divide_currencies = {'rub', 'rub_cashe', 'thb', 'thb_cashe', 'aed', 'aed_cashe'}
-        multiply_currencies = {'usd', 'usd_cashe', 'euro', 'euro_cashe', 'usdt', 'cny', 'cny_cashe'}
-
-        if self.currency in divide_currencies and self.conversion_currency in multiply_currencies:
-            converted_amount = base_amount / self.rate
-        else:
-            converted_amount = base_amount * self.rate
-
-        # Получаем маппинг полей для конкретной валюты для исходящей суммы
+        # создаём записи Money: списание и поступление
         cf_map_out = self._currency_field_map(self.currency, -base_amount)
-        money_vals_out = {
-            'date': self.date,
-            'partner_id': self.sender_id.id,
-            'currency': self.currency,
-            'amount': -base_amount,
-            'state': 'debt',
-            'wallet_id': self.wallet_id.id,
-            'order_id': [(6, 0, [order.id])],
-            # Добавляем поля sum_*
-            **{k: v for k, v in cf_map_out.items() if k.startswith('sum_')},
-        }
+        cf_map_in  = self._currency_field_map(self.conversion_currency, converted_amount)
 
-        # Получаем маппинг полей для конкретной валюты для входящей суммы
-        cf_map_in = self._currency_field_map(self.conversion_currency, converted_amount)
-        money_vals_in = {
-            'date': self.date,
-            'partner_id': self.receiver_id.id,
-            'currency': self.conversion_currency,
-            'amount': converted_amount,
-            'state': 'positive',
-            'wallet_id': self.wallet_id.id,
-            'order_id': [(6, 0, [order.id])],
-            # Добавляем поля sum_*
-            **{k: v for k, v in cf_map_in.items() if k.startswith('sum_')},
-        }
+        money_vals = [
+            {
+                'date':      self.date,
+                'partner_id': self.sender_id.id,
+                'currency':   self.currency,
+                'amount':     -base_amount,
+                'state':      'debt',
+                'wallet_id':  self.wallet_id.id,
+                'order_id':   [(6, 0, [order.id])],
+                **{k: v for k, v in cf_map_out.items() if k.startswith('sum_')},
+            },
+            {
+                'date':      self.date,
+                'partner_id': self.receiver_id.id,
+                'currency':   self.conversion_currency,
+                'amount':     converted_amount,
+                'state':      'positive',
+                'wallet_id':  self.wallet_id.id,
+                'order_id':   [(6, 0, [order.id])],
+                **{k: v for k, v in cf_map_in.items() if k.startswith('sum_')},
+            },
+        ]
+        self.env['amanat.money'].create(money_vals)
 
-        self.env['amanat.money'].create([money_vals_out, money_vals_in])
-        
-        # Добавлено: присваиваем ордер к текущей записи
+        # связываем ордер с конвертацией
         self.order_id = [(4, order.id)]
-
         return order
 
     def _currency_field_map(self, currency, amount):
@@ -338,6 +343,15 @@ class Conversion(models.Model, AmanatBaseModel):
         if royalty_money:
             royalty_money.unlink()
             _logger.info('Удалено %d записей роялти для ордера (ID=%s)', len(royalty_money), order_id)
+
+        payer_royalty = self.env['amanat.payer'].search([('name', '=', 'Роялти')], limit=1)
+        if payer_royalty:
+            royalty_recons = self.env['amanat.reconciliation'].search([
+                ('order_id', '=', order_id),
+                ('sender_id', 'in', [payer_royalty.id])
+            ])
+            if royalty_recons:
+                royalty_recons.unlink()
 
     def _clear_orders_money_recon(self):
         """Удаляет все связанные ордера, записи в таблицах Money и Reconciliation"""
@@ -388,6 +402,12 @@ class Conversion(models.Model, AmanatBaseModel):
         
         # Сначала очищаем существующие ордера и связанные записи
         self._clear_orders_money_recon()
+
+        # Формируем комментарий в стиле Airtable
+        comment_text = _('Конвертация: %s -> %s, курс: %s') % (
+            self.currency, self.conversion_currency, self.rate)
+        if self.cross_envelope:
+            comment_text += _(' курс-кросс (%s)') % (self.cross_rate)
         
         # Затем создаем новый ордер
         order = self.env['amanat.order'].create({
@@ -402,9 +422,7 @@ class Conversion(models.Model, AmanatBaseModel):
             'currency': self.currency,
             'amount': self.amount,
             'rate': self.rate,
-            'comment': _('Конвертация %s→%s по курсу %s') % (
-                self.currency, self.conversion_currency, self.rate
-            ),
+            'comment': comment_text,
         })
         
         # Связываем ордер с текущей записью
@@ -417,20 +435,21 @@ class Conversion(models.Model, AmanatBaseModel):
 
     def _post_entries_for_order(self, order):
         """Создает записи в Money и Reconciliation для указанного ордера конвертации."""
+        # Use values from order's computed conversion fields
         out_amount = order.amount
-        in_amount = self._convert_amount(out_amount, self.currency, self.conversion_currency, self.rate)
-        
+        in_amount = order.amount_after_conv
+
         Money = self.env['amanat.money']
         Recon = self.env['amanat.reconciliation']
 
-        lines = [(self.currency, -out_amount, self.sender_payer_id),
-                (self.conversion_currency, in_amount, self.sender_payer_id)]
-        partners = [self.sender_id, self.sender_id]
+        # Build lines depending on contragent_count
+        lines = [(order.currency, -out_amount, self.sender_payer_id)]
+        partners = [self.sender_id]
         if self.contragent_count == '2':
             lines = [
-                (self.currency, -out_amount, self.sender_payer_id, self.receiver_payer_id),
+                (order.currency, -out_amount, self.sender_payer_id, self.receiver_payer_id),
                 (self.conversion_currency, in_amount, self.sender_payer_id, self.receiver_payer_id),
-                (self.currency, out_amount, self.sender_payer_id, self.receiver_payer_id),
+                (order.currency, out_amount, self.sender_payer_id, self.receiver_payer_id),
                 (self.conversion_currency, -in_amount, self.sender_payer_id, self.receiver_payer_id),
             ]
             partners = [self.sender_id, self.sender_id, self.receiver_id, self.receiver_id]
@@ -438,36 +457,31 @@ class Conversion(models.Model, AmanatBaseModel):
         for idx, vals in enumerate(lines):
             curr, amt, pay1 = vals[0], vals[1], vals[2]
             pay2 = vals[3] if len(vals) > 3 else pay1
-
-            # --- Money: generic + только sum_<currency>
             cf_map = self._currency_field_map(curr, amt)
             money_vals = {
-                'date':       self.date,
+                'date':       order.date,
                 'partner_id': partners[idx].id,
                 'currency':   curr,
                 'amount':     amt,
                 'state':      'debt' if amt < 0 else 'positive',
-                'wallet_id':  self.wallet_id.id,
-                'order_id':   [(6, 0, [order.id])],
-                # забираем только sum_<currency> для контейнера
+                'wallet_id':  order.wallet_1_id.id,
+                'order_id':   order.id,
                 **{k: v for k, v in cf_map.items() if k.startswith('sum_')},
             }
             Money.create(money_vals)
 
-            # --- Reconciliation: generic + только sum_<currency>
             recon_vals = {
-                'date':       self.date,
+                'date':       order.date,
                 'partner_id': partners[idx].id,
                 'currency':   curr,
                 'sum':        amt,
-                'wallet_id':  self.wallet_id.id,
+                'wallet_id':  order.wallet_1_id.id,
                 'order_id':   [(6, 0, [order.id])],
                 'sender_id':  [(6, 0, [pay1.id])],
                 'receiver_id':[(6, 0, [pay2.id])],
                 **{k: v for k, v in cf_map.items() if k.startswith('sum_')},
             }
             Recon.create(recon_vals)
-
 
     def _create_royalty_entries(self):
         """Создает записи роялти на основе суммы роялти в исходной валюте, аналогично Airtable."""
@@ -518,7 +532,7 @@ class Conversion(models.Model, AmanatBaseModel):
                 'amount':     -amt1,
                 'state':      'debt',
                 'wallet_id':  self.wallet_id.id,
-                'order_id':   [(6, 0, [order.id])],
+                'order_id':   order.id,
                 'royalty':    True,  # Помечаем запись как роялти
                 **{k: v for k, v in cf_map_1.items() if k.startswith('sum_')},
             }
@@ -558,7 +572,7 @@ class Conversion(models.Model, AmanatBaseModel):
                 'amount':     -amt2,
                 'state':      'debt',
                 'wallet_id':  self.wallet_id.id,
-                'order_id':   [(6, 0, [order.id])],
+                'order_id':   order.id,
                 'royalty':    True,  # Помечаем запись как роялти
                 **{k: v for k, v in cf_map_2.items() if k.startswith('sum_')},
             }
@@ -581,23 +595,23 @@ class Conversion(models.Model, AmanatBaseModel):
 
     def _convert_amount(self, amount, from_currency, to_currency, rate):
         """
-        Конвертирует сумму из одной валюты в другую с учетом направления конвертации.
-        
-        :param amount: Сумма для конвертации
-        :param from_currency: Исходная валюта
-        :param to_currency: Целевая валюта
-        :param rate: Курс конвертации
-        :return: Конвертированная сумма
+        Конвертирует сумму из одной валюты в другую.
+        Делим, если направление между группами base_div ↔ target_div,
+        иначе умножаем.
         """
         if not rate:
-            rate = 1
-            
-        # Валюты, для которых применяется деление при конвертации в другую группу
-        divide_currencies = {'rub', 'rub_cashe', 'thb', 'thb_cashe', 'aed', 'aed_cashe'}
-        # Валюты, для которых применяется умножение при конвертации из другой группы
-        multiply_currencies = {'usd', 'usd_cashe', 'euro', 'euro_cashe', 'usdt', 'cny', 'cny_cashe'}
-        
-        if from_currency in divide_currencies and to_currency in multiply_currencies:
+            rate = 1.0
+
+        base_div   = {'rub', 'rub_cashe', 'thb', 'thb_cashe', 'aed', 'aed_cashe'}
+        target_div = {'usd', 'usd_cashe', 'euro', 'euro_cashe', 'usdt', 'cny', 'cny_cashe'}
+
+        # проверяем, попадают ли валюты в разные группы
+        is_cross_group = (
+            (from_currency in base_div   and to_currency in target_div) or
+            (from_currency in target_div and to_currency in base_div)
+        )
+
+        if is_cross_group:
             return amount / rate
         else:
             return amount * rate

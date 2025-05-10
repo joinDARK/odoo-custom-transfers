@@ -126,7 +126,14 @@ class Order(models.Model, AmanatBaseModel):
     )
 
     # Золото
-    gold = fields.Float(string='Золото', tracking=True)
+    gold = fields.Many2many(
+        'amanat.gold_deal',
+        'amanat_order_gold_deal_rel',
+        'order_id',
+        'gold_deal_id',
+        string='Золото', 
+        tracking=True
+    )
 
     # Конвертация
     conversion_ids = fields.Many2many(
@@ -173,6 +180,19 @@ class Order(models.Model, AmanatBaseModel):
         string='В какую валюту (from Конвертация)',
         compute='_compute_conversion_fields', store=True
     )
+    cross_currency = fields.Selection(
+        [
+            ('rub', 'RUB'), ('rub_cashe', 'RUB КЕШ'),
+            ('usd', 'USD'), ('usd_cashe', 'USD КЕШ'),
+            ('usdt', 'USDT'),
+            ('euro', 'EURO'), ('euro_cashe', 'EURO КЕШ'),
+            ('cny', 'CNY'), ('cny_cashe', 'CNY КЕШ'),
+            ('aed', 'AED'), ('aed_cashe', 'AED КЕШ'),
+            ('thb', 'THB'), ('thb_cashe', 'THB КЕШ'),
+        ],
+        string='Кросс валюта (from Конвертация)',
+        compute='_compute_conversion_fields', store=True
+    )
 
     # formula-поля
     cross_calc = fields.Float(
@@ -185,7 +205,14 @@ class Order(models.Model, AmanatBaseModel):
     )
 
     # Финал
-    partner_gold = fields.Float(string='Партнеры золото', tracking=True)
+    partner_gold = fields.Many2many(
+        'amanat.partner_gold',
+        'amanat_order_partner_gold_rel',
+        'order_id',
+        'partner_gold_id',
+        string='Партнеры золото', 
+        tracking=True
+    )
     write_off = fields.Float(string='Списания', tracking=True)
     rollup_write_off = fields.Float(string='Роллап списания', tracking=True)
     reconciliation = fields.Float(string='Сверка', tracking=True)
@@ -220,49 +247,60 @@ class Order(models.Model, AmanatBaseModel):
                 rec.amount_2 = rec.amount - rec.rko_2
             # Вычисляем общий итог
             rec.total = rec.amount - rec.rko
-
+    
     @api.depends(
         'conversion_ids.cross_envelope',
         'conversion_ids.cross_rate',
+        'conversion_ids.rate',  # добавлено
         'conversion_ids.currency',
         'conversion_ids.conversion_currency',
+        'conversion_ids.cross_conversion_currency',
         'amount', 'rate'
     )
-    
     def _compute_conversion_fields(self):
         base_div = {'rub', 'rub_cashe', 'thb', 'thb_cashe', 'aed', 'aed_cashe'}
         target_div = {'usd', 'usd_cashe', 'euro', 'euro_cashe', 'usdt', 'cny', 'cny_cashe'}
+
         for rec in self:
-            # первая кроссовая конверсия
             cross = rec.conversion_ids.filtered('cross_envelope')
             if cross:
                 c = cross[0]
                 rec.cross_from = True
-                rec.cross_rate = c.cross_rate
+                rec.cross_rate = c.cross_rate or 0.0
                 rec.currency_from_conv = c.currency
                 rec.currency_to_copy = c.conversion_currency
-                # расчёт cross_calc
-                if c.currency in base_div and c.conversion_currency in target_div:
+                rec.cross_currency = c.cross_conversion_currency
+
+                # расчёт промежуточного значения
+                if c.currency in base_div and c.cross_conversion_currency in target_div:
                     rec.cross_calc = rec.amount / (c.cross_rate or 1.0)
                 else:
                     rec.cross_calc = rec.amount * (c.cross_rate or 1.0)
-                # расчёт amount_after_conv
-                if c.conversion_currency in base_div and c.currency in target_div:
-                    rec.amount_after_conv = rec.cross_calc / (c.rate or 1.0)
+
+                # используем c.rate из cross-конверсии
+                conversion_rate = c.rate or 1.0
+
+                if ((c.conversion_currency in base_div and c.cross_conversion_currency in target_div) or
+                    (c.conversion_currency in target_div and c.cross_conversion_currency in base_div)):
+                    rec.amount_after_conv = rec.cross_calc / conversion_rate
                 else:
-                    rec.amount_after_conv = rec.cross_calc * (c.rate or 1.0)
+                    rec.amount_after_conv = rec.cross_calc * conversion_rate
+
             elif rec.conversion_ids:
-                # обычная первая конверсия
                 c2 = rec.conversion_ids[0]
                 rec.cross_from = False
                 rec.cross_rate = 0.0
                 rec.currency_from_conv = c2.currency
                 rec.currency_to_copy = c2.conversion_currency
                 rec.cross_calc = rec.amount
-                if c2.currency in base_div and c2.conversion_currency in target_div:
-                    rec.amount_after_conv = rec.amount / (c2.rate or 1.0)
+
+                rate = c2.rate or 1.0
+                if ((c2.currency in base_div and c2.conversion_currency in target_div) or
+                    (c2.currency in target_div and c2.conversion_currency in base_div)):
+                    rec.amount_after_conv = rec.amount / rate
                 else:
-                    rec.amount_after_conv = rec.amount * (c2.rate or 1.0)
+                    rec.amount_after_conv = rec.amount * rate
+
             else:
                 rec.cross_from = False
                 rec.cross_rate = 0.0
@@ -270,7 +308,6 @@ class Order(models.Model, AmanatBaseModel):
                 rec.currency_to_copy = False
                 rec.cross_calc = 0.0
                 rec.amount_after_conv = 0.0
-
 
     @api.depends('amount', 'operation_percent', 'our_percent')
     def _compute_financials(self):

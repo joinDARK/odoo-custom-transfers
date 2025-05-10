@@ -10,6 +10,9 @@
                 <!-- Если хотите видеть системный ID, можно добавить -->
                 <field name="id_spisaniya"/>
                 <field name="date"/>
+                <field name="sender_id"/>
+                <field name="sender_payer_id"/>
+                <field name="sender_wallet_id"/>
                 <field name="amount"/>
                 <field name="money_id"/>
                 <field name="writeoff_investment"/>
@@ -28,8 +31,12 @@
                         <!-- То же самое: если нужно id, можно добавить <field name="id" readonly="1"/> -->
                         <field name="id_spisaniya"/>
                         <field name="date"/>
+                        <field name="sender_id"/>
+                        <field name="sender_payer_id"/>
+                        <field name="sender_wallet_id"/>
                         <field name="amount"/>
                         <field name="money_id"/>
+                        <field name="investment_ids" widget="many2many_tags"/>
                         <field name="writeoff_investment"/>
                     </group>
                 </sheet>

@@ -209,7 +209,7 @@ class Reserve(models.Model, AmanatBaseModel):
             'partner_id': partner.id,
             'currency': order.currency,
             'amount': amount,
-            'order_id': [(6, 0, [order.id])],
+            'order_id': order.id,
             'state': 'positive' if amount > 0 else 'debt',
             **currency_fields
         })
@@ -302,7 +302,7 @@ class Reserve(models.Model, AmanatBaseModel):
                     'partner_id': recipient.id,
                     'currency': self.currency,
                     'amount': royalty_sum,
-                    'order_id': [(6, 0, [order.id])],
+                    'order_id': order.id,
                     'state': 'debt',
                     **fields
                 })
