@@ -4,7 +4,7 @@ from .base_model import AmanatBaseModel
 class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
     _name = 'amanat.price_list_payer_carrying_out'
     _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
-    _description = 'Прайс лист: Плательщик-Исполнение'
+    _description = 'Прайс лист Плательщика За проведение'
 
     name = fields.Char(string="Наименования", tracking=True)
     payer_partner = fields.Many2one('amanat.payer', string="Плательщик субагенты", tracking=True)
@@ -13,12 +13,16 @@ class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
     date_end = fields.Date(string="Дата конец", tracking=True)
     today_date = fields.Date(string="Даты TODAY", default=fields.Date.context_today, tracking=True)
     period_days = fields.Integer(string="Период дней", compute="_compute_period_days", store=True)
-    accrual_percentage = fields.Float(string="Начисления", tracking=True)
+    accrual_percentage = fields.Float(string="% Начисления", tracking=True)
     fixed_deal_fee = fields.Float(string="Фикс за сделку в $", tracking=True)
-    min_application_amount = fields.Float(string="Минимальная сумма заявки", tracking=True)
-    max_application_amount = fields.Float(string="Максимальная сумма заявки", tracking=True)
+    min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)
+    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True)
     bind_field = fields.Boolean(string="Привязать", tracking=True)
-    applications = fields.One2many('amanat.applications', 'price_list_payer_carrying_out_id', string="Заявки")
+    zayavka_ids = fields.One2many(
+        'amanat.zayavka',               # модель заявок
+        'price_list_carrying_out_id',   # имя поля Many2one в заявке
+        string='Заявки'
+    )
 
     @api.depends('date_start', 'date_end')
     def _compute_period_days(self):

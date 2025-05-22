@@ -28,7 +28,7 @@
                 <field width="200" name="comment"/>
                 <field width="200" name="is_confirmed"/>
                 <field name="status"/>
-                <field name="money"/>
+                <field name="money_ids"/>
                 <field width="200" name="reserve_ids" widget="many2many_tags"/>
                 <field width="200" name="conversion_ids" widget="many2many_tags"/>
                 <field width="200" name="converted_amount"/>
@@ -97,7 +97,7 @@
                         <field name="rko_2"/>
                         <field name="amount_2"/>
                         <field name="total"/>
-                        <field name="money"/>
+                        <field name="money_ids"/>
                         <field name="reserve_ids"/>
                         <field name="conversion_ids" widget="many2many_tags"/>
                         <field name="converted_amount"/>

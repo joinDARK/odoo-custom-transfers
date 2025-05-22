@@ -125,7 +125,7 @@ class GoldDeal(models.Model):
     conduct_in = fields.Boolean(string="Провести вход", default=False, tracking=True)
 
     # 20. Провести выход
-    conduct_out = fields.Boolean(string="Провести выход", default=False, tracking=True)
+    conduct_out = fields.Boolean(string="Провести выход", default=False)
 
     # 21. Проводка Вита
     vita_posting = fields.Boolean(string="Проводка Вита", default=False, tracking=True)
@@ -138,7 +138,7 @@ class GoldDeal(models.Model):
 
     # 24. Пометить на удаление
     mark_for_deletion = fields.Boolean(
-        string="Пометить на удаление", default=False, tracking=True
+        string="Удалить", default=False, tracking=True
     )
 
     # 25. Сумма по инвойсу
@@ -160,7 +160,6 @@ class GoldDeal(models.Model):
     extract_delivery_ids = fields.Many2many(
         "amanat.extract_delivery",
         string="Платежка",
-        tracking=True,
         domain="[('direction_choice', '=', 'gold_deal')]",  # добавляем домен для фильтрации по золотым сделкам
     )
 
@@ -252,13 +251,21 @@ class GoldDeal(models.Model):
             rec.difference = rec.purchase_total_rub - rec.invoice_amount
 
     @staticmethod
-    def _prepare_currency_fields(currency_name: str, amount: float):
+    def _prepare_currency_fields(currency_name: str, amount: float): # TODO доделать метод
         mapping = {
             "RUB": "sum_rub",
             "RUB_CASH": "sum_rub_cash",
             "USD": "sum_usd",
             "USD_CASH": "sum_usd_cash",
-            # … остальные валюты, КАКИЕ ЕСТЬ В МОДЕЛИ
+            "USDT": "sum_usdt",
+            "AED": "sum_aed",
+            "CNY": "sum_cny",
+            "CNY_CASH": "sum_cny_cash",
+            "EURO": "sum_euro",
+            "EURO_CASH": "sum_euro_cash",
+            "THB": "sum_thb",
+            "THB_CASH": "sum_thb_cash",
+            # … добавьте другие валюты по аналогии
         }
         field_name = mapping.get(currency_name.upper())
         return {field_name: amount} if field_name else {}
@@ -308,6 +315,10 @@ class GoldDeal(models.Model):
                 rec._action_process_gold_deal_distribution_logic()
                 rec._action_process_gold_deal_profit_distribution_logic()
                 rec.conduct_out = False
+
+            if 'extract_delivery_ids' in vals and rec.extract_delivery_ids:
+                _logger.info(f"Изменено поле 'Платежка' для сделки: {rec.name}")
+                rec._action_process_gold_deal_payment_logic()
 
         return res
 
@@ -360,26 +371,54 @@ class GoldDeal(models.Model):
         # Контрагенты
         gold_contragent = ContragentModel.search([("name", "=", "Золото")], limit=1)
         vita_contragent = ContragentModel.search([("name", "=", "Вита")], limit=1)
-        if not gold_contragent:
-            raise UserError("Контрагент 'Золото' не найден.")
-        if not vita_contragent:
-            raise UserError("Контрагент 'Вита' не найден.")
 
-        # Кошельки (предполагаем, что у кошельков тоже есть 'name')
+        # Создаем контрагентов, если они не найдены
+        if not gold_contragent:
+            gold_contragent = ContragentModel.create({
+                "name": "Золото",
+            })
+            _logger.info("Создан контрагент 'Золото'")
+
+        if not vita_contragent:
+            vita_contragent = ContragentModel.create({
+                "name": "Вита",
+            })
+            _logger.info("Создан контрагент 'Вита'")
+
+        # Кошельки
         gold_wallet = WalletModel.search([("name", "=", "Золото")], limit=1)
         if not gold_wallet:
-            raise UserError("Кошелек 'Золото' не найден.")
+            gold_wallet = WalletModel.create({
+                "name": "Золото",
+            })
+            _logger.info("Создан кошелек 'Золото'")
 
-        # Плательщики (предполагаем, что у плательщиков тоже есть 'name')
-        # Если Плательщик это тот же Контрагент, используйте ContragentModel
-        gold_payer = PayerModel.search(
-            [("name", "=", "Золото")], limit=1
-        )  # или ('partner_id.name', '=', 'Золото') если это res.partner
+        # Плательщики
+        gold_payer = PayerModel.search([("name", "=", "Золото")], limit=1)
         vita_payer = PayerModel.search([("name", "=", "Вита")], limit=1)
+
+        # Создаем плательщиков и связываем с контрагентами, если они не найдены
         if not gold_payer:
-            raise UserError("Плательщик 'Золото' не найден.")
+            gold_payer = PayerModel.create({
+                "name": "Золото",
+                "contragents_ids": [(6, 0, [gold_contragent.id])]
+            })
+            # Обновляем связь с обратной стороны
+            gold_contragent.write({
+                "payer_ids": [(6, 0, [gold_payer.id])]
+            })
+            _logger.info("Создан плательщик 'Золото' и связан с контрагентом 'Золото'")
+
         if not vita_payer:
-            raise UserError("Плательщик 'Вита' не найден.")
+            vita_payer = PayerModel.create({
+                "name": "Вита",
+                "contragents_ids": [(6, 0, [vita_contragent.id])]
+            })
+            # Обновляем связь с обратной стороны
+            vita_contragent.write({
+                "payer_ids": [(6, 0, [vita_payer.id])]
+            })
+            _logger.info("Создан плательщик 'Вита' и связан с контрагентом 'Вита'")
 
         total_rub_amount_for_vita_order = 0.0
         created_orders_for_deal = []
@@ -585,21 +624,21 @@ class GoldDeal(models.Model):
         OrderModel = self.env["amanat.order"]
         MoneyModel = self.env["amanat.money"]
         VerificationModel = self.env["amanat.reconciliation"]
-        
-        # Проверка наличия покупателя
-        if not self.buyer_id:
-            raise UserError(f"Не указан покупатель в сделке: {self.name}")
-        
+
         # Проверка наличия партнеров и дат
         if not self.partner_ids:
             raise UserError(f"Нет партнеров для создания ордеров выхода в сделке: {self.name}")
-        
+                
         # Используем дату продажи из первого партнера (как в скрипте Airtable)
         sale_date = None
         for partner in self.partner_ids:
             if hasattr(partner, 'sale_date') and partner.sale_date:
                 sale_date = partner.sale_date
                 break
+        
+        # Проверка наличия покупателя
+        if not self.buyer_id:
+            raise UserError(f"Не указан покупатель в сделке: {self.name}")
         
         if not sale_date:
             # Если нет даты продажи, используем текущую дату
@@ -749,25 +788,45 @@ class GoldDeal(models.Model):
             # Если нет даты продажи, используем текущую дату
             sale_date = fields.Date.today()
         
-        # Получаем необходимые контрагенты и кошелек
-        gold_contragent = ContragentModel.search([("name", "=", "Золото")], limit=1)
-        service_contragent = ContragentModel.search([("name", "=", "Услуга")], limit=1)
-        bank_sum_contragent = ContragentModel.search([("name", "=", "Банк сумм")], limit=1)
-        bank_kb_contragent = ContragentModel.search([("name", "=", "Банк КБ")], limit=1)
-        courier_contragent = ContragentModel.search([("name", "=", "Курьер")], limit=1)
-        
-        if not gold_contragent:
-            raise UserError("Не найден контрагент 'Золото'")
-        
-        # Получаем плательщиков
-        gold_payer = PayerModel.search([("name", "=", "Золото")], limit=1)
-        service_payer = PayerModel.search([("name", "=", "Услуга")], limit=1)
-        bank_sum_payer = PayerModel.search([("name", "=", "Банк сумм")], limit=1)
-        bank_kb_payer = PayerModel.search([("name", "=", "Банк КБ")], limit=1)
-        courier_payer = PayerModel.search([("name", "=", "Курьер")], limit=1)
-        
-        if not gold_payer:
-            raise UserError("Не найден плательщик 'Золото'")
+        # Получаем или создаём контрагенты
+        def get_or_create_contragent(name):
+            contragent = ContragentModel.search([("name", "=", name)], limit=1)
+            if not contragent:
+                contragent = ContragentModel.create({"name": name})
+                _logger.info(f"Создан контрагент '{name}'")
+            return contragent
+
+        gold_contragent = get_or_create_contragent("Золото")
+        service_contragent = get_or_create_contragent("Услуга")
+        bank_sum_contragent = get_or_create_contragent("Банк сумм")
+        bank_kb_contragent = get_or_create_contragent("Банк КБ")
+        courier_contragent = get_or_create_contragent("Курьер")
+
+        # Получаем или создаём кошелёк "Золото"
+        gold_wallet = WalletModel.search([("name", "=", "Золото")], limit=1)
+        if not gold_wallet:
+            gold_wallet = WalletModel.create({"name": "Золото"})
+            _logger.info("Создан кошелек 'Золото'")
+
+        # Получаем или создаём плательщиков
+        def get_or_create_payer(name, contragent):
+            payer = PayerModel.search([("name", "=", name)], limit=1)
+            if not payer:
+                payer = PayerModel.create({
+                    "name": name,
+                    "contragents_ids": [(6, 0, [contragent.id])]
+                })
+                contragent.write({
+                    "payer_ids": [(6, 0, [payer.id])]
+                })
+                _logger.info(f"Создан плательщик '{name}' и связан с контрагентом '{name}'")
+            return payer
+
+        gold_payer = get_or_create_payer("Золото", gold_contragent)
+        service_payer = get_or_create_payer("Услуга", service_contragent)
+        bank_sum_payer = get_or_create_payer("Банк сумм", bank_sum_contragent)
+        bank_kb_payer = get_or_create_payer("Банк КБ", bank_kb_contragent)
+        courier_payer = get_or_create_payer("Курьер", courier_contragent)
         
         # Получаем кошелек
         gold_wallet = WalletModel.search([("name", "=", "Золото")], limit=1)
@@ -776,7 +835,6 @@ class GoldDeal(models.Model):
         
         # Валюта для всех операций - USDT
         currency = "usdt"
-        created_orders = []
         
         # Обработка каждого контрагента и создание соответствующих ордеров
         
@@ -802,7 +860,10 @@ class GoldDeal(models.Model):
                 }
                 
                 service_order = OrderModel.create(order_vals)
-                created_orders.append(service_order.id)
+                if self.order_ids:
+                    self.order_ids = [(4, service_order.id, 0)]
+                else:
+                    self.order_ids = [(6, 0, [service_order.id])]
                 _logger.info(f"Создан ордер Услуга: {service_order.name if hasattr(service_order, 'name') else service_order.id}")
                 
                 # Создаем долговой контейнер для Услуги
@@ -886,7 +947,6 @@ class GoldDeal(models.Model):
                 }
                 
                 bank_sum_order = OrderModel.create(order_vals)
-                created_orders.append(bank_sum_order.id)
                 _logger.info(f"Создан ордер Банк сумм: {bank_sum_order.name if hasattr(bank_sum_order, 'name') else bank_sum_order.id}")
                 
                 # Создаем долговой контейнер для Банк сумм
@@ -970,7 +1030,6 @@ class GoldDeal(models.Model):
                 }
                 
                 bank_kb_order = OrderModel.create(order_vals)
-                created_orders.append(bank_kb_order.id)
                 _logger.info(f"Создан ордер Банк КБ: {bank_kb_order.name if hasattr(bank_kb_order, 'name') else bank_kb_order.id}")
                 
                 # Создаем долговой контейнер для Банк КБ
@@ -1054,7 +1113,6 @@ class GoldDeal(models.Model):
                 }
                 
                 courier_order = OrderModel.create(order_vals)
-                created_orders.append(courier_order.id)
                 _logger.info(f"Создан ордер Курьер: {courier_order.name if hasattr(courier_order, 'name') else courier_order.id}")
                 
                 # Создаем долговой контейнер для Курьера
@@ -1115,13 +1173,6 @@ class GoldDeal(models.Model):
                 
             except Exception as e:
                 _logger.error(f"Ошибка при создании ордера Курьер: {e}")
-        
-        # Добавляем созданные ордера к списку ордеров сделки
-        if created_orders:
-            if self.order_ids:
-                self.order_ids = [(4, order_id, 0) for order_id in created_orders]
-            else:
-                self.order_ids = [(6, 0, created_orders)]
         
         _logger.info(f"Скрипт распределения USDT успешно завершён для: {self.name}!")
         return True
@@ -1292,15 +1343,12 @@ class GoldDeal(models.Model):
         return True
 
     # "Золото Вход" Платежка
-    @api.depends('extract_delivery_ids')
+    @api.onchange('extract_delivery_ids')
     def _onchange_extract_delivery_ids(self):
         for rec in self:
             if rec.extract_delivery_ids:
                 _logger.info(f"Изменено поле 'Платежка' для сделки: {rec.name}")
-                # Вызываем метод обработки платежки только если флаг conduct_out не установлен
-                # Это предотвращает повторную обработку
-                if not rec.conduct_out:
-                    rec._action_process_gold_deal_payment_logic()
+                rec._action_process_gold_deal_payment_logic()
     
     def _action_process_gold_deal_payment_logic(self):
         """
@@ -1320,11 +1368,10 @@ class GoldDeal(models.Model):
         
         # Проверка получателя в платежке
         # В скрипте Airtable проверяется, что получатель - "Вита"
-        if not hasattr(payment, 'receiver_id') or not payment.receiver_id:
+        if not hasattr(payment, 'recipient') or not payment.recipient:
             _logger.warning(f"Не указан получатель в платежке для сделки: {self.name}")
-            return False
         
-        if payment.receiver_id.name != "Вита":
+        if payment.recipient.name != "Вита":
             _logger.warning(f"Получатель платежки не 'Вита', завершаем обработку для сделки: {self.name}")
             return False
         
@@ -1438,9 +1485,7 @@ class GoldDeal(models.Model):
         if processed_orders:
             _logger.info(f"Успешно обработано {len(processed_orders)} ордеров с Вита")
         else:
-            _logger.warning("Не найдено ордеров с Вита для обработки")
+            _logger.warning("Не найдено ордеров с Вита для обработки или еще не сохранена платежка в золоте")
         
         _logger.info(f"Скрипт обработки платежки успешно завершён для: {self.name}!")
         return True
-    
-    

@@ -19,6 +19,24 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
 
     raznesti = fields.Boolean(string='Разнести', tracking=True)
 
+    bank = fields.Selection(
+        [
+            ('mti', 'МТИ'),
+            ('sberbank', 'Сбербанк'),
+            ('sovkombank', 'Совкомбанк'),
+            ('morskoy', 'Морской'),
+            ('ingosstrah', 'Ингосстрах'),
+            ('rosbank', 'Росбанк'),
+            ('sdm_bank', 'СДМ банк'),
+            ('vtb', 'ВТБ'),
+            ('nbs', 'НБС'),
+            ('zenit', 'Зенит'),
+            ('absolut', 'Абсолют'),
+        ],
+        string='Банк',
+        tracking=True
+    )
+
     extract_delivery_ids = fields.Many2many(
         'amanat.extract_delivery',
         'amanat_extracts_extract_rel',

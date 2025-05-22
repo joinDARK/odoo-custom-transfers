@@ -112,6 +112,14 @@ class Order(models.Model, AmanatBaseModel):
     ], string='Статус', default='draft', tracking=True)
 
     # Привязка к заявке
+    zayavka_ids = fields.Many2many(
+        'amanat.zayavka',
+        'amanat_zayavka_order_rel',
+        'order_id',
+        'zayavka_id',
+        string='Заявки',
+        tracking=True
+    )
     money = fields.Float(string='Деньги', tracking=True)
     converted_amount = fields.Float(string='Валюта(из заявки)', tracking=True)
 
@@ -228,6 +236,167 @@ class Order(models.Model, AmanatBaseModel):
         inverse_name='order_ids',
     )
 
+    DIRECT_RULES = {
+        ('aed', 'aed'): 'mul',
+        ('aed', 'aed_cashe'): 'mul',
+        ('aed', 'cny'): 'mul',
+        ('aed', 'cny_cashe'): 'mul',
+        ('aed', 'euro'): 'div',
+        ('aed', 'euro_cashe'): 'div',
+        ('aed', 'rub'): 'mul',
+        ('aed', 'rub_cashe'): 'mul',
+        ('aed', 'usd'): 'div',
+        ('aed', 'usd_cashe'): 'div',
+        ('aed', 'usdt'): 'div',
+        ('cny', 'aed'): 'mul',
+        ('cny', 'aed_cashe'): 'mul',
+        ('cny', 'cny'): 'mul',
+        ('cny', 'cny_cashe'): 'mul',
+        ('cny', 'euro'): 'mul',
+        ('cny', 'euro_cashe'): 'mul',
+        ('cny', 'rub'): 'mul',
+        ('cny', 'rub_cashe'): 'mul',
+        ('cny', 'usd'): 'mul',
+        ('cny', 'usd_cashe'): 'mul',
+        ('cny', 'usdt'): 'mul',
+        ('cny_cashe', 'aed'): 'mul',
+        ('cny_cashe', 'aed_cashe'): 'mul',
+        ('cny_cashe', 'cny'): 'mul',
+        ('cny_cashe', 'cny_cashe'): 'mul',
+        ('cny_cashe', 'euro'): 'mul',
+        ('cny_cashe', 'euro_cashe'): 'mul',
+        ('cny_cashe', 'rub'): 'mul',
+        ('cny_cashe', 'rub_cashe'): 'mul',
+        ('cny_cashe', 'usd'): 'mul',
+        ('cny_cashe', 'usd_cashe'): 'mul',
+        ('cny_cashe', 'usdt'): 'mul',
+        ('euro', 'aed'): 'mul',
+        ('euro', 'aed_cashe'): 'mul',
+        ('euro', 'cny'): 'mul',
+        ('euro', 'cny_cashe'): 'mul',
+        ('euro', 'euro'): 'mul',
+        ('euro', 'euro_cashe'): 'mul',
+        ('euro', 'rub'): 'mul',
+        ('euro', 'rub_cashe'): 'mul',
+        ('euro', 'usd'): 'mul',
+        ('euro', 'usd_cashe'): 'mul',
+        ('euro', 'usdt'): 'mul',
+        ('euro_cashe', 'aed'): 'mul',
+        ('euro_cashe', 'aed_cashe'): 'mul',
+        ('euro_cashe', 'cny'): 'mul',
+        ('euro_cashe', 'cny_cashe'): 'mul',
+        ('euro_cashe', 'euro'): 'mul',
+        ('euro_cashe', 'euro_cashe'): 'mul',
+        ('euro_cashe', 'rub'): 'mul',
+        ('euro_cashe', 'rub_cashe'): 'mul',
+        ('euro_cashe', 'usd'): 'mul',
+        ('euro_cashe', 'usd_cashe'): 'mul',
+        ('euro_cashe', 'usdt'): 'mul',
+        ('rub', 'aed'): 'mul',
+        ('rub', 'aed_cashe'): 'mul',
+        ('rub', 'cny'): 'div',
+        ('rub', 'cny_cashe'): 'div',
+        ('rub', 'euro'): 'div',
+        ('rub', 'euro_cashe'): 'div',
+        ('rub', 'rub'): 'mul',
+        ('rub', 'rub_cashe'): 'mul',
+        ('rub', 'usd'): 'div',
+        ('rub', 'usd_cashe'): 'div',
+        ('rub', 'usdt'): 'div',
+        ('rub_cashe', 'aed'): 'mul',
+        ('rub_cashe', 'aed_cashe'): 'mul',
+        ('rub_cashe', 'cny'): 'div',
+        ('rub_cashe', 'cny_cashe'): 'div',
+        ('rub_cashe', 'euro'): 'div',
+        ('rub_cashe', 'euro_cashe'): 'div',
+        ('rub_cashe', 'rub'): 'mul',
+        ('rub_cashe', 'rub_cashe'): 'mul',
+        ('rub_cashe', 'usd'): 'div',
+        ('rub_cashe', 'usd_cashe'): 'div',
+        ('rub_cashe', 'usdt'): 'div',
+        ('usd', 'aed'): 'mul',
+        ('usd', 'aed_cashe'): 'mul',
+        ('usd', 'cny'): 'mul',
+        ('usd', 'cny_cashe'): 'mul',
+        ('usd', 'euro'): 'mul',
+        ('usd', 'euro_cashe'): 'mul',
+        ('usd', 'rub'): 'mul',
+        ('usd', 'rub_cashe'): 'mul',
+        ('usd', 'usd'): 'mul',
+        ('usd', 'usd_cashe'): 'mul',
+        ('usd', 'usdt'): 'mul',
+        ('usd_cashe', 'aed'): 'mul',
+        ('usd_cashe', 'aed_cashe'): 'mul',
+        ('usd_cashe', 'cny'): 'mul',
+        ('usd_cashe', 'cny_cashe'): 'mul',
+        ('usd_cashe', 'euro'): 'mul',
+        ('usd_cashe', 'euro_cashe'): 'mul',
+        ('usd_cashe', 'rub'): 'mul',
+        ('usd_cashe', 'rub_cashe'): 'mul',
+        ('usd_cashe', 'usd'): 'mul',
+        ('usd_cashe', 'usd_cashe'): 'mul',
+        ('usd_cashe', 'usdt'): 'mul',
+        ('usdt', 'aed'): 'mul',
+        ('usdt', 'aed_cashe'): 'mul',
+        ('usdt', 'cny'): 'mul',
+        ('usdt', 'cny_cashe'): 'mul',
+        ('usdt', 'euro'): 'mul',
+        ('usdt', 'euro_cashe'): 'mul',
+        ('usdt', 'rub'): 'mul',
+        ('usdt', 'rub_cashe'): 'mul',
+        ('usdt', 'usd'): 'mul',
+        ('usdt', 'usd_cashe'): 'mul',
+        ('usdt', 'usdt'): 'mul',
+    }
+
+    CROSS_RULES_STAGE_1 = {
+        ('usdt', 'rub'): 'mul',
+        ('usdt', 'usd'): 'mul',
+        ('usd', 'rub'): 'mul',
+        ('usd', 'usd'): 'mul',
+        ('usd_cashe', 'rub'): 'mul',
+        ('usd_cashe', 'usd'): 'mul',
+        ('euro', 'rub'): 'mul',
+        ('euro', 'usd'): 'mul',
+        ('euro_cashe', 'rub'): 'mul',
+        ('euro_cashe', 'usd'): 'mul',
+        ('cny', 'rub'): 'mul',
+        ('cny', 'usd'): 'mul',
+        ('cny_cashe', 'rub'): 'mul',
+        ('cny_cashe', 'usd'): 'mul',
+        ('aed', 'rub'): 'mul',
+        ('aed', 'usd'): 'div',
+        ('aed_cashe', 'rub'): 'mul',
+        ('aed_cashe', 'usd'): 'div',
+        ('rub', 'usd'): 'div',
+        ('rub_cashe', 'usd'): 'div',
+    }
+
+    CROSS_RULES_STAGE_2 = {
+        ('rub', 'euro'): 'div',
+        ('rub', 'euro_cashe'): 'div',
+        ('rub', 'cny'): 'div',
+        ('rub', 'cny_cashe'): 'div',
+        ('rub', 'aed'): 'mul',
+        ('rub', 'aed_cashe'): 'mul',
+        ('rub', 'rub_cashe'): 'mul',
+        ('rub', 'rub'): 'mul',
+        ('rub', 'usd'): 'div',
+        ('rub', 'usd_cashe'): 'div',
+        ('rub', 'usdt'): 'div',
+        ('usd', 'rub'): 'mul',
+        ('usd', 'rub_cashe'): 'mul',
+        ('usd', 'euro'): 'mul',
+        ('usd', 'euro_cashe'): 'mul',
+        ('usd', 'cny'): 'mul',
+        ('usd', 'cny_cashe'): 'mul',
+        ('usd', 'aed'): 'mul',
+        ('usd', 'aed_cashe'): 'mul',
+        ('usd', 'usdt'): 'mul',
+        ('usd', 'usd_cashe'): 'mul',
+        ('usd', 'usd'): 'mul',
+    }
+
     @api.depends('amount', 'operation_percent', 'our_percent')
     def _compute_financials(self):
         for rec in self:
@@ -251,17 +420,26 @@ class Order(models.Model, AmanatBaseModel):
     @api.depends(
         'conversion_ids.cross_envelope',
         'conversion_ids.cross_rate',
-        'conversion_ids.rate',  # добавлено
+        'conversion_ids.rate',
         'conversion_ids.currency',
         'conversion_ids.conversion_currency',
         'conversion_ids.cross_conversion_currency',
-        'amount', 'rate'
+        'amount',
     )
     def _compute_conversion_fields(self):
-        base_div = {'rub', 'rub_cashe', 'thb', 'thb_cashe', 'aed', 'aed_cashe'}
-        target_div = {'usd', 'usd_cashe', 'euro', 'euro_cashe', 'usdt', 'cny', 'cny_cashe'}
-
         for rec in self:
+            # нет конверсий — обнуляем
+            if not rec.conversion_ids:
+                rec.cross_from = False
+                rec.cross_rate = 0.0
+                rec.currency_from_conv = False
+                rec.currency_to_copy = False
+                rec.cross_currency = False
+                rec.cross_calc = 0.0
+                rec.amount_after_conv = 0.0
+                continue
+
+            # ищем кросс-конверсию
             cross = rec.conversion_ids.filtered('cross_envelope')
             if cross:
                 c = cross[0]
@@ -271,43 +449,38 @@ class Order(models.Model, AmanatBaseModel):
                 rec.currency_to_copy = c.conversion_currency
                 rec.cross_currency = c.cross_conversion_currency
 
-                # расчёт промежуточного значения
-                if c.currency in base_div and c.cross_conversion_currency in target_div:
-                    rec.cross_calc = rec.amount / (c.cross_rate or 1.0)
-                else:
+                # 1) Шаг 1: currency → cross_currency через cross_rate
+                key1 = (c.currency, c.cross_conversion_currency)
+                action1 = self.CROSS_RULES_STAGE_1.get(key1, 'mul')
+                if action1 == 'mul':
                     rec.cross_calc = rec.amount * (c.cross_rate or 1.0)
-
-                # используем c.rate из cross-конверсии
-                conversion_rate = c.rate or 1.0
-
-                if ((c.conversion_currency in base_div and c.cross_conversion_currency in target_div) or
-                    (c.conversion_currency in target_div and c.cross_conversion_currency in base_div)):
-                    rec.amount_after_conv = rec.cross_calc / conversion_rate
                 else:
-                    rec.amount_after_conv = rec.cross_calc * conversion_rate
+                    rec.cross_calc = rec.amount / (c.cross_rate or 1.0)
 
-            elif rec.conversion_ids:
+                # 2) Шаг 2: cross_currency → conversion_currency через rate
+                key2 = (c.cross_conversion_currency, c.conversion_currency)
+                action2 = self.CROSS_RULES_STAGE_2.get(key2, 'mul')
+                if action2 == 'mul':
+                    rec.amount_after_conv = rec.cross_calc * (c.rate or 1.0)
+                else:
+                    rec.amount_after_conv = rec.cross_calc / (c.rate or 1.0)
+
+            else:
+                # прямая конвертация (без кросс)
                 c2 = rec.conversion_ids[0]
                 rec.cross_from = False
                 rec.cross_rate = 0.0
                 rec.currency_from_conv = c2.currency
                 rec.currency_to_copy = c2.conversion_currency
+                rec.cross_currency = False
+
                 rec.cross_calc = rec.amount
-
-                rate = c2.rate or 1.0
-                if ((c2.currency in base_div and c2.conversion_currency in target_div) or
-                    (c2.currency in target_div and c2.conversion_currency in base_div)):
-                    rec.amount_after_conv = rec.amount / rate
+                key = (c2.currency, c2.conversion_currency)
+                action = self.DIRECT_RULES.get(key, 'mul')
+                if action == 'mul':
+                    rec.amount_after_conv = rec.cross_calc * (c2.rate or 1.0)
                 else:
-                    rec.amount_after_conv = rec.amount * rate
-
-            else:
-                rec.cross_from = False
-                rec.cross_rate = 0.0
-                rec.currency_from_conv = False
-                rec.currency_to_copy = False
-                rec.cross_calc = 0.0
-                rec.amount_after_conv = 0.0
+                    rec.amount_after_conv = rec.cross_calc / (c2.rate or 1.0)
 
     @api.depends('amount', 'operation_percent', 'our_percent')
     def _compute_financials(self):

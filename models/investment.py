@@ -63,7 +63,7 @@ class Investment(models.Model, AmanatBaseModel):
     create_action = fields.Boolean(string='Создать', tracking=True)
     to_delete = fields.Boolean(string='Удалить', tracking=True)
     post = fields.Boolean(string='Провести', tracking=True)
-    repost = fields.Boolean(string='Перепровести', tracking=True)
+    # repost = fields.Boolean(string='Перепровести', tracking=True)
     close_investment = fields.Boolean(string='Закрытие инвестиций', tracking=True)
     accrue = fields.Boolean(string='Начислить', tracking=True) 
 
@@ -127,6 +127,20 @@ class Investment(models.Model, AmanatBaseModel):
     royalty_amount_7 = fields.Float(string='Сумма роялти 7', compute='_compute_royalty_amounts', store=True, tracking=True)
     royalty_amount_8 = fields.Float(string='Сумма роялти 8', compute='_compute_royalty_amounts', store=True, tracking=True)
     royalty_amount_9 = fields.Float(string='Сумма роялти 9', compute='_compute_royalty_amounts', store=True, tracking=True)
+
+    def action_create_writeoff(self):
+        self.ensure_one()
+        return {
+            "name": _("Списание по инвестиции"),
+            "type": "ir.actions.act_window",
+            "res_model": "amanat.writeoff",
+            "view_mode": "form",
+            "target": "current",
+            "context": dict(self.env.context, **{
+                "default_investment_ids": [self.id],
+                "default_writeoff_investment": True,
+            }),
+        }
 
     @api.depends('amount', 'rollup_write_offs')
     def _compute_principal(self):
@@ -239,14 +253,16 @@ class Investment(models.Model, AmanatBaseModel):
 
     
     def action_post(self):
-        """Метод для кнопки 'Провести'"""
         for inv in self:
-            # Сначала создаем списания
-            inv.action_create_writeoffs()
-            # Затем синхронизируем с Airtable и сверкой
-            inv.action_sync_airtable()
+            # 1) Синхронизируем ордер и контейнеры
+            # inv.action_sync_airtable()
+            # 2) Создаём principal-списания
+            # inv.action_create_writeoffs()
+            # 3) Создаём записи сверки
             inv.action_sync_reconciliation()
-            inv.post = False  # Сброс флага после выполнения
+            # 4) Сбрасываем флаг
+            inv.post = False
+        return True
 
 
     def parse_date_from_string(self, date_str):
@@ -340,98 +356,98 @@ class Investment(models.Model, AmanatBaseModel):
         return (date(nxt.year, nxt.month, 1) - date(d.year, d.month, 1)).day
     
     def action_sync_reconciliation(self):
-        Reconc = self.env['amanat.reconciliation']
-        Wallet = self.env['amanat.wallet']
-        Payer = self.env['amanat.payer']
+        """
+        Полная реализация автоматизации сверки на уровне Odoo,
+        аналог скрипта в Airtable:
+        1) Удаляем старые записи сверки по первому ордеру.
+        2) Получаем контейнеры money и связанные writeoff'ы.
+        3) Для principal-контейнеров создаем одну запись на дату инвестирования.
+        4) Для процентных/роялти-контейнеров группируем списания по месяцам
+           и создаем записи сверки по последней дате в месяце.
+        """
+        Reconciliation = self.env['amanat.reconciliation']
         Writeoff = self.env['amanat.writeoff']
+        Money = self.env['amanat.money']
+        Payer = self.env['amanat.payer']
+        Wallet = self.env['amanat.wallet']
+        Contr = self.env['amanat.contragent']
 
-        # Основной кошелек
         wallet = Wallet.search([('name', '=', 'Инвестиции')], limit=1)
         if not wallet:
             raise UserError(_('Кошелёк "Инвестиции" не найден'))
 
-        # Настройка роялти
         royal_payer = Payer.search([('name', '=', 'Роялти')], limit=1)
         if not royal_payer:
             royal_payer = Payer.create({'name': 'Роялти'})
-        royal_partner = self.env['amanat.contragent'].search([('name', '=', 'Роялти')], limit=1)
+        royal_partner = Contr.search([('name', '=', 'Роялти')], limit=1)
         if not royal_partner:
-            royal_partner = self.env['amanat.contragent'].create({'name': 'Роялти'})
+            royal_partner = Contr.create({'name': 'Роялти'})
 
         for inv in self:
             if not inv.orders:
                 continue
             order = inv.orders[0]
-            # Удалить старые записи сверки
-            Reconc.search([('order_id', '=', order.id)]).unlink()
 
-            # Собираем контейнеры и связанные writeoff'ы
+            # 1) Удалить старые записи сверки
+            Reconciliation.search([('order_id', 'in', order.id)]).unlink()
+
+            # 2) Собираем контейнеры и writeoff-ы
             containers = order.money_ids
-            wf_ids = set()
+            monthly = defaultdict(lambda: {'sum': 0.0, 'last_date': False, 'cont_id': False})
+
             for cont in containers:
                 if cont.percent or cont.royalty:
-                    wf_ids |= set(cont.writeoff_ids.ids)
-            wf_records = Writeoff.browse(list(wf_ids))
+                    for wf in Writeoff.browse(cont.writeoff_ids.ids):
+                        key = (wf.date.year, wf.date.month, cont.id)
+                        monthly[key]['sum'] += wf.amount
+                        if not monthly[key]['last_date'] or wf.date > monthly[key]['last_date']:
+                            monthly[key]['last_date'] = wf.date
+                            monthly[key]['cont_id'] = cont.id
 
-            # Проходим по каждому контейнеру
-            for cont in containers:
-                base_vals = {
-                    'order_id': [(4, order.id)],
-                    'wallet_id': wallet.id,
-                    'currency': inv.currency.lower(),
-                }
-                # Principal-контейнеры
-                if not cont.percent and not cont.royalty:
-                    total = cont.amount or 0.0
-                    date_val = inv.date
-                    vals = {
-                        'date': date_val,
-                        'partner_id': cont.partner_id.id,
-                        **base_vals,
-                        'sum': total,
-                        **self._get_currency_fields(inv.currency, total),
-                        'sender_id': [(4, inv.payer_sender.id)] if inv.payer_sender else False,
-                        'receiver_id': [(4, inv.payer_receiver.id)] if inv.payer_receiver else False,
-                    }
-                    Reconc.create(vals)
+            # 3) Создаем записи по процентам и роялти
+            for (y, m, cont_id), data in sorted(monthly.items()):
+                total = data['sum']
+                if not total:
                     continue
+                last_date = data['last_date']
+                cont = Money.browse(cont_id)
+                inv_currency = inv.currency.lower()
+                vals_base = {
+                    'date': last_date,
+                    'partner_id': cont.partner_id.id,
+                    'currency': inv_currency,
+                    'sum': -total,
+                    f'sum_{inv_currency}': -total,
+                    'wallet_id': wallet.id,
+                    'order_id': [(4, order.id)],
+                }
+                # Сверка для держателя
+                vals = vals_base.copy()
+                vals['sender_id'] = [(4, inv.payer_sender.id)] if inv.payer_sender else False
+                vals['receiver_id'] = [(4, inv.payer_receiver.id)] if inv.payer_receiver else False
+                Reconciliation.create(vals)
+                # Если роялти, создаём дополнительную запись
+                if cont.royalty:
+                    vals2 = vals_base.copy()
+                    vals2['partner_id'] = royal_partner.id
+                    vals2['sender_id'] = [(4, royal_payer.id)]
+                    Reconciliation.create(vals2)
 
-                # Процентные/роялти-контейнеры: группировка по месяцам
-                monthly = defaultdict(lambda: {'sum': 0.0, 'last_date': False})
-                for wf in wf_records.filtered(lambda w: w.money_id.id == cont.id):
-                    key = (wf.date.year, wf.date.month)
-                    monthly[key]['sum'] += wf.amount
-                    if not monthly[key]['last_date'] or wf.date > monthly[key]['last_date']:
-                        monthly[key]['last_date'] = wf.date
-
-                for (y, m), data in sorted(monthly.items()):
-                    total = data['sum']
-                    if total == 0.0:
-                        continue
-                    rec_date = data['last_date']
-                    inverted = -total
-                    vals = {
-                        'date': rec_date,
-                        'partner_id': cont.partner_id.id,
-                        **base_vals,
-                        'sum': inverted,
-                        **self._get_currency_fields(inv.currency, inverted),
-                    }
-                    # Запись для держателя
-                    Reconc.create({
-                        **vals,
-                        'sender_id': [(4, inv.payer_sender.id)] if inv.payer_sender else False,
-                        'receiver_id': [(4, inv.payer_receiver.id)] if inv.payer_receiver else False,
-                    })
-                    # Запись для роялти
-                    if cont.royalty:
-                        Reconc.create({
-                            **vals,
-                            'partner_id': royal_partner.id,
-                            'sender_id': [(4, royal_payer.id)],
-                        })
-
+            # 4) Обработка principal-контейнеров
+            for cont in containers.filtered(lambda m: not m.percent and not m.royalty):
+                Reconciliation.create({
+                    'date': inv.date,
+                    'partner_id': cont.partner_id.id,
+                    'currency': inv.currency.lower(),
+                    'sum': cont.amount,
+                    f'sum_{inv.currency.lower()}': cont.amount,
+                    'wallet_id': wallet.id,
+                    'order_id': [(4, order.id)],
+                    'sender_id': [(4, inv.payer_sender.id)] if inv.payer_sender else False,
+                    'receiver_id': [(4, inv.payer_receiver.id)] if inv.payer_receiver else False,
+                })
         return True
+
 
     def action_sync_airtable(self):
         Money = self.env['amanat.money']
@@ -475,6 +491,11 @@ class Investment(models.Model, AmanatBaseModel):
                 ord.unlink()
             inv.orders = [(5, 0, 0)]  # Очистка many2many
 
+            # забираем словарь вариантов поля period
+            period_selection = dict(inv.fields_get(['period'])['period']['selection'])
+            # получаем человекочитаемый текст
+            period_label = period_selection.get(inv.period, inv.period)
+
             # 2) Создание нового ордера
             order_vals = {
                 'date': inv.date,
@@ -485,7 +506,7 @@ class Investment(models.Model, AmanatBaseModel):
                 'amount': inv.amount,
                 'wallet_1_id': wallet.id,
                 'wallet_2_id': wallet.id,
-                'comment': _('Сделка Инвестиция %s %s%%') % (inv.period or '', inv.percent * 100),
+                'comment': _('Сделка Инвестиция %s %s%%') % (period_label or '', inv.percent * 100),
             }
             # Плательщики (если есть), выбираем первый подходящий
             payer_1 = Payer.search([('contragents_ids', 'in', inv.sender.id)], limit=1)
@@ -717,108 +738,259 @@ class Investment(models.Model, AmanatBaseModel):
         for i in range(0, len(vals_list), 50):
             Writeoff.create(vals_list[i:i+50])
 
-    def accrue_daily_interest(self):
-        """Ежедневное начисление процентов и роялти по открытым инвестициям"""
-        Money = self.env['amanat.money']
-        Writeoff = self.env['amanat.writeoff']
-        today = fields.Date.context_today(self)
-        for inv in self.search([('status', '=', 'open')]):
-            # стартовые проверки
-            # start_date = inv.date or today
-            if not inv.date or not inv.percent or not inv.orders:
-                continue
-            # находим контейнеры
-            order = inv.orders[0]
-            principal_cont = Money.search([
-                ('order_id', '=', order.id), ('percent', '=', False), ('royalty', '=', False)
-            ], limit=1)
-            interest_send = Money.search([
-                ('order_id', '=', order.id), ('percent', '=', True), ('partner_id','=',inv.sender.id)
-            ], limit=1)
-            interest_recv = Money.search([
-                ('order_id', '=', order.id), ('percent', '=', True), ('partner_id','=',inv.receiver.id)
-            ], limit=1)
+    # def accrue_daily_interest(self):
+    #     """Ежедневное начисление процентов и роялти по открытым инвестициям"""
+    #     Money = self.env['amanat.money']
+    #     Writeoff = self.env['amanat.writeoff']
+    #     today = fields.Date.context_today(self)
+    #     for inv in self.search([('status', '=', 'open')]):
+    #         # стартовые проверки
+    #         # start_date = inv.date or today
+    #         if not inv.date or not inv.percent or not inv.orders:
+    #             continue
+    #         # находим контейнеры
+    #         order = inv.orders[0]
+    #         principal_cont = Money.search([
+    #             ('order_id', '=', order.id), ('percent', '=', False), ('royalty', '=', False)
+    #         ], limit=1)
+    #         interest_send = Money.search([
+    #             ('order_id', '=', order.id), ('percent', '=', True), ('partner_id','=',inv.sender.id)
+    #         ], limit=1)
+    #         interest_recv = Money.search([
+    #             ('order_id', '=', order.id), ('percent', '=', True), ('partner_id','=',inv.receiver.id)
+    #         ], limit=1)
 
-            if interest_recv:
-                interest_recv.write({'state': 'positive'})
+    #         if interest_recv:
+    #             interest_recv.write({'state': 'positive'})
             
-            if interest_send:
-                interest_send.write({'state': 'debt'})                
+    #         if interest_send:
+    #             interest_send.write({'state': 'debt'})                
 
-            if not (principal_cont and interest_send and interest_recv):
-                continue
-            royalty_conts = Money.search([
-                ('order_id', '=', order.id), ('royalty', '=', True)
-            ])
+    #         if not (principal_cont and interest_send and interest_recv):
+    #             continue
+    #         royalty_conts = Money.search([
+    #             ('order_id', '=', order.id), ('royalty', '=', True)
+    #         ])
 
-            delete_start = principal_cont.date + timedelta(days=1)
-            delete_end = today
+    #         delete_start = principal_cont.date + timedelta(days=1)
+    #         delete_end = today
 
-            # удаляем старые
-            old_ids = Writeoff.search([
-                ('money_id', 'in', [principal_cont.id, interest_send.id, interest_recv.id] + [rc.id for rc in royalty_conts]),
-                ('date', '>=', delete_start),
-                ('date', '<=', delete_end),
-            ]).ids
-            for rc in royalty_conts:
-                old_ids += rc.writeoff_ids.ids
-            if old_ids:
-                Writeoff.browse(old_ids).unlink()
-            # расчёт: явно проходим по каждому полному дню (skip creation date, include today)
-            days_diff = (today - principal_cont.date).days
-            writeoffs = []
-            if days_diff > 0:
-                # для i=1..days_diff: дни с principal_cont.date + i
-                for i in range(1, days_diff + 1):
-                    day = principal_cont.date + timedelta(days=i)
-                    # principal с учётом списаний
-                    used = sum(w.amount for w in principal_cont.writeoff_ids if w.date <= day)
-                    principal = (inv.amount or 0.0) - used
-                    if principal <= 0:
-                        continue
-                    # процент
-                    rate = inv.percent
-                    if inv.period == 'calendar_month':
-                        rate /= self._get_month_days(day)
-                    elif inv.period == 'calendar_year':
-                        # длина периода в днях от даты создания
-                        period_len = self._get_period_days(inv.period, principal_cont.date)
-                        rate /= period_len
-                    interest = principal * rate
-                    if interest:
-                        writeoffs += [{
-                            'date': day, 'amount': interest,
-                            'money_id': interest_send.id,
-                            'investment_ids': [(4, inv.id)]
-                        }, {
-                            'date': day, 'amount': -interest,
-                            'money_id': interest_recv.id,
-                            'investment_ids': [(4, inv.id)]
-                        }]
-                    # роялти
-                    if inv.has_royalty:
-                        for j in range(1, 10):
-                            pct = getattr(inv, f'percent_{j}', 0.0)
-                            recv = getattr(inv, f'royalty_recipient_{j}', False)
-                            if not (recv and pct):
-                                continue
-                            cont = royalty_conts.filtered(lambda m: m.partner_id == recv)
-                            if cont:
-                                roy = principal * (pct / 100.0)
-                                writeoffs.append({
-                                    'date': day, 'amount': roy,
-                                    'money_id': cont.id,
-                                    'investment_ids': [(4, inv.id)]
-                                })
-            # запись
-            if writeoffs:
-                self._batch_create_writeoffs(writeoffs)
+    #         # удаляем старые
+    #         old_ids = Writeoff.search([
+    #             ('money_id', 'in', [principal_cont.id, interest_send.id, interest_recv.id] + [rc.id for rc in royalty_conts]),
+    #             ('date', '>=', delete_start),
+    #             ('date', '<=', delete_end),
+    #         ]).ids
+    #         for rc in royalty_conts:
+    #             old_ids += rc.writeoff_ids.ids
+    #         if old_ids:
+    #             Writeoff.browse(old_ids).unlink()
+    #         # расчёт: явно проходим по каждому полному дню (skip creation date, include today)
+    #         days_diff = (today - principal_cont.date).days
+    #         writeoffs = []
+    #         if days_diff > 0:
+    #             # для i=1..days_diff: дни с principal_cont.date + i
+    #             for i in range(1, days_diff + 1):
+    #                 day = principal_cont.date + timedelta(days=i)
+    #                 # principal с учётом списаний
+    #                 used = sum(w.amount for w in principal_cont.writeoff_ids if w.date <= day)
+    #                 principal = (inv.amount or 0.0) - used
+    #                 if principal <= 0:
+    #                     continue
+    #                 # процент
+    #                 rate = inv.percent
+    #                 if inv.period == 'calendar_month':
+    #                     rate /= self._get_month_days(day)
+    #                 elif inv.period == 'calendar_year':
+    #                     # длина периода в днях от даты создания
+    #                     period_len = self._get_period_days(inv.period, principal_cont.date)
+    #                     rate /= period_len
+    #                 interest = principal * rate
+    #                 if interest:
+    #                     writeoffs += [{
+    #                         'date': day, 'amount': interest,
+    #                         'money_id': interest_send.id,
+    #                         'investment_ids': [(4, inv.id)]
+    #                     }, {
+    #                         'date': day, 'amount': -interest,
+    #                         'money_id': interest_recv.id,
+    #                         'investment_ids': [(4, inv.id)]
+    #                     }]
+    #                 # роялти
+    #                 if inv.has_royalty:
+    #                     for j in range(1, 10):
+    #                         pct = getattr(inv, f'percent_{j}', 0.0)
+    #                         recv = getattr(inv, f'royalty_recipient_{j}', False)
+    #                         if not (recv and pct):
+    #                             continue
+    #                         cont = royalty_conts.filtered(lambda m: m.partner_id == recv)
+    #                         if cont:
+    #                             roy = principal * (pct / 100.0)
+    #                             writeoffs.append({
+    #                                 'date': day, 'amount': roy,
+    #                                 'money_id': cont.id,
+    #                                 'investment_ids': [(4, inv.id)]
+    #                             })
+    #         # запись
+    #         if writeoffs:
+    #             self._batch_create_writeoffs(writeoffs)
 
     @api.model
     def _cron_accrue_interest(self):
         """Cron: ежедневный запуск начисления"""
-        self.search([('status', '=', 'open')]).accrue_daily_interest()
+        self.search([('status', '=', 'open')]).accrue_interest()
         return True
+
+    def _days_between(self, d1, d2):
+        return (d2 - d1).days if d1 and d2 else 0
+
+    def _is_same_day(self, d1, d2):
+        return d1 == d2
+
+    def _get_period_days(self, period, start_date):
+        if not start_date:
+            return 1
+        if period == 'calendar_day' or period == 'work_day':
+            return 1
+        if period == 'calendar_month':
+            nxt = start_date + relativedelta(months=1)
+            return (nxt - start_date).days
+        if period == 'calendar_year':
+            nxt = start_date + relativedelta(years=1)
+            # корректировка на месяц/день
+            while nxt.month != start_date.month or nxt.day != start_date.day:
+                nxt -= timedelta(days=1)
+            return (nxt - start_date).days
+        return 1
+
+    def _get_month_days(self, d):
+        nxt = d + relativedelta(months=1)
+        return (date(nxt.year, nxt.month, 1) - date(d.year, d.month, 1)).days
+
+    def accrue_interest(self):
+        """Ежедневное начисление процентов и роялти по открытым инвестициям"""
+        Money = self.env['amanat.money']
+        Writeoff = self.env['amanat.writeoff']
+        today = fields.Date.context_today(self)
+        HOLIDAYS = {
+            date(2024,1,1), date(2024,1,2), date(2024,1,3), date(2024,1,4), date(2024,1,5),
+            date(2024,1,6), date(2024,1,7), date(2024,1,8), date(2024,2,23), date(2024,3,8),
+            date(2024,5,1), date(2024,5,9), date(2024,6,12), date(2024,11,4)
+        }
+
+        for inv in self.search([('status', '=', 'open')]):
+            raw_date = inv.date
+            if not raw_date or not inv.percent or not inv.orders:
+                continue
+            first_date = raw_date + timedelta(days=1)
+            if today < first_date:
+                continue
+
+            order = inv.orders[0]
+            principal_cont = Money.search([('order_id','=',order.id), ('percent','=',False), ('royalty','=',False)], limit=1)
+            if not principal_cont:
+                continue
+
+            # Собираем все writeoff'ы, отсортированные по дате
+            writeoffs = principal_cont.writeoff_ids.sorted(lambda w: w.date)
+
+            # Считаем сумму списаний до первого дня начисления (чтобы понять стартовое тело)
+            initial_off = sum(w.amount for w in writeoffs if w.date < first_date)
+            initial_principal = inv.amount - initial_off
+
+            interest_send = Money.search([('order_id','=',order.id), ('percent','=',True), ('partner_id','=',inv.sender.id)], limit=1)
+            interest_recv = Money.search([('order_id','=',order.id), ('percent','=',True), ('partner_id','=',inv.receiver.id)], limit=1)
+            royalty_conts = Money.search([('order_id','=',order.id), ('royalty','=',True)])
+            if not (interest_send and interest_recv):
+                continue
+
+            write_vals = []
+            period_days = self._get_period_days(inv.period, raw_date)
+            day_cursor = first_date
+
+            while day_cursor <= today:
+                if inv.period == 'work_day' and (day_cursor.weekday() >= 5 or day_cursor in HOLIDAYS):
+                    day_cursor += timedelta(days=1)
+                    continue
+
+                # Считаем сумму списаний на текущую дату
+                total_writeoffs = sum(w.amount for w in writeoffs if w.date <= day_cursor)
+
+                # Универсальная логика: если суммы writeoff'ов отрицательные — добавляем, если положительные — вычитаем
+                if total_writeoffs < 0:
+                    principal = initial_principal + total_writeoffs
+                else:
+                    principal = initial_principal - total_writeoffs
+
+                if principal <= 0:
+                    day_cursor += timedelta(days=1)
+                    continue
+
+                if inv.period == 'calendar_month':
+                    daily_rate = inv.percent / self._get_month_days(day_cursor)
+                elif inv.period == 'calendar_year':
+                    daily_rate = inv.percent / period_days
+                else:
+                    daily_rate = inv.percent
+
+                interest = principal * daily_rate
+
+                if interest_send.state == 'empty':
+                    interest_send.write({'state': 'debt'})
+                if interest_recv.state == 'empty':
+                    interest_recv.write({'state': 'positive'})
+
+                if interest:
+                    write_vals.append({
+                        'date': day_cursor,
+                        'amount': interest,
+                        'money_id': interest_send.id,
+                        'investment_ids': [(4, inv.id)],
+                    })
+                    write_vals.append({
+                        'date': day_cursor,
+                        'amount': -interest,
+                        'money_id': interest_recv.id,
+                        'investment_ids': [(4, inv.id)],
+                    })
+
+                # Роялти
+                if inv.has_royalty:
+                    for j in range(1, 10):
+                        pct = getattr(inv, f'percent_{j}', 0)
+                        recv = getattr(inv, f'royalty_recipient_{j}', False)
+                        if not (recv and pct):
+                            continue
+                        cont = royalty_conts.filtered(lambda m: m.partner_id.id == recv.id)
+                        if cont:
+                            divisor = 1
+                            if inv.period == 'calendar_month':
+                                divisor = self._get_month_days(day_cursor)
+                            elif inv.period == 'calendar_year':
+                                divisor = period_days
+                            roy = principal * pct / divisor
+                            write_vals.append({
+                                'date': day_cursor,
+                                'amount': roy,
+                                'money_id': cont.id,
+                                'investment_ids': [(4, inv.id)],
+                            })
+
+                day_cursor += timedelta(days=1)
+
+            # Удаляем старые списания процентов и роялти за период
+            ids_to_del = Writeoff.search([
+                ('money_id', 'in', interest_send.ids + [interest_recv.id] + royalty_conts.ids),
+                ('date', '>=', first_date),
+                ('date', '<=', today),
+            ]).ids
+            if ids_to_del:
+                Writeoff.browse(ids_to_del).unlink()
+
+            # Создаём новые списания пакетно
+            for i in range(0, len(write_vals), 50):
+                Writeoff.create(write_vals[i:i+50])
+
 
     def write(self, vals):
         res = super().write(vals)
@@ -844,7 +1016,7 @@ class Investment(models.Model, AmanatBaseModel):
                 r.action_close_investment()
         if vals.get('accrue', False):
             for inv in self.filtered(lambda r: r.accrue):
-                inv.accrue_daily_interest()
+                inv.accrue_interest()
                 inv.accrue = False  # Сбрасываем флаг после выполнения
         return res
 
@@ -865,6 +1037,6 @@ class Investment(models.Model, AmanatBaseModel):
         if rec.close_investment:
             rec.action_close_investment()
         if vals.get('accrue', False):
-            rec.accrue_daily_interest()
+            rec.accrue_interest()
             rec.accrue = False
         return rec

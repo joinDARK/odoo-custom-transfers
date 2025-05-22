@@ -271,8 +271,37 @@ class PartnerGold(models.Model):
             rec.courier_amount = rec.purchase_amount_dollar * rec.courier_percent
 
     # 31. Дополнительные расходы – вычисляемые на основе дополнительных входных полей
-    total_extra_expenses = fields.Float(string="Доп расходы", tracking=True)
-    overall_pure_weight = fields.Float(string="Чистый вес общий", tracking=True)
+    total_extra_expenses = fields.Float(
+        string="Доп расходы", 
+        compute="_compute_total_extra_expenses",
+        store=True,
+        tracking=True
+    )
+    # Новые методы для вычисления полей
+    @api.depends("gold_deal_ids.extra_expenses")
+    def _compute_total_extra_expenses(self):
+        for rec in self:
+            # Берем значение поля extra_expenses из первой связанной записи gold_deal_ids
+            if rec.gold_deal_ids:
+                rec.total_extra_expenses = rec.gold_deal_ids[0].extra_expenses
+            else:
+                rec.total_extra_expenses = 0.0
+
+    overall_pure_weight = fields.Float(
+        string="Чистый вес общий", 
+        compute="_compute_overall_pure_weight", 
+        store=True, 
+        tracking=True
+    )
+    @api.depends("gold_deal_ids.pure_weight_sum")
+    def _compute_overall_pure_weight(self):
+        for rec in self:
+            # Берем значение поля pure_weight_sum из первой связанной записи gold_deal_ids
+            if rec.gold_deal_ids:
+                rec.overall_pure_weight = rec.gold_deal_ids[0].pure_weight_sum
+            else:
+                rec.overall_pure_weight = 0.0
+    
     extra_expenses_computed = fields.Float(
         string="Дополнительные расходы (расчет)",
         compute="_compute_extra_expenses",

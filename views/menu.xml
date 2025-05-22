@@ -288,4 +288,32 @@
         parent="amanat_menu_manuals_group"
         action="manager_action"
     />
+
+    <menuitem 
+        id="amanat_menu_price_list_payer_carrying_out" 
+        name="Прайс лист Плательщика За проведение"
+        parent="amanat_menu_main_group"
+        action="action_price_list_payer_carrying_out"
+    />
+
+    <menuitem
+        id="amanat_menu_payment_order_rule"
+        name="Правило Платежка РФ"
+        parent="amanat_menu_main_group"
+        action="action_payment_order_rule"
+    />
+
+    <menuitem
+        id="amanat_menu_money_cost_rule"
+        name="Правило Себестоимость денег"
+        parent="amanat_menu_main_group"
+        action="action_money_cost_rule"
+    />
+
+    <menuitem
+        id="amanat_menu_expense_rule"
+        name="Правило Расход на операционную деятельность"
+        parent="amanat_menu_main_group"
+        action="action_expense_rule"
+    />
 </odoo>

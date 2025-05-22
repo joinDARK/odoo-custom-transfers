@@ -29,7 +29,7 @@
                 <field name="rollup_amount" width="120"/>
                 <field name="create_action" width="100"/>
                 <field name="post" width="100"/>
-                <field name="repost" width="100"/>
+                <!-- <field name="repost" width="100"/> -->
                 <field name="close_investment" width="120"/>
                 <field name="today_date" width="100"/>
                 <field name="to_delete" width="100"/>
@@ -95,12 +95,17 @@
                         <field name="calendar_days"/>
                         <field name="work_days"/>
                         <field name="orders" widget="many2many_tags"/>
-                        <field name="write_offs" widget="many2many_tags"/>
+                        <field name="write_offs"/>
+                        <button name="action_create_writeoff"
+                            type="object"
+                            string="Создать списание"
+                            class="btn-primary"
+                        />
                         <field name="rollup_write_offs"/>
                         <field name="rollup_amount"/>
                         <field name="create_action"/>
                         <field name="post"/>
-                        <field name="repost"/>
+                        <!-- <field name="repost"/> -->
                         <field name="close_investment"/>
                         <field name="today_date"/>
                         <field name="to_delete"/>
