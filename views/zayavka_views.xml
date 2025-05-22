@@ -114,6 +114,170 @@
                 <field name="conversion_auto"/>
                 <field name="hand_reward_percent"/>
                 <field name="export_agent_flag"/>
+                <field name="bank_select"/>
+                <field name="xe_select"/>
+                <field name="extract_delivery_ids"/>
+                <field name="price_list_percent_accrual" widget="percentage"/>
+                <field name="payer_profit_currency"/>
+                <field name="is_money_stuck"/>
+                <field name="problem_stage"/>
+                <field name="problem_comment"/>
+                <field name="currency_stuck"/>
+                <field name="sum_stuck"/>
+                <field name="whose_mistake"/>
+                <field name="zayavka_link"/>
+                <field name="invoice_link"/>
+                <field name="assignment_link"/>
+                <field name="swift_link"/>
+                <field name="swift103_link"/>
+                <field name="swift199_link"/>
+                <field name="report_link"/>
+                <field name="money_ran_out"/>
+                <field name="received_on_our_pc"/>
+                <field name="agent_on_pc"/>
+                <field name="calculation"/>
+                <field name="bank"/>
+                <field name="zayavka_mistake"/>
+                <field name="date_received_on_pc12"/>
+                <field name="date_agent_on_pc"/>
+                <field name="waiting_for_replenishment"/>
+                <field name="deal_amount_received"/>
+                <field name="total_amount_received"/>
+                <field name="order_ids"/>
+                <field name="sum_from_extracts"/>
+                <field name="error_sovok"/>
+                <field name="error_sber"/>
+                <field name="error_in_rate"/>
+                <field name="error_in_bank_rate"/>
+                <field name="error_in_xe_rate"/>
+                <field name="partner_post_conversion_rate"/>
+                <field name="payer_cross_rate_usd"/>
+                <field name="payer_cross_rate_usd_auto"/>
+                <field name="real_post_conversion_rate"/>
+                <field name="real_post_conversion_rate_usd"/>
+                <field name="payer_cross_rate_rub"/>
+                <field name="real_post_conversion_rate_rub"/>
+                <field name="date_received_on_pc_auto"/>
+                <field name="price_list_carrying_out_id"/>
+                <field name="price_list_carrying_out_accrual_percentage"/>
+                <field name="price_list_carrying_out_fixed_deal_fee"/>
+                <field name="payment_order_rule_id"/>
+                <field name="percent_from_payment_order_rule"/>
+                <field name="price_list_partners_id"/>
+                <field name="price_list_partners_id_accrual_percentage"/>
+                <field name="price_list_partners_id_fixed_deal_fee"/>
+                <field name="price_list_partners_id_2"/>
+                <field name="price_list_partners_id_2_accrual_percentage"/>
+                <field name="price_list_partners_id_2_fixed_deal_fee"/>
+                <field name="price_list_partners_id_3"/>
+                <field name="price_list_partners_id_3_accrual_percentage"/>
+                <field name="price_list_partners_id_3_fixed_deal_fee"/>
+                <field name="price_list_partners_id_4"/>
+                <field name="price_list_partners_id_4_accrual_percentage"/>
+                <field name="price_list_partners_id_4_fixed_deal_fee"/>
+                <field name="price_list_partners_id_5"/>
+                <field name="price_list_partners_id_5_accrual_percentage"/>
+                <field name="price_list_partners_id_5_fixed_deal_fee"/>
+                <field name="money_cost_rule_id"/>
+                <field name="money_cost_rule_credit_rate"/>
+                <field name="money_cost_rule_credit_period"/>
+                <field name="money_cost_rule_extra_days"/>
+                <field name="expense_rule_id"/>
+                <field name="percent_from_expense_rule"/>
+                <field name="range_id"/>
+                <field name="range_date_start"/>
+                <field name="range_date_end"/>
+                <field name="range_date_start_copy"/>
+                <field name="range_date_end_copy"/>
+                <field name="status_range_copy"/>
+                <field name="status_range"/>
+                <field name="zayavka_file"/>
+                <field name="invoice_file"/>
+                <field name="assignment_file"/>
+                <field name="swift_file"/>
+                <field name="swift103_file"/>
+                <field name="swift199_file"/>
+                <field name="report_file"/>
+                <field name="client_operating_expenses"/>
+                <field name="client_real_operating_expenses"/>
+                <field name="client_real_operating_expenses_usd"/>
+                <field name="client_real_operating_expenses_rub"/>
+                <field name="client_currency_bought"/>
+                <field name="client_currency_bought_real"/>
+                <field name="client_currency_bought_real_usd"/>
+                <field name="client_currency_bought_real_rub"/>
+                <field name="hidden_partner_commission_real"/>
+                <field name="hidden_partner_commission"/>
+                <field name="hidden_partner_commission_real_usd"/>
+                <field name="hidden_partner_commission_real_rub"/>
+                <field name="payer_profit_usd"/>
+                <field name="payer_profit_rub"/>
+                <field name="date_days"/>
+                <field name="assignment_signed_sovcom"/>
+                <field name="payment_order_rf_sovok"/>
+                <field name="operating_expenses_sovok_partner"/>
+                <field name="operating_expenses_sovok_real"/>
+                <field name="operating_expenses_sovok_real_usd"/>
+                <field name="operating_expenses_sovok_real_rub"/>
+                <field name="payment_order_rf_sber"/>
+                <field name="client_payment_cost_usd"/>
+                <field name="client_payment_cost_rub"/>
+                <field name="cost_of_money_client"/>
+                <field name="cost_of_money_client_real"/>
+                <field name="cost_of_money_client_real_usd"/>
+                <field name="cost_of_money_client_real_rub"/>
+                <field name="fin_res_client"/>
+                <field name="fin_res_client_real"/>
+                <field name="fin_res_client_real_usd"/>
+                <field name="fin_res_client_real_rub"/>
+                <field name="kupili_valyutu_sovok_partner"/>
+                <field name="kupili_valyutu_sovok_real"/>
+                <field name="kupili_valyutu_sovok_real_usd"/>
+                <field name="kupili_valyutu_sovok_real_rub"/>
+                <field name="sebestoimost_denej_sovok_partner"/>
+                <field name="payment_cost_sovok_partner_usd"/>
+                <field name="payment_cost_sovok_real_usd"/>
+                <field name="payment_cost_sovok_real_rub"/>
+                <field name="sebestoimost_denej_sovok_real"/>
+                <field name="sebestoimost_denej_sovok_real_usd"/>
+                <field name="sebestoimost_denej_sovok_real_rub"/>
+                <field name="fin_res_sovok_partner"/>
+                <field name="fin_res_sovok_real"/>
+                <field name="fin_res_sovok_real_usd"/>
+                <field name="fin_res_sovok_real_rub"/>
+
+
+                <field name="sber_operating_expenses"/>
+                <field name="sber_operating_expenses_real"/>
+                <field name="sber_operating_expenses_real_usd"/>
+                <field name="sber_operating_expenses_real_rub"/>
+                <field name="kupili_valyutu_sber"/>
+                <field name="kupili_valyutu_sber_real"/>
+                <field name="kupili_valyutu_sber_real_usd"/>
+                <field name="kupili_valyutu_sber_real_rub"/>
+                <field name="sber_payment_cost_usd"/>
+                <field name="sber_payment_cost_rub"/>
+                <field name="sber_payment_cost_on_usd"/>
+                <field name="sber_payment_cost_on_usd_real"/>
+                <field name="sebestoimost_denej_sber"/>
+                <field name="sebestoimost_denej_sber_real"/>
+                <field name="sebestoimost_denej_sber_real_usd"/>
+                <field name="sebestoimost_denej_sber_real_rub"/>
+                <field name="fin_res_sber"/>
+                <field name="fin_res_sber_real"/>
+                <field name="fin_res_sber_real_usd"/>
+                <field name="fin_res_sber_real_rub"/>
+              </group>
+              <group string="Дополнительные чекбоксы и даты">
+                <field name="correction"/>
+                <field name="send_to_reconciliation"/>
+                <field name="fin_entry_check"/>
+                <field name="for_khalida_temp"/>
+                <field name="hide_in_dashboard"/>
+              </group>
+              <group string="Дополнительные даты">
+                <field name="date_received_on_pc_payment"/>
+                <field name="date_received_tezera"/>
               </group>
             </page>
           </notebook>
@@ -195,8 +359,13 @@
         <field width="200" name="sovok_reward"/>
         <field width="200" name="payment_cost_sovok"/>
         <field width="200" name="sber_reward"/>
+        <field width="200" name="bank_select"/>
+        <field width="200" name="xe_select"/>
         <field width="200" name="client_reward"/>
+        <field width="200" name="extract_delivery_ids"/>
         <field width="200" name="our_sovok_reward"/>
+        <field width="200" name="price_list_percent_accrual" widget="percentage"/>
+        <field width="200" name="payer_profit_currency"/>
         <field width="200" name="our_sber_reward"/>
         <field width="200" name="our_client_reward"/>
         <field width="200" name="non_our_sber_reward"/>
@@ -213,7 +382,6 @@
         <field width="200" name="calculated_percent"/>
         <field width="200" name="overall_sovok_percent"/>
         <field width="200" name="overall_sber_percent"/>
-        <field width="200" name="rate_rub"/>
         <field width="200" name="sum_from_extracts"/>
         <field width="200" name="rate_real"/>
         <field width="200" name="rate_real_sber"/>
@@ -251,6 +419,161 @@
         <field width="200" name="return_money_received_date"/>
         <field width="200" name="swift_status"/>
         <field width="200" name="price_list_profit_id"/>
+        <field width="200" name="is_money_stuck"/>
+        <field width="200" name="correction"/>
+        <field width="200" name="send_to_reconciliation"/>
+        <field width="200" name="fin_entry_check"/>
+        <field width="200" name="for_khalida_temp"/>
+        <field width="200" name="hide_in_dashboard"/>
+        <field width="200" name="date_received_on_pc_payment"/>
+        <field width="200" name="date_received_tezera"/>
+        <field width="200" name="problem_stage"/>
+        <field width="200" name="problem_comment"/>
+        <field width="200" name="currency_stuck"/>
+        <field width="200" name="sum_stuck"/>
+        <field width="200" name="whose_mistake"/>
+        <field width="200" name="zayavka_link"/>
+        <field width="200" name="invoice_link"/>
+        <field width="200" name="assignment_link"/>
+        <field width="200" name="swift_link"/>
+        <field width="200" name="swift103_link"/>
+        <field width="200" name="swift199_link"/>
+        <field width="200" name="report_link"/>
+        <field width="200" name="money_ran_out"/>
+        <field width="200" name="received_on_our_pc"/>
+        <field width="200" name="agent_on_pc"/>
+        <field width="200" name="calculation"/>
+        <field width="200" name="bank"/>
+        <field width="200" name="zayavka_mistake"/>
+        <field width="200" name="date_received_on_pc12"/>
+        <field width="200" name="date_agent_on_pc"/>
+        <field width="200" name="waiting_for_replenishment"/>
+        <field width="200" name="deal_amount_received"/>
+        <field width="200" name="total_amount_received"/>
+        <field width="200" name="order_ids"/>
+        <field width="200" name="sum_from_extracts"/>
+        <field width="200" name="error_sovok"/>
+        <field width="200" name="error_sber"/>
+        <field width="200" name="error_in_rate"/>
+        <field width="200" name="error_in_bank_rate"/>
+        <field width="200" name="error_in_xe_rate"/>
+        <field width="200" name="partner_post_conversion_rate"/>
+        <field width="200" name="payer_cross_rate_usd"/>
+        <field width="200" name="payer_cross_rate_usd_auto"/>
+        <field width="200" name="real_post_conversion_rate"/>
+        <field width="200" name="real_post_conversion_rate_usd"/>
+        <field width="200" name="payer_cross_rate_rub"/>
+        <field width="200" name="real_post_conversion_rate_rub"/>
+        <field width="200" name="date_received_on_pc_auto"/>
+        <field width="200" name="price_list_carrying_out_id"/>
+        <field width="200" name="price_list_carrying_out_accrual_percentage"/>
+        <field width="200" name="price_list_carrying_out_fixed_deal_fee"/>
+        <field width="200" name="payment_order_rule_id"/>
+        <field width="200" name="percent_from_payment_order_rule"/>
+        <field width="200" name="price_list_partners_id"/>
+        <field width="200" name="price_list_partners_id_accrual_percentage"/>
+        <field width="200" name="price_list_partners_id_fixed_deal_fee"/>
+        <field width="200" name="price_list_partners_id_2"/>
+        <field width="200" name="price_list_partners_id_2_accrual_percentage"/>
+        <field width="200" name="price_list_partners_id_2_fixed_deal_fee"/>
+        <field width="200" name="price_list_partners_id_3"/>
+        <field width="200" name="price_list_partners_id_3_accrual_percentage"/>
+        <field width="200" name="price_list_partners_id_3_fixed_deal_fee"/>
+        <field width="200" name="price_list_partners_id_4"/>
+        <field width="200" name="price_list_partners_id_4_accrual_percentage"/>
+        <field width="200" name="price_list_partners_id_4_fixed_deal_fee"/>
+        <field width="200" name="price_list_partners_id_5"/>
+        <field width="200" name="price_list_partners_id_5_accrual_percentage"/>
+        <field width="200" name="price_list_partners_id_5_fixed_deal_fee"/>
+        <field width="200" name="money_cost_rule_id"/>
+        <field width="200" name="money_cost_rule_credit_rate"/>
+        <field width="200" name="money_cost_rule_credit_period"/>
+        <field width="200" name="money_cost_rule_extra_days"/>
+        <field width="200" name="expense_rule_id"/>
+        <field width="200" name="percent_from_expense_rule"/>
+        <field width="200" name="range_id"/>
+        <field width="200" name="range_date_start"/>
+        <field width="200" name="range_date_end"/>
+        <field width="200" name="range_date_start_copy"/>
+        <field width="200" name="range_date_end_copy"/>
+        <field width="200" name="status_range_copy"/>
+        <field width="200" name="status_range"/>
+        <field width="200" name="zayavka_file"/>
+        <field width="200" name="invoice_file"/>
+        <field width="200" name="assignment_file"/>
+        <field width="200" name="swift_file"/>
+        <field width="200" name="swift103_file"/>
+        <field width="200" name="swift199_file"/>
+        <field width="200" name="report_file"/>
+        <field width="200" name="client_operating_expenses"/>
+        <field width="200" name="client_real_operating_expenses"/>
+        <field width="200" name="client_real_operating_expenses_usd"/>
+        <field width="200" name="client_real_operating_expenses_rub"/>
+        <field width="200" name="client_currency_bought"/>
+        <field width="200" name="client_currency_bought_real"/>
+        <field width="200" name="client_currency_bought_real_usd"/>
+        <field width="200" name="client_currency_bought_real_rub"/>
+        <field width="200" name="hidden_partner_commission_real"/>
+        <field width="200" name="hidden_partner_commission"/>
+        <field width="200" name="hidden_partner_commission_real_usd"/>
+        <field width="200" name="hidden_partner_commission_real_rub"/>
+        <field width="200" name="payer_profit_usd"/>
+        <field width="200" name="payer_profit_rub"/>
+        <field width="200" name="date_days"/>
+        <field width="200" name="assignment_signed_sovcom"/>
+        <field width="200" name="payment_order_rf_sovok"/>
+        <field width="200" name="operating_expenses_sovok_partner"/>
+        <field width="200" name="operating_expenses_sovok_real"/>
+        <field width="200" name="operating_expenses_sovok_real_usd"/>
+        <field width="200" name="operating_expenses_sovok_real_rub"/>
+        <field width="200" name="payment_order_rf_sber"/>
+        <field width="200" name="client_payment_cost_usd"/>
+        <field width="200" name="client_payment_cost_rub"/>
+        <field width="200" name="cost_of_money_client"/>
+        <field width="200" name="cost_of_money_client_real"/>
+        <field width="200" name="cost_of_money_client_real_usd"/>
+        <field width="200" name="cost_of_money_client_real_rub"/>
+        <field width="200" name="fin_res_client"/>
+        <field width="200" name="fin_res_client_real"/>
+        <field width="200" name="fin_res_client_real_usd"/>
+        <field width="200" name="fin_res_client_real_rub"/>
+        <field width="200" name="sber_operating_expenses"/>
+        <field width="200" name="kupili_valyutu_sovok_partner"/>
+        <field width="200" name="kupili_valyutu_sovok_real"/>
+        <field width="200" name="kupili_valyutu_sovok_real_usd"/>
+        <field width="200" name="kupili_valyutu_sovok_real_rub"/>
+        <field width="200" name="payment_cost_sovok_partner_usd"/>
+        <field width="200" name="sebestoimost_denej_sovok_partner"/>
+        <field width="200" name="payment_cost_sovok_real_usd"/>
+        <field width="200" name="payment_cost_sovok_real_rub"/>
+        <field width="200" name="sebestoimost_denej_sovok_real"/>
+        <field width="200" name="sebestoimost_denej_sovok_real_usd"/>
+        <field width="200" name="sebestoimost_denej_sovok_real_rub"/>
+        <field width="200" name="fin_res_sovok_partner"/>
+        <field width="200" name="fin_res_sovok_real"/>
+        <field width="200" name="fin_res_sovok_real_usd"/>
+        <field width="200" name="fin_res_sovok_real_rub"/>
+
+
+        <field width="200" name="sber_operating_expenses_real"/>
+        <field width="200" name="sber_operating_expenses_real_usd"/>
+        <field width="200" name="sber_operating_expenses_real_rub"/>
+        <field width="200" name="kupili_valyutu_sber"/>
+        <field width="200" name="kupili_valyutu_sber_real"/>
+        <field width="200" name="kupili_valyutu_sber_real_usd"/>
+        <field width="200" name="kupili_valyutu_sber_real_rub"/>
+        <field width="200" name="sber_payment_cost_usd"/>
+        <field width="200" name="sber_payment_cost_rub"/>
+        <field width="200" name="sber_payment_cost_on_usd"/>
+        <field width="200" name="sber_payment_cost_on_usd_real"/>
+        <field width="200" name="sebestoimost_denej_sber"/>
+        <field width="200" name="sebestoimost_denej_sber_real"/>
+        <field width="200" name="sebestoimost_denej_sber_real_usd"/>
+        <field width="200" name="sebestoimost_denej_sber_real_rub"/>
+        <field width="200" name="fin_res_sber"/>
+        <field width="200" name="fin_res_sber_real"/>
+        <field width="200" name="fin_res_sber_real_usd"/>
+        <field width="200" name="fin_res_sber_real_rub"/>
       </list>
     </field>
   </record>

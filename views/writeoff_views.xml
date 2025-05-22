@@ -35,7 +35,6 @@
                         <field name="sender_payer_id"/>
                         <field name="sender_wallet_id"/>
                         <field name="amount"/>
-                        <field name="money_id"/>
                         <field name="investment_ids" widget="many2many_tags"/>
                         <field name="writeoff_investment"/>
                     </group>
@@ -64,6 +63,7 @@
         <field name="res_model">amanat.writeoff</field>
         <field name="view_mode">list,form,search</field>
         <field name="view_id" ref="writeoff_list_view"/>
+        <field name="context">{}</field>
         <field name="target">main</field>
     </record>
 </odoo>

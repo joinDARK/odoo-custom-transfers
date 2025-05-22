@@ -126,16 +126,6 @@ class WriteOff(models.Model):
         tracking=True,
     )
 
-    @api.model
-    def default_get(self, fields_list):
-        """Автоматическое подставление инвестиции при создании из формы инвестиции"""
-        res = super().default_get(fields_list)
-        active_model = self.env.context.get('active_model')
-        active_id = self.env.context.get('active_id')
-        if active_model == 'amanat.investment' and active_id:
-            res['investment_ids'] = [(6, 0, [active_id])]
-        return res
-
     # Списание инвестиции. Используется для автоматизации
     writeoff_investment = fields.Boolean(
         string="Списание инвестиций",
@@ -152,6 +142,9 @@ class WriteOff(models.Model):
             try:
                 rec.process_write_off()
                 rec.create_transfer_after_writeoff()
+                # Сбрасываем флаг до начисления процентов
+                rec.write({"writeoff_investment": False})
+                # Теперь запускаем cron: первичное списание уже не подлежит удалению
                 rec.cron_accrue_interest()
             except Exception as e:
                 _logger.error("Ошибка при автоматической обработке create: %s", e)
@@ -169,6 +162,10 @@ class WriteOff(models.Model):
                 try:
                     rec.process_write_off()
                     rec.create_transfer_after_writeoff()
+                    rec.cron_accrue_interest()
+                    # Сбрасываем флаг до начисления процентов
+                    rec.write({"writeoff_investment": False})
+                    # Теперь запускаем cron: первичное списание уже не подлежит удалению
                     rec.cron_accrue_interest()
                 except Exception as e:
                     _logger.error("Ошибка при автоматической обработке write: %s", e)
@@ -218,15 +215,21 @@ class WriteOff(models.Model):
         
         if self.amount < 0:
             raise ValidationError("Нельзя списать инвестицию с отрицательной суммой")
+        
+        # …после нахождения valid_container
+        self.write({'money_id': valid_container.id})
 
-        self.create(
+        new_writeoff = self.create(
             {
                 "amount": -self.amount,
                 "date": self.date,
                 "money_id": debt_container.id,
                 "investment_ids": [(6, 0, [investment.id])],
+                "writeoff_investment": False,
             }
         )
+
+        _logger.info(f"Создался инвертированное списание: {new_writeoff}")
 
         return True
 
@@ -291,7 +294,7 @@ class WriteOff(models.Model):
         if not transfer_currency:
             raise ValueError(f"Неизвестная валюта: {investment.currency}")
 
-        self.env["amanat.transfer"].create(
+        transfer = self.env["amanat.transfer"].create(
             {
                 "date": self.date,
                 "currency": transfer_currency,
@@ -306,6 +309,8 @@ class WriteOff(models.Model):
             }
         )
 
+        _logger.info(f"Создался перевод на списание: {transfer}")
+
         return True
 
     @api.model
@@ -317,8 +322,23 @@ class WriteOff(models.Model):
         _logger.info("=== Начало ежедневного начисления процентов и роялти ===")
         # Сегодня в контексте пользователя
         today = fields.Date.context_today(self)
+        # Получаем текущее локальное время
+        now_dt = fields.Datetime.context_timestamp(self, fields.Datetime.now(self))
         if isinstance(today, str):
             today = datetime.strptime(today, "%Y-%m-%d").date()
+
+        if now_dt.hour < 20:
+            # До 20:00 создаём списания только за предыдущий день
+            _logger.info(
+                "cron_accrue_interest: текущее время %s <20:00, считаем today = вчера",
+                now_dt
+            )
+            today = today - timedelta(days=1)
+        else:
+            _logger.info(
+                "cron_accrue_interest: текущее время %s >=20:00, считаем today = %s",
+                now_dt, today
+            )
 
         # Получаем все открытые инвестиции
         Investment = self.env["amanat.investment"]
@@ -390,21 +410,38 @@ class WriteOff(models.Model):
                 continue
 
             # Собираем списания для удаления старых
-            old_wos = WriteOff.search(
-                [
-                    ("investment_ids", "in", inv.id),
-                    ("writeoff_investment", "=", True),
-                ]
-            )
-            _logger.info("Найдено %s старых списаний для удаления: %s", len(old_wos), old_wos.mapped('id'))
-            if old_wos:
-                _logger.info("Удаляем %s старых списаний", len(old_wos))
-                old_wos.unlink()
+            all_cont_ids = cont_int_sender.ids + cont_int_receiver.ids + cont_royalty.ids
+            if all_cont_ids:
+                old_wos = WriteOff.search([("money_id", "in", all_cont_ids)])
+                if old_wos:
+                    _logger.info(
+                        "Инвестиция %s: удаляем %s старых списаний (по контейнерам %s)",
+                        inv.id, len(old_wos), all_cont_ids
+                    )
+                    old_wos.unlink()
+                else:
+                    _logger.info("Старые списания не найден в all_cont_ids")
 
             # Начинаем цикл по дням
             day = first_date
             days_total = days_between(first_date, today)
             day_count = 0
+
+            # 8) Подготовка для учёта досрочных списаний
+            existing_wos = WriteOff.search(
+                [("investment_ids", "in", inv.id), ("writeoff_investment", "=", False)],
+                order="date asc"
+            )
+            def adjust_principal(day_cursor, init_p):
+                p = init_p
+                for w in existing_wos:
+                    if w.date <= day_cursor:
+                        p -= w.amount
+                    else:
+                        break
+                return p
+
+            # 9) Период для «годового» расчёта
             period_days = get_period_days(period, start_date)
 
             while day <= today and (
@@ -416,10 +453,11 @@ class WriteOff(models.Model):
                     continue
 
                 # TODO: учитывать досрочные списания: корректировать principal_initial по суммам writeoff до day
-                principal = principal_initial
+                # 11) Корректируем principal
+                principal = adjust_principal(day, principal_initial)
 
                 # Расчёт ежедневного процента
-                daily_pct = percent / 100.0
+                daily_pct = percent
                 if period == "calendar_month":
                     daily_pct /= get_month_days(day)
                 elif period == "calendar_year":
@@ -428,7 +466,7 @@ class WriteOff(models.Model):
                 amount_interest = principal * daily_pct
                 # Создаём списания процентов отправителю и получателю
                 if amount_interest:
-                    WriteOff.create(
+                    writeoff1 = WriteOff.create(
                         {
                             "date": day,
                             "amount": amount_interest,
@@ -437,7 +475,7 @@ class WriteOff(models.Model):
                             "writeoff_investment": False,
                         }
                     )
-                    WriteOff.create(
+                    writeoff2 = WriteOff.create(
                         {
                             "date": day,
                             "amount": -amount_interest,
@@ -446,6 +484,7 @@ class WriteOff(models.Model):
                             "writeoff_investment": False,
                         }
                     )
+                    _logger.info(f"Создалось 2 списания: {writeoff1} {writeoff2}")
 
                 # Расчёт и создание роялти
                 if inv.has_royalty:
@@ -458,7 +497,7 @@ class WriteOff(models.Model):
                                 lambda m: m.partner_id.id == recipient.id
                             )
                             if cont:
-                                WriteOff.create(
+                                write_off_royal = WriteOff.create(
                                     {
                                         "date": day,
                                         "amount": amt_roy,
@@ -467,6 +506,7 @@ class WriteOff(models.Model):
                                         "writeoff_investment": False,
                                     }
                                 )
+                                _logger.info(f"Создалось роялти списания: {write_off_royal}")
 
                 day += timedelta(days=1)
                 day_count += 1

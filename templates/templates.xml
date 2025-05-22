@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Добавляем скрипт для обновления в реальном времени -->
+    <template id="assets_backend" name="Amanat Assets" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/amanat/static/src/js/real_time_interaction.js"/>
+        </xpath>
+    </template>
+    
+    <!-- Дополнительный шаблон для изменения внешнего вида веб-клиента (если необходимо) -->
+    <template id="webclient_bootstrap" name="Amanat Web Client" inherit_id="web.webclient_bootstrap">
+        <xpath expr="//div[hasclass('o_main')]" position="attributes">
+            <attribute name="t-attf-class" add="o_amanat_client" separator=" "/>
+        </xpath>
+    </template>
+</odoo>

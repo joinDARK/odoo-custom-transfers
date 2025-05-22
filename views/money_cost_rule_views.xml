@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_money_cost_rule_form" model="ir.ui.view">
+        <field name="name">amanat.money_cost_rule.form</field>
+        <field name="model">amanat.money_cost_rule</field>
+        <field name="arch" type="xml">
+            <form string="Правило Себестоимость денег">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="credit_rate"/>
+                        <field name="credit_period"/>
+                        <field name="extra_days"/>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                        <field name="zayavka_ids"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_money_cost_rule_tree" model="ir.ui.view">
+        <field name="name">amanat.money_cost_rule.list</field>
+        <field name="model">amanat.money_cost_rule</field>
+        <field name="arch" type="xml">
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <field name="name"/>
+                <field name="credit_rate"/>
+                <field name="credit_period"/>
+                <field name="extra_days"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_money_cost_rule" model="ir.actions.act_window">
+        <field name="name">Правила Себестоимость денег</field>
+        <field name="res_model">amanat.money_cost_rule</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">main</field>
+    </record>
+</odoo>

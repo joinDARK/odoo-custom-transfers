@@ -22,6 +22,11 @@ class Ranges(models.Model, AmanatBaseModel):
     compare_balance_date_2 = fields.Date(string='Сравнения баланса дата 2', tracking=True)
     reconciliation_date_1 = fields.Date(string='Сверка Дата 1', tracking=True)
     reconciliation_date_2 = fields.Date(string='Сверка Дата 2', tracking=True)
+    zayavka_ids = fields.One2many(
+        'amanat.zayavka',      # модель заявки
+        'range_id',            # имя поля Many2one в заявке (оно должно называться так же)
+        string='Заявки в диапазоне'
+    )
 
     @api.model
     def create(self, vals):

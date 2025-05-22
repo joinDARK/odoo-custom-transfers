@@ -33,6 +33,7 @@
         <field width="200" name="mark_for_deletion"/>
         <field width="200" name="invoice_amount"/>
         <field width="200" name="difference"/>
+        <field width="200" name="extract_delivery_ids" widget="many2many_tags"/>
         <field width="200" name="bank"/>
         <field width="200" name="order_ids" widget="many2many_tags"/>
         <field width="200" name="buyer_id"/>
@@ -58,7 +59,6 @@
             <field name="pure_weight_sum"/>
             <field name="sale_amount_aed"/>
             <field name="sale_amount_usdt"/>
-            <field name="sale_amount_usdt"/>
             <field name="expenses"/>
             <field name="purchase_total_rub"/>
             <field name="purchase_total_dollar"/>
@@ -75,6 +75,7 @@
             <field name="invoice_amount"/>
             <field name="difference" readonly="1"/>
             <field name="order_ids" widget="many2many_tags"/>
+            <field name="extract_delivery_ids"/>
           </group>
           <group>
             <field name="conduct_in"/>

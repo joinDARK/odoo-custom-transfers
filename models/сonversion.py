@@ -12,7 +12,6 @@ CURRENCY_SELECTION = [
     ('euro', 'EURO'), ('euro_cashe', 'EURO КЭШ'),
     ('cny', 'CNY'), ('cny_cashe', 'CNY КЭШ'),
     ('aed', 'AED'), ('aed_cashe', 'AED КЭШ'),
-    ('thb', 'THB'), ('thb_cashe', 'THB КЭШ'),
 ]
 
 class Conversion(models.Model, AmanatBaseModel):
@@ -73,7 +72,9 @@ class Conversion(models.Model, AmanatBaseModel):
         string='Кросс-курс', digits=(16, 6), tracking=True
     )
     cross_conversion_currency = fields.Selection(
-        CURRENCY_SELECTION, string='Кросс-валюта', tracking=True
+        [('rub', 'RUB'), ('usd', 'USD')], 
+        string='Кросс-валюта', 
+        tracking=True,
     )
 
     sender_id = fields.Many2one(
@@ -443,20 +444,25 @@ class Conversion(models.Model, AmanatBaseModel):
         Recon = self.env['amanat.reconciliation']
 
         # Build lines depending on contragent_count
-        lines = [(order.currency, -out_amount, self.sender_payer_id)]
-        partners = [self.sender_id]
+        lines = [
+            (order.currency, -out_amount, self.sender_payer_id),
+            (self.conversion_currency, in_amount, self.sender_payer_id),
+        ]
+        
+        partners = [self.sender_id, self.receiver_id]
         if self.contragent_count == '2':
+            _logger.info("Выбраны 2 контрагента")
             lines = [
                 (order.currency, -out_amount, self.sender_payer_id, self.receiver_payer_id),
-                (self.conversion_currency, in_amount, self.sender_payer_id, self.receiver_payer_id),
+                (self.conversion_currency, in_amount, self.receiver_payer_id, self.sender_payer_id),
                 (order.currency, out_amount, self.sender_payer_id, self.receiver_payer_id),
-                (self.conversion_currency, -in_amount, self.sender_payer_id, self.receiver_payer_id),
+                (self.conversion_currency, -in_amount, self.receiver_payer_id, self.sender_payer_id),
             ]
             partners = [self.sender_id, self.sender_id, self.receiver_id, self.receiver_id]
 
         for idx, vals in enumerate(lines):
             curr, amt, pay1 = vals[0], vals[1], vals[2]
-            pay2 = vals[3] if len(vals) > 3 else pay1
+            pay2 = vals[3] if len(vals) > 3  else pay1
             cf_map = self._currency_field_map(curr, amt)
             money_vals = {
                 'date':       order.date,

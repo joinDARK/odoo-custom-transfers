@@ -28,7 +28,6 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         readonly=True,
         tracking=True
     )
-
     payment_purpose = fields.Char(string="Назначение платежа", tracking=True)
     document_id = fields.Many2many('amanat.extracts', string="ID Документа", tracking=True)
     assign_bulinan = fields.Boolean(string="Разнести булинан", tracking=True)
@@ -49,7 +48,14 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         ('applications', 'Заявки')
     ], string="Выбор направления", tracking=True)
 
-    applications = fields.Many2many('amanat.zayavka', string="Заявки", tracking=True)
+    applications = fields.Many2many(
+        'amanat.zayavka', 
+        'amanat_zayavka_extract_delivery_rel',
+        'extract_delivery_id',
+        'zayavka_id',
+        string="Заявки", 
+        tracking=True
+    )
     currency_reserve = fields.Many2many('amanat.reserve', string="Валютный резерв", tracking=True)
     transfer_ids = fields.Many2many('amanat.transfer', string="Перевод", tracking=True)
     conversion = fields.Many2many(

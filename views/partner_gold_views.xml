@@ -127,7 +127,7 @@
             <field name="total_expenses" readonly="1"/>
             <field name="overall_amount" readonly="1"/>
             <field name="profit" readonly="1"/>
-            <field name="deal_percentage" readonly="1"/>
+            <field name="deal_percentage" readonly="1" widget="percentage"/>
             <field name="final_rate" readonly="1"/>
           </group>
           <group>

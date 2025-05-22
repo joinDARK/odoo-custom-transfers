@@ -15,6 +15,7 @@
                 <field width="200" name="compare_balance_date_2"/>
                 <field width="200" name="reconciliation_date_1"/>
                 <field width="200" name="reconciliation_date_2"/>
+                <field width="200" name="zayavka_ids"/>
             </list>
         </field>
     </record>
@@ -38,6 +39,7 @@
                         <field name="compare_balance_date_2"/>
                         <field name="reconciliation_date_1"/>
                         <field name="reconciliation_date_2"/>
+                        <field name="zayavka_ids"/>
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->

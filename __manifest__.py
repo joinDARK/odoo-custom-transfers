@@ -7,7 +7,8 @@
     "category": "Amanat",
     "depends": ["base", "mail", "base_automation", "web", "base_setup"],
     "data": [
-        # sidebar
+        # sidebar ==============
+        # "templates/templates.xml",
         "templates/webclient.xml",
         "views/res_users.xml",
         "views/res_config_settings.xml",
@@ -40,6 +41,10 @@
         "views/kassa_2_views.xml",
         "views/kassa_3_views.xml",
         "views/price_list_partners_views.xml",
+        "views/price_list_payer_carrying_out_views.xml",
+        "views/payment_order_rule_views.xml",
+        "views/money_cost_rule_views.xml",
+        "views/expense_rule_views.xml",
         "views/price_list_payer_profit_views.xml",
         "views/tasks_views.xml",
         "views/payment_views.xml",
@@ -69,6 +74,7 @@
         "data/investment_sequence.xml",
         "data/cron_accrue_interest.xml",
         "data/amanat_writeoff_sequence.xml",
+
     ],
     "assets": {
         "web._assets_primary_variables": [
@@ -85,6 +91,8 @@
             ),
         ],
         "web.assets_backend": [
+            "/amanat/static/src/js/real_time_interaction.js",
+            # "/amanat/static/src/js/writeoff_context.js",
             (
                 "after",
                 "web/static/src/webclient/webclient.js",
@@ -105,6 +113,10 @@
                 "web/static/src/webclient/webclient.js",
                 "amanat/static/src/webclient/appsbar/appsbar.js",
             ),
+            # (
+            #     "after",
+            #     "web/static/src/webclient/webclient.js",
+            # ),
             "amanat/static/src/webclient/webclient.scss",
             "amanat/static/src/webclient/appsbar/appsbar.xml",
             "amanat/static/src/webclient/appsbar/appsbar.scss",

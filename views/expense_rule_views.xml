@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_expense_rule_list" model="ir.ui.view">
+        <field name="name">amanat.expense.rule.list</field>
+        <field name="model">amanat.expense_rule</field>
+        <field name="arch" type="xml">
+            <list editable="top">
+                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <field name="name"/>
+                <field name="percent"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="zayavka_ids" widget="one2many_list" string="Заявки"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_expense_rule_form" model="ir.ui.view">
+        <field name="name">amanat.expense.rule.form</field>
+        <field name="model">amanat.expense_rule</field>
+        <field name="arch" type="xml">
+            <form string="Правило Расход на операционную деятельность">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="percent"/>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                        <field name="zayavka_ids"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_expense_rule" model="ir.actions.act_window">
+        <field name="name">Правила Расходов</field>
+        <field name="res_model">amanat.expense_rule</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">main</field>
+    </record>
+</odoo>

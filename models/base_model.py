@@ -54,10 +54,15 @@ class AmanatBaseModel(models.AbstractModel):
             if user.has_group('amanat.group_amanat_manager'):
                 vals['manager_id'] = user.id  # Менеджер автоматически назначается
         
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        
+        self.env.user._bus_send("notification", {'type': 'create', 'model': self._name, 'ids': records.ids})
+        
+        return records
 
     def write(self, vals):
         # Исправление: перебор записей для корректного логгирования
+        user = self.env.user
         for record in self:
             changes = []
             for field, value in vals.items():
@@ -65,6 +70,7 @@ class AmanatBaseModel(models.AbstractModel):
                 changes.append(f"{field}: {old_value} → {value}")
             super(AmanatBaseModel, record).write(vals)
             record._log_activity('update', "\n".join(changes))
+        self.env.user._bus_send("notification", {'type': 'update', 'model': self._name, 'ids': [user.id]})
         return True
 
     def unlink(self):
@@ -94,4 +100,12 @@ class AmanatBaseModel(models.AbstractModel):
                 'data': html_escape(str(data)),
                 'user_id': self.env.uid,
             })
+        user = self.env.user
+        # self.env.user._bus_send("my_channel", {'type': 'delete', 'model': self._name, 'ids': [user.id]})
         return result
+    
+
+
+
+
+    
