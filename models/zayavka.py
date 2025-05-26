@@ -497,7 +497,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         for rec in self:
             # Формула: ({Дата}+1)/25*0.04*{Купили валюту Клиент}
             if rec.date_days and rec.client_currency_bought:
-                days = (fields.Date.today() - rec.date_days).days + 1
+                days = rec.date_days + 1
                 rec.cost_of_money_client = (days / 25) * 0.04 * rec.client_currency_bought
             else:
                 rec.cost_of_money_client = 0.0
@@ -1665,14 +1665,6 @@ class Zayavka(models.Model, AmanatBaseModel):
             else:
                 rec.conversion_ratio = 0.0
     
-    profit_rate = fields.Selection(
-        [
-            ('bank', 'Курс Банка'),
-            ('xe', 'XE')
-        ],
-        string='Валютная пара',
-        tracking=True
-    )
     course_profitable = fields.Char(
         string='Какой курс выгоднее',
         compute='_compute_course_profitable',
@@ -1945,7 +1937,22 @@ class Zayavka(models.Model, AmanatBaseModel):
         string="Выписка разнос", 
         tracking=True
     )
-    # TODO узнать, надо добавить поле Банк Выписка (related на поле extract_delivery_ids.bank)
+    bank_vypiska = fields.Char(
+        string='Банк Выписка',
+        compute='_compute_bank_vypiska',
+        store=True,
+        tracking=True
+    )
+
+    @api.depends('extract_delivery_ids.bank_document')
+    def _compute_bank_vypiska(self):
+        for rec in self:
+            # Собираем все уникальные значения bank_document из связанных выписок
+            bank_names = list(filter(None, rec.extract_delivery_ids.mapped('bank_document')))
+            # Убираем дубли и сортируем
+            bank_names = sorted(set(bank_names))
+            rec.bank_vypiska = ', '.join(bank_names)
+
     payer_profit_currency = fields.Float(
         string='Прибыль Плательщика по валюте заявки',
         compute='_compute_payer_profit_currency',
@@ -2191,6 +2198,25 @@ class Zayavka(models.Model, AmanatBaseModel):
     payment_order_rule_id = fields.Many2one(
         'amanat.payment_order_rule',
         string='Правило платежка',
+        tracking=True
+    )
+    period_id = fields.Many2one(
+        'amanat.period',
+        string='Период',
+        tracking=True
+    )
+    period_date_1 = fields.Date(
+        string='Дата 1 (from Период)',
+        related='period_id.date_1',
+        store=True,
+        readonly=True,
+        tracking=True
+    )
+    period_date_2 = fields.Date(
+        string='Дата 2 (from Период)',
+        related='period_id.date_2',
+        store=True,
+        readonly=True,
         tracking=True
     )
     percent_from_payment_order_rule = fields.Float(
@@ -2756,26 +2782,16 @@ class Zayavka(models.Model, AmanatBaseModel):
             rate = rec.xe_rate if rec.xe_rate else 1.0
             rec.usd_equivalent = rate * rec.amount
 
-    @api.depends('jess_rate', 'xe_rate_auto', 'best_rate', 'amount')
+    @api.depends('jess_rate', 'payer_cross_rate_usd_auto', 'best_rate', 'amount')
     def _compute_conversion_expenses(self):
         for rec in self:
-            try:
-                # Преобразуем строку xe_rate_auto в число с плавающей точкой
-                payer_cross_rate = float(str(rec.xe_rate_auto).replace(',', '.')) if rec.xe_rate_auto else 0.0
-            except ValueError:
-                payer_cross_rate = 0.0
-
+            payer_cross_rate = rec.payer_cross_rate_usd_auto or 0.0
             rec.conversion_expenses_rub = ((rec.jess_rate or 0.0) * payer_cross_rate - (rec.best_rate or 0.0)) * (rec.amount or 0.0)
 
-    @api.depends('conversion_expenses_rub', 'jess_rate', 'xe_rate_auto')
+    @api.depends('conversion_expenses_rub', 'jess_rate', 'payer_cross_rate_usd_auto')
     def _compute_conversion_expenses_currency(self):
         for rec in self:
-            try:
-                payer_cross_rate = float(str(rec.xe_rate_auto).replace(',', '.')) if rec.xe_rate_auto else 0.0
-            except ValueError:
-                payer_cross_rate = 0.0
-
-            denominator = (rec.jess_rate or 0.0) * payer_cross_rate
+            denominator = (rec.jess_rate or 0.0) * (rec.payer_cross_rate_usd_auto or 0.0)
             if denominator:
                 rec.conversion_expenses_currency = rec.conversion_expenses_rub / denominator
             else:
@@ -2794,7 +2810,7 @@ class Zayavka(models.Model, AmanatBaseModel):
                 else:
                     rec.xe_rate_auto = f"{1/xe_rate:.2f}".replace('.', ',')
 
-    @api.depends('profit_rate', 'currency_pair', 'xe_rate', 'cross_rate_pair', 'cross_rate_usd_rub', 'conversion_percent')
+    @api.depends('course_profitable', 'currency_pair', 'xe_rate', 'cross_rate_pair', 'cross_rate_usd_rub', 'conversion_percent')
     def _compute_real_cross_rate(self):
         reverse_pairs = {'cny_usd', 'euro_usd', 'aed_usd', 'thb_usd'}
         for rec in self:
@@ -2805,23 +2821,29 @@ class Zayavka(models.Model, AmanatBaseModel):
             is_reverse = (rec.currency_pair or '').lower() in reverse_pairs
 
             result = 0.0
-            if rec.profit_rate == 'xe':
+            if rec.course_profitable.lower() == 'xe':
                 if is_reverse:
-                    if xe != 0:
+                    if xe:
                         result = (usd_rub / xe) * (1 + conv_percent)
+                    else:
+                        result = 0.0
                 else:
                     result = (usd_rub * xe) * (1 + conv_percent)
-            else:  # profit_rate == 'bank' или None
+            else:
                 if pair_rate:
                     if is_reverse:
-                        if pair_rate != 0:
+                        if pair_rate:
                             result = (usd_rub / pair_rate) * (1 + conv_percent)
+                        else:
+                            result = 0.0
                     else:
                         result = (usd_rub * pair_rate) * (1 + conv_percent)
                 else:
                     if is_reverse:
-                        if xe != 0:
+                        if xe:
                             result = (usd_rub / xe) * (1 + conv_percent)
+                        else:
+                            result = 0.0
                     else:
                         result = (usd_rub * xe) * (1 + conv_percent)
 
@@ -2967,14 +2989,34 @@ class Zayavka(models.Model, AmanatBaseModel):
             record.subagent_ids = [(6, 0, contragents.ids)]
 
     def write(self, vals):
-        # Проверяем, изменилось ли поле "оплачена валюта поставщику (импорт) / субагенту (экспорт)"
-        paid_field_name = 'supplier_currency_paid_date'  # <- замени на правильное имя поля
-
         res = super(Zayavka, self).write(vals)
-
-        # Если поле обновлено, запускаем скрипты
-        if paid_field_name in vals:
-            for record in self:
-                print("Сработала автоматизация")
-
+        # Автоматизация "Automation 2"
+        if 'date_received_on_pc_auto' in vals:
+            for rec in self:
+                # Получаем все даты из extract_delivery_ids
+                dates = rec.extract_delivery_ids.mapped('date')
+                # Фильтруем пустые значения
+                dates = [d for d in dates if d]
+                if dates:
+                    min_date = min(dates)
+                    max_date = max(dates)
+                    rec.date_received_on_pc_payment = min_date
+                    rec.date_agent_on_pc = max_date
         return res
+
+    @api.model
+    def create(self, vals):
+        if vals.get('fin_entry_check'):
+            print("Триггер для автоматизации Создание ордера заявки фин")
+        # Автоматизация "Automation 2"
+        if not vals.get('period_id'):
+            Period = self.env['amanat.period']
+            period = Period.search([('id', '=', 1)], limit=1)
+            if not period:
+                period = Period.create({
+                    'name': '1',
+                    'date_1': '2025-03-01',
+                    'date_2': '2025-03-21',
+                })
+            vals['period_id'] = period.id
+        return super().create(vals)

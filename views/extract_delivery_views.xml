@@ -15,6 +15,7 @@
                 <field width="200" name="recipient_inn"/>
                 <field width="200" name="payment_purpose"/>
                 <field width="200" name="document_id"/>
+                <field width="200" name="bank_document"/>
                 <field width="200" name="assign_bulinan"/>
                 <field width="200" name="create_transfer_bulinan"/>
                 <field width="200" name="dds_article"/>
@@ -77,6 +78,7 @@
                         <field name="recipient_inn"/>
                         <field name="payment_purpose"/>
                         <field name="document_id"/>
+                        <field name="bank_document"/>
                         <field name="assign_bulinan"/>
                         <field name="create_transfer_bulinan"/>
                         <field name="dds_article"/>

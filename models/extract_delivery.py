@@ -29,7 +29,14 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         tracking=True
     )
     payment_purpose = fields.Char(string="Назначение платежа", tracking=True)
-    document_id = fields.Many2many('amanat.extracts', string="ID Документа", tracking=True)
+    document_id = fields.Many2one('amanat.extracts', string="ID Документа", tracking=True)
+    bank_document = fields.Selection(
+        related='document_id.bank',
+        string='Банк',
+        store=True,
+        readonly=True,
+        tracking=True
+    )
     assign_bulinan = fields.Boolean(string="Разнести булинан", tracking=True)
     create_transfer_bulinan = fields.Boolean(string="Создать перевод булинан", tracking=True)
     dds_article = fields.Selection([

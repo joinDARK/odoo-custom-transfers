@@ -28,7 +28,7 @@ class Manager(models.Model, AmanatBaseModel):
         tracking=True
     )
     # Поле "Задачник" реализовано как ссылка на модель задач (например, manager.task)
-    task_manager = fields.Many2one('amanat.tasks', string="Задачник")
+    task_manager = fields.Many2one('amanat.task', string="Задачник")
     total_applications = fields.Integer(string="Количество заявок за менеджером")
     wrong_applications = fields.Integer(string="Количество ошибочных заявок за менеджером")
     efficiency = fields.Float(

@@ -4,7 +4,7 @@ import { registry } from "@web/core/registry";
 
 const amanatRealTimeService = {
     dependencies: ["bus_service", "action"],
-    start(env) {1234
+    start(env) {
         
         const busService = env.services.bus_service;
         busService.subscribe("my_channel", (message) => {
