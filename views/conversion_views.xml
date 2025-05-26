@@ -82,13 +82,13 @@
         <field width="200" name="amount"/>
         <field width="200" name="currency"/>
         <field width="200" name="conversion_currency"/>
+        <field width="200" name="rate"/>
         <field width="200" name="sender_id"/>
         <field width="200" name="sender_payer_id"/>
-        <field width="200" name="rate"/>
         <field width="200" name="receiver_id"/>
         <field width="200" name="receiver_payer_id"/>
-        <field name="order_id" widget="many2many_tags"/>
         <field width="100" name="create_Conversion"/>
+        <field name="order_id" widget="many2many_tags"/>
         <field width="100" name="contragent_count"/>
         <field width="100" name="delete_Conversion"/>
         <field width="100" name="wallet_id"/>

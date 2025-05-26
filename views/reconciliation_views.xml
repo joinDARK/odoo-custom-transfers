@@ -58,6 +58,7 @@
                 <field width="200" name="equivalent"/>
                 <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" width="100"/>
                 <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" width="120"/>
+                <field name="range_reconciliation_bool" width="200"/>
             </list>
         </field>
     </record>
@@ -121,6 +122,7 @@
                         <field name="equivalent"/>
                         <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
                         <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                        <field name="range_reconciliation_bool"/>
                     </group>
                 </sheet>
                 <chatter>
@@ -145,6 +147,7 @@
                 <field name="order_id" string="Заявка"/>
                 <filter name="filter_create_true" string="Только Create=TRUE" domain="[('create_Reconciliation','=',True)]"/>
                 <filter name="filter_royalti_true" string="Только Royalti=TRUE" domain="[('royalti_Reconciliation','=',True)]"/>
+                <field name="range_reconciliation_bool" string="Сверка по диапазону"/>
             </search>
         </field>
     </record>

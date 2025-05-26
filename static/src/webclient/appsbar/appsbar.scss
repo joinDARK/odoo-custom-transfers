@@ -22,6 +22,10 @@
         }
     }
 
+    .mk_apps_sidebar_name {
+        font-weight: 400;
+    }
+
     &.mk_apps_sidebar_collapsed {
         min-width: 50px;
         width: 50px;
@@ -52,11 +56,9 @@
                     cursor: pointer;
                     font-size: 13px;
                     font-weight: 300;
-                    overflow: hidden;
                     padding: 8px 11px;
                     text-decoration: none;
                     color: $mk-appbar-color;
-                    text-overflow: ellipsis;
                     transition: background 0.2s ease;
 
                     &:hover {
@@ -66,6 +68,7 @@
 
                 &.active>a {
                     background: $mk-appbar-active;
+                    color: #FFFFFF;
                 }
             }
         }
@@ -133,28 +136,13 @@
     }
 }
 
-.sub-menu {
-    list-style: none;
-    margin: 0;
-    padding: 10px 10px;
-    background-color: darken($mk-appbar-background, 5%);
-
-    border-radius: 4px;
-    box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.2);
-
-    .sub-item {
-        font-size: 90%;
-        color: #fff;
-        padding: 6px 8px;
-        border-left: 2px solid transparent;
-        transition: all 0.2s ease;
-
-        &:hover {
-            background-color: darken($mk-appbar-background, 20%);
-            border-left-color: lighten($mk-appbar-active, 10%);
-        }
-    }
+.mk_apps_sidebar_menu>li>a {
+    color: #FFFFFF;
+    padding: 8px 11px;
+    font-size: 13px;
+    transition: background 0.2s ease;
 }
+
 
 // Стрелочки
 .arrow {
@@ -241,6 +229,11 @@
         }
     }
 
+    .mk_apps_sidebar_menu>li.active>a {
+        background: $mk-appbar-active;
+    }
+
+
     .mk_apps_sidebar {
         height: 100%;
         display: flex;
@@ -351,16 +344,35 @@
     border-radius: 4px;
     box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.2);
 
-    .sub-item {
-        font-size: 90%;
-        color: #fff;
-        padding: 6px 8px;
-        border-left: 2px solid transparent;
+    .nav-item {
+        display: flex;
+        align-items: center;
+        border-left: 1px solid transparent;
         transition: all 0.2s ease;
 
         &:hover {
-            background-color: darken($mk-appbar-background, 20%);
-            border-left-color: lighten($mk-appbar-active, 10%);
+            border-left: 1px solid #7d7d7d;
+        }
+
+        &.active {
+            border-left: 1px solid #ababab;
+        }
+    }
+
+    .sub-item {
+        margin-left: 10px;
+        font-size: 90%;
+        color: #fff;
+        border-radius: 8px;
+        padding: 6px 8px;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background-color: darken($mk-appbar-background, 10%);
+        }
+
+        &.active {
+            background-color: darken($mk-appbar-background, 15%);
         }
     }
 }

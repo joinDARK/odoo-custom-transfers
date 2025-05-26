@@ -5,7 +5,7 @@
                 <ul class="mk_apps_sidebar_menu">
                     <!-- Рендерим пункты меню -->
                     <t t-foreach="menuData" t-as="menu" t-index="menu_index" t-key="menu_index">
-                        <li class="nav-item">
+                        <li class="nav-item" t-att-class="{ active: state.activeMainMenuIndex === menu_index }">
                             <a href="#"
                                class="nav-link"
                                role="menuitem"
@@ -24,11 +24,12 @@
                             <t t-if="menu.items and state.activeMenuIndex === menu_index">
                                 <ul class="sub-menu">
                                     <t t-foreach="menu.items" t-as="subItem" t-index="subItem_index" t-key="subItem_index">
-                                        <li class="nav-item">
+                                        <li class="nav-item" t-att-class="{ active: state.activeItem === subItem.action }">
                                             <a href="#"
                                                class="nav-link sub-item"
                                                role="menuitem"
-                                               t-on-click.prevent="() => this.openAction(subItem.action)"
+                                               t-on-click.prevent="() => this.openAction(subItem.action, menu_index)"
+                                               t-att-class="{ active: state.activeItem === subItem.action }"
                                             >
                                                 <t t-esc="subItem.name"/>
                                             </a>

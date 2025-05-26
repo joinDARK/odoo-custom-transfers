@@ -546,7 +546,7 @@ class Conversion(models.Model, AmanatBaseModel):
 
             recon_vals = {
                 'date':       self.date,
-                'partner_id': RoyaltySenderPartner.id,  # Устанавливаем "Отправитель роялти" как контрагента
+                'partner_id': payer1.id,  # Устанавливаем "Отправитель роялти" как контрагента
                 'currency':   self.currency,  # Используем исходную валюту
                 'sum':        -amt1,
                 'wallet_id':  self.wallet_id.id,
@@ -586,7 +586,7 @@ class Conversion(models.Model, AmanatBaseModel):
 
             recon_vals = {
                 'date':       self.date,
-                'partner_id': RoyaltySenderPartner.id,  # Устанавливаем "Отправитель роялти" как контрагента
+                'partner_id': payer2.id,  # Устанавливаем "Отправитель роялти" как контрагента
                 'currency':   self.currency,  # Используем исходную валюту
                 'sum':        -amt2,
                 'wallet_id':  self.wallet_id.id,

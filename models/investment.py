@@ -351,9 +351,9 @@ class Investment(models.Model, AmanatBaseModel):
             return (nxt - start_date).days
         return 1  # work_day == 1
 
-    def _get_month_days(d):
+    def _get_month_days(self, d):
         nxt = d + relativedelta(months=1)
-        return (date(nxt.year, nxt.month, 1) - date(d.year, d.month, 1)).day
+        return (date(nxt.year, nxt.month, 1) - date(d.year, d.month, 1)).days
     
     def action_sync_reconciliation(self):
         """
@@ -412,26 +412,36 @@ class Investment(models.Model, AmanatBaseModel):
                 last_date = data['last_date']
                 cont = Money.browse(cont_id)
                 inv_currency = inv.currency.lower()
-                vals_base = {
-                    'date': last_date,
-                    'partner_id': cont.partner_id.id,
-                    'currency': inv_currency,
-                    'sum': -total,
-                    f'sum_{inv_currency}': -total,
-                    'wallet_id': wallet.id,
-                    'order_id': [(4, order.id)],
-                }
-                # Сверка для держателя
-                vals = vals_base.copy()
-                vals['sender_id'] = [(4, inv.payer_sender.id)] if inv.payer_sender else False
-                vals['receiver_id'] = [(4, inv.payer_receiver.id)] if inv.payer_receiver else False
-                Reconciliation.create(vals)
-                # Если роялти, создаём дополнительную запись
-                if cont.royalty:
-                    vals2 = vals_base.copy()
-                    vals2['partner_id'] = royal_partner.id
-                    vals2['sender_id'] = [(4, royal_payer.id)]
-                    Reconciliation.create(vals2)
+                # ПРОЦЕНТНЫЕ
+                if cont.percent:
+                    vals = {
+                        'date': last_date,
+                        'partner_id': cont.partner_id.id,
+                        'currency': inv_currency,
+                        'sum': -total,
+                        f'sum_{inv_currency}': -total,
+                        'wallet_id': wallet.id,
+                        'order_id': [(4, order.id)],
+                        'sender_id': [(4, inv.payer_sender.id)] if inv.payer_sender else False,
+                        'receiver_id': [(4, inv.payer_receiver.id)] if inv.payer_receiver else False,
+                    }
+                    Reconciliation.create(vals)
+                # РОЯЛТИ — только 1 запись: отправитель=Роялти, получатель=контрагент получателя роялти
+                elif cont.royalty:
+                    # Найти payer для получателя роялти
+                    payer_receiver = Payer.search([('contragents_ids', 'in', cont.partner_id.id)], limit=1)
+                    vals = {
+                        'date': last_date,
+                        'partner_id': cont.partner_id.id,  # Получатель роялти (человек)
+                        'currency': inv_currency,
+                        'sum': -total,
+                        f'sum_{inv_currency}': -total,
+                        'wallet_id': wallet.id,
+                        'order_id': [(4, order.id)],
+                        'sender_id': [(4, royal_payer.id)],
+                        'receiver_id': [(4, payer_receiver.id)] if payer_receiver else False,
+                    }
+                    Reconciliation.create(vals)
 
             # 4) Обработка principal-контейнеров
             for cont in containers.filtered(lambda m: not m.percent and not m.royalty):
@@ -562,8 +572,8 @@ class Investment(models.Model, AmanatBaseModel):
                     recv = getattr(inv, f'royalty_recipient_{i}', False)
                     pct = getattr(inv, f'percent_{i}', 0.0)
                     if recv and pct:
-                        amt = (inv.amount or 0.0) * pct / 100.0
-                        mk(recv, amt, roy=True)
+                        amt = 0
+                        mk(recv, amt, roy=True, state='empty')
 
             # 7) Создаем помесячные списания и сверки — вызываем ваши методы
             # inv.action_create_writeoffs()
@@ -738,103 +748,6 @@ class Investment(models.Model, AmanatBaseModel):
         for i in range(0, len(vals_list), 50):
             Writeoff.create(vals_list[i:i+50])
 
-    # def accrue_daily_interest(self):
-    #     """Ежедневное начисление процентов и роялти по открытым инвестициям"""
-    #     Money = self.env['amanat.money']
-    #     Writeoff = self.env['amanat.writeoff']
-    #     today = fields.Date.context_today(self)
-    #     for inv in self.search([('status', '=', 'open')]):
-    #         # стартовые проверки
-    #         # start_date = inv.date or today
-    #         if not inv.date or not inv.percent or not inv.orders:
-    #             continue
-    #         # находим контейнеры
-    #         order = inv.orders[0]
-    #         principal_cont = Money.search([
-    #             ('order_id', '=', order.id), ('percent', '=', False), ('royalty', '=', False)
-    #         ], limit=1)
-    #         interest_send = Money.search([
-    #             ('order_id', '=', order.id), ('percent', '=', True), ('partner_id','=',inv.sender.id)
-    #         ], limit=1)
-    #         interest_recv = Money.search([
-    #             ('order_id', '=', order.id), ('percent', '=', True), ('partner_id','=',inv.receiver.id)
-    #         ], limit=1)
-
-    #         if interest_recv:
-    #             interest_recv.write({'state': 'positive'})
-            
-    #         if interest_send:
-    #             interest_send.write({'state': 'debt'})                
-
-    #         if not (principal_cont and interest_send and interest_recv):
-    #             continue
-    #         royalty_conts = Money.search([
-    #             ('order_id', '=', order.id), ('royalty', '=', True)
-    #         ])
-
-    #         delete_start = principal_cont.date + timedelta(days=1)
-    #         delete_end = today
-
-    #         # удаляем старые
-    #         old_ids = Writeoff.search([
-    #             ('money_id', 'in', [principal_cont.id, interest_send.id, interest_recv.id] + [rc.id for rc in royalty_conts]),
-    #             ('date', '>=', delete_start),
-    #             ('date', '<=', delete_end),
-    #         ]).ids
-    #         for rc in royalty_conts:
-    #             old_ids += rc.writeoff_ids.ids
-    #         if old_ids:
-    #             Writeoff.browse(old_ids).unlink()
-    #         # расчёт: явно проходим по каждому полному дню (skip creation date, include today)
-    #         days_diff = (today - principal_cont.date).days
-    #         writeoffs = []
-    #         if days_diff > 0:
-    #             # для i=1..days_diff: дни с principal_cont.date + i
-    #             for i in range(1, days_diff + 1):
-    #                 day = principal_cont.date + timedelta(days=i)
-    #                 # principal с учётом списаний
-    #                 used = sum(w.amount for w in principal_cont.writeoff_ids if w.date <= day)
-    #                 principal = (inv.amount or 0.0) - used
-    #                 if principal <= 0:
-    #                     continue
-    #                 # процент
-    #                 rate = inv.percent
-    #                 if inv.period == 'calendar_month':
-    #                     rate /= self._get_month_days(day)
-    #                 elif inv.period == 'calendar_year':
-    #                     # длина периода в днях от даты создания
-    #                     period_len = self._get_period_days(inv.period, principal_cont.date)
-    #                     rate /= period_len
-    #                 interest = principal * rate
-    #                 if interest:
-    #                     writeoffs += [{
-    #                         'date': day, 'amount': interest,
-    #                         'money_id': interest_send.id,
-    #                         'investment_ids': [(4, inv.id)]
-    #                     }, {
-    #                         'date': day, 'amount': -interest,
-    #                         'money_id': interest_recv.id,
-    #                         'investment_ids': [(4, inv.id)]
-    #                     }]
-    #                 # роялти
-    #                 if inv.has_royalty:
-    #                     for j in range(1, 10):
-    #                         pct = getattr(inv, f'percent_{j}', 0.0)
-    #                         recv = getattr(inv, f'royalty_recipient_{j}', False)
-    #                         if not (recv and pct):
-    #                             continue
-    #                         cont = royalty_conts.filtered(lambda m: m.partner_id == recv)
-    #                         if cont:
-    #                             roy = principal * (pct / 100.0)
-    #                             writeoffs.append({
-    #                                 'date': day, 'amount': roy,
-    #                                 'money_id': cont.id,
-    #                                 'investment_ids': [(4, inv.id)]
-    #                             })
-    #         # запись
-    #         if writeoffs:
-    #             self._batch_create_writeoffs(writeoffs)
-
     @api.model
     def _cron_accrue_interest(self):
         """Cron: ежедневный запуск начисления"""
@@ -968,7 +881,8 @@ class Investment(models.Model, AmanatBaseModel):
                                 divisor = self._get_month_days(day_cursor)
                             elif inv.period == 'calendar_year':
                                 divisor = period_days
-                            roy = principal * pct / divisor
+                            # Теперь роялти считается от суммы процентов, а не от тела долга
+                            roy = interest * (pct / 100.0) / divisor
                             write_vals.append({
                                 'date': day_cursor,
                                 'amount': roy,

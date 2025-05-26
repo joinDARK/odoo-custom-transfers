@@ -5,15 +5,59 @@
 
 /* Общие стили для формы */
 .o_form_view .o_form_sheet {
-    background-color: #f9f9f9;
+    background-color: #F9F9F9;
+    /* Светло-серый фон */
     padding: 20px;
-    border: 1px solid #ddd;
+    border: 1px solid #E0E0E0;
+    /* Тонкая серая граница */
 }
 
 /* Стандартизация числовых полей */
 .o_field_monetary {
     text-align: right;
     font-family: monospace;
+}
+
+.o_data_cell {
+    border: 0.5px solid rgba(0, 0, 0, 0.2);
+}
+
+/* .o_data_cell:first-child {
+    border: 0.5px solid transparent;
+} */
+
+.o_column_sortable {
+    border: 0.5px solid rgba(0, 0, 0, 0.2);
+}
+
+.o_form_group {
+    background-color: #FFFFFF;
+    /* Белый фон таблицы */
+    border: 1px solid #E0E0E0;
+    /* Тонкие серые границы */
+    padding: 10px;
+}
+
+.o_form_view {
+    font-family: Arial, Helvetica, sans-serif;
+    /* Шрифт без засечек */
+}
+
+.o_form_label {
+    font-weight: bold;
+    /* Жирные заголовки */
+    color: #333333;
+    /* Темно-серый цвет текста */
+}
+
+.o_form_group .o_field_widget:nth-child(odd) {
+    background-color: #F9F9F9;
+    /* Чередующийся светло-серый фон для нечетных строк */
+}
+
+.o_field_widget {
+    padding: 5px 10px;
+    /* Внутренние отступы для ячеек */
 }
 
 /* Выделение меток */

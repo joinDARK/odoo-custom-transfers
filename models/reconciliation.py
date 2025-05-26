@@ -1,6 +1,13 @@
 # models/reconciliation.py
-from odoo import models, fields
+from odoo import models, fields, api
 from .base_model import AmanatBaseModel
+from odoo.exceptions import UserError
+import requests
+from datetime import datetime
+from odoo.tools.translate import _
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class Reconciliation(models.Model, AmanatBaseModel):
     _name = 'amanat.reconciliation'
@@ -122,6 +129,136 @@ class Reconciliation(models.Model, AmanatBaseModel):
     rate_usdt = fields.Float(string='usdt (from Курсы)', related='rate_id.usdt', store=True, tracking=True)
     equivalent = fields.Float(string='Эквивалент $', tracking=True)
 
-    create_Reconciliation = fields.Boolean(string='Создать', default=False, tracking=True)
-    royalti_Reconciliation = fields.Boolean(string='Провести роялти', default=False, tracking=True)
+    create_Reconciliation = fields.Boolean(string='Создать', default=False, tracking=True) # TODO нужно удалить
+    royalti_Reconciliation = fields.Boolean(string='Провести роялти', default=False, tracking=True) # TODO нужно удалить
+
+    range_reconciliation_bool = fields.Boolean(string='Сверка по диапазону', default=False, tracking=True)
+
+    def write(self, vals):
+        unload_trigger = False
+        if 'unload' in vals:
+            # Выгружать только когда чекбокс стал True (но не при снятии галки)
+            for rec in self:
+                old_value = rec.unload
+                new_value = vals['unload']
+                if not old_value and new_value:
+                    unload_trigger = True
+                    break
+
+        res = super(Reconciliation, self).write(vals)
+        if unload_trigger:
+            # После сохранения вызываем автоматизацию для тех записей, где unload = True
+            for rec in self.filtered(lambda r: r.unload):
+                rec._run_reconciliation_export()
+                # Сбросить галку обратно
+                rec.with_context(skip_export=True).write({'unload': False})
+        return res
+
+    @api.model
+    def create(self, vals):
+        # Автоматизация "Автодиапазон"
+        # --- Блок автозаполнения диапазона ---
+        range_id = vals.get('range')
+        if not range_id:
+            range_rec = self.env['amanat.ranges'].browse(1)
+            if range_rec.exists():
+                vals['range'] = range_rec.id
+            else:
+                _logger.warning(_('В таблице "Диапазон" не найдена запись с ID = 1.'))
+
+        # --- Блок автозаполнения курса ---
+        rate_id = vals.get('rate_id')
+        if not rate_id:
+            rate_rec = self.env['amanat.rates'].browse(1)
+            if rate_rec.exists():
+                vals['rate_id'] = rate_rec.id
+            else:
+                _logger.warning(_('В таблице "Курсы" не найдена запись с ID = 1.'))
+
+        rec = super(Reconciliation, self).create(vals)
+
+        # Срабатывание выгрузки если отмечен чекбокс "Выгрузить" (оставляем твою логику)
+        if vals.get('unload'):
+            rec._run_reconciliation_export()
+            rec.with_context(skip_export=True).write({'unload': False})
+
+        return rec
+    
+    @api.model
+    def _prepare_reconciliation_export_data(self, contragent, use_range):
+        """
+        Готовит данные для экспорта по контрагенту (и диапазону).
+        """
+        domain = [('partner_id', '=', contragent.id)]
+        if use_range:
+            domain.append(('range_date_reconciliation', '=', 'yes'))
+        recs = self.search(domain)
+        data = []
+        for rec in recs.sorted(key=lambda r: r.id):
+            data.append({
+                'id': rec.id,
+                '№': rec.id,
+                'Контрагент': rec.partner_id.name,
+                'Дата': rec.date.isoformat() if rec.date else '',
+                'Отправитель': ', '.join(rec.sender_id.mapped('name')),
+                'Контрагенты (from Отправитель)': ', '.join(rec.sender_contragent.mapped('name')),
+                'Получатель': ', '.join(rec.receiver_id.mapped('name')),
+                'Валюта': rec.currency,
+                'Сумма': rec.sum,
+                'Сумма RUB': rec.sum_rub,
+                'Сумма USD': rec.sum_usd,
+                'Сумма USDT': rec.sum_usdt,
+                'Сумма CNY': rec.sum_cny,
+                'Сумма AED': rec.sum_aed,
+                'Сумма EURO': rec.sum_euro,
+                'Сумма THB': rec.sum_thb,
+                'Сумма RUB КЕШ': rec.sum_rub_cashe,
+                'Сумма USD КЕШ': rec.sum_usd_cashe,
+                'Сумма CNY КЕШ': rec.sum_cny_cashe,
+                'Сумма EURO КЕШ': rec.sum_euro_cashe,
+                'Сумма AED КЕШ': rec.sum_aed_cashe,
+                'Сумма THB КЕШ': rec.sum_thb_cashe,
+                'Ордеры': ', '.join(rec.order_id.mapped('name')),
+                'Комментарий (from Ордер)': rec.order_comment or '',
+                'Сумма_Ордер': rec.order_id and rec.order_id[0].amount_total or 0.0,  # пример
+                'Курс': rec.rate,
+            })
+        return data
+
+    def _run_reconciliation_export(self):
+        """
+        Основная логика выгрузки.
+        """
+        for rec in self:
+            contragent = rec.partner_id
+            if not contragent:
+                continue
+            use_range = rec.range_reconciliation_bool
+
+            file_name = '{} {}'.format(contragent.name, datetime.today().strftime('%d.%m.%Y'))
+
+            data = self._prepare_reconciliation_export_data(contragent, use_range)
+            payload = {'fileName': file_name, 'data': data}
+
+            endpoint = "http://92.255.207.48:8080/receive-data"
+            file_url = False
+            try:
+                resp = requests.post(endpoint, json=payload, timeout=60)
+                resp.raise_for_status()
+                resp_data = resp.json()
+                if resp_data.get('success') and resp_data.get('fileUrl'):
+                    file_url = resp_data['fileUrl']
+            except Exception as e:
+                raise UserError(_("Ошибка при отправке данных на сервер: %s" % e))
+
+            if file_url:
+                IrAttachment = self.env['ir.attachment']
+                attachment = IrAttachment.create({
+                    'name': file_name + ".xlsx",
+                    'type': 'url',
+                    'url': file_url,
+                    'res_model': self._name,
+                    'res_id': rec.id,
+                })
+        return True
     

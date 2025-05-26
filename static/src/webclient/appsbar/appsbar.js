@@ -5,7 +5,6 @@ import { Component, onWillUnmount } from '@odoo/owl';
 import { useService } from '@web/core/utils/hooks';
 import { url } from '@web/core/utils/urls';
 
-
 export class AppsBar extends Component {
     static template = 'amanat.AppsBar';
 
@@ -60,10 +59,12 @@ export class AppsBar extends Component {
             },
             {
                 name: "Автоматизации",
+                action: "amanat.action_automation_for_amanat",
                 actionMethod: "openAutomations",
             },
             {
                 name: "Логи",
+                action: "amanat.activity_action",
                 actionMethod: "openLogs",
             },
         ];
@@ -73,6 +74,8 @@ export class AppsBar extends Component {
             activeMenuIndex: null,
             isAmanat: false,
             appName: '',
+            activeItem: null,
+            activeMainMenuIndex: null,
         });
 
         const refreshMenuState = () => {
@@ -99,23 +102,20 @@ export class AppsBar extends Component {
         }
     }
 
-    // Клик по пункту: либо раскрыть подпункты, либо вызвать метод
     handleMenuClick(menu, menu_index) {
         if (menu.items) {
-            // Есть подпункты, значит сворачиваем/разворачиваем
             this.toggleMenu(menu_index);
         } else if (menu.actionMethod) {
-            // Вызываем метод по имени (например, "openAutomations")
             this[menu.actionMethod]();
+            this.state.activeItem = menu.actionMethod;
+            this.state.activeMainMenuIndex = menu_index;
         }
     }
 
-    // Сворачивание боковой панели (не задействовано в шаблоне по умолчанию)
     toggleSidebar() {
         this.state.isCollapsed = !this.state.isCollapsed;
     }
 
-    // Раскрытие / сворачивание подпунктов
     toggleMenu(menu_index) {
         if (this.state.activeMenuIndex === menu_index) {
             this.state.activeMenuIndex = null;
@@ -124,16 +124,20 @@ export class AppsBar extends Component {
         }
     }
 
-    openAction(actionName) {
-        console.log(actionName);
+    openAction(actionName, menuIndex) {
         this.actionService.doAction(actionName, { additionalContext: { clear_breadcrumb: true } });
+        this.state.activeItem = actionName;
+        this.state.activeMainMenuIndex = menuIndex;
     }
 
     openAutomations() {
         this.actionService.doAction('amanat.action_automation_for_amanat', { additionalContext: { clear_breadcrumb: true } });
+        this.state.activeItem = 'openAutomations';
     }
 
     openLogs() {
         this.actionService.doAction('amanat.activity_action', { additionalContext: { clear_breadcrumb: true } });
+        this.state.activeItem = 'openLogs';
     }
+
 }
