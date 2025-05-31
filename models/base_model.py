@@ -56,7 +56,7 @@ class AmanatBaseModel(models.AbstractModel):
         
         records = super().create(vals_list)
         
-        self.env.user._bus_send("my_channel", {'type': 'create', 'model': self._name, 'ids': records.ids})
+        self.env.user._bus_send("realtime_updates", {'type': 'create', 'model': records._name, 'ids': records.ids, 'user_id': user.id})
         
         return records
 
@@ -70,7 +70,7 @@ class AmanatBaseModel(models.AbstractModel):
                 changes.append(f"{field}: {old_value} → {value}")
             super(AmanatBaseModel, record).write(vals)
             record._log_activity('update', "\n".join(changes))
-        self.env.user._bus_send("my_channel", {'type': 'update', 'model': self._name, 'ids': [user.id]})
+        self.env.user._bus_send("realtime_updates", {'type': 'update', 'model': record._name, 'ids': [record.id], 'user_id': user.id})
         return True
 
     def unlink(self):
@@ -101,7 +101,7 @@ class AmanatBaseModel(models.AbstractModel):
                 'user_id': self.env.uid,
             })
         user = self.env.user
-        # self.env.user._bus_send("my_channel", {'type': 'delete', 'model': self._name, 'ids': [user.id]})
+        self.env.user._bus_send("realtime_updates", {'type': 'update', 'model': record._name, 'ids': [record.id], 'user_id': user.id})
         return result
     
 

@@ -19,6 +19,7 @@
             <field name="contragent_id"/>
             <field name="agent_id"/>
             <field name="client_id"/>
+            <field name="subagent_ids"/>
             <field name="inn"/>
             <field name="client_inn"/>
           </group>
@@ -92,6 +93,7 @@
           <notebook>
             <page string="Нераспределенные">
               <group>
+                <field name="deal_closed_date"/>
                 <field name="hand_reward_percent" widget="percentage"/>
                 <field name="export_agent_flag"/>
                 <field name="bank_select"/>

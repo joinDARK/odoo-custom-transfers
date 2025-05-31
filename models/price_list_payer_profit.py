@@ -73,7 +73,7 @@ class PriceListPayerProfit(models.Model):
     @api.depends('payer_subagent_ids')
     def _compute_contragent_ids(self):
         for rec in self:
-            rec.contragent_ids = rec.payer_subagent_ids.mapped('contragent_id')
+            rec.contragent_ids = rec.payer_subagent_ids.mapped('contragents_ids')
 
     @api.depends('date_start', 'date_end')
     def _compute_period_days(self):
