@@ -1,6 +1,9 @@
 # models/extract_delivery.py
 from odoo import models, fields, api
 from .base_model import AmanatBaseModel
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class Extract_delivery(models.Model, AmanatBaseModel):
     _name = 'amanat.extract_delivery'
@@ -19,6 +22,7 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         readonly=True,
         tracking=True
     )
+    serial_number = fields.Integer(string="Порядковый номер в выписке", tracking=True)
 
     recipient = fields.Many2one('amanat.payer', string="Получатель", tracking=True)
     recipient_inn = fields.Char(
@@ -136,3 +140,159 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                     record.range_status = "Нет"
             else:
                 record.range_status = "Нет"
+
+    def write(self, vals):
+        res = super().write(vals)
+        if vals.get('fragment_statement'):
+            for rec in self.filtered('fragment_statement'):
+                rec.action_fragment_statement()
+                rec.match_extract_with_zayavka()
+                rec.fragment_statement = False
+        return res
+
+    @api.model
+    def create(self, vals):
+        res = super().create(vals)
+        trigger = vals.get('fragment_statement', False)
+        if trigger:
+            res.action_fragment_statement()
+            res.match_extract_with_zayavka()
+            res.fragment_statement = False
+        return res
+    
+    def action_fragment_statement(self):
+        record = self.id
+        if not record:
+            return {'error': f'Запись с ID {record} не найдена.'}
+
+        # Копируем нужные поля
+        base_vals = {
+            'date': self.date,
+            'payer': self.payer.id if self.payer else False,
+            'recipient': self.recipient.id if self.recipient else False,
+            'payment_purpose': self.payment_purpose,
+            'document_id': self.document_id.id if self.document_id else False,
+            'direction_choice': self.direction_choice,
+            'range_field': self.range_field.id if self.range_field else False,
+            'serial_number': self.serial_number,
+        }
+
+        new_records = []
+        # Перебираем дроби
+        for i in range(1, 21):
+            part_field = f'statement_part_{i}'
+            part_value = getattr(self, part_field, None)
+            if part_value:
+                vals = base_vals.copy()
+                vals['amount'] = part_value
+                # Создаём новую выписку
+                new_rec = self.create(vals)
+                new_records.append(new_rec.id)
+
+        # Обновляем исходную выписку
+        self.amount = self.remaining_statement
+        for i in range(1, 21):
+            setattr(self, f'statement_part_{i}', 0)
+        self.fragment_statement = False
+
+        _logger.info(f"Обновлена выписка разнос с ID={self.id} а также созданы новые записи: {new_records}")
+        
+        # Запускаем сопоставление с заявками после дробления
+        
+        return True
+
+    def match_extract_with_zayavka(self):
+        """
+        Сопоставляет выписки с заявками по логике из скрипта.
+        Ищет подходящие заявки для выписок без связанных заявок.
+        """
+        TOLERANCE = 1.0
+        
+        # Поля для проверки сумм в заявках
+        fields_to_check = [
+            'application_amount_rub_contract',  # Заявка по курсу в рублях по договору
+            'contract_reward',                  # Вознаграждение по договору
+            'total_fact'                       # Итого факт
+        ]
+        
+        # Получаем все заявки с заполненной датой "Взята в работу"
+        zayavka_records = self.env['amanat.zayavka'].search([
+            ('taken_in_work_date', '!=', False)
+        ])
+        
+        used_extract_ids = set()
+        
+        for zayavka in zayavka_records:
+            # Собираем кандидатов плательщиков через агента и клиента
+            candidate_payers = []
+            
+            if zayavka.agent_id and zayavka.agent_id.payer_ids:
+                candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
+                
+            if zayavka.client_id and zayavka.client_id.payer_ids:
+                candidate_payers.extend(zayavka.client_id.payer_ids.ids)
+            
+            if not candidate_payers:
+                continue
+                
+            # Ищем подходящие выписки
+            candidate_extracts = []
+            
+            # Получаем выписки без связанных заявок и не использованные ранее
+            extract_records = self.env['amanat.extract_delivery'].search([
+                ('applications', '=', False),  # Нет связанных заявок
+                ('id', 'not in', list(used_extract_ids))
+            ])
+            
+            for extract in extract_records:
+                # Проверяем плательщиков и получателей
+                extract_payers = []
+                if extract.payer:
+                    extract_payers.append(extract.payer.id)
+                if extract.recipient:
+                    extract_payers.append(extract.recipient.id)
+                
+                if not extract_payers:
+                    continue
+                    
+                # Проверяем, что все плательщики/получатели выписки есть среди кандидатов
+                all_matched = all(payer_id in candidate_payers for payer_id in extract_payers)
+                
+                if not all_matched:
+                    continue
+                    
+                # Проверяем сумму с допуском
+                if extract.amount is None:
+                    continue
+                    
+                sum_matches = False
+                for field_name in fields_to_check:
+                    zayavka_sum = getattr(zayavka, field_name, None)
+                    if isinstance(zayavka_sum, (int, float)) and zayavka_sum is not None:
+                        if abs(zayavka_sum - extract.amount) <= TOLERANCE:
+                            sum_matches = True
+                            break
+                            
+                if not sum_matches:
+                    continue
+                    
+                candidate_extracts.append(extract)
+            
+            # Если найдены подходящие выписки, выбираем лучшую (самую раннюю по дате)
+            if candidate_extracts:
+                # Сортируем по дате (самая ранняя первая)
+                candidate_extracts.sort(key=lambda x: x.date or fields.Date.today())
+                best_extract = candidate_extracts[0]
+                
+                # Обновляем выписку
+                best_extract.write({
+                    'applications': [(4, zayavka.id)],  # Добавляем связь с заявкой
+                    'direction_choice': 'applications'   # Устанавливаем направление
+                })
+                
+                used_extract_ids.add(best_extract.id)
+                
+                _logger.info(f"Связана выписка ID={best_extract.id} с заявкой ID={zayavka.id}")
+        
+        _logger.info(f"Сопоставление завершено. Обработано заявок: {len(zayavka_records)}, связано выписок: {len(used_extract_ids)}")
+        return True

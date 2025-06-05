@@ -1129,7 +1129,6 @@ class Zayavka(models.Model, AmanatBaseModel):
         'zayavka_id',
         'extract_delivery_id',
         string="Выписка разнос", 
-        tracking=True
     )
 
     bank_vypiska = fields.Char(

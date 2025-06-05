@@ -178,8 +178,9 @@ class Transfer(models.Model, AmanatBaseModel):
     @api.depends('amount', 'intermediary_1_commission_percent')
     def _compute_intermediary_1_sum(self):
         for record in self:
+            comp_sum = record.amount - (record.amount * (record.sending_commission_percent if record.sending_commission_percent else 1))
             # Сумма 1 посредника = {Сумма} - ({Сумма} * {Процент комиссии по отправке Посредник 1} / 100)
-            record.intermediary_1_sum = record.amount - (record.amount * record.intermediary_1_commission_percent) if record.amount else 0.0
+            record.intermediary_1_sum = comp_sum - (comp_sum * record.intermediary_1_commission_percent) if comp_sum else 0.0
 
     @api.depends('intermediary_1_sum', 'intermediary_2_commission_percent')
     def _compute_intermediary_2_sum(self):
@@ -262,15 +263,13 @@ class Transfer(models.Model, AmanatBaseModel):
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
-
-        a1, a2 = self._calculate_amounts(record.amount, record.sending_commission_percent)
         self._create_money_and_reconciliation(
             order_a, record.sender_wallet_id, record.sender_id,
-            -a1, record.sender_payer_id, record.intermediary_1_payer_id
+            -record.amount, record.sender_payer_id, record.intermediary_1_payer_id
         )
         self._create_money_and_reconciliation(
             order_a, record.intermediary_1_wallet_id, record.intermediary_1_id,
-            a2, record.sender_payer_id, record.intermediary_1_payer_id
+            record.amount, record.sender_payer_id, record.intermediary_1_payer_id
         )
 
         # B) Посредник_1 -> Получатель (только если есть сумма для перевода)
@@ -326,14 +325,13 @@ class Transfer(models.Model, AmanatBaseModel):
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
-        a1, a2 = self._calculate_amounts(record.amount, record.sending_commission_percent)
         self._create_money_and_reconciliation(
             order_a, record.sender_wallet_id, record.sender_id,
-            -a1, record.sender_payer_id, record.intermediary_1_payer_id
+            -record.amount, record.sender_payer_id, record.intermediary_1_payer_id
         )
         self._create_money_and_reconciliation(
             order_a, record.intermediary_1_wallet_id, record.intermediary_1_id,
-            a2, record.sender_payer_id, record.intermediary_1_payer_id
+            record.amount, record.sender_payer_id, record.intermediary_1_payer_id
         )
 
         # B) Посредник_1 -> Посредник_2
@@ -353,14 +351,13 @@ class Transfer(models.Model, AmanatBaseModel):
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
             })
-            b1, b2 = self._calculate_amounts(record.intermediary_1_sum, record.sending_commission_percent)
             self._create_money_and_reconciliation(
                 order_b, record.intermediary_1_wallet_id, record.intermediary_1_id,
-                -b1, record.intermediary_1_payer_id, record.intermediary_2_payer_id
+                -record.intermediary_1_sum, record.intermediary_1_payer_id, record.intermediary_2_payer_id
             )
             self._create_money_and_reconciliation(
                 order_b, record.intermediary_2_wallet_id, record.intermediary_2_id,
-                b2, record.intermediary_1_payer_id, record.intermediary_2_payer_id
+                record.intermediary_1_sum, record.intermediary_1_payer_id, record.intermediary_2_payer_id
             )
 
         # C) Посредник_2 -> Получатель
@@ -380,14 +377,13 @@ class Transfer(models.Model, AmanatBaseModel):
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
             })
-            c1, c2 = self._calculate_amounts(record.intermediary_2_sum, record.sending_commission_percent)
             self._create_money_and_reconciliation(
                 order_c, record.intermediary_2_wallet_id, record.intermediary_2_id,
-                -c1, record.intermediary_2_payer_id, record.receiver_payer_id
+                -record.intermediary_2_sum, record.intermediary_2_payer_id, record.receiver_payer_id
             )
             self._create_money_and_reconciliation(
                 order_c, record.receiver_wallet_id, record.receiver_id,
-                c2, record.intermediary_2_payer_id, record.receiver_payer_id
+                record.intermediary_2_sum, record.intermediary_2_payer_id, record.receiver_payer_id
             )
 
     # ========================================
