@@ -11,8 +11,27 @@ class ZayavkaMethods(models.Model):
 
     def write(self, vals):
         trigger = vals.get('fin_entry_check', False)
+        trigger2 = vals.get('for_khalida_temp', False)
         send_to_reconciliation = vals.get('send_to_reconciliation', False)
+
+        old_values = {}
+        if 'extract_delivery_ids' in vals:
+            for rec in self:
+                old_values[rec.id] = rec.extract_delivery_ids.ids.copy()
+
         res = super().write(vals)  # <-- Исправлено!
+
+        if vals.get('status', False) == '6':
+            for rec in self:
+                _logger.info("Изменился на нужный статус")
+                rec.run_all_fix_course_automations()
+
+        if 'extract_delivery_ids' in vals:
+            for rec in self:
+                old_ids = set(old_values.get(rec.id, []))
+                new_ids = set(rec.extract_delivery_ids.ids)
+                if old_ids != new_ids:
+                    rec._on_extract_delivery_ids_changed(old_ids, new_ids)
 
         if trigger:
             for rec in self:
@@ -24,6 +43,12 @@ class ZayavkaMethods(models.Model):
                 _logger.info(f"Отправляем в сверку заявку {rec.id}")
                 rec.run_all_send_to_reconciliation_automations()
                 rec.send_to_reconciliation = False
+
+        if trigger2:
+            for rec in self:
+                _logger.info(f"Сработал триггер для Халиды для заявки {rec.id}")
+                rec.for_khalida_temp = False
+                rec.run_for_khalida_automations()
         # ... (остальная логика по датам)
         # if 'date_received_on_pc_auto' in vals:
         #     for rec in self:
@@ -40,8 +65,13 @@ class ZayavkaMethods(models.Model):
     @api.model
     def create(self, vals):
         trigger = vals.get('fin_entry_check', False)
+        trigger2 = vals.get('for_khalida_temp', False)
         send_to_reconciliation = vals.get('send_to_reconciliation', False)
         res = super().create(vals)
+
+        if vals.get('status', False) == '6':
+            _logger.info("Изменился на нужный статус")
+            res.run_all_fix_course_automations()
 
         if trigger:
             # Запуск основной логики (вместо print потом будут скрипты)
@@ -52,6 +82,11 @@ class ZayavkaMethods(models.Model):
             _logger.info(f"Отправляем в сверку заявку {res.id}")
             res.run_all_send_to_reconciliation_automations()
             res.send_to_reconciliation = False
+
+        if trigger2:
+            _logger.info(f"Сработал триггер для Халиды для заявки {res.id}")
+            res.for_khalida_temp = False
+            res.run_for_khalida_automations()
         # ... (остальная логика по period_id и т.п.)
         # if not vals.get('period_id'):
         #     Period = self.env['amanat.period']

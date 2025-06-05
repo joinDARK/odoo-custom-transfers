@@ -109,7 +109,7 @@ class Order(models.Model, AmanatBaseModel):
         ('draft', 'Черновик'),
         ('confirmed', 'Подтверждено'),
         ('done', 'Выполнено'),
-    ], string='Статус', default='draft', tracking=True)
+    ], string='Статус', tracking=True)
 
     # Привязка к заявке
     zayavka_ids = fields.Many2many(

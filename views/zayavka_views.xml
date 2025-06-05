@@ -93,6 +93,8 @@
           <notebook>
             <page string="Нераспределенные">
               <group>
+                <field name="subagent_payer_ids"/>
+                <field name="supplier_currency_paid_date"/>
                 <field name="deal_closed_date"/>
                 <field name="hand_reward_percent" widget="percentage"/>
                 <field name="export_agent_flag"/>
