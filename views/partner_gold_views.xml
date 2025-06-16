@@ -92,18 +92,6 @@
             <field name="purchase_amount_dollar" readonly="1"/>
           </group>
           <group>
-            <field name="sale_date"/>
-            <field name="initial_price_per_oz"/>
-            <field name="sale_discount_per_oz"/>
-            <field name="sale_price_per_oz" readonly="1"/>
-          </group>
-          <group>
-            <field name="aed_rate"/>
-            <field name="sale_amount_aed" readonly="1"/>
-            <field name="usdt_rate"/>
-            <field name="purchase_usdt" readonly="1"/>
-          </group>
-          <group>
             <field name="bank_percent" widget="percentage"/>
             <field name="bank_amount" readonly="1"/>
             <field name="service_percent" widget="percentage"/>
@@ -125,10 +113,6 @@
           </group>
           <group>
             <field name="total_expenses" readonly="1"/>
-            <field name="overall_amount" readonly="1"/>
-            <field name="profit" readonly="1"/>
-            <field name="deal_percentage" readonly="1" widget="percentage"/>
-            <field name="final_rate" readonly="1"/>
           </group>
           <group>
             <field name="order_ids" widget="many2many_tags"/>
@@ -149,6 +133,76 @@
             <field name="lookup_invoice_amount" readonly="1"/>
             <field name="partner_percentage" readonly="1"/>
             <field name="partner_invoice_amount" readonly="1"/>
+          </group>
+          <group string="Выход 1">
+            <field name="sale_date"/>
+            <field name="initial_price_per_oz"/>
+            <field name="sale_discount_per_oz"/>
+            <field name="sale_price_per_oz"/>
+            <field name="aed_rate"/>
+            <field name="sale_amount_aed"/>
+            <field name="usdt_rate"/>
+            <field name="purchase_usdt"/>
+            <field name="overall_amount"/>
+            <field name="profit"/>
+            <field name="deal_percentage" widget="percentage"/>
+            <field name="final_rate"/>
+          </group>
+          <group string="Выход 2">
+            <field name="sale_date"/>
+            <field name="initial_price_per_oz"/>
+            <field name="sale_discount_per_oz"/>
+            <field name="sale_price_per_oz"/>
+            <field name="aed_rate"/>
+            <field name="sale_amount_aed"/>
+            <field name="usdt_rate"/>
+            <field name="purchase_usdt"/>
+            <field name="overall_amount"/>
+            <field name="profit"/>
+            <field name="deal_percentage" widget="percentage"/>
+            <field name="final_rate"/>
+          </group>
+          <group string="Выход 3">
+            <field name="sale_date"/>
+            <field name="initial_price_per_oz"/>
+            <field name="sale_discount_per_oz"/>
+            <field name="sale_price_per_oz"/>
+            <field name="aed_rate"/>
+            <field name="sale_amount_aed"/>
+            <field name="usdt_rate"/>
+            <field name="purchase_usdt"/>
+            <field name="overall_amount"/>
+            <field name="profit"/>
+            <field name="deal_percentage" widget="percentage"/>
+            <field name="final_rate"/>
+          </group>
+          <group string="Выход 4">
+            <field name="sale_date"/>
+            <field name="initial_price_per_oz"/>
+            <field name="sale_discount_per_oz"/>
+            <field name="sale_price_per_oz"/>
+            <field name="aed_rate"/>
+            <field name="sale_amount_aed"/>
+            <field name="usdt_rate"/>
+            <field name="purchase_usdt"/>
+            <field name="overall_amount"/>
+            <field name="profit"/>
+            <field name="deal_percentage" widget="percentage"/>
+            <field name="final_rate"/>
+          </group>
+          <group string="Выход 5">
+            <field name="sale_date"/>
+            <field name="initial_price_per_oz"/>
+            <field name="sale_discount_per_oz"/>
+            <field name="sale_price_per_oz"/>
+            <field name="aed_rate"/>
+            <field name="sale_amount_aed"/>
+            <field name="usdt_rate"/>
+            <field name="purchase_usdt"/>
+            <field name="overall_amount"/>
+            <field name="profit"/>
+            <field name="deal_percentage" widget="percentage"/>
+            <field name="final_rate"/>
           </group>
         </sheet>
         <chatter>

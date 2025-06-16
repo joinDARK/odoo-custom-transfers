@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Тест Real-time List View -->
+        <record id="view_test_realtime_list" model="ir.ui.view">
+            <field name="name">amanat.test.realtime.list</field>
+            <field name="model">amanat.test.realtime</field>
+            <field name="type">list</field>
+            <field name="arch" type="xml">
+                <list string="Тесты Real-time">
+                    <field name="name"/>
+                    <field name="value"/>
+                    <field name="state"/>
+                    <field name="active"/>
+                    <field name="test_date"/>
+                    <field name="partner_id"/>
+                    <field name="create_date"/>
+                    <field name="write_date"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Тест Real-time Form View -->
+        <record id="view_test_realtime_form" model="ir.ui.view">
+            <field name="name">amanat.test.realtime.form</field>
+            <field name="model">amanat.test.realtime</field>
+            <field name="arch" type="xml">
+                <form string="Тест Real-time">
+                    <header>
+                        <button name="action_start_test" string="Начать тест" 
+                                type="object" class="btn-primary"
+                                invisible="state != 'draft'"/>
+                        <button name="action_complete_test" string="Завершить тест" 
+                                type="object" class="btn-success"
+                                invisible="state != 'in_progress'"/>
+                        <button name="action_cancel_test" string="Отменить тест" 
+                                type="object" class="btn-secondary"
+                                invisible="state in ('done', 'cancelled')"/>
+                        <button name="action_test_realtime_update" string="🔄 Тест Real-time" 
+                                type="object" class="btn-warning"
+                                title="Обновить запись для тестирования real-time уведомлений"/>
+                        <button name="action_test_bus_directly" string="📡 Тест Bus" 
+                                type="object" class="btn-info"
+                                title="Прямой тест отправки bus сообщения"/>
+                        <button name="action_simple_bus_test" string="🔥 Простой Bus" 
+                                type="object" class="btn-danger"
+                                title="Самый простой тест bus"/>
+                        <button name="action_test_new_realtime_system" string="🆕 Новая система" 
+                                type="object" class="btn-success"
+                                title="Тест новой системы real-time"/>
+                        <button name="action_test_direct_user_channel" string="👤 Личный канал" 
+                                type="object" class="btn-primary"
+                                title="Тест отправки на личный канал пользователя"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
+                    </header>
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="description"/>
+                                <field name="value"/>
+                                <field name="test_date"/>
+                            </group>
+                            <group>
+                                <field name="active"/>
+                                <field name="partner_id"/>
+                                <field name="create_date" readonly="1"/>
+                                <field name="write_date" readonly="1"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <chatter>
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </chatter>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_test_realtime" model="ir.actions.act_window">
+            <field name="name">Тесты Real-time</field>
+            <field name="res_model">amanat.test.realtime</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                Создайте первый тест для real-time обновлений!
+              </p>
+            </field>
+        </record>
+
+        <!-- Menu -->
+        <menuitem id="menu_test_realtime"
+                  name="Тест Real-time"
+                  parent="amanat_menu_main_group"
+                  action="action_test_realtime"
+                  sequence="999"/>
+
+    </data>
+</odoo> 

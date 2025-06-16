@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError
 import logging
 from datetime import datetime, timedelta, date
 import calendar
+import pytz
 
 _logger = logging.getLogger(__name__)
 
@@ -322,22 +323,23 @@ class WriteOff(models.Model):
         _logger.info("=== Начало ежедневного начисления процентов и роялти ===")
         # Сегодня в контексте пользователя
         today = fields.Date.context_today(self)
-        # Получаем текущее локальное время
-        now_dt = fields.Datetime.context_timestamp(self, fields.Datetime.now(self))
+        # Получаем текущее время по Москве
+        moscow_tz = pytz.timezone('Europe/Moscow')
+        now_utc = fields.Datetime.now(self)
+        now_moscow = now_utc.astimezone(moscow_tz)
         if isinstance(today, str):
             today = datetime.strptime(today, "%Y-%m-%d").date()
 
-        if now_dt.hour < 20:
-            # До 20:00 создаём списания только за предыдущий день
+        if now_moscow.hour < 20:
             _logger.info(
                 "cron_accrue_interest: текущее время %s <20:00, считаем today = вчера",
-                now_dt
+                now_moscow
             )
             today = today - timedelta(days=1)
         else:
             _logger.info(
                 "cron_accrue_interest: текущее время %s >=20:00, считаем today = %s",
-                now_dt, today
+                now_moscow, today
             )
 
         # Получаем все открытые инвестиции

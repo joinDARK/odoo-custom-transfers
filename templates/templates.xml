@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Добавляем скрипт для обновления в реальном времени -->
+    <!-- Удалён скрипт для real-time обновлений -->
     <template id="assets_backend" name="Amanat Assets" inherit_id="web.assets_backend">
         <xpath expr="." position="inside">
-            <script type="text/javascript" src="/amanat/static/src/js/real_time_interaction.js"/>
+            <!-- <script type="text/javascript" src="/amanat/static/src/js/real_time_interaction.js"/> -->
         </xpath>
     </template>
     

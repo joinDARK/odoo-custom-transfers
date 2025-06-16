@@ -110,3 +110,53 @@
 .o_menu_sections {
     visibility: hidden;
 } */
+
+/* Real-time обновления */
+.field-updated {
+    border: 2px solid #17a2b8 !important;
+    background-color: rgba(23, 162, 184, 0.1) !important;
+    transition: all 0.3s ease !important;
+}
+
+.table-success {
+    background-color: rgba(212, 237, 218, 0.7) !important;
+    transition: background-color 0.3s ease !important;
+}
+
+.table-info {
+    background-color: rgba(209, 236, 241, 0.7) !important;
+    transition: background-color 0.3s ease !important;
+}
+
+.table-warning {
+    background-color: rgba(255, 243, 205, 0.7) !important;
+    transition: background-color 0.3s ease !important;
+}
+
+.table-danger {
+    background-color: rgba(248, 215, 218, 0.7) !important;
+    transition: background-color 0.3s ease !important;
+}
+
+/* Анимация для новых записей */
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.o_data_row.new-record {
+    animation: slideInFromTop 0.3s ease;
+}
+
+/* Подсветка измененных ячеек */
+.o_data_cell.cell-updated {
+    background-color: rgba(23, 162, 184, 0.1);
+    border: 1px solid #17a2b8;
+    transition: all 0.3s ease;
+}

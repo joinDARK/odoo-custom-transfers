@@ -150,7 +150,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         _logger.info(f"Получен ID заявки: {record_id}")
 
         contragent = self.contragent_id
-        if not contragent or contragent.name != "Cбербанк":
+        if not contragent or contragent.name != "Сбербанк":
             _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Сбербанк', найден: {contragent.name if contragent else 'Не указан'}")
             return
 
@@ -285,7 +285,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
             return
         
         # Фильтр: контрагент НЕ должен быть Совкомбанком или Сбербанком
-        if contragent.name == "Совкомбанк" or contragent.name == "Cбербанк":
+        if contragent.name == "Совкомбанк" or contragent.name == "Сбербанк":
             _logger.warning(f"Запись не проходит фильтр: Контрагент не должен быть 'Совкомбанк' или 'Сбербанк', найден: {contragent.name}")
             return
 

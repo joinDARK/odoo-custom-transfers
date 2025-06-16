@@ -23,4 +23,4 @@ class PaymentOrderRule(models.Model):
     @api.depends('percent')
     def _compute_name(self):
         for rec in self:
-            rec.name = f"Платежка РФ: {rec.percent:.3f}"
+            rec.name = f"Платежка РФ: {rec.percent * 100}%"

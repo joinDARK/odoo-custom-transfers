@@ -121,7 +121,6 @@ class Order(models.Model, AmanatBaseModel):
         tracking=True
     )
     money = fields.Float(string='Деньги', tracking=True)
-    converted_amount = fields.Float(string='Валюта(из заявки)', tracking=True)
 
     # Инвестиции
     investment = fields.Many2many(
@@ -224,7 +223,12 @@ class Order(models.Model, AmanatBaseModel):
     write_off = fields.Float(string='Списания', tracking=True)
     rollup_write_off = fields.Float(string='Роллап списания', tracking=True)
     reconciliation = fields.Float(string='Сверка', tracking=True)
-    remaining_debt = fields.Float(string='Остаток долга', tracking=True)
+    remaining_debt = fields.Float(
+        string='Остаток долга',
+        compute='_compute_remaining_debt',
+        store=True,
+        tracking=True
+    )
 
     # Валютный резерв
     reserve_ids = fields.Many2many(
@@ -235,6 +239,39 @@ class Order(models.Model, AmanatBaseModel):
         column2='reserve_id',
         inverse_name='order_ids',
     )
+
+    currency_from_zayavka = fields.Selection([
+            ('rub', 'RUB'), ('rub_cashe', 'RUB КЭШ'),
+            ('usd', 'USD'), ('usd_cashe', 'USD КЭШ'),
+            ('usdt', 'USDT'),
+            ('euro', 'EURO'), ('euro_cashe', 'EURO КЭШ'),
+            ('cny', 'CNY'), ('cny_cashe', 'CNY КЭШ'),
+            ('aed', 'AED'), ('aed_cashe', 'AED КЭШ'),
+            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ')
+        ],
+        string='Валюта (from Заявки)',
+        compute='_compute_currency_from_zayavka',
+        store=True,
+        tracking=True
+    )
+
+    converted_sum_from_zayavka = fields.Float(
+        string='Сумма после конвертации Заявки',
+        compute='_compute_currency_from_zayavka',
+        store=True,
+        tracking=True
+    )
+
+    @api.depends('zayavka_ids.currency', 'amount', 'rate')
+    def _compute_currency_from_zayavka(self):
+        for rec in self:
+            if len(rec.zayavka_ids) == 1:
+                zayavka = rec.zayavka_ids[0]
+                rec.currency_from_zayavka = zayavka.currency
+                rec.converted_sum_from_zayavka = rec.amount * rec.rate if rec.amount and rec.rate else 0.0
+            else:
+                rec.currency_from_zayavka = False
+                rec.converted_sum_from_zayavka = 0.0
 
     DIRECT_RULES = {
         ('aed', 'aed'): 'mul',
@@ -481,6 +518,22 @@ class Order(models.Model, AmanatBaseModel):
                     rec.amount_after_conv = rec.cross_calc * (c2.rate or 1.0)
                 else:
                     rec.amount_after_conv = rec.cross_calc / (c2.rate or 1.0)
+
+    def _get_realtime_fields(self):
+        """Поля для real-time обновлений в списке ордеров"""
+        return [
+            'id', 'display_name', 'name', 'date', 'type', 'currency', 'amount',
+            'partner_1_id', 'partner_2_id', 'payer_1_id', 'payer_2_id',
+            'wallet_1_id', 'wallet_2_id', 'status', 'is_confirmed',
+            'comment', 'rate', 'operation_percent', 'our_percent',
+            'rko', 'amount_1', 'rko_2', 'amount_2', 'total',
+            'create_date', 'write_date'
+        ]
+
+    @api.depends('money_ids.remains')
+    def _compute_remaining_debt(self):
+        for rec in self:
+            rec.remaining_debt = sum(rec.money_ids.mapped('remains'))
 
     @api.depends('amount', 'operation_percent', 'our_percent')
     def _compute_financials(self):

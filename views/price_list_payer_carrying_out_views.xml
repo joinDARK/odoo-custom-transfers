@@ -13,7 +13,7 @@
                 <field width="200" name="date_end"/>
                 <field width="200" name="today_date"/>
                 <field width="200" name="period_days"/>
-                <field width="200" name="accrual_percentage"/>
+                <field width="200" name="accrual_percentage" widget="percentage"/>
                 <field width="200" name="fixed_deal_fee"/>
                 <field width="200" name="min_application_amount"/>
                 <field width="200" name="max_application_amount"/>
@@ -37,7 +37,7 @@
                         <field name="date_end"/>
                         <field name="today_date"/>
                         <field name="period_days"/>
-                        <field name="accrual_percentage"/>
+                        <field name="accrual_percentage" widget="percentage"/>
                         <field name="fixed_deal_fee"/>
                         <field name="min_application_amount"/>
                         <field name="max_application_amount"/>

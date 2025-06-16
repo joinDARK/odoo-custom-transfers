@@ -84,6 +84,7 @@
           </group>
           <notebook>
             <page string="Партнеры">
+              <button name="create_partner" string="Создать партнера" type="object" class="btn-primary"/>
               <field name="partner_ids">
                 <list editable="bottom">
                   <field name="name"/>

@@ -24,10 +24,10 @@
                 <field name="calendar_days" width="110"/>
                 <field name="work_days" width="140"/>
                 <field name="orders" width="180" widget="many2many_tags"/>
-                <field name="write_offs" width="180" widget="many2many_tags"/>
+                <field name="write_offs" width="180"/> <!-- TODO: add widget -->
                 <field name="rollup_write_offs" width="180"/>
                 <field name="rollup_amount" width="120"/>
-                <field name="create_action" width="100"/>
+                <field name="create_action" width="100"/> 
                 <field name="post" width="100"/>
                 <!-- <field name="repost" width="100"/> -->
                 <field name="close_investment" width="120"/>

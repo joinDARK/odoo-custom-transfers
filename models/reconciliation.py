@@ -75,7 +75,13 @@ class Reconciliation(models.Model, AmanatBaseModel):
     our_percent = fields.Float(string='Наш процент (from Ордер)', related='order_id.our_percent', store=True, tracking=True)
     rko_2 = fields.Float(string='РКО 2 (from Ордер)', related='order_id.rko_2', store=True, tracking=True)
     
-    exchange = fields.Float(string='К выдаче', tracking=True)
+    exchange = fields.Float(string='К выдаче', store=True, compute='_compute_exchange')
+    
+    @api.depends('sum')
+    def _compute_exchange(self):
+        for rec in self:
+            rec.exchange = rec.sum or 0
+
     order_id = fields.Many2many(
         'amanat.order',
         'amanat_order_reconciliation_rel',
@@ -127,7 +133,33 @@ class Reconciliation(models.Model, AmanatBaseModel):
     rate_thb = fields.Float(string='thb (from Курсы)', related='rate_id.thb', store=True, tracking=True)
     rate_usd = fields.Float(string='usd (from Курсы)', related='rate_id.usd', store=True, tracking=True)
     rate_usdt = fields.Float(string='usdt (from Курсы)', related='rate_id.usdt', store=True, tracking=True)
-    equivalent = fields.Float(string='Эквивалент $', tracking=True)
+    equivalent = fields.Float(
+        string='Эквивалент $', 
+        tracking=True,
+        compute='_compute_equivalent',
+        store=True,
+    )
+    @api.depends(
+        'sum_euro', 'sum_euro_cashe',
+        'sum_cny', 'sum_cny_cashe',
+        'sum_rub', 'sum_rub_cashe',
+        'sum_aed', 'sum_aed_cashe',
+        'sum_thb', 'sum_thb_cashe',
+        'sum_usd', 'sum_usd_cashe',
+        'sum_usdt',
+        'rate_euro', 'rate_cny', 'rate_rub', 'rate_aed', 'rate_thb', 'rate_usd', 'rate_usdt'
+    )
+    def _compute_equivalent(self):
+        for rec in self:
+            rec.equivalent = (
+                (rec.sum_euro + rec.sum_euro_cashe) * rec.rate_euro +
+                (rec.sum_cny + rec.sum_cny_cashe) * rec.rate_cny +
+                (rec.sum_rub + rec.sum_rub_cashe) * rec.rate_rub +
+                (rec.sum_aed + rec.sum_aed_cashe) * rec.rate_aed +
+                (rec.sum_thb + rec.sum_thb_cashe) * rec.rate_thb +
+                (rec.sum_usd + rec.sum_usd_cashe) * rec.rate_usd +
+                rec.sum_usdt * rec.rate_usdt
+            )
 
     create_Reconciliation = fields.Boolean(string='Создать', default=False, tracking=True) # TODO нужно удалить
     royalti_Reconciliation = fields.Boolean(string='Провести роялти', default=False, tracking=True) # TODO нужно удалить

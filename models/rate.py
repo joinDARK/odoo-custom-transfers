@@ -13,10 +13,10 @@ class Rates(models.Model, AmanatBaseModel):
         required=True,
         readonly=True,
     )
-    euro = fields.Float(string='euro', tracking=True)
-    cny = fields.Float(string='cny', tracking=True)
-    rub = fields.Float(string='rub', tracking=True)
-    aed = fields.Float(string='aed', tracking=True)
-    thb = fields.Float(string='thb', tracking=True)
-    usd = fields.Float(string='usd', tracking=True)
-    usdt = fields.Float(string='usdt', tracking=True)
+    euro = fields.Float(string='euro', tracking=True, digits=(16,4))
+    cny = fields.Float(string='cny', tracking=True, digits=(16,4))
+    rub = fields.Float(string='rub', tracking=True, digits=(16,4))
+    aed = fields.Float(string='aed', tracking=True, digits=(16,4))
+    thb = fields.Float(string='thb', tracking=True, digits=(16,4))
+    usd = fields.Float(string='usd', tracking=True, digits=(16,4))
+    usdt = fields.Float(string='usdt', tracking=True, digits=(16,4))

@@ -5,7 +5,7 @@
     "description": "Модуль проекта Amanat",
     "author": "IncubeAI (Мирас, Комрад и Эдуард)",
     "category": "Amanat",
-    "depends": ["base", "mail", "base_automation", "web", "base_setup"],
+    "depends": ["base", "mail", "base_automation", "web", "base_setup", "bus"],
     "data": [
         # sidebar ==============
         # "templates/templates.xml",
@@ -55,6 +55,7 @@
         "views/period_views.xml",
         "views/investment_views.xml",
         "views/manager_views.xml",
+        # "views/test_realtime_views.xml",
         # 5) Затем создаём/обновляем меню (поскольку оно ссылается на группы)
         "views/menu.xml",
         # 'static/src/xml/templates.xml',
@@ -74,7 +75,7 @@
         "data/investment_sequence.xml",
         "data/cron_accrue_interest.xml",
         "data/amanat_writeoff_sequence.xml",
-
+        "data/extract_delivery_sequence.xml",
     ],
     "assets": {
         "web._assets_primary_variables": [
@@ -92,6 +93,8 @@
         ],
         "web.assets_backend": [
             "/amanat/static/src/js/real_time_interaction.js",
+            "/amanat/static/src/js/list_view_enhanced.js",
+            "/amanat/static/src/js/list_view_numbering.js",
             # "/amanat/static/src/js/writeoff_context.js",
             (
                 "after",
