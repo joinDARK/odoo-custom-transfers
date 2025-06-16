@@ -28,10 +28,12 @@
                 <field width="200" name="comment"/>
                 <field width="200" name="is_confirmed"/>
                 <field name="status"/>
-                <field name="money_ids"/>
+                <field name="money_ids" widget="many2many_tags"/>
                 <field width="200" name="reserve_ids" widget="many2many_tags"/>
                 <field width="200" name="conversion_ids" widget="many2many_tags"/>
-                <field width="200" name="converted_amount"/>
+                <field width="200" name="zayavka_ids" widget="many2many_tags"/>
+                <field width="200" name="currency_from_zayavka"/>
+                <field width="200" name="converted_sum_from_zayavka"/>
                 <field name="investment" widget="many2many_tags"/>
                 <field name="gold"/>
                 <field width="200" name="cross_from"/>
@@ -100,7 +102,9 @@
                         <field name="money_ids"/>
                         <field name="reserve_ids"/>
                         <field name="conversion_ids" widget="many2many_tags"/>
-                        <field name="converted_amount"/>
+                        <field name="zayavka_ids" widget="many2many_tags"/>
+                        <field name="currency_from_zayavka"/>
+                        <field name="converted_sum_from_zayavka"/>
                         <field name="investment" widget="many2many_tags"/>
                         <field name="gold"/>
                         <field name="cross_from"/>

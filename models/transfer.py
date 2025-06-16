@@ -209,6 +209,7 @@ class Transfer(models.Model, AmanatBaseModel):
     # 1) Без посредников
     # ================================
     def _create_simple_transfer(self, record):
+        comp_sum = record.amount - (record.amount * (record.sending_commission_percent if record.sending_commission_percent else 1))
         order = self.env['amanat.order'].create({
             'date': record.date,
             'type': 'transfer',
@@ -219,14 +220,14 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_1_id': record.sender_payer_id.id,
             'payer_2_id': record.receiver_payer_id.id,
             'currency': record.currency,
-            'amount': record.amount,
+            'amount': comp_sum,
             'comment': record.comment,
             'operation_percent': record.sending_commission_percent,
             # Используем команду для Many2many: (6, 0, [record.id])
             'transfer_id': [(6, 0, [record.id])],
         })
         
-        amount_1, amount_2 = self._calculate_amounts(record.amount, record.sending_commission_percent)
+        amount_1, amount_2 = self._calculate_amounts(comp_sum, record.sending_commission_percent)
 
         # Деньги/Сверки: сначала списываем со счета отправителя, затем зачисляем получателю
         self._create_money_and_reconciliation(
@@ -247,6 +248,7 @@ class Transfer(models.Model, AmanatBaseModel):
         A) Отправитель -> Посредник_1 (сумма = record.amount)
         B) Посредник_1 -> Получатель (сумма = record.intermediary_1_sum)
         """
+        comp_sum = record.amount - (record.amount * (record.sending_commission_percent if record.sending_commission_percent else 1))
         # A) Отправитель -> Посредник_1
         order_a = self.env['amanat.order'].create({
             'date': record.date,
@@ -258,18 +260,18 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_1_id': record.sender_payer_id.id,
             'payer_2_id': record.intermediary_1_payer_id.id,
             'currency': record.currency,
-            'amount': record.amount,
+            'amount': comp_sum,
             'comment': record.comment,
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
         self._create_money_and_reconciliation(
             order_a, record.sender_wallet_id, record.sender_id,
-            -record.amount, record.sender_payer_id, record.intermediary_1_payer_id
+            -comp_sum, record.sender_payer_id, record.intermediary_1_payer_id
         )
         self._create_money_and_reconciliation(
             order_a, record.intermediary_1_wallet_id, record.intermediary_1_id,
-            record.amount, record.sender_payer_id, record.intermediary_1_payer_id
+            comp_sum, record.sender_payer_id, record.intermediary_1_payer_id
         )
 
         # B) Посредник_1 -> Получатель (только если есть сумма для перевода)
@@ -308,6 +310,7 @@ class Transfer(models.Model, AmanatBaseModel):
         B) Посредник_1 -> Посредник_2 (сумма = record.intermediary_1_sum)
         C) Посредник_2 -> Получатель (сумма = record.intermediary_2_sum)
         """
+        comp_sum = record.amount - (record.amount * (record.sending_commission_percent if record.sending_commission_percent else 1))
 
         # A) Отправитель -> Посредник_1
         order_a = self.env['amanat.order'].create({
@@ -320,18 +323,18 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_1_id': record.sender_payer_id.id,
             'payer_2_id': record.intermediary_1_payer_id.id,
             'currency': record.currency,
-            'amount': record.amount,
+            'amount': comp_sum,
             'comment': record.comment,
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
         self._create_money_and_reconciliation(
             order_a, record.sender_wallet_id, record.sender_id,
-            -record.amount, record.sender_payer_id, record.intermediary_1_payer_id
+            -comp_sum, record.sender_payer_id, record.intermediary_1_payer_id
         )
         self._create_money_and_reconciliation(
             order_a, record.intermediary_1_wallet_id, record.intermediary_1_id,
-            record.amount, record.sender_payer_id, record.intermediary_1_payer_id
+            comp_sum, record.sender_payer_id, record.intermediary_1_payer_id
         )
 
         # B) Посредник_1 -> Посредник_2
@@ -581,3 +584,12 @@ class Transfer(models.Model, AmanatBaseModel):
             record.with_context(skip_automation=True).write({'create_order': False})
 
         return record
+
+    def _get_realtime_fields(self):
+        """Поля для real-time обновлений в списке переводов"""
+        return [
+            'id', 'display_name', 'name', 'state', 'date', 'currency', 'amount',
+            'sender_id', 'receiver_id', 'sender_payer_id', 'receiver_payer_id',
+            'create_date', 'write_date', 'manager_id', 'comment', 'hash',
+            'is_complex', 'intermediary_1_id', 'intermediary_2_id'
+        ]

@@ -96,7 +96,7 @@ class PartnerGold(models.Model):
     pure_weight_oz = fields.Float(
         string="чистый вес OZ",
         compute="_compute_pure_weight_oz",
-        digits=(16, 3),
+        digits=(16, 5),
         store=True,
         tracking=True,
     )
@@ -143,9 +143,7 @@ class PartnerGold(models.Model):
                 )
 
     # 15. Дата продажи – по умолчанию текущая дата
-    sale_date = fields.Date(
-        string="Дата продажи", default=fields.Date.context_today, tracking=True
-    )
+    sale_date = fields.Date(string="Дата продажи", tracking=True)
 
     # 16. Изначальная цена $/OZ
     initial_price_per_oz = fields.Float(string="Изначальная цена $/OZ", tracking=True)
@@ -189,10 +187,14 @@ class PartnerGold(models.Model):
             )
 
     # 21. курс USDT
-    usdt_rate = fields.Float(string="курс USDT", tracking=True)
+    usdt_rate = fields.Float(
+        string="курс USDT", 
+        tracking=True,
+        digits=(16, 5),
+    )
 
     # 22. покупка USDT = Сумма продажи AED / курс USDT
-    purchase_usdt = fields.Float(
+    purchase_usdt = fields.Float( # ! используется в автоматизации
         string="покупка USDT",
         compute="_compute_purchase_usdt",
         store=True,
@@ -254,7 +256,7 @@ class PartnerGold(models.Model):
             rec.bank_kb_amount = rec.purchase_amount_dollar * rec.bank_kb_percent
 
     # 29. %Курьер
-    courier_percent = fields.Float(string="%Курьер", tracking=True, default=0.0015)
+    courier_percent = fields.Float(string="%Курьер", tracking=True, default=0.0015, digits=(16, 5))
 
     # 30. Курьер сумма = Сумма закупа, $ * %Курьер
     courier_amount = fields.Float(

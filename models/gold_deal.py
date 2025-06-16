@@ -250,6 +250,29 @@ class GoldDeal(models.Model):
         for rec in self:
             rec.difference = rec.purchase_total_rub - rec.invoice_amount
 
+    def create_partner(self):
+        """Создает нового партнера золота с датой текущей сделки"""
+        self.ensure_one()
+        
+        partner_vals = {
+            'deal_date': self.date,
+            'gold_deal_ids': [(6, 0, [self.id])],
+        }
+        partner = self.env['amanat.partner_gold'].create(partner_vals)
+        
+        # Обновляем связь в текущей сделке
+        self.partner_ids = [(4, partner.id)]
+        
+        return {
+            'name': 'Создание партнера золота',
+            'type': 'ir.actions.act_window',
+            'res_model': 'amanat.partner_gold',
+            'res_id': partner.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_gold_deal_ids': [(6, 0, [self.id])]},
+        }
+
     @staticmethod
     def _prepare_currency_fields(currency_name: str, amount: float): # TODO доделать метод
         mapping = {

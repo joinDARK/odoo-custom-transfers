@@ -24,6 +24,7 @@
                 <field width="200" name="applications"/>
                 <field width="200" name="currency_reserve"/>
                 <field width="200" name="transfer_ids"/>
+                <field width="200" name="deal"/>
                 <field width="200" name="conversion"/>
                 <field width="200" name="investment"/>
                 <field width="200" name="gold_deal"/>
@@ -31,7 +32,7 @@
                 <field width="200" name="counterparty2"/>
                 <field width="200" name="wallet1"/>
                 <field width="200" name="wallet2"/>
-                <field width="200" name="percent"/>
+                <field width="200" name="percent" widget="percentage"/>
                 <field width="200" name="fragment_statement"/>
                 <field width="200" name="statement_part_1"/>
                 <field width="200" name="statement_part_2"/>
@@ -94,13 +95,36 @@
                         <field name="counterparty2"/>
                         <field name="wallet1"/>
                         <field name="wallet2"/>
-                        <field name="percent"/>
+                        <field name="percent" widget="percentage"/>
                         <field name="fragment_statement"/>
+                        <field name="deal"/>
                         <field name="remaining_statement"/>
                         <field name="range_field"/>
                         <field name="date_start"/>
                         <field name="date_end"/>
                         <field name="range_status"/>
+                    </group>
+                    <group string="Выписка дробь">
+                        <field name="statement_part_1"/>
+                        <field name="statement_part_2"/>
+                        <field name="statement_part_3"/>
+                        <field name="statement_part_4"/>
+                        <field name="statement_part_5"/>
+                        <field name="statement_part_6"/>
+                        <field name="statement_part_7"/>
+                        <field name="statement_part_8"/>
+                        <field name="statement_part_9"/>
+                        <field name="statement_part_10"/>
+                        <field name="statement_part_11"/>
+                        <field name="statement_part_12"/>
+                        <field name="statement_part_13"/>
+                        <field name="statement_part_14"/>
+                        <field name="statement_part_15"/>
+                        <field name="statement_part_16"/>
+                        <field name="statement_part_17"/>
+                        <field name="statement_part_18"/>
+                        <field name="statement_part_19"/>
+                        <field name="statement_part_20"/>
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->

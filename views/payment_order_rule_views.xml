@@ -9,7 +9,7 @@
                 <field name="name"/>
                 <field name="date_start"/>
                 <field name="date_end"/>
-                <field name="percent"/>
+                <field name="percent" widget="percentage"/>
                 <field name="zayavka_ids"/>
             </list>
         </field>
@@ -24,7 +24,7 @@
                     <field name="name"/>
                     <field name="date_start"/>
                     <field name="date_end"/>
-                    <field name="percent"/>
+                    <field name="percent" widget="percentage"/>
                     <field name="zayavka_ids"/>
                 </group>
             </form>

@@ -27,11 +27,16 @@ class ZayavkaMethods(models.Model):
                 rec.run_all_fix_course_automations()
 
         if 'extract_delivery_ids' in vals:
+            _logger.info(f"Обнаружено изменение extract_delivery_ids в vals: {vals.get('extract_delivery_ids')}")
             for rec in self:
                 old_ids = set(old_values.get(rec.id, []))
                 new_ids = set(rec.extract_delivery_ids.ids)
+                _logger.info(f"Заявка {rec.id}: old_ids={old_ids}, new_ids={new_ids}")
                 if old_ids != new_ids:
+                    _logger.info(f"Изменения обнаружены для заявки {rec.id}, вызываем _on_extract_delivery_ids_changed")
                     rec._on_extract_delivery_ids_changed(old_ids, new_ids)
+                else:
+                    _logger.info(f"Изменений не обнаружено для заявки {rec.id}")
 
         if trigger:
             for rec in self:
@@ -49,6 +54,13 @@ class ZayavkaMethods(models.Model):
                 _logger.info(f"Сработал триггер для Халиды для заявки {rec.id}")
                 rec.for_khalida_temp = False
                 rec.run_for_khalida_automations()
+
+        # Триггер для автоматизации привязки прайс-листов при изменении даты фиксации курса
+        # if 'rate_fixation_date' in vals:
+        #     for rec in self:
+        #         _logger.info(f"Изменена дата фиксации курса для заявки {rec.id}, запускаем автоматизацию привязки прайс-листов")
+        #         rec.run_price_list_automation()
+
         # ... (остальная логика по датам)
         # if 'date_received_on_pc_auto' in vals:
         #     for rec in self:
@@ -87,6 +99,12 @@ class ZayavkaMethods(models.Model):
             _logger.info(f"Сработал триггер для Халиды для заявки {res.id}")
             res.for_khalida_temp = False
             res.run_for_khalida_automations()
+
+        # Триггер для автоматизации привязки прайс-листов при создании с датой фиксации курса
+        # if vals.get('rate_fixation_date'):
+        #     _logger.info(f"Создана заявка {res.id} с датой фиксации курса, запускаем автоматизацию привязки прайс-листов")
+        #     res.run_price_list_automation()
+
         # ... (остальная логика по period_id и т.п.)
         # if not vals.get('period_id'):
         #     Period = self.env['amanat.period']
@@ -175,6 +193,36 @@ class ZayavkaMethods(models.Model):
         }
 
         result = {'amount': amount}
+
+        # Добавляем поле для конкретной валюты
+        if currency in currency_field_map:
+            result[currency_field_map[currency]] = amount
+
+        return result
+    
+    @staticmethod
+    def _get_reconciliation_currency_fields(currency, amount):
+        """
+        Возвращает словарь с полем валюты и суммой для модели amanat.reconciliation
+        """
+        # Маппинг валют на поля в модели money
+        currency_field_map = {
+            'rub': 'sum_rub',
+            'rub_cashe': 'sum_rub_cashe',
+            'usd': 'sum_usd',
+            'usd_cashe': 'sum_usd_cashe',
+            'usdt': 'sum_usdt',
+            'euro': 'sum_euro',
+            'euro_cashe': 'sum_euro_cashe',
+            'cny': 'sum_cny',
+            'cny_cashe': 'sum_cny_cashe',
+            'aed': 'sum_aed',
+            'aed_cashe': 'sum_aed_cashe',
+            'thb': 'sum_thb',
+            'thb_cashe': 'sum_thb_cashe',
+        }
+
+        result = {'sum': amount}
 
         # Добавляем поле для конкретной валюты
         if currency in currency_field_map:

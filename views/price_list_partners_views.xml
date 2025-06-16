@@ -16,7 +16,7 @@
                 <field width="200" name="period_days"/>
                 <field width="200" name="currency_type"/>
                 <field width="200" name="type_binding"/>
-                <field width="200" name="accrual_percentage"/>
+                <field width="200" name="accrual_percentage" widget="percentage"/>
                 <field width="200" name="fixed_deal_fee"/>
                 <field width="200" name="min_application_amount"/>
                 <field width="200" name="bind_field"/>
@@ -26,6 +26,38 @@
                 <field width="200" name="zayavka_ids_4"/>
                 <field width="200" name="zayavka_ids_5"/>
             </list>
+        </field>
+    </record>
+
+    <record id="price_list_partners_list_form" model="ir.ui.view">
+        <field name="name">price_list_partners.form</field>
+        <field name="model">amanat.price_list_partners</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="payer_partner"/>
+                        <field name="contragents_ids"/>
+                        <field name="accrual_type"/>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                        <field name="today_date"/>
+                        <field name="period_days"/>
+                        <field name="currency_type"/>
+                        <field name="type_binding"/>
+                        <field name="accrual_percentage" widget="percentage"/>
+                        <field name="fixed_deal_fee"/>
+                        <field name="min_application_amount"/>
+                        <field name="bind_field"/>
+                        <field name="zayavka_ids"/>
+                        <field name="zayavka_ids_2"/>
+                        <field name="zayavka_ids_3"/>
+                        <field name="zayavka_ids_4"/>
+                        <field name="zayavka_ids_5"/>
+                    </group>
+                </sheet>
+            </form>
         </field>
     </record>
 

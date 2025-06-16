@@ -35,11 +35,14 @@ class ZayavkaComputes(models.Model):
             valid_courses = {
                 'Курс Инвестинг': rec.investing_rate or None,
                 'Курс ЦБ': rec.cb_rate or None,
-                'Курс КРОСС': rec.cross_rate or None,
+                'Курс КРОСС': rec.cross_rate or None if rec.is_cross else None,
                 'Курс Биржи 1': rec.exchange_rate_1 or None,
                 'Курс Биржи 2': rec.exchange_rate_2 or None,
                 'Курс Биржи 3': rec.exchange_rate_3 or None,
             }
+            # Если не выбрана галочка is_cross, исключаем кросс-курс
+            if not rec.is_cross and 'Курс КРОСС' in valid_courses:
+                valid_courses['Курс КРОСС'] = None
             valid_courses = {k: v for k, v in valid_courses.items() if v is not None}
             
             if not valid_courses:
@@ -72,27 +75,31 @@ class ZayavkaComputes(models.Model):
             ):
                 record.best_rate = False  # BLANK()
             else:
+                # Если не выбрана галочка is_cross, кросс-курс не участвует
                 if record.deal_type == "export":
-                    # Для экспорта ищем минимальное значение среди всех курсов
                     rates = [
                         record.investing_rate or 9999999,
                         record.cb_rate or 9999999,
-                        record.cross_rate or 9999999,
+                        (record.cross_rate if record.is_cross else None) or 9999999,
                         record.exchange_rate_1 or 9999999,
                         record.exchange_rate_2 or 9999999,
                         record.exchange_rate_3 or 9999999,
                     ]
+                    # Исключаем кросс-курс если is_cross не выбран
+                    if not record.is_cross:
+                        rates[2] = 9999999
                     record.best_rate = min(rates)
                 else:
-                    # Для импорта ищем максимальное значение среди всех курсов
                     rates = [
                         record.investing_rate or -9999999,
                         record.cb_rate or -9999999,
-                        record.cross_rate or -9999999,
+                        (record.cross_rate if record.is_cross else None) or -9999999,
                         record.exchange_rate_1 or -9999999,
                         record.exchange_rate_2 or -9999999,
                         record.exchange_rate_3 or -9999999,
                     ]
+                    if not record.is_cross:
+                        rates[2] = -9999999
                     record.best_rate = max(rates)
 
     @api.depends('reward_percent', 'rate_field', 'amount')
@@ -583,14 +590,6 @@ class ZayavkaComputes(models.Model):
             percent = record.price_list_carrying_out_accrual_percentage or 0.0
             record.payment_cost_sovok = amount * percent
 
-    @api.depends('application_amount_rub_contract', 'sovok_reward', 'percent_from_payment_order_rule')
-    def _compute_payment_order_rf_sovok(self):
-        for rec in self:
-            contract_rub = rec.application_amount_rub_contract or 0.0
-            sovok_reward = rec.sovok_reward or 0.0
-            percent = rec.percent_from_payment_order_rule or 0.0
-            rec.payment_order_rf_sovok = (contract_rub + sovok_reward) * percent
-
     @api.depends('usd_equivalent', 'total_sovok', 'partner_post_conversion_rate')
     def _compute_operating_expenses_sovok_partner(self):
         for rec in self:
@@ -972,11 +971,6 @@ class ZayavkaComputes(models.Model):
     def _compute_real_post_conversion_rate_usd(self):
         for rec in self:
             rec.real_post_conversion_rate_usd = (rec.real_post_conversion_rate or 0.0) * (rec.payer_cross_rate_usd_auto or 0.0)
-
-    @api.depends('jess_rate')
-    def _compute_payer_cross_rate_rub(self):
-        for rec in self:
-            rec.payer_cross_rate_rub = rec.jess_rate or 0.0
 
     @api.depends('real_post_conversion_rate_usd', 'payer_cross_rate_rub')
     def _compute_real_post_conversion_rate_rub(self):
@@ -2110,13 +2104,6 @@ class ZayavkaComputes(models.Model):
     def _compute_sum_from_extracts(self):
         for rec in self:
             rec.sum_from_extracts = sum(rec.extract_delivery_ids.mapped('amount'))
-
-    @api.depends('subagent_ids', 'subagent_ids.payer_ids')
-    def _compute_subagent_payer_ids(self):
-        for rec in self:
-            # Собираем всех плательщиков для выбранных субагентов
-            payers = rec.subagent_ids.mapped('payer_ids')
-            rec.subagent_payer_ids = [(6, 0, payers.ids)]
 
     @api.depends('extract_delivery_ids.bank_document')
     def _compute_bank_vypiska(self):

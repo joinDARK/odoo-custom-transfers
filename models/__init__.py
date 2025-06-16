@@ -1,5 +1,7 @@
 # crm_amanat/models/__init__.py
+from . import list_view_mixin
 from . import base_model
+from . import test_realtime
 from . import activity
 from . import contragent
 from . import payer

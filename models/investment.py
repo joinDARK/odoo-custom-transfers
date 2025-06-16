@@ -22,7 +22,7 @@ class Investment(models.Model, AmanatBaseModel):
         ('open', 'Открыта'),
         ('close', 'Закрыта'),
         ('archive', 'Архив')
-    ], string='Статус', default='close', tracking=True)
+    ], string='Статус', default='open', tracking=True)
 
     date = fields.Date(string='Дата', default=fields.Date.today, tracking=True)
 
@@ -128,6 +128,36 @@ class Investment(models.Model, AmanatBaseModel):
     royalty_amount_8 = fields.Float(string='Сумма роялти 8', compute='_compute_royalty_amounts', store=True, tracking=True)
     royalty_amount_9 = fields.Float(string='Сумма роялти 9', compute='_compute_royalty_amounts', store=True, tracking=True)
 
+    @api.onchange('sender')
+    def _onchange_sender(self):
+        """Автоматически подтягивает плательщика отправителя при выборе отправителя"""
+        if self.sender:
+            # Ищем плательщика, связанного с отправителем
+            payer = self.env['amanat.payer'].search([
+                ('contragents_ids', 'in', self.sender.id)
+            ], limit=1)
+            if payer:
+                self.payer_sender = payer
+            else:
+                self.payer_sender = False
+        else:
+            self.payer_sender = False
+
+    @api.onchange('receiver')
+    def _onchange_receiver(self):
+        """Автоматически подтягивает плательщика получателя при выборе получателя"""
+        if self.receiver:
+            # Ищем плательщика, связанного с получателем
+            payer = self.env['amanat.payer'].search([
+                ('contragents_ids', 'in', self.receiver.id)
+            ], limit=1)
+            if payer:
+                self.payer_receiver = payer
+            else:
+                self.payer_receiver = False
+        else:
+            self.payer_receiver = False
+
     def action_create_writeoff(self):
         self.ensure_one()
         return {
@@ -172,12 +202,6 @@ class Investment(models.Model, AmanatBaseModel):
 
     @api.depends('date')
     def _compute_calendar_and_work_days(self):
-        # вычисляем календарные и рабочие дни с учётом праздников
-        HOLIDAYS = {  # набор дат
-            date(2024,1,1),date(2024,1,2),date(2024,1,3),date(2024,1,4),date(2024,1,5),
-            date(2024,1,6),date(2024,1,7),date(2024,1,8),date(2024,2,23),date(2024,3,8),
-            date(2024,5,1),date(2024,5,9),date(2024,6,12),date(2024,11,4)
-        }
         for rec in self:
             today = fields.Date.context_today(self)
             if rec.date:
@@ -185,7 +209,8 @@ class Investment(models.Model, AmanatBaseModel):
                 wd = 0
                 for i in range(days):
                     d = rec.date + timedelta(days=i)
-                    if d.weekday() < 5 and d not in HOLIDAYS:
+                    holidays = self.get_holidays(d.year)
+                    if d.weekday() < 5 and d not in holidays:
                         wd += 1
                 rec.calendar_days = days
                 rec.work_days = wd
@@ -739,46 +764,118 @@ class Investment(models.Model, AmanatBaseModel):
     
 
     @staticmethod
-    def _get_month_days(d):
-        nxt = d + relativedelta(months=1)
-        return (date(nxt.year, nxt.month, 1) - date(d.year, d.month, 1)).days
+    def get_holidays(year):
+        """Возвращает set с праздничными и дополнительными выходными днями для заданного года, учитывая переносы для 2025 года"""
+        holidays = {
+            date(year, 1, 1), date(year, 1, 2), date(year, 1, 3), date(year, 1, 4), date(year, 1, 5),
+            date(year, 1, 6), date(year, 1, 7), date(year, 1, 8), date(year, 2, 23), date(year, 3, 8),
+            date(year, 5, 1), date(year, 5, 9), date(year, 6, 12), date(year, 11, 4)
+        }
+        # Для 2025 года учитываем переносы
+        if year == 2025:
+            # Исключаем 4 и 5 января из праздников (они рабочие)
+            holidays.discard(date(2025, 1, 4))
+            holidays.discard(date(2025, 1, 5))
+            # Добавляем дополнительные выходные по переносам
+            holidays.update({
+                date(2025, 5, 2),   # пятница
+                date(2025, 12, 31), # среда
+                date(2025, 5, 8),   # четверг
+                date(2025, 6, 13),  # пятница
+                date(2025, 11, 3),  # понедельник
+            })
+        return holidays
 
-    def _batch_create_writeoffs(self, vals_list):
-        Writeoff = self.env['amanat.writeoff']
-        for i in range(0, len(vals_list), 50):
-            Writeoff.create(vals_list[i:i+50])
+    def write(self, vals):
+        # Автоматически обновляем плательщиков при изменении отправителя/получателя
+        if 'sender' in vals and not vals.get('payer_sender'):
+            if vals['sender']:
+                payer = self.env['amanat.payer'].search([
+                    ('contragents_ids', 'in', vals['sender'])
+                ], limit=1)
+                if payer:
+                    vals['payer_sender'] = payer.id
+            else:
+                vals['payer_sender'] = False
+        
+        if 'receiver' in vals and not vals.get('payer_receiver'):
+            if vals['receiver']:
+                payer = self.env['amanat.payer'].search([
+                    ('contragents_ids', 'in', vals['receiver'])
+                ], limit=1)
+                if payer:
+                    vals['payer_receiver'] = payer.id
+            else:
+                vals['payer_receiver'] = False
+        
+        res = super().write(vals)
+        if vals.get('create_action'):
+            for r in self.filtered('create_action'):
+                r.action_sync_airtable()
+                r.action_sync_reconciliation()
+                r.create_action = False
+        if vals.get('to_delete'):
+            for r in self.filtered('to_delete'):
+                r.action_delete()
+        if vals.get('post'):
+            for r in self.filtered('post'):
+                r.action_post()
+        if vals.get('royalty_post'):
+            for r in self.filtered('royalty_post'):
+                r.action_create_royalty_containers()
+                r.action_create_writeoffs()
+                r.action_sync_reconciliation()
+                r.royalty_post = False
+        if vals.get('close_investment'):
+            for r in self.filtered('close_investment'):
+                r.action_close_investment()
+        if vals.get('accrue', False):
+            for inv in self.filtered(lambda r: r.accrue):
+                inv.accrue_interest()
+                inv.accrue = False  # Сбрасываем флаг после выполнения
+        return res
+
+    @api.model
+    def create(self, vals):
+        # Автоматически подтягиваем плательщиков при создании
+        if vals.get('sender') and not vals.get('payer_sender'):
+            payer = self.env['amanat.payer'].search([
+                ('contragents_ids', 'in', vals['sender'])
+            ], limit=1)
+            if payer:
+                vals['payer_sender'] = payer.id
+        
+        if vals.get('receiver') and not vals.get('payer_receiver'):
+            payer = self.env['amanat.payer'].search([
+                ('contragents_ids', 'in', vals['receiver'])
+            ], limit=1)
+            if payer:
+                vals['payer_receiver'] = payer.id
+        
+        rec = super().create(vals)
+        if rec.create_action:
+            rec.action_sync_airtable()
+            rec.action_sync_reconciliation()
+            rec.create_action = False
+        if rec.to_delete:
+            rec.action_delete()
+        if rec.royalty_post:
+            rec.action_create_royalty_containers()
+            rec.action_create_writeoffs()
+            rec.action_sync_reconciliation()
+            rec.royalty_post = False
+        if rec.close_investment:
+            rec.action_close_investment()
+        if vals.get('accrue', False):
+            rec.accrue_interest()
+            rec.accrue = False
+        return rec
 
     @api.model
     def _cron_accrue_interest(self):
         """Cron: ежедневный запуск начисления"""
         self.search([('status', '=', 'open')]).accrue_interest()
         return True
-
-    def _days_between(self, d1, d2):
-        return (d2 - d1).days if d1 and d2 else 0
-
-    def _is_same_day(self, d1, d2):
-        return d1 == d2
-
-    def _get_period_days(self, period, start_date):
-        if not start_date:
-            return 1
-        if period == 'calendar_day' or period == 'work_day':
-            return 1
-        if period == 'calendar_month':
-            nxt = start_date + relativedelta(months=1)
-            return (nxt - start_date).days
-        if period == 'calendar_year':
-            nxt = start_date + relativedelta(years=1)
-            # корректировка на месяц/день
-            while nxt.month != start_date.month or nxt.day != start_date.day:
-                nxt -= timedelta(days=1)
-            return (nxt - start_date).days
-        return 1
-
-    def _get_month_days(self, d):
-        nxt = d + relativedelta(months=1)
-        return (date(nxt.year, nxt.month, 1) - date(d.year, d.month, 1)).days
 
     def accrue_interest(self):
         """Ежедневное начисление процентов и роялти по открытым инвестициям"""
@@ -822,7 +919,14 @@ class Investment(models.Model, AmanatBaseModel):
             day_cursor = first_date
 
             while day_cursor <= today:
-                if inv.period == 'work_day' and (day_cursor.weekday() >= 5 or day_cursor in HOLIDAYS):
+                # Приведение day_cursor к типу date для корректного сравнения с праздниками
+                day_cursor_date = day_cursor
+                if isinstance(day_cursor_date, fields.Date):
+                    day_cursor_date = fields.Date.to_date(day_cursor_date)
+                elif hasattr(day_cursor_date, 'date'):
+                    day_cursor_date = day_cursor_date.date()
+                holidays = self.get_holidays(day_cursor_date.year)
+                if inv.period == 'work_day' and (day_cursor_date.weekday() >= 5 or day_cursor_date in holidays):
                     day_cursor += timedelta(days=1)
                     continue
 
@@ -904,53 +1008,3 @@ class Investment(models.Model, AmanatBaseModel):
             # Создаём новые списания пакетно
             for i in range(0, len(write_vals), 50):
                 Writeoff.create(write_vals[i:i+50])
-
-
-    def write(self, vals):
-        res = super().write(vals)
-        if vals.get('create_action'):
-            for r in self.filtered('create_action'):
-                r.action_sync_airtable()
-                r.action_sync_reconciliation()
-                r.create_action = False
-        if vals.get('to_delete'):
-            for r in self.filtered('to_delete'):
-                r.action_delete()
-        if vals.get('post'):
-            for r in self.filtered('post'):
-                r.action_post()
-        if vals.get('royalty_post'):
-            for r in self.filtered('royalty_post'):
-                r.action_create_royalty_containers()
-                r.action_create_writeoffs()
-                r.action_sync_reconciliation()
-                r.royalty_post = False
-        if vals.get('close_investment'):
-            for r in self.filtered('close_investment'):
-                r.action_close_investment()
-        if vals.get('accrue', False):
-            for inv in self.filtered(lambda r: r.accrue):
-                inv.accrue_interest()
-                inv.accrue = False  # Сбрасываем флаг после выполнения
-        return res
-
-    @api.model
-    def create(self, vals):
-        rec = super().create(vals)
-        if rec.create_action:
-            rec.action_sync_airtable()
-            rec.action_sync_reconciliation()
-            rec.create_action = False
-        if rec.to_delete:
-            rec.action_delete()
-        if rec.royalty_post:
-            rec.action_create_royalty_containers()
-            rec.action_create_writeoffs()
-            rec.action_sync_reconciliation()
-            rec.royalty_post = False
-        if rec.close_investment:
-            rec.action_close_investment()
-        if vals.get('accrue', False):
-            rec.accrue_interest()
-            rec.accrue = False
-        return rec

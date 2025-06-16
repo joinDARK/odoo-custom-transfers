@@ -63,9 +63,6 @@ class ZayavkaFinEntryAutomations(models.Model):
             return
 
         amount = self.amount
-        if not amount:
-            _logger.warning("Не заполнена сумма заявки!")
-            return
         
         payment_cost_sovok = self.payment_cost_sovok
         
@@ -123,7 +120,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, amount),
                 'order_id': [(6, 0, [order1.id])],
                 'partner_id': self.contragent_id.id,
                 'sender_id': [(6, 0, [client_payer.id])],
@@ -162,7 +159,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -amount,
+                **self._get_reconciliation_currency_fields(currency, -amount),
                 'partner_id': self.contragent_id.id,
                 'order_id': [(6, 0, [order2.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
@@ -183,7 +180,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 self._create_reconciliation({
                     'date': date,
                     'currency': 'rub',
-                    'sum': amount_in_rub,
+                    **self._get_reconciliation_currency_fields('rub', amount_in_rub),
                     'partner_id': self.contragent_id.id,
                     'order_id': [(6, 0, [order2.id])],
                     'sender_id': [(6, 0, [client_payer.id])],
@@ -221,7 +218,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': our_sovok_reward,
+                **self._get_reconciliation_currency_fields('rub', our_sovok_reward),
                 'partner_id': self.contragent_id.id,
                 'order_id': [(6, 0, [order3.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
@@ -259,7 +256,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -amount,
+                **self._get_reconciliation_currency_fields(currency, -amount),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order5.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -297,7 +294,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -payment_cost_sovok,
+                **self._get_reconciliation_currency_fields(currency, -payment_cost_sovok),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order6.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -315,7 +312,7 @@ class ZayavkaFinEntryAutomations(models.Model):
         _logger.info(f"Получен ID заявки: {record_id}")
 
         # Филтруем по условию: Контрагент "Сбербанк" и вид сделки "Импорт"
-        if (self.contragent_id.name != 'Cбербанк'):
+        if (self.contragent_id.name != 'Сбербанк'):
             _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Сбербанк', найден: {self.contragent_id.name or 'Не указан'}")
             return
         
@@ -355,24 +352,12 @@ class ZayavkaFinEntryAutomations(models.Model):
             return
 
         amount = self.amount
-        if not amount:
-            _logger.warning("Не заполнена сумма заявки!")
-            return
         
         amount1 = self.sber_payment_cost
-        if not amount1:
-            _logger.warning("Не заполнена стоимость оплаты Сберу!")
-            return
         
         our_reward_amount = self.our_sber_reward
-        if not our_reward_amount:
-            _logger.warning("Не заполнена вознаграждение наше Сбер!")
-            return
         
         not_our_reward_amount = self.non_our_sber_reward
-        if not not_our_reward_amount:
-            _logger.warning("Не заполнена вознаграждение не наше Сбер!")
-            return
         
         best_rate = self.best_rate
         if not best_rate:
@@ -429,7 +414,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, amount),
                 'order_id': [(6, 0, [order1.id])],
                 'partner_id': self.contragent_id.id,
                 'sender_id': [(6, 0, [client_payer.id])],
@@ -468,7 +453,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -amount,
+                **self._get_reconciliation_currency_fields(currency, -amount),
                 'partner_id': self.contragent_id.id,
                 'order_id': [(6, 0, [order2.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
@@ -490,7 +475,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 self._create_reconciliation({
                     'date': date,
                     'currency': 'rub',
-                    'sum': amount_in_rub,
+                    **self._get_reconciliation_currency_fields('rub', amount_in_rub),
                     'partner_id': self.contragent_id.id,
                     'order_id': [(6, 0, [order2.id])],
                     'sender_id': [(6, 0, [client_payer.id])],
@@ -528,7 +513,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': our_reward_amount,
+                **self._get_reconciliation_currency_fields('rub', our_reward_amount),
                 'partner_id': self.contragent_id.id,
                 'order_id': [(6, 0, [order3.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
@@ -566,7 +551,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': not_our_reward_amount,
+                **self._get_reconciliation_currency_fields('rub', not_our_reward_amount),
                 'partner_id': self.contragent_id.id,
                 'order_id': [(6, 0, [order4.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
@@ -604,7 +589,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -amount,
+                **self._get_reconciliation_currency_fields(currency, -amount),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order5.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -642,7 +627,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -amount1,
+                **self._get_reconciliation_currency_fields(currency, -amount1),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order6.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -665,7 +650,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             return
         
         contragent = self.contragent_id
-        if (contragent.name != 'Совкомбанк' or contragent.name != 'Сбербанк'):
+        if (contragent.name == 'Совкомбанк' or contragent.name == 'Сбербанк'):
             _logger.warning("Запись не проходит фильтр: Контрагент не должен быть 'Совкомбанк' или 'Сбербанк'")
             return
         
@@ -701,24 +686,12 @@ class ZayavkaFinEntryAutomations(models.Model):
             return
 
         amount = self.amount
-        if not amount:
-            _logger.warning("Не заполнена сумма заявки!")
-            return
         
         amount1 = self.client_payment_cost
-        if not amount1:
-            _logger.warning("Не заполнена стоимость оплаты клиенту!")
-            return
         
         our_reward_amount = self.our_client_reward
-        if not our_reward_amount:
-            _logger.warning("Не заполнена вознаграждение наше клиенту!")
-            return
         
         not_our_reward_amount = self.non_our_client_reward
-        if not not_our_reward_amount:
-            _logger.warning("Не заполнена вознаграждение не наше клиенту!")
-            return
         
         best_rate = self.best_rate
         if not best_rate:
@@ -772,9 +745,9 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, amount),
                 'order_id': [(6, 0, [order1.id])],
-                'partner_id': contragent,
+                'partner_id': contragent.id,
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
                 'wallet_id': agentka_wallet.id,
@@ -811,8 +784,8 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -amount,
-                'partner_id': contragent,
+                **self._get_reconciliation_currency_fields(currency, -amount),
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order2.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
@@ -833,8 +806,8 @@ class ZayavkaFinEntryAutomations(models.Model):
                 self._create_reconciliation({
                     'date': date,
                     'currency': 'rub',
-                    'sum': amount_in_rub,
-                    'partner_id': contragent,
+                    **self._get_reconciliation_currency_fields('rub', amount_in_rub),
+                    'partner_id': contragent.id,
                     'order_id': [(6, 0, [order2.id])],
                     'sender_id': [(6, 0, [client_payer.id])],
                     'receiver_id': [(6, 0, [agent_payer.id])],
@@ -871,8 +844,8 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': our_reward_amount,
-                'partner_id': contragent,
+                **self._get_reconciliation_currency_fields('rub', our_reward_amount),
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order3.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
@@ -909,8 +882,8 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': not_our_reward_amount,
-                'partner_id': contragent,
+                **self._get_reconciliation_currency_fields('rub', not_our_reward_amount),
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order4.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
@@ -947,7 +920,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -amount,
+                **self._get_reconciliation_currency_fields(currency, -amount),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order5.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -985,7 +958,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -amount1,
+                **self._get_reconciliation_currency_fields(currency, -amount1),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order6.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -1043,19 +1016,10 @@ class ZayavkaFinEntryAutomations(models.Model):
             return
 
         amount = self.amount
-        if not amount:
-            _logger.warning("Не заполнена сумма заявки!")
-            return
         
         payment_cost_sovok = self.payment_cost_sovok
-        if not payment_cost_sovok:
-            _logger.warning("Не заполнена стоимость оплаты Совкомбанку!")
-            return
         
         our_sovok_reward = self.our_sovok_reward
-        if not our_sovok_reward:
-            _logger.warning("Не заполнена наша стоимость оплаты Совкомбанку!")
-            return
         
         best_rate = self.best_rate
         if not best_rate:
@@ -1113,7 +1077,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, -amount),
                 'order_id': [(6, 0, [order1.id])],
                 'partner_id': contragent.id,
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -1152,7 +1116,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, amount),
                 'partner_id': contragent.id,
                 'order_id': [(6, 0, [order2.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -1173,7 +1137,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 self._create_reconciliation({
                     'date': date,
                     'currency': 'rub',
-                    'sum': -amount_in_rub,
+                    **self._get_reconciliation_currency_fields('rub', -amount_in_rub),
                     'partner_id': contragent.id,
                     'order_id': [(6, 0, [order2.id])],
                     'sender_id': [(6, 0, [agent_payer.id])],
@@ -1211,7 +1175,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': -our_sovok_reward,
+                **self._get_reconciliation_currency_fields('rub', -our_sovok_reward),
                 'partner_id': contragent.id,
                 'order_id': [(6, 0, [order3.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -1249,7 +1213,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, amount),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order5.id])],
                 'sender_id': [(6, 0, [temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False),])],
@@ -1287,7 +1251,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': payment_cost_sovok,
+                **self._get_reconciliation_currency_fields(currency, payment_cost_sovok),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order6.id])],
                 'sender_id': [(6, 0, [temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False),])],
@@ -1345,24 +1309,12 @@ class ZayavkaFinEntryAutomations(models.Model):
             return
 
         amount = self.amount
-        if not amount:
-            _logger.warning("Не заполнена сумма заявки!")
-            return
         
         amount1 = self.sber_payment_cost
-        if not amount1:
-            _logger.warning("Не заполнена стоимость оплаты Сберу!")
-            return
         
         our_reward_amount = self.our_sber_reward
-        if not our_reward_amount:
-            _logger.warning("Не заполнена вознаграждение наше Сбер!")
-            return
         
         not_our_reward_amount = self.non_our_sber_reward
-        if not not_our_reward_amount:
-            _logger.warning("Не заполнена вознаграждение не наше Сбер!")
-            return
         
         best_rate = self.best_rate
         if not best_rate:
@@ -1420,9 +1372,9 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': -amount,
+                **self._get_reconciliation_currency_fields(currency, -amount),
                 'order_id': [(6, 0, [order1.id])],
-                'partner_id': contragent,
+                'partner_id': contragent.id,
                 'sender_id': [(6, 0, [agent_payer.id])],
                 'receiver_id': [(6, 0, [client_payer.id])],
                 'wallet_id': agentka_wallet.id,
@@ -1459,8 +1411,8 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
-                'partner_id': contragent,
+                **self._get_reconciliation_currency_fields(currency, amount),
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order2.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
                 'receiver_id': [(6, 0, [client_payer.id])],
@@ -1481,8 +1433,8 @@ class ZayavkaFinEntryAutomations(models.Model):
                 self._create_reconciliation({
                     'date': date,
                     'currency': 'rub',
-                    'sum': amount_in_rub,
-                    'partner_id': contragent,
+                    **self._get_reconciliation_currency_fields('rub', amount_in_rub),
+                    'partner_id': contragent.id,
                     'order_id': [(6, 0, [order2.id])],
                     'sender_id': [(6, 0, [agent_payer.id])],
                     'receiver_id': [(6, 0, [client_payer.id])],
@@ -1519,8 +1471,8 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': -our_reward_amount,
-                'partner_id': contragent,
+                **self._get_reconciliation_currency_fields('rub', -our_reward_amount),
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order3.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
                 'receiver_id': [(6, 0, [client_payer.id])],
@@ -1557,7 +1509,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': -not_our_reward_amount,
+                **self._get_reconciliation_currency_fields('rub', -not_our_reward_amount),
                 'partner_id': contragent.id,
                 'order_id': [(6, 0, [order4.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -1595,7 +1547,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, amount),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order5.id])],
                 'sender_id': [(6, 0, [temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False),])],
@@ -1633,7 +1585,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount1,
+                **self._get_reconciliation_currency_fields(currency, amount1),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order6.id])],
                 'sender_id': [(6, 0, [temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False),])],
@@ -1656,7 +1608,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             return
         
         contragent = self.contragent_id
-        if (contragent.name != 'Совкомбанк' or contragent.name != 'Сбербанк'):
+        if (contragent.name == 'Совкомбанк' or contragent.name == 'Сбербанк'):
             _logger.warning("Запись не проходит фильтр: Контрагент не должен быть 'Совкомбанк' или 'Сбербанк'")
             return
         
@@ -1692,24 +1644,12 @@ class ZayavkaFinEntryAutomations(models.Model):
             return
 
         amount = self.amount
-        if not amount:
-            _logger.warning("Не заполнена сумма заявки!")
-            return
         
         amount1 = self.client_payment_cost
-        if not amount1:
-            _logger.warning("Не заполнена стоимость оплаты клиенту!")
-            return
         
         our_reward_amount = self.our_client_reward
-        if not our_reward_amount:
-            _logger.warning("Не заполнена вознаграждение наше клиенту!")
-            return
         
         not_our_reward_amount = self.non_our_client_reward
-        if not not_our_reward_amount:
-            _logger.warning("Не заполнена вознаграждение не наше клиенту!")
-            return
         
         best_rate = self.best_rate
         if not best_rate:
@@ -1763,7 +1703,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, amount),
                 'order_id': [(6, 0, [order1.id])],
                 'partner_id': contragent.id,
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -1802,7 +1742,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, amount),
                 'partner_id': contragent.id,
                 'order_id': [(6, 0, [order2.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -1824,7 +1764,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 self._create_reconciliation({
                     'date': date,
                     'currency': 'rub',
-                    'sum': -amount_in_rub,
+                    **self._get_reconciliation_currency_fields('rub', -amount_in_rub),
                     'partner_id': contragent.id,
                     'order_id': [(6, 0, [order2.id])],
                     'sender_id': [(6, 0, [agent_payer.id])],
@@ -1862,7 +1802,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': -our_reward_amount,
+                **self._get_reconciliation_currency_fields('rub', -our_reward_amount),
                 'partner_id': contragent.id,
                 'order_id': [(6, 0, [order3.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -1900,7 +1840,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': 'rub',
-                'sum': -not_our_reward_amount,
+                **self._get_reconciliation_currency_fields('rub', -not_our_reward_amount),
                 'partner_id': contragent.id,
                 'order_id': [(6, 0, [order4.id])],
                 'sender_id': [(6, 0, [agent_payer.id])],
@@ -1938,7 +1878,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount,
+                **self._get_reconciliation_currency_fields(currency, amount),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order5.id])],
                 'sender_id': [(6, 0, [temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False),])],
@@ -1976,7 +1916,7 @@ class ZayavkaFinEntryAutomations(models.Model):
             self._create_reconciliation({
                 'date': date,
                 'currency': currency,
-                'sum': amount1,
+                **self._get_reconciliation_currency_fields(currency, amount1),
                 'partner_id': subagent.id,
                 'order_id': [(6, 0, [order6.id])],
                 'sender_id': [(6, 0, [temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False),])],

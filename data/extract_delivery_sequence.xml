@@ -4,6 +4,7 @@
         <record id="amanat_extract_delivery_sequence" model="ir.sequence">
             <field name="name">Amanat Extract Delivery Sequence</field>
             <field name="code">amanat.extract_delivery.sequence</field>
+            <field name="prefix">Платеж №</field>
             <field name="padding">1</field>
             <field name="number_next">1</field>
             <field name="number_increment">1</field>

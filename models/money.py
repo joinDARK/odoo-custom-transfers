@@ -36,7 +36,6 @@ class Money(models.Model, AmanatBaseModel):
         'amanat.order',
         string='Заявка',
         tracking=True,
-        ondelete='cascade',
     )
     state = fields.Selection([
         ('debt',      'Долг'),
@@ -64,7 +63,7 @@ class Money(models.Model, AmanatBaseModel):
         string='Остаток',
         tracking=True,
         compute='_compute_remains_fields',
-        # store = True
+        store = True
     )
     remains_rub = fields.Float(
         string='Остаток RUB',
@@ -193,3 +192,11 @@ class Money(models.Model, AmanatBaseModel):
             rec.remains_aed_cashe = rec.sum_aed_cashe - writeoff_sum if rec.currency == 'aed_cashe' else 0
             rec.remains_thb = rec.sum_thb - writeoff_sum if rec.currency == 'thb' else 0
             rec.remains_thb_cashe = rec.sum_thb_cashe - writeoff_sum if rec.currency == 'thb_cashe' else 0
+
+    def _get_realtime_fields(self):
+        """Поля для real-time обновлений в списке контейнеров денег"""
+        return [
+            'id', 'display_name', 'date', 'wallet_id', 'partner_id', 'currency',
+            'amount', 'sum', 'state', 'order_id', 'remains', 'sum_remains',
+            'royalty', 'percent', 'comment', 'create_date', 'write_date'
+        ]

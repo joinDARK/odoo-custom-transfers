@@ -1,13 +1,14 @@
 # models/base_model.py
-from odoo import models, api
+from odoo import models, api, fields
 from odoo.tools import html_escape
 import logging
+import json
 
 _logger = logging.getLogger(__name__)
 
 class AmanatBaseModel(models.AbstractModel):
     _name = 'amanat.base.model'
-    _description = 'Base Model for Logging'
+    _description = 'Base Model for Logging and Real-time Updates'
 
     def open_form(self):
         return {
@@ -25,6 +26,66 @@ class AmanatBaseModel(models.AbstractModel):
             self._name != 'amanat.activity' and
             'amanat.activity' in self.env.registry
         )
+
+    def _get_realtime_fields(self):
+        """Переопределите этот метод в наследуемых моделях для указания полей для real-time обновлений"""
+        # Базовые поля для всех моделей
+        basic_fields = ['id', 'display_name', 'create_date', 'write_date']
+        
+        # Добавляем общие поля если они есть
+        common_fields = ['name', 'state', 'active', 'date', 'amount', 'currency']
+        for field in common_fields:
+            if field in self._fields:
+                basic_fields.append(field)
+        
+        # Добавляем поля отслеживания (tracking=True)
+        for field_name, field in self._fields.items():
+            if hasattr(field, 'tracking') and field.tracking and field_name not in basic_fields:
+                basic_fields.append(field_name)
+        
+        return basic_fields
+
+    def _get_record_data_for_realtime(self, record):
+        """Получаем данные записи для real-time обновлений"""
+        try:
+            # Получаем поля для чтения
+            fields_to_read = record._get_realtime_fields()
+            
+            # Убираем дубликаты
+            fields_to_read = list(set(fields_to_read))
+            
+            # Читаем данные
+            data = record.read(fields_to_read)[0] if record.exists() else {}
+            
+            # Преобразуем Many2one поля в читаемый формат
+            for field_name, field in record._fields.items():
+                if field_name in data and field.type == 'many2one' and data[field_name]:
+                    if isinstance(data[field_name], (list, tuple)) and len(data[field_name]) == 2:
+                        data[field_name] = {
+                            'id': data[field_name][0],
+                            'display_name': data[field_name][1]
+                        }
+            
+            return data
+        except Exception as e:
+            _logger.error(f"Ошибка при получении данных записи для real-time: {e}")
+            return {'id': record.id, 'display_name': record.display_name}
+
+    def _send_realtime_notification(self, action, changed_fields=None):
+        """Отправляем real-time уведомление с детальной информацией"""
+        try:
+            _logger.info(f"🔥 _send_realtime_notification called: action={action}, model={self._name}, records={len(self)}")
+            _logger.info(f"🔥 Changed fields: {changed_fields}")
+            
+            # Используем новый метод из res.users
+            self.env.user.notify_record_change(action, self, changed_fields)
+            
+            _logger.info("🔥 notify_record_change completed successfully")
+            
+        except Exception as e:
+            _logger.error(f"❌ Ошибка при отправке real-time уведомления: {e}")
+            import traceback
+            _logger.error(f"❌ Traceback: {traceback.format_exc()}")
 
     def _log_activity(self, action, changes=None):
         if not self._should_log():
@@ -66,75 +127,70 @@ class AmanatBaseModel(models.AbstractModel):
             for record in records:
                 record._log_activity('create')
         
-        try:
-            self.env.user._bus_send("realtime_updates", {
-                'type': 'create', 
-                'model': records._name, 
-                'ids': records.ids, 
-                'user_id': user.id
-            })
-        except:
-            pass  # Игнорируем ошибки отправки уведомлений
+        # # Отправляем real-time уведомление для всех записей
+        # if records:
+        #     records._send_realtime_notification('create')
         
         return records
 
     def write(self, vals):
-        if not self._should_log():
-            return super().write(vals)
-            
-        user = self.env.user
+        changed_fields = list(vals.keys())
         
-        for record in self:
-            # Подготавливаем изменения для лога
-            changes = []
-            for field, value in vals.items():
-                old_value = getattr(record, field, None)
-                changes.append(f"{field}: {old_value} → {value}")
-            
-            # Применяем изменения
-            super(AmanatBaseModel, record).write(vals)
-            
-            # Логируем изменения
-            record._log_activity('update', "\n".join(changes))
+        # Сохраняем старые значения для логирования
+        old_values = {}
+        if self._should_log():
+            for record in self:
+                old_values[record.id] = {}
+                for field in changed_fields:
+                    old_values[record.id][field] = getattr(record, field, None)
         
-        try:
-            self.env.user._bus_send("realtime_updates", {
-                'type': 'update', 
-                'model': self._name, 
-                'ids': self.ids, 
-                'user_id': user.id
-            })
-        except:
-            pass
+        # Применяем изменения
+        result = super().write(vals)
         
-        return True
+        # Логируем изменения
+        if self._should_log():
+            for record in self:
+                if record.id in old_values:
+                    changes = []
+                    for field, new_value in vals.items():
+                        old_value = old_values[record.id].get(field)
+                        if field in record._fields:
+                            # Для Many2one полей показываем имена
+                            if record._fields[field].type == 'many2one':
+                                old_display = old_value.display_name if old_value else 'Не задано'
+                                new_display = getattr(record, field).display_name if getattr(record, field) else 'Не задано'
+                                changes.append(f"{field}: {old_display} → {new_display}")
+                            else:
+                                changes.append(f"{field}: {old_value} → {new_value}")
+                    
+                    if changes:
+                        record._log_activity('update', "\n".join(changes))
+        
+        # # Отправляем real-time уведомление
+        # if self.exists():
+        #     self._send_realtime_notification('update', changed_fields=changed_fields)
+        
+        return result
 
     def unlink(self):
-        # Если это логи - просто удаляем без логирования
-        if not self._should_log():
-            return super().unlink()
-            
-        user = self.env.user
-        
-        # Собираем данные для лога перед удалением
+        # Сохраняем данные для логирования и уведомления перед удалением
         log_data = []
-        for record in self:
-            data = {
-                'name': record.display_name,
-                'model': record._name,
-                'id': record.id,
-            }
-            log_data.append(data)
+        records_for_notification = self
         
-        # Сохраняем IDs для уведомления
-        record_ids = self.ids
-        model_name = self._name
+        if self._should_log():
+            for record in self:
+                data = {
+                    'name': record.display_name,
+                    'model': record._name,
+                    'id': record.id,
+                }
+                log_data.append(data)
         
         # Удаляем записи
         result = super().unlink()
         
         # Логируем удаление
-        if log_data:
+        if self._should_log() and log_data:
             try:
                 for data in log_data:
                     self.env['amanat.activity'].with_context(no_log=True).sudo().create({
@@ -148,16 +204,10 @@ class AmanatBaseModel(models.AbstractModel):
             except Exception as e:
                 _logger.error(f"Ошибка при логировании удаления: {e}")
         
-        # Отправляем уведомление
+        # Отправляем real-time уведомление об удалении
         try:
-            if record_ids:
-                self.env.user._bus_send("realtime_updates", {
-                    'type': 'delete',
-                    'model': model_name,
-                    'ids': record_ids,
-                    'user_id': user.id
-                })
-        except:
-            pass
+            self.env.user.notify_record_change('delete', records_for_notification, None)
+        except Exception as e:
+            _logger.error(f"Ошибка при отправке уведомления об удалении: {e}")
         
         return result
