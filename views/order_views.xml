@@ -5,7 +5,7 @@
         <field name="model">amanat.order</field>
         <field name="arch" type="xml">
             <list editable="top">
-                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name"/>
                 <field name="date"/>
                 <field name="type"/>
@@ -117,6 +117,12 @@
                         <field name="partner_gold"/>
                         <field name="write_off"/>
                         <field name="rollup_write_off"/>
+                        <button name="button_update_rollup_write_off"
+                                type="object"
+                                string="Обновить rollup списания"
+                                class="btn-secondary"
+                                groups="base.group_system,amanat.group_amanat_admin"
+                        />
                         <field name="reconciliation"/>
                         <field name="remaining_debt"/>
                     </group>

@@ -221,7 +221,10 @@ class Investment(models.Model, AmanatBaseModel):
     @api.depends('orders.rollup_write_off')
     def _compute_rollup_write_offs(self):
         for rec in self:
-            rec.rollup_write_offs = sum(o.rollup_write_off for o in rec.orders)
+            # Суммируем rollup_write_off всех связанных ордеров (как rollup в Airtable)
+            rec.rollup_write_offs = sum(
+                float(o.rollup_write_off or 0.0) for o in rec.orders
+            )
 
     @api.depends('amount', 'percent_1', 'percent_2', 'percent_3', 'percent_4', 'percent_5', 'percent_6', 'percent_7', 'percent_8', 'percent_9')
     def _compute_royalty_amounts(self):
@@ -1008,3 +1011,26 @@ class Investment(models.Model, AmanatBaseModel):
             # Создаём новые списания пакетно
             for i in range(0, len(write_vals), 50):
                 Writeoff.create(write_vals[i:i+50])
+
+    def action_update_rollup_amount(self):
+        """
+        Ручной пересчёт суммы rollup_amount: суммирует rollup_write_off всех связанных ордеров
+        """
+        for rec in self:
+            rec.rollup_amount = sum(order.rollup_write_off for order in rec.orders)
+        return True
+
+    # Кнопка для ручного обновления суммы rollup_amount
+    def button_update_rollup_amount(self):
+        self.ensure_one()
+        self.action_update_rollup_amount()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Rollup обновлён'),
+                'message': _('Сумма роллап списания успешно пересчитана.'),
+                'type': 'success',
+                'sticky': False,
+            }
+        }

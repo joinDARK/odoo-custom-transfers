@@ -2,12 +2,13 @@
     @include mk-disable-scrollbar();
     background-color: $mk-appbar-background;
     min-width: 200px;
-    width: 50%;
+    width: 300px; // Стандартная ширина
     overflow-y: auto;
-    transition: width 0.3s ease;
+    transition: none; // Убираем анимацию для плавного изменения размера
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
     overflow: auto;
     white-space: nowrap;
+    position: relative; // Для позиционирования разделителя
 
     .mk_apps_sidebar_toggle {
         padding: 8px;
@@ -27,11 +28,16 @@
     }
 
     &.mk_apps_sidebar_collapsed {
-        min-width: 50px;
-        width: 50px;
-
+        min-width: 0;
+        width: 0 !important; // Полностью скрываем сайдбар
+        overflow: hidden; // Скрываем содержимое
+        
         .mk_apps_sidebar_name {
             display: none;
+        }
+        
+        .mk_sidebar_resizer {
+            display: none; // Скрываем разделитель при полном сворачивании
         }
     }
 
@@ -106,9 +112,6 @@
     --mk-sidebar-width: 0;
 }
 
-.editor_has_snippets_hide_backend_navbar .mk_apps_sidebar_panel {
-    transition: width 300ms;
-}
 
 @include media-breakpoint-only(md) {
     .mk_sidebar_type_large {
@@ -197,7 +200,6 @@
     min-width: 200px;
     width: 50%;
     overflow-y: auto; // fallback
-    transition: width 0.3s ease;
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
     overflow: auto;
     white-space: nowrap;
@@ -306,9 +308,6 @@
     --mk-sidebar-width: 0;
 }
 
-.editor_has_snippets_hide_backend_navbar .mk_apps_sidebar_panel {
-    transition: width 300ms;
-}
 
 @include media-breakpoint-only(md) {
     .mk_sidebar_type_large {
@@ -461,3 +460,157 @@
     background-color: rgb(192, 192, 192);
     border-radius: 5px;
 }
+
+// Стили для разделителя изменения размера сайдбара
+.mk_sidebar_resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    cursor: col-resize;
+    background: transparent;
+    transition: background-color 0.2s ease;
+    z-index: 1000;
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+    }
+
+    &:active {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+}
+
+// Стили для состояния изменения размера
+.mk_sidebar_resizing {
+    cursor: col-resize !important;
+    user-select: none;
+    
+    * {
+        cursor: col-resize !important;
+        user-select: none;
+        pointer-events: none;
+    }
+    
+    .mk_sidebar_resizer {
+        pointer-events: auto;
+    }
+}
+
+// Обновляем стили для скрытого сайдбара  
+.mk_apps_sidebar_panel.mk_apps_sidebar_collapsed {
+    .mk_sidebar_resizer {
+        display: none; // Скрываем разделитель при полном сворачивании
+    }
+}
+
+// Скрываем разделитель когда body имеет класс скрытого сайдбара
+.mk_sidebar_hidden .mk_sidebar_resizer {
+    display: none;
+}
+
+// Полностью скрываем элементы сайдбара когда он отключен
+.mk_sidebar_disabled {
+    .mk_sidebar_toggle_button {
+        display: none !important;
+    }
+    
+    .mk_sidebar_resizer {
+        display: none !important;
+    }
+}
+
+// Кнопка сворачивания/разворачивания сайдбара (соприкасается)
+.mk_sidebar_toggle_button {
+    position: fixed;
+    bottom: 0; // Позиция снизу
+    width: 32px;
+    height: 32px;
+    background: $mk-appbar-background; // Тот же цвет что и сайдбар
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-left: none; // Левая граница убрана для плотного соприкосновения
+    border-radius: 0 6px 6px 0; // Скругление только справа
+    box-shadow: 1px 0 6px rgba(0, 0, 0, 0.15); // Уменьшенная тень для соприкосновения
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1002; // Выше всего остального
+    
+    &:hover {
+        background: lighten($mk-appbar-background, 5%);
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    &:active {
+        background: lighten($mk-appbar-background, 3%);
+    }
+}
+
+// Когда сайдбар скрыт, добавляем левую границу кнопке
+.mk_sidebar_hidden .mk_sidebar_toggle_button {
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0 6px 6px 0;
+}
+
+// Иконки для кнопки сворачивания
+.mk_toggle_icon {
+    width: 16px;
+    height: 16px;
+    position: relative;
+    transition: transform 0.3s ease;
+    
+    &::before,
+    &::after {
+        content: '';
+        position: absolute;
+        background: #fff;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 1px; // Слегка скругленные концы стрелок
+    }
+}
+
+// Иконка "скрыть" (стрелка влево)
+.mk_icon_collapse {
+    &::before {
+        width: 8px;
+        height: 2px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        transform-origin: center;
+    }
+    
+    &::after {
+        width: 8px;
+        height: 2px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+        transform-origin: center;
+    }
+}
+
+// Иконка "показать" (стрелка вправо)
+.mk_icon_expand {
+    &::before {
+        width: 8px;
+        height: 2px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+        transform-origin: center;
+    }
+    
+    &::after {
+        width: 8px;
+        height: 2px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        transform-origin: center;
+    }
+}
+

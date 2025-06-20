@@ -6,7 +6,7 @@
         <field name="type">list</field>
         <field name="arch" type="xml">
             <list editable="top">
-                <button title="Кнопка формы" string="" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Кнопка формы" string="" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="name"/> 
                 <field width="100" name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
                 <field width="200" name="state"/>
@@ -49,106 +49,104 @@
                     <h1><field name="name" readonly="1"/></h1>
                 </header>
                 <sheet>
-                    <!-- Ряд 1: Общая информация о переводе -->
-                    <header>
-                        <h2>Общая информация о переводе</h2>
-                    </header>
-                    <group>
-                        <div class="o-form-group">
+                    <notebook>
+                        <page string="Основные">
+                            <header>
+                                <h2>Общая информация о переводе</h2>
+                            </header>
                             <group>
-                                <field name="state"/>
-                                <field name="amount"/>
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="state"/>
+                                        <field name="amount"/>
+                                    </group>
+                                    <group>
+                                        <field name="date"/>
+                                        <field name="hash"/>
+                                    </group>
+                                    <group>
+                                        <field name="currency"/>
+                                        <field name="sending_commission_percent" widget="percentage" options="{'rounding': 2}"/>
+                                    </group>
+                                </div>
+                                <field name="order_ids"/>
+                            </group>
+                            <header>
+                                <h2>Информация об отправителе и получателе</h2>
+                            </header>
+                            <group>
+                                <group>
+                                    <field name="sender_id"/>
+                                    <field name="sender_payer_id"/>
+                                    <field name="sender_wallet_id"/>
+                                </group>
+                                <group>
+                                    <field name="receiver_id"/>
+                                    <field name="receiver_payer_id"/>
+                                    <field name="receiver_wallet_id"/>
+                                </group>
+                            </group>
+                            <header>
+                                <h2>Действия перевода</h2>
+                            </header>
+                            <group>
+                                <group colspan="2">
+                                    <field name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                    <field name="delete_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                </group>
                             </group>
                             <group>
-                                <field name="date"/>
-                                <field name="hash"/>
+                                <field name="comment"/>
                             </group>
+                        </page>
+                        <page string="Сложные переводы">
+                            <header>
+                                <h2>Сложные переводы</h2>
+                            </header>
                             <group>
-                                <field name="currency"/>
-                                <field name="sending_commission_percent" widget="percentage" options="{'rounding': 2}"/>
+                                <field name="is_complex"/>
+                                <group>
+                                    <field name="intermediary_1_id" invisible="not is_complex"/>
+                                    <field name="intermediary_1_payer_id" invisible="not is_complex"/>
+                                    <field name="intermediary_1_wallet_id" invisible="not is_complex"/>
+                                    <field name="intermediary_1_commission_percent" widget="percentage" options="{'rounding': 2}" invisible="not is_complex"/>
+                                    <field name="intermediary_1_sum" invisible="not is_complex"/>
+                                </group>
+                                <group>
+                                    <field name="intermediary_2_id" invisible="not is_complex"/>
+                                    <field name="intermediary_2_payer_id" invisible="not is_complex"/>
+                                    <field name="intermediary_2_wallet_id" invisible="not is_complex"/>
+                                    <field name="intermediary_2_commission_percent" widget="percentage" options="{'rounding': 2}" invisible="not is_complex"/>
+                                    <field name="intermediary_2_sum" invisible="not is_complex"/>
+                                </group>
                             </group>
-                        </div>
-                        <field name="order_ids"/>
-                    </group>
-                    <!-- Ряд 2: Информация об отправителе и получателе -->
-                    <header>
-                        <h2>Информация об отправителе и получателе</h2>
-                    </header>
-                    <group>
-                        <group>
-                            <field name="sender_id"/>
-                            <field name="sender_payer_id"/>
-                            <field name="sender_wallet_id"/>
-                        </group>
-                        <group>
-                            <field name="receiver_id"/>
-                            <field name="receiver_payer_id"/>
-                            <field name="receiver_wallet_id"/>
-                        </group>
-                    </group>
-                    <!-- Ряд 3: Сведения по посредникам (для комплексных переводов) -->
-                    <header>
-                        <h2>Сложные переводы</h2>
-                    </header>
-                    <group>
-                        <field name="is_complex"/>
-                        <group>
-                            <field name="intermediary_1_id" invisible="not is_complex"/>
-                            <field name="intermediary_1_payer_id" invisible="not is_complex"/>
-                            <field name="intermediary_1_wallet_id" invisible="not is_complex"/>
-                            <field name="intermediary_1_commission_percent" widget="percentage" options="{'rounding': 2}" invisible="not is_complex"/>
-                            <field name="intermediary_1_sum" invisible="not is_complex"/>
-                        </group>
-                        <group>
-                            <field name="intermediary_2_id" invisible="not is_complex"/>
-                            <field name="intermediary_2_payer_id" invisible="not is_complex"/>
-                            <field name="intermediary_2_wallet_id" invisible="not is_complex"/>
-                            <field name="intermediary_2_commission_percent" widget="percentage" options="{'rounding': 2}" invisible="not is_complex"/>
-                            <field name="intermediary_2_sum" invisible="not is_complex"/>
-                        </group>
-                    </group>
-                    <!-- Ряд 4: Действия перевода -->
-                    <header>
-                        <h2>Действия перевода</h2>
-                    </header>
-                    <group>
-                        <div class="o-form-group">
+                        </page>
+                        <page string="Роялти">
+                            <header>
+                                <h2>Роялти</h2>
+                            </header>
                             <group>
-                                <field name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                <group colspan="2">
+                                    <field name="royalti_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                </group>
+                                <group>
+                                    <field name="royalty_recipient_1"/>
+                                    <field name="royalty_recipient_2"/>
+                                    <field name="royalty_recipient_3"/>
+                                    <field name="royalty_recipient_4"/>
+                                    <field name="royalty_recipient_5"/>
+                                </group>
+                                <group>
+                                    <field name="royalty_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                                    <field name="royalty_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                                    <field name="royalty_percent_3" widget="percentage" options="{'rounding': 2}"/>
+                                    <field name="royalty_percent_4" widget="percentage" options="{'rounding': 2}"/>
+                                    <field name="royalty_percent_5" widget="percentage" options="{'rounding': 2}"/>
+                                </group>
                             </group>
-                            <group>
-                                <field name="royalti_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                            </group>
-                            <group>
-                                <field name="delete_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                            </group>
-                        </div>
-                    </group>
-                    <!-- Ряд 5: Роялти -->
-                    <header>
-                        <h2>Роялти</h2>
-                    </header>
-                    <group>
-                        <group>
-                            <field name="royalty_recipient_1"/>
-                            <field name="royalty_recipient_2"/>
-                            <field name="royalty_recipient_3"/>
-                            <field name="royalty_recipient_4"/>
-                            <field name="royalty_recipient_5"/>
-                        </group>
-                        <group>
-                            <field name="royalty_percent_1" widget="percentage" options="{'rounding': 2}"/>
-                            <field name="royalty_percent_2" widget="percentage" options="{'rounding': 2}"/>
-                            <field name="royalty_percent_3" widget="percentage" options="{'rounding': 2}"/>
-                            <field name="royalty_percent_4" widget="percentage" options="{'rounding': 2}"/>
-                            <field name="royalty_percent_5" widget="percentage" options="{'rounding': 2}"/>
-                        </group>
-                    </group>
-                    <group>
-                        <field name="comment"/>
-                    </group>
+                        </page>
+                    </notebook>
                 </sheet>
-                <!-- Виджет трекинга -->
                 <chatter>
                     <field name="message_follower_ids"/>
                     <field name="activity_ids"/>

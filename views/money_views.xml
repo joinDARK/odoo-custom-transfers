@@ -5,7 +5,7 @@
         <field name="model">amanat.money</field>
         <field name="arch" type="xml">
             <list editable="top">
-                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="royalty" width="78"/>
                 <field name="percent" width="102"/>
                 <field name="date" width="200"/>

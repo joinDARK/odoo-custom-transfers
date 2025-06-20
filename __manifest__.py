@@ -93,8 +93,10 @@
         ],
         "web.assets_backend": [
             "/amanat/static/src/js/real_time_interaction.js",
-            "/amanat/static/src/js/list_view_enhanced.js",
             "/amanat/static/src/js/list_view_numbering.js",
+            "/amanat/static/src/js/chatter_toggle.js",
+            # "/amanat/static/src/js/list_view_enhanced.js",
+            # "/amanat/static/src/js/fixed_columns_calculator.js",
             # "/amanat/static/src/js/writeoff_context.js",
             (
                 "after",

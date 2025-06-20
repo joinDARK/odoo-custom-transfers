@@ -160,3 +160,153 @@
     border: 1px solid #17a2b8;
     transition: all 0.3s ease;
 }
+
+/* Фиксация первых 4 колонок в основных list view (исключаем поля many2many) */
+/* .o_list_view:not(.o_field_many2many) .o_list_table {
+    position: relative;
+    overflow-x: auto;
+} */
+
+/* Фиксированные колонки в заголовке */
+/* .o_list_view:not(.o_field_many2many) .o_list_table thead th:nth-child(1),
+.o_list_view:not(.o_field_many2many) .o_list_table thead th:nth-child(2), 
+.o_list_view:not(.o_field_many2many) .o_list_table thead th:nth-child(3),
+.o_list_view:not(.o_field_many2many) .o_list_table thead th:nth-child(4) {
+    position: sticky !important;
+    z-index: 10 !important;
+    background-color: #f8f9fa !important;
+    /* Границы устанавливаются динамически через JavaScript */
+} */
+
+/* Первая колонка получает максимальный z-index */
+.o_list_view:not(.o_field_many2many) .o_list_table thead th:nth-child(1),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr td:nth-child(1) {
+    z-index: 11 !important;
+}
+
+/* Фиксированные колонки в строках данных */
+/* .o_list_view:not(.o_field_many2many) .o_list_table tbody tr td:nth-child(1),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr td:nth-child(2),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr td:nth-child(3),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr td:nth-child(4) {
+    position: sticky !important;
+    z-index: 9 !important;
+    background-color: white !important;
+    /* Границы устанавливаются динамически через JavaScript */
+} */
+
+/* Особые стили для кнопок в фиксированных колонках */
+/* .o_list_view:not(.o_field_many2many) .o_list_table tbody tr td:nth-child(1) .btn,
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr td:nth-child(1) button {
+    z-index: 11 !important;
+    position: relative;
+} */
+
+/* Подсветка при наведении на фиксированные колонки */
+/* .o_list_view:not(.o_field_many2many) .o_list_table tbody tr:hover td:nth-child(1),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr:hover td:nth-child(2),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr:hover td:nth-child(3),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr:hover td:nth-child(4) {
+    background-color: #f5f5f5 !important;
+} */
+
+/* Выделение активной строки для фиксированных колонок */
+/* .o_list_view:not(.o_field_many2many) .o_list_table tbody tr.o_data_row.o_selected_row td:nth-child(1),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr.o_data_row.o_selected_row td:nth-child(2),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr.o_data_row.o_selected_row td:nth-child(3),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr.o_data_row.o_selected_row td:nth-child(4) {
+    background-color: #e7f3ff !important;
+} */
+
+/* Специальные стили для четных строк */
+/* .o_list_view:not(.o_field_many2many) .o_list_table tbody tr:nth-child(even) td:nth-child(1),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr:nth-child(even) td:nth-child(2),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr:nth-child(even) td:nth-child(3),
+.o_list_view:not(.o_field_many2many) .o_list_table tbody tr:nth-child(even) td:nth-child(4) {
+    background-color: #f9f9f9 !important;
+} */
+
+/* Классы для фиксированных колонок с границами - устанавливаются через JavaScript */
+/* .o_list_view:not(.o_field_many2many) .o_list_table .fixed-column-with-border {
+    border-right: 2px solid #dee2e6 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+} */
+
+/* Дополнительная специфичность для заголовков */
+/* .o_list_view:not(.o_field_many2many) .o_list_table thead th.fixed-column-with-border {
+    border-right: 2px solid #dee2e6 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+} */
+
+/* Дополнительная специфичность для ячеек данных */
+/* .o_list_view:not(.o_field_many2many) .o_list_table tbody tr td.fixed-column-with-border {
+    border-right: 2px solid #dee2e6 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+} */
+
+/* Стили для минималистичной кнопки переключения chatter в navbar */
+.o_menu_systray {
+    align-items: center !important;
+    display: flex !important;
+}
+
+.o_main_navbar .navbar-nav.ms-auto {
+    align-items: center !important;
+    display: flex !important;
+}
+
+.chatter-toggle-btn {
+    background: none !important;
+    border: none !important;
+    color: #6c757d !important;
+    cursor: pointer !important;
+    font-size: 16px !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 8px !important;
+    height: 40px !important;
+    width: 40px !important;
+    border-radius: 4px !important;
+    list-style: none !important;
+    vertical-align: middle !important;
+    line-height: 1 !important;
+    align-self: center !important;
+}
+
+.chatter-toggle-btn:hover {
+    color: #495057 !important;
+    background-color: rgba(0,0,0,0.05) !important;
+}
+
+.chatter-toggle-btn:active {
+    background-color: rgba(0,0,0,0.1) !important;
+}
+
+.chatter-toggle-btn:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25) !important;
+}
+
+/* Анимация для показа/скрытия chatter */
+.o_chatter {
+    transition: all 0.3s ease !important;
+}
+
+.o_chatter.hidden {
+    opacity: 0 !important;
+    transform: translateX(100%) !important;
+    pointer-events: none !important;
+}
+
+/* Мобильная адаптивность */
+@media (max-width: 768px) {
+    .chatter-toggle-btn {
+        font-size: 14px !important;
+        height: 36px !important;
+        width: 36px !important;
+        margin: 0 4px !important;
+    }
+}

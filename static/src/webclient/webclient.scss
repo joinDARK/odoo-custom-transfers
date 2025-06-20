@@ -6,7 +6,30 @@
         "sidebar content"
         "components components";
     grid-template-rows: auto auto 1fr auto;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: var(--sidebar-width, 300px) 1fr; // Используем CSS переменную для ширины
+    
+    // Когда сайдбар полностью скрыт, убираем его из grid
+    &.mk_sidebar_hidden {
+        grid-template-columns: 0fr 1fr;
+        
+        > .mk_apps_sidebar_panel {
+            display: none;
+        }
+    }
+    
+    // Когда сайдбар полностью отключен (не в модуле Amanat)
+    &.mk_sidebar_disabled {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "banner"
+            "navbar"
+            "content"
+            "components";
+        
+        > .mk_apps_sidebar_panel {
+            display: none !important;
+        }
+    }
     > div:has(#oe_neutralize_banner) {
     	grid-area: banner;
     }

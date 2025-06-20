@@ -221,7 +221,17 @@ class Order(models.Model, AmanatBaseModel):
         tracking=True
     )
     write_off = fields.Float(string='Списания', tracking=True)
-    rollup_write_off = fields.Float(string='Роллап списания', tracking=True)
+    @api.depends('money_ids.writeoff_ids.amount')
+    def _compute_rollup_write_off(self):
+        for rec in self:
+            rec.rollup_write_off = sum(w.amount for m in rec.money_ids for w in m.writeoff_ids)
+
+    rollup_write_off = fields.Float(
+        string='Роллап списания',
+        compute='_compute_rollup_write_off',
+        store=True,
+        tracking=True
+    )
     reconciliation = fields.Float(string='Сверка', tracking=True)
     remaining_debt = fields.Float(
         string='Остаток долга',
@@ -535,13 +545,28 @@ class Order(models.Model, AmanatBaseModel):
         for rec in self:
             rec.remaining_debt = sum(rec.money_ids.mapped('remains'))
 
-    @api.depends('amount', 'operation_percent', 'our_percent')
-    def _compute_financials(self):
+    def action_update_rollup_write_off(self):
+        """
+        Ручной пересчёт rollup_write_off: суммирует все списания по всем контейнерам этого ордера
+        """
+        Writeoff = self.env['amanat.writeoff']
         for rec in self:
-            rec.rko = rec.amount * rec.operation_percent
-            rec.amount_1 = rec.amount if rec.operation_percent < 0 else rec.amount - rec.rko
-            rec.rko_2 = rec.amount * rec.our_percent
-            rec.amount_2 = rec.amount - rec.rko if rec.operation_percent < 0 else rec.amount - rec.rko_2
-            rec.total = rec.amount - rec.rko
+            writeoffs = Writeoff.search([('money_id.order_id', '=', rec.id)])
+            rec.rollup_write_off = sum(writeoffs.mapped('amount'))
+        return True
+
+    def button_update_rollup_write_off(self):
+        self.ensure_one()
+        self.action_update_rollup_write_off()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Rollup списания обновлён'),
+                'message': _('Сумма rollup списания успешно пересчитана.'),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
 
     
