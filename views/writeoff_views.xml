@@ -6,7 +6,7 @@
         <field name="model">amanat.writeoff</field>
         <field name="arch" type="xml">
             <list editable="top">
-                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <!-- Если хотите видеть системный ID, можно добавить -->
                 <field name="id_spisaniya"/>
                 <field name="date"/>

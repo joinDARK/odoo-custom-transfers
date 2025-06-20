@@ -5,7 +5,7 @@
         <field name="model">amanat.kassa_ivan</field>
         <field name="arch" type="xml">
             <list editable="top">
-                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name"/>
                 <field name="contragent_id"/>
             </list>

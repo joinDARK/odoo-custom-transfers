@@ -4,11 +4,16 @@ import { registry } from "@web/core/registry";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { patch } from "@web/core/utils/patch";
 
+// Проверяем, что модуль загружается
+console.log('🚀 Amanat: list_view_enhanced.js loaded!');
+
 // Расширяем стандартный ListRenderer для поддержки real-time обновлений
 patch(ListRenderer.prototype, {
 
     setup() {
         super.setup();
+        
+        console.log('🔧 Amanat: ListRenderer setup called');
         
         // Сохраняем ссылку на renderer в глобальном объекте для доступа из real-time сервиса
         if (!window.amanatListRenderers) {
@@ -21,12 +26,162 @@ patch(ListRenderer.prototype, {
         this.realtimeUpdater = new AmanatListRealtimeUpdater(this);
     },
 
+    onMounted() {
+        console.log('🎯 Amanat: ListRenderer onMounted called');
+        
+        // Устанавливаем фиксированные колонки после рендера
+        setTimeout(() => this.setupStickyColumns(), 300);
+        
+        // Добавляем обработчик ресайза
+        this._resizeHandler = () => {
+            setTimeout(() => this.setupStickyColumns(), 100);
+        };
+        window.addEventListener('resize', this._resizeHandler);
+    },
+
+    setupStickyColumns() {
+        const table = this.tableRef?.el;
+        if (!table) {
+            console.log('Amanat: Table not found');
+            return;
+        }
+        
+        console.log('Amanat: Starting sticky columns setup...');
+        console.log('Amanat: Table element:', table);
+        
+        const thead = table.querySelector('thead');
+        const tbody = table.querySelector('tbody');
+        if (!thead || !tbody) {
+            console.log('Amanat: thead or tbody not found', { thead, tbody });
+            return;
+        }
+        
+        // Получаем ВСЕ заголовки для анализа
+        const allHeaders = thead.querySelectorAll('th');
+        console.log('Amanat: All headers found:', allHeaders.length);
+        
+        // Логируем информацию о каждом заголовке
+        allHeaders.forEach((th, index) => {
+            console.log(`Amanat: Header ${index}:`, {
+                element: th,
+                textContent: th.textContent?.trim(),
+                className: th.className,
+                offsetWidth: th.offsetWidth,
+                clientWidth: th.clientWidth,
+                getBoundingClientRect: th.getBoundingClientRect(),
+                style: th.style.cssText
+            });
+        });
+        
+        if (allHeaders.length < 4) {
+            console.log('Amanat: Less than 4 headers found:', allHeaders.length);
+            return;
+        }
+        
+        // Получаем первую строку данных для сравнения
+        const firstRow = tbody.querySelector('tr');
+        if (firstRow) {
+            const allCells = firstRow.querySelectorAll('td');
+            console.log('Amanat: First row cells:', allCells.length);
+            
+            allCells.forEach((td, index) => {
+                if (index < 6) { // Логируем первые 6 ячеек
+                    console.log(`Amanat: Cell ${index}:`, {
+                        element: td,
+                        textContent: td.textContent?.trim(),
+                        className: td.className,
+                        offsetWidth: td.offsetWidth,
+                        clientWidth: td.clientWidth,
+                        getBoundingClientRect: td.getBoundingClientRect()
+                    });
+                }
+            });
+        }
+        
+        // Работаем с первыми 4 заголовками
+        const headers = Array.from(allHeaders).slice(0, 4);
+        console.log('Amanat: Working with headers:', headers.map(h => h.textContent?.trim()));
+        
+        // Временно убираем sticky для точного измерения
+        console.log('Amanat: Removing sticky temporarily...');
+        headers.forEach((th, index) => {
+            th.style.position = 'static';
+            th.style.left = 'auto';
+            
+            // Также убираем sticky у ячеек
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const td = row.children[index];
+                if (td) {
+                    td.style.position = 'static';
+                    td.style.left = 'auto';
+                }
+            });
+        });
+        
+        // Даем браузеру время на перерисовку
+        requestAnimationFrame(() => {
+            console.log('Amanat: Measuring widths after removing sticky...');
+            
+            // Измеряем ширины
+            const widths = [];
+            headers.forEach((th, index) => {
+                const measurements = {
+                    offsetWidth: th.offsetWidth,
+                    clientWidth: th.clientWidth,
+                    boundingRect: th.getBoundingClientRect().width,
+                    scrollWidth: th.scrollWidth
+                };
+                
+                console.log(`Amanat: Header ${index} measurements:`, measurements);
+                widths.push(measurements.boundingRect); // Используем boundingRect как основной
+            });
+            
+            console.log('Amanat: Collected widths:', widths);
+            
+            // Восстанавливаем sticky и устанавливаем позиции
+            let currentLeft = 0;
+            headers.forEach((th, index) => {
+                console.log(`Amanat: Setting column ${index} - left: ${currentLeft}px, width: ${widths[index]}px`);
+                
+                // Восстанавливаем sticky для заголовка
+                th.style.position = 'sticky';
+                th.style.left = currentLeft + 'px';
+                
+                // Восстанавливаем sticky для ячеек
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const td = row.children[index];
+                    if (td) {
+                        td.style.position = 'sticky';
+                        td.style.left = currentLeft + 'px';
+                    }
+                });
+                
+                currentLeft += widths[index];
+            });
+            
+            console.log('Amanat: Sticky columns setup completed!');
+            console.log('Amanat: Final positions:', headers.map((th, i) => ({
+                column: i,
+                left: th.style.left,
+                width: widths[i]
+            })));
+        });
+    },
+
     willUnmount() {
         // Убираем ссылку при размонтировании
         const model = this.props.list.model.config.resModel;
         if (window.amanatListRenderers) {
             window.amanatListRenderers.delete(model);
         }
+        
+        // Убираем обработчик ресайза
+        if (this._resizeHandler) {
+            window.removeEventListener('resize', this._resizeHandler);
+        }
+        
         super.willUnmount();
     },
 

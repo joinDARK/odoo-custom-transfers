@@ -76,7 +76,17 @@ export class AppsBar extends Component {
             appName: '',
             activeItem: null,
             activeMainMenuIndex: null,
+            sidebarWidth: this.getSavedSidebarWidth(),
         });
+        
+        // Переменные для изменения размера
+        this.isResizing = false;
+        this.startX = 0;
+        this.startWidth = 0;
+        
+        // Привязываем методы для обработчиков событий
+        this.boundOnMouseMove = this.onMouseMove.bind(this);
+        this.boundStopResize = this.stopResize.bind(this);
 
         const refreshMenuState = () => {
             const currentApp = this.appMenuService.getCurrentApp();
@@ -84,13 +94,59 @@ export class AppsBar extends Component {
                 this.state.appName = currentApp.name;
                 this.state.isAmanat = (currentApp.name === 'ТДК');
                 this.state.activeMenuIndex = null;
+                
+                // Управляем сайдбаром в зависимости от модуля
+                if (this.state.isAmanat) {
+                    // В модуле Amanat - показываем сайдбар
+                    document.body.classList.remove('mk_sidebar_disabled');
+                    if (this.state.isCollapsed) {
+                        document.documentElement.style.setProperty('--sidebar-width', '0px');
+                        document.body.classList.add('mk_sidebar_hidden');
+                    } else {
+                        document.documentElement.style.setProperty('--sidebar-width', this.state.sidebarWidth + 'px');
+                        document.body.classList.remove('mk_sidebar_hidden');
+                    }
+                } else {
+                    // Не в модуле Amanat - полностью отключаем сайдбар
+                    document.documentElement.style.setProperty('--sidebar-width', '0px');
+                    document.body.classList.add('mk_sidebar_disabled');
+                    document.body.classList.remove('mk_sidebar_hidden');
+                }
             }
         };
         refreshMenuState();
+        
+        // Устанавливаем начальное состояние сайдбара
+        if (this.state.isAmanat) {
+            document.body.classList.remove('mk_sidebar_disabled');
+            if (this.state.isCollapsed) {
+                document.documentElement.style.setProperty('--sidebar-width', '0px');
+                document.body.classList.add('mk_sidebar_hidden');
+            } else {
+                document.documentElement.style.setProperty('--sidebar-width', this.state.sidebarWidth + 'px');
+                document.body.classList.remove('mk_sidebar_hidden');
+            }
+        } else {
+            // По умолчанию отключаем сайдбар если не в Amanat
+            document.documentElement.style.setProperty('--sidebar-width', '0px');
+            document.body.classList.add('mk_sidebar_disabled');
+            document.body.classList.remove('mk_sidebar_hidden');
+        }
 
         this.env.bus.addEventListener('MENUS:APP-CHANGED', refreshMenuState);
         onWillUnmount(() => {
             this.env.bus.removeEventListener('MENUS:APP-CHANGED', refreshMenuState);
+            
+            // Очищаем слушатели событий для изменения размера, если они активны
+            if (this.isResizing) {
+                document.removeEventListener('mousemove', this.boundOnMouseMove);
+                document.removeEventListener('mouseup', this.boundStopResize);
+                document.body.classList.remove('mk_sidebar_resizing');
+            }
+            
+            // Очищаем все CSS классы и переменные сайдбара при размонтировании
+            document.body.classList.remove('mk_sidebar_hidden', 'mk_sidebar_disabled');
+            document.documentElement.style.removeProperty('--sidebar-width');
         });
 
         if (this.companyService.currentCompany.has_appsbar_image) {
@@ -114,6 +170,15 @@ export class AppsBar extends Component {
 
     toggleSidebar() {
         this.state.isCollapsed = !this.state.isCollapsed;
+        
+        // Обновляем CSS переменную в зависимости от состояния
+        if (this.state.isCollapsed) {
+            document.documentElement.style.setProperty('--sidebar-width', '0px');
+            document.body.classList.add('mk_sidebar_hidden');
+        } else {
+            document.documentElement.style.setProperty('--sidebar-width', this.state.sidebarWidth + 'px');
+            document.body.classList.remove('mk_sidebar_hidden');
+        }
     }
 
     toggleMenu(menu_index) {
@@ -138,6 +203,63 @@ export class AppsBar extends Component {
     openLogs() {
         this.actionService.doAction('amanat.activity_action', { additionalContext: { clear_breadcrumb: true } });
         this.state.activeItem = 'openLogs';
+    }
+
+    // Методы для изменения размера сайдбара
+    getSavedSidebarWidth() {
+        const saved = localStorage.getItem('amanat_sidebar_width');
+        return saved ? parseInt(saved) : 300; // Стандартная ширина 300px
+    }
+
+    saveSidebarWidth(width) {
+        localStorage.setItem('amanat_sidebar_width', width.toString());
+    }
+
+    startResize(event) {
+        event.preventDefault();
+        this.isResizing = true;
+        this.startX = event.clientX;
+        this.startWidth = this.state.sidebarWidth;
+        
+        // Добавляем слушатели для перемещения мыши и отпускания кнопки
+        document.addEventListener('mousemove', this.boundOnMouseMove);
+        document.addEventListener('mouseup', this.boundStopResize);
+        
+        // Добавляем класс для изменения курсора
+        document.body.classList.add('mk_sidebar_resizing');
+    }
+
+    onMouseMove(event) {
+        if (!this.isResizing) return;
+        
+        const deltaX = event.clientX - this.startX;
+        let newWidth = this.startWidth + deltaX;
+        
+        // Ограничиваем минимальную и максимальную ширину
+        const minWidth = 200;
+        const maxWidth = Math.min(600, window.innerWidth * 0.4); // Максимум 40% от ширины экрана или 600px
+        
+        newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+        
+        this.state.sidebarWidth = newWidth;
+        // Обновляем CSS переменную для grid layout
+        document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
+    }
+
+    stopResize() {
+        if (!this.isResizing) return;
+        
+        this.isResizing = false;
+        
+        // Удаляем слушатели событий
+        document.removeEventListener('mousemove', this.boundOnMouseMove);
+        document.removeEventListener('mouseup', this.boundStopResize);
+        
+        // Убираем класс изменения курсора
+        document.body.classList.remove('mk_sidebar_resizing');
+        
+        // Сохраняем новую ширину
+        this.saveSidebarWidth(this.state.sidebarWidth);
     }
 
 }

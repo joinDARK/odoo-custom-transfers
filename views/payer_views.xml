@@ -7,7 +7,7 @@
         <field name="type">list</field>
         <field name="arch" type="xml">
             <list editable="top">
-                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="name"/>
                 <field name="inn"/>
                 <field width="200" name="contragents_ids" widget="many2many_tags"/>

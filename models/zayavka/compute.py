@@ -2337,8 +2337,12 @@ class ZayavkaComputes(models.Model):
         'contragent_id.name',
         'rate_real',
         'price_list_partners_id_accrual_percentage',
+        'price_list_partners_id_2_accrual_percentage',
+        'price_list_partners_id_3_accrual_percentage',
+        'price_list_partners_id_4_accrual_percentage',
+        'price_list_partners_id_5_accrual_percentage',
         'jess_rate',
-        'application_amount_rub_contract',
+        'amount',
         'non_our_client_reward'
     )
     def _compute_hidden_partner_commission_real(self):
@@ -2346,12 +2350,18 @@ class ZayavkaComputes(models.Model):
             contragent = (rec.contragent_id.name or '').strip().lower()
             jess_rate = rec.jess_rate or 1  # На всякий случай, чтобы не делить на ноль
 
-            accrual = rec.price_list_partners_id_accrual_percentage or 0.0
+            accrual = (
+                (rec.price_list_partners_id_accrual_percentage or 0.0) +
+                (rec.price_list_partners_id_2_accrual_percentage or 0.0) +
+                (rec.price_list_partners_id_3_accrual_percentage or 0.0) +
+                (rec.price_list_partners_id_4_accrual_percentage or 0.0) +
+                (rec.price_list_partners_id_5_accrual_percentage or 0.0)
+            )
 
             if 'совкомбанк' in contragent:
                 value = (rec.rate_real or 0.0) * accrual / jess_rate if jess_rate else 0.0
             elif 'сбербанк' in contragent:
-                value = (rec.application_amount_rub_contract or 0.0) * accrual / jess_rate if jess_rate else 0.0
+                value = (rec.amount or 0.0) * accrual
             else:
                 value = (rec.non_our_client_reward or 0.0) / jess_rate if jess_rate else 0.0
 

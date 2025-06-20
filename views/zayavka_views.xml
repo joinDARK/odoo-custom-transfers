@@ -10,8 +10,8 @@
         </header>
         <sheet>
           <group string="Основная информация">
-            <field name="status"/>
             <field name="zayavka_num"/>
+            <field name="status"/>
             <field name="manager_ids"/>
             <field name="checker_ids"/>
             <field name="date_placement"/>
@@ -490,10 +490,10 @@
     <field name="model">amanat.zayavka</field>
     <field name="arch" type="xml">
       <list editable="top">
-        <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+        <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
         <field name="zayavka_id"/>
-        <field width="200" name="status"/>
         <field width="200" name="zayavka_num"/>
+        <field width="200" name="status"/>
         <field width="200" name="date_placement"/>
         <field width="200" name="taken_in_work_date"/>
         <field width="200" name="contragent_id"/>

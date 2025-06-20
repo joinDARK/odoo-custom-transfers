@@ -103,6 +103,12 @@
                         />
                         <field name="rollup_write_offs"/>
                         <field name="rollup_amount"/>
+                        <button name="button_update_rollup_amount"
+                                type="object"
+                                string="Обновить сумму роллап списания"
+                                class="btn-secondary"
+                                groups="base.group_system,amanat.group_amanat_admin"
+                        />
                         <field name="create_action"/>
                         <field name="post"/>
                         <!-- <field name="repost"/> -->

@@ -75,7 +75,7 @@
     <field name="model">amanat.conversion</field>
     <field name="arch" type="xml">
       <list editable="top">
-        <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+        <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
         <field width="200" name="name"/>
         <field width="200" name="state"/>
         <field width="200" name="date"/>

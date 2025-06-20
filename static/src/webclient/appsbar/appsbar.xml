@@ -1,6 +1,16 @@
 <t t-name="amanat.AppsBar">
     <t t-if="state.isAmanat">
-        <div t-attf-class="mk_apps_sidebar_panel #{state.isCollapsed ? 'mk_apps_sidebar_collapsed' : ''}">
+        <!-- Кнопка сворачивания/разворачивания соприкасается с сайдбаром -->
+        <div class="mk_sidebar_toggle_button" 
+             t-on-click="toggleSidebar"
+             title="Скрыть/Показать сайдбар"
+             t-attf-style="left: #{state.isCollapsed ? '0px' : state.sidebarWidth + 'px'};">
+            <i t-attf-class="mk_toggle_icon #{state.isCollapsed ? 'mk_icon_expand' : 'mk_icon_collapse'}"></i>
+        </div>
+        
+        <div t-attf-class="mk_apps_sidebar_panel #{state.isCollapsed ? 'mk_apps_sidebar_collapsed' : ''}" 
+             t-ref="sidebarPanel" 
+             t-attf-style="width: #{state.isCollapsed ? '0px' : state.sidebarWidth + 'px'};">
             <div class="mk_apps_sidebar scroll">
                 <ul class="mk_apps_sidebar_menu">
                     <!-- Рендерим пункты меню -->
@@ -40,6 +50,12 @@
                         </li>
                     </t>
                 </ul>
+            </div>
+            <!-- Разделитель для изменения ширины -->
+            <div class="mk_sidebar_resizer" 
+                 t-ref="sidebarResizer"
+                 t-on-mousedown="startResize"
+                 title="Перетащите для изменения ширины сайдбара">
             </div>
         </div>
     </t>

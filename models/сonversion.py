@@ -236,6 +236,7 @@ class Conversion(models.Model, AmanatBaseModel):
                 rec.with_context(skip_automation=True).write({'create_conversion': False})
 
             if do_royal:
+                print('do_royal');
                 rec.with_context(skip_automation=True)._create_royalty_entries()
                 rec.with_context(skip_automation=True).write({'make_royalty': False})
 
@@ -493,6 +494,8 @@ class Conversion(models.Model, AmanatBaseModel):
         """Создает записи роялти на основе суммы роялти в исходной валюте, аналогично Airtable."""
         # Сначала удаляем существующие записи роялти
         self._clear_royalty_entries()
+
+        print('do_royal automation');
 
         order = self.order_id and self.order_id[0]
         if not order:

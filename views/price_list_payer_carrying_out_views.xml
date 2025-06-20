@@ -5,7 +5,7 @@
         <field name="model">amanat.price_list_payer_carrying_out</field>
         <field name="arch" type="xml">
             <list editable="top">
-                <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="name"/>
                 <field width="200" name="payer_partner"/>
                 <field width="200" name="counterparties"/>
