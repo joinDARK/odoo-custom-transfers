@@ -166,6 +166,48 @@ class TestRealtime(models.Model, AmanatBaseModel):
                 }
             }
     
+    def action_force_realtime_update(self):
+        """Принудительное тестирование real-time обновления"""
+        import logging
+        _logger = logging.getLogger(__name__)
+        
+        _logger.info("🔥 FORCE REALTIME UPDATE TEST")
+        
+        try:
+            # Обновляем запись принудительно
+            self.write({
+                'description': f'Принудительное обновление: {fields.Datetime.now()}'
+            })
+            
+            # Дополнительно отправляем уведомление вручную  
+            self._send_realtime_notification('update', ['description'])
+            
+            _logger.info("🔥 Force update completed")
+            
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Принудительное обновление',
+                    'message': 'Запись обновлена принудительно! Проверьте другие вкладки.',
+                    'type': 'success',
+                }
+            }
+            
+        except Exception as e:
+            _logger.error(f"Force update failed: {e}")
+            import traceback
+            _logger.error(f"Traceback: {traceback.format_exc()}")
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Ошибка принудительного обновления',
+                    'message': f'Ошибка: {e}',
+                    'type': 'danger',
+                }
+            }
+    
     def action_test_new_realtime_system(self):
         """Тест новой системы real-time с личными каналами пользователей"""
         import logging
@@ -258,6 +300,119 @@ class TestRealtime(models.Model, AmanatBaseModel):
                 'params': {
                     'title': 'Ошибка',
                     'message': f'Тест личного канала не удался: {e}',
+                    'type': 'danger',
+                }
+            }
+    
+    def action_direct_bus_test(self):
+        """Прямой тест отправки bus сообщения всеми доступными методами"""
+        import logging
+        _logger = logging.getLogger(__name__)
+        
+        _logger.info("🧪 DIRECT BUS TEST: Starting...")
+        
+        try:
+            user = self.env.user
+            user_channel = f"res.users,{user.id}"
+            
+            test_message = {
+                'type': 'update',
+                'model': self._name,
+                'user_id': user.id,
+                'user_name': user.name,
+                'timestamp': fields.Datetime.now().isoformat(),
+                'records': [{
+                    'id': self.id,
+                    'display_name': self.display_name,
+                    'test_message': 'Прямой тест bus!'
+                }],
+                'changed_fields': ['test_message']
+            }
+            
+            _logger.info(f"🧪 DIRECT BUS TEST: Sending to channel {user_channel}")
+            _logger.info(f"🧪 DIRECT BUS TEST: Message: {test_message}")
+            
+            # Пробуем все доступные методы отправки
+            methods_tried = []
+            success_method = None
+            
+            # Метод 1: _sendone
+            try:
+                self.env['bus.bus']._sendone(user_channel, 'amanat_realtime_update', test_message)
+                methods_tried.append("_sendone: ✅")
+                success_method = "_sendone"
+                _logger.info("🧪 Method 1 (_sendone) succeeded")
+            except Exception as e:
+                methods_tried.append(f"_sendone: ❌ {e}")
+                _logger.warning(f"🧪 Method 1 (_sendone) failed: {e}")
+            
+            # Метод 2: sendone (без подчеркивания)
+            try:
+                self.env['bus.bus'].sendone(user_channel, 'amanat_realtime_update', test_message)
+                methods_tried.append("sendone: ✅")
+                if not success_method:
+                    success_method = "sendone"
+                _logger.info("🧪 Method 2 (sendone) succeeded")
+            except Exception as e:
+                methods_tried.append(f"sendone: ❌ {e}")
+                _logger.warning(f"🧪 Method 2 (sendone) failed: {e}")
+            
+            # Метод 3: Прямое создание записи в bus.bus
+            try:
+                self.env['bus.bus'].sudo().create({
+                    'channel': user_channel,
+                    'message': test_message
+                })
+                methods_tried.append("direct create: ✅")
+                if not success_method:
+                    success_method = "direct create"
+                _logger.info("🧪 Method 3 (direct create) succeeded")
+            except Exception as e:
+                methods_tried.append(f"direct create: ❌ {e}")
+                _logger.warning(f"🧪 Method 3 (direct create) failed: {e}")
+            
+            # Метод 4: Через JSON сериализацию
+            try:
+                import json
+                self.env['bus.bus'].sudo().create({
+                    'channel': user_channel,
+                    'message': json.dumps({
+                        'type': 'amanat_realtime_update',
+                        'payload': test_message
+                    })
+                })
+                methods_tried.append("JSON create: ✅")
+                if not success_method:
+                    success_method = "JSON create"
+                _logger.info("🧪 Method 4 (JSON create) succeeded")
+            except Exception as e:
+                methods_tried.append(f"JSON create: ❌ {e}")
+                _logger.warning(f"🧪 Method 4 (JSON create) failed: {e}")
+            
+            _logger.info("🧪 DIRECT BUS TEST: Completed")
+            
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Прямой Bus тест',
+                    'message': f'Тест завершен. Рабочий метод: {success_method or "НЕТ"}. Проверьте консоль браузера и логи сервера.',
+                    'type': 'success' if success_method else 'warning',
+                    'sticky': True,
+                }
+            }
+            
+        except Exception as e:
+            _logger.error(f"🧪 DIRECT BUS TEST ERROR: {e}")
+            import traceback
+            _logger.error(f"🧪 TRACEBACK: {traceback.format_exc()}")
+            
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Ошибка Bus теста',
+                    'message': f'Ошибка: {e}',
                     'type': 'danger',
                 }
             } 

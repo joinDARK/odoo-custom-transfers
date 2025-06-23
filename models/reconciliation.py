@@ -28,29 +28,33 @@ class Reconciliation(models.Model, AmanatBaseModel):
     )
     sum = fields.Float(string='Сумма', tracking=True)
     wallet_id = fields.Many2one('amanat.wallet', string='Кошелек', tracking=True)
+    # Отправитель (Плательщик)
     sender_id = fields.Many2many(
         'amanat.payer',
-        string='Отправитель',
+        string='Плательщик',
         tracking=True
     )
+    # Контрагент Отправителя
     sender_contragent = fields.Many2many(
         'amanat.contragent',
         related='sender_id.contragents_ids',
-        string='Отправитель (from Контрагент)',
+        string='Контрагент',
         tracking=True
     )
+    # Получатель (Плательщик)
     receiver_id = fields.Many2many(
         'amanat.payer',
         'amanat_reconciliation_payer_rel',
         'reconciliation_id',
         'payer_id',
-        string='Получатель',
+        string='Плательщик',
         tracking=True
     )
+    # Контрагент Получателя
     receiver_contragent = fields.Many2many(
         'amanat.contragent',
         related='receiver_id.contragents_ids',
-        string='Получатель (from Контрагент)',
+        string='Контрагент',
         tracking=True
     )
 
@@ -69,7 +73,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
     sum_aed_cashe = fields.Float(string='Сумма AED КЭШ', tracking=True)
     sum_thb_cashe = fields.Float(string='Сумма THB КЭШ', tracking=True)
 
-    rate = fields.Float(string='Курс', related='order_id.rate', store=True, tracking=True)
+    rate = fields.Float(string='Курс (from Ордер)', related='order_id.rate', store=True, tracking=True)
     award = fields.Float(string='За операцию (from Ордер)', related='order_id.operation_percent', store=True, tracking=True)
     rko = fields.Float(string='РКО (from Ордер)', related='order_id.rko', store=True, tracking=True)
     our_percent = fields.Float(string='Наш процент (from Ордер)', related='order_id.our_percent', store=True, tracking=True)

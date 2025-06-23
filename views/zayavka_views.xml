@@ -417,6 +417,9 @@
               </group>
             </page>
             <page string="Нераспределенные">
+              <group>
+                <field name="order_ids"/>
+              </group>
               <group string="Даты">
                 <field name="date_agent_on_pc"/>
                 <field name="date_received_tezera"/>

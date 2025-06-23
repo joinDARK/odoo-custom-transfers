@@ -127,13 +127,16 @@ class AmanatBaseModel(models.AbstractModel):
             for record in records:
                 record._log_activity('create')
         
-        # # Отправляем real-time уведомление для всех записей
-        # if records:
-        #     records._send_realtime_notification('create')
+        # Отправляем real-time уведомление для всех записей
+        if records:
+            records._send_realtime_notification('create')
         
         return records
 
     def write(self, vals):
+        _logger.info(f"🔥 BASE_MODEL WRITE CALLED: model={self._name}, vals={vals}")
+        _logger.info(f"🔥 Records count: {len(self)}")
+        
         changed_fields = list(vals.keys())
         
         # Сохраняем старые значения для логирования
@@ -166,9 +169,9 @@ class AmanatBaseModel(models.AbstractModel):
                     if changes:
                         record._log_activity('update', "\n".join(changes))
         
-        # # Отправляем real-time уведомление
-        # if self.exists():
-        #     self._send_realtime_notification('update', changed_fields=changed_fields)
+        # Отправляем real-time уведомление
+        if self.exists():
+            self._send_realtime_notification('update', changed_fields=changed_fields)
         
         return result
 

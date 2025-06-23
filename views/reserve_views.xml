@@ -13,77 +13,76 @@
                 </header>
                 <sheet>
                     <!-- Блок «Основная информация» -->
-                    <header>
-                        <h2>Основаная информация</h2>
-                    </header>
-                    <group colspan="2">
-                        <field name="status"/>
-                        <field name="today_date"/>
-                        <field name="currency"/>
-                        <field name="amount"/>
-                    </group>
-
-                    <!-- Блок «Участники» -->
-                    <header>
-                        <h2>Участники</h2>
-                    </header>
-                    <group colspan="2" col="2">
-                        <group string="Отправитель">
-                            <field name="sender_id"/>
-                            <field name="sender_payer_id" domain="[('contragents_ids', 'in', sender_id)]"/>
-                            <field name="commision_percent_1" widget="percentage" options="{'rounding': 2}"/>
-                        </group>
-                        <group string="Получатель">
-                            <field name="receiver_id"/>
-                            <field name="receiver_payer_id" domain="[('contragents_ids', 'in', receiver_id)]"/>
-                            <field name="commision_percent_2" widget="percentage" options="{'rounding': 2}"/>
-                        </group>
-                    </group>
-
-                    <!-- Блок «Действия» -->
-                    <header>
-                        <h2>Действия</h2>
-                    </header>
-                    <group colspan="2" col="2">
-                        <group>
-                            <field name="commision_difference" widget="percentage" options="{'rounding': 2}"/>
-                            <field name="finally_result"/>
-                        </group>
-                        <group>
-                            <field name="create_reserve"/>
-                            <field name="delete_reserve"/>
-                        </group>
-                    </group>
-
-                    <!-- Блок «Роялти» -->
-                    <header>
-                        <h2>Роялти</h2>
-                    </header>
-                    <group colspan="2">
-                        <field name="has_royalti"/>
-                        <field name="make_royalti"/>
-
-                        <!-- Прячем поля роялти, если галка has_royalti не стоит -->
-                        <field name="royalty_recipient_1" invisible="not has_royalti"/>
-                        <field name="royalty_percent_1" widget="percentage" options="{'rounding': 2}" invisible="not has_royalti"/>
-                        <field name="royalty_amount_1" invisible="not has_royalti"/>
-                        <field name="royalty_recipient_2" invisible="not has_royalti"/>
-                        <field name="royalty_percent_2" widget="percentage" options="{'rounding': 2}" invisible="not has_royalti"/>
-                        <field name="royalty_amount_2" invisible="not has_royalti"/>
-                    </group>
-
-                    <!-- Блок «Ордеры -->
-                    <header>
-                        <h2>Ордеры</h2>
-                    </header>
-                    <group colspan="1" col="1">
-                        <group>
-                            <field name="order_ids" widget="many2many_tags"/>
-                        </group>
-                    </group>
-                    <group>
-                        <field name="comment"/>
-                    </group>
+                    <notebook>
+                        <page string="Основные">
+                            <header>
+                                <h2>Участники</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group string="Отправитель">
+                                        <field name="sender_id"/>
+                                        <field name="sender_payer_id" domain="[('contragents_ids', 'in', sender_id)]"/>
+                                        <field name="commision_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                                    </group>
+                                    <group string="Получатель">
+                                        <field name="receiver_id"/>
+                                        <field name="receiver_payer_id" domain="[('contragents_ids', 'in', receiver_id)]"/>
+                                        <field name="commision_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                                    </group>
+                                </div>
+                            </group>
+        
+                            <!-- Блок «Действия» -->
+                            <header>
+                                <h2>Действия</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="commision_difference" widget="percentage" options="{'rounding': 2}"/>
+                                        <field name="finally_result"/>
+                                    </group>
+                                    <group>
+                                        <field name="create_reserve"/>
+                                        <field name="delete_reserve"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <header>
+                                <h2>Ордеры</h2>
+                            </header>
+                            <group>
+                                <field name="order_ids" widget="many2many_tags"/>
+                                <field name="comment"/>
+                            </group>
+                        </page>
+                        <page string="Роялти">
+                            <!-- Блок «Роялти» -->
+                            <header>
+                                <h2>Роялти</h2>
+                            </header>
+                            <group>
+                              <field name="has_royalti"/>
+                              <field name="make_royalti"/>
+                            </group>
+                            <group invisible="not has_royalti">
+                                <div class="o-form-group-2">
+                                    <group>        
+                                    <!-- Прячем поля роялти, если галка has_royalti не стоит -->
+                                        <field name="royalty_recipient_1"/>
+                                        <field name="royalty_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                                        <field name="royalty_amount_1"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_recipient_2"/>
+                                        <field name="royalty_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                                        <field name="royalty_amount_2"/>
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>

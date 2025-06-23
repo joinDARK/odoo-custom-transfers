@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, fields
 from .base_model import AmanatBaseModel
 
 class ExpenseRule(models.Model, AmanatBaseModel):

@@ -1,0 +1,161 @@
+/* Real-time изменения - подсветка полей и строк */
+
+/* Анимация для подсвеченных элементов */
+@keyframes realtime-highlight {
+    0% { 
+        background-color: #28a745; 
+        transform: scale(1.02);
+    }
+    50% { 
+        background-color: #40e158; 
+        transform: scale(1.01);
+    }
+    100% { 
+        background-color: transparent; 
+        transform: scale(1);
+    }
+}
+
+/* Подсветка строк в таблице */
+.o_list_table tr.realtime-updated {
+    animation: realtime-highlight 2s ease-in-out;
+    border-left: 4px solid #28a745 !important;
+}
+
+.o_list_table tr.realtime-updated td {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+    transition: background-color 2s ease-out;
+}
+
+/* Подсветка отдельных ячеек в таблице */
+.o_list_table td.field-updated {
+    background-color: #28a745 !important;
+    color: white !important;
+    font-weight: bold;
+    animation: realtime-highlight 3s ease-in-out;
+    transition: all 0.3s ease;
+}
+
+/* Подсветка полей в формах */
+.o_form_view .field-updated {
+    background-color: #28a745 !important;
+    color: white !important;
+    border: 2px solid #155724 !important;
+    border-radius: 4px;
+    animation: realtime-highlight 3s ease-in-out;
+    transition: all 0.3s ease;
+}
+
+/* Подсветка для input полей */
+.o_form_view .field-updated input,
+.o_form_view .field-updated textarea,
+.o_form_view .field-updated select {
+    background-color: rgba(40, 167, 69, 0.2) !important;
+    border: 2px solid #28a745 !important;
+    color: #155724 !important;
+    font-weight: bold;
+}
+
+/* Подсветка для readonly полей */
+.o_form_view .field-updated.o_readonly_modifier {
+    background-color: rgba(40, 167, 69, 0.3) !important;
+    color: #155724 !important;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Пульсирующая анимация для новых записей */
+@keyframes realtime-pulse {
+    0%, 100% { 
+        background-color: rgba(40, 167, 69, 0.2); 
+        border-color: #28a745;
+    }
+    50% { 
+        background-color: rgba(40, 167, 69, 0.4); 
+        border-color: #155724;
+    }
+}
+
+.o_list_table tr.realtime-created {
+    animation: realtime-pulse 1s ease-in-out 3;
+    border-left: 4px solid #28a745 !important;
+    background-color: rgba(40, 167, 69, 0.1) !important;
+}
+
+/* Анимация для удаленных записей */
+@keyframes realtime-fade-out {
+    0% { 
+        opacity: 1; 
+        background-color: #dc3545;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.5; 
+        background-color: #f5c6cb;
+        transform: scale(0.98);
+    }
+    100% { 
+        opacity: 0; 
+        transform: scale(0.95);
+    }
+}
+
+.o_list_table tr.realtime-deleted {
+    animation: realtime-fade-out 2s ease-in-out forwards;
+    border-left: 4px solid #dc3545 !important;
+}
+
+/* Уведомление о real-time изменениях */
+.realtime-notification {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background-color: #28a745;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 9999;
+    animation: slide-in 0.3s ease-out;
+}
+
+@keyframes slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Подсветка измененных значений */
+.value-changed {
+    background: linear-gradient(90deg, 
+        rgba(40, 167, 69, 0.3) 0%, 
+        rgba(40, 167, 69, 0.1) 100%);
+    border-radius: 3px;
+    padding: 1px 3px;
+    transition: all 0.5s ease;
+}
+
+/* Hover эффекты для подсвеченных элементов */
+.field-updated:hover {
+    background-color: #1e7e34 !important;
+    transform: scale(1.02);
+    cursor: pointer;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+    .realtime-notification {
+        right: 10px;
+        left: 10px;
+        top: 80px;
+    }
+    
+    .o_list_table tr.realtime-updated {
+        border-left: 2px solid #28a745 !important;
+    }
+} 

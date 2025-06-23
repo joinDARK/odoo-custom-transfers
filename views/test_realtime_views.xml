@@ -51,6 +51,12 @@
                         <button name="action_test_direct_user_channel" string="👤 Личный канал" 
                                 type="object" class="btn-primary"
                                 title="Тест отправки на личный канал пользователя"/>
+                        <button name="action_force_realtime_update" string="🔥 Принудительный Update" 
+                                type="object" class="btn-warning"
+                                title="Принудительное обновление для тестирования real-time"/>
+                        <button name="action_direct_bus_test" string="🚀 Прямой Bus тест" 
+                                type="object" class="btn-danger"
+                                title="Тест всех методов отправки bus сообщений"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
                     </header>
                     <sheet>

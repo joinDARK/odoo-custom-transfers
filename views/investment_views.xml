@@ -78,75 +78,205 @@
                     <h1><field name="name" readonly="1"/></h1>
                 </header>
                 <sheet>
-                    <group>
-                        <field name="status"/>
-                        <field name="date"/>
-                        <field name="date_close"/>
-                        <field name="sender"/>
-                        <field name="payer_sender"/>
-                        <field name="receiver"/>
-                        <field name="payer_receiver"/>
-                        <field name="percent" widget="percentage" options="{'rounding': 2}"/>
-                        <field name="fixed_amount"/>
-                        <field name="period"/>
-                        <field name="amount"/>
-                        <field name="currency"/>
-                        <field name="principal"/>
-                        <field name="calendar_days"/>
-                        <field name="work_days"/>
-                        <field name="orders" widget="many2many_tags"/>
-                        <field name="write_offs"/>
-                        <button name="action_create_writeoff"
-                            type="object"
-                            string="Создать списание"
-                            class="btn-primary"
-                        />
-                        <field name="rollup_write_offs"/>
-                        <field name="rollup_amount"/>
-                        <button name="button_update_rollup_amount"
-                                type="object"
-                                string="Обновить сумму роллап списания"
-                                class="btn-secondary"
-                                groups="base.group_system,amanat.group_amanat_admin"
-                        />
-                        <field name="create_action"/>
-                        <field name="post"/>
-                        <!-- <field name="repost"/> -->
-                        <field name="close_investment"/>
-                        <field name="today_date"/>
-                        <field name="to_delete"/>
-                        <field name="accrue"/>
-                        <field name="has_royalty"/>
-                        <field name="royalty_post"/>
-                        <field name="royalty_recipient_1"/>
-                        <field name="royalty_recipient_2"/>
-                        <field name="royalty_recipient_3"/>
-                        <field name="royalty_recipient_4"/>
-                        <field name="royalty_recipient_5"/>
-                        <field name="royalty_recipient_6"/>
-                        <field name="royalty_recipient_7"/>
-                        <field name="royalty_recipient_8"/>
-                        <field name="royalty_recipient_9"/>
-                        <field name="percent_1"/>
-                        <field name="percent_2"/>
-                        <field name="percent_3"/>
-                        <field name="percent_4"/>
-                        <field name="percent_5"/>
-                        <field name="percent_6"/>
-                        <field name="percent_7"/>
-                        <field name="percent_8"/>
-                        <field name="percent_9"/>
-                        <field name="royalty_amount_1"/>
-                        <field name="royalty_amount_2"/>
-                        <field name="royalty_amount_3"/>
-                        <field name="royalty_amount_4"/>
-                        <field name="royalty_amount_5"/>
-                        <field name="royalty_amount_6"/>
-                        <field name="royalty_amount_7"/>
-                        <field name="royalty_amount_8"/>
-                        <field name="royalty_amount_9"/>
-                        <field name="rollup_amount_total"/>
-                    </group>
+                    <notebook>
+                        <page string="Основные">
+                            <header>
+                                <h2>Общая информация об инвестиции</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="status"/>
+                                        <field name="date"/>
+                                        <field name="date_close"/>
+                                    </group>
+                                    <group>
+                                        <field name="currency"/>
+                                        <field name="amount"/>
+                                        <field name="principal"/>
+                                    </group>
+                                    <group>
+                                        <field name="percent" widget="percentage" options="{'rounding': 2}"/>
+                                        <field name="fixed_amount"/>
+                                        <field name="period"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <header>
+                                <h2>Информация об отправителе и получателе</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="sender"/>
+                                        <field name="payer_sender"/>
+                                    </group>
+                                    <group>
+                                        <field name="receiver"/>
+                                        <field name="payer_receiver"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <header>
+                                <h2>Временные параметры</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="calendar_days"/>
+                                        <field name="work_days"/>
+                                    </group>
+                                    <group>
+                                        <field name="today_date"/>
+                                        <field name="accrue"/>
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+                        <page string="Списания и роллапы">
+                            <header>
+                                <h2>Списания</h2>
+                            </header>
+                            <group>
+                                <field name="write_offs"/>
+                                <button name="action_create_writeoff"
+                                    type="object"
+                                    string="Создать списание"
+                                    class="btn-primary"
+                                />
+                            </group>
+                            <header>
+                                <h2>Роллап списания</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="rollup_write_offs"/>
+                                        <field name="rollup_amount"/>
+                                    </group>
+                                    <group>
+                                        <field name="rollup_amount_total"/>
+                                        <button name="button_update_rollup_amount"
+                                                type="object"
+                                                string="Обновить сумму роллап списания"
+                                                class="btn-secondary"
+                                                groups="base.group_system,amanat.group_amanat_admin"
+                                        />
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+                        <page string="Роялти">
+                            <header>
+                                <h2>Настройки роялти</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="has_royalty"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_post"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <header>
+                                <h2>Получатели роялти (1-3)</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-3">
+                                    <group>
+                                        <field name="royalty_recipient_1"/>
+                                        <field name="percent_1"/>
+                                        <field name="royalty_amount_1"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_recipient_2"/>
+                                        <field name="percent_2"/>
+                                        <field name="royalty_amount_2"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_recipient_3"/>
+                                        <field name="percent_3"/>
+                                        <field name="royalty_amount_3"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <header>
+                                <h2>Получатели роялти (4-6)</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-3">
+                                    <group>
+                                        <field name="royalty_recipient_4"/>
+                                        <field name="percent_4"/>
+                                        <field name="royalty_amount_4"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_recipient_5"/>
+                                        <field name="percent_5"/>
+                                        <field name="royalty_amount_5"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_recipient_6"/>
+                                        <field name="percent_6"/>
+                                        <field name="royalty_amount_6"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <header>
+                                <h2>Получатели роялти (7-9)</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-3">
+                                    <group>
+                                        <field name="royalty_recipient_7"/>
+                                        <field name="percent_7"/>
+                                        <field name="royalty_amount_7"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_recipient_8"/>
+                                        <field name="percent_8"/>
+                                        <field name="royalty_amount_8"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_recipient_9"/>
+                                        <field name="percent_9"/>
+                                        <field name="royalty_amount_9"/>
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+                        <page string="Действия и управление">
+                            <header>
+                                <h2>Действия с инвестицией</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="create_action"/>
+                                        <field name="post"/>
+                                        <field name="close_investment"/>
+                                    </group>
+                                    <group>
+                                        <field name="to_delete"/>
+                                        <button name="test_moscow_time_logic"
+                                                type="object"
+                                                string="Тест времени по Москве"
+                                                class="btn-info"
+                                                groups="base.group_system,amanat.group_amanat_admin"
+                                        />
+                                    </group>
+                                </div>
+                            </group>
+                            <header>
+                                <h2>Связанные документы</h2>
+                            </header>
+                            <group>
+                                <field name="orders" widget="many2many_tags"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter>
                     <field name="message_follower_ids"/>

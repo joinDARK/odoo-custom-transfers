@@ -4,6 +4,7 @@ import { registry } from "@web/core/registry";
 import { browser } from "@web/core/browser/browser";
 import { session } from "@web/session";
 import { makeContext } from "@web/core/context";
+import { useService } from "@web/core/utils/hooks";
 
 // Сервис для отслеживания активных редакторов
 const editingStateService = {
@@ -40,540 +41,469 @@ const editingStateService = {
     }
 };
 
-// Основной сервис real-time обновлений
+// Основной сервис real-time обновлений для Odoo 18
 const amanatRealTimeService = {
-    dependencies: ["bus_service", "action", "notification", "orm", "editing_state"],
+    dependencies: ["bus_service", "action", "notification", "orm"],
     
-    start(env, { bus_service, action, notification, orm, editing_state }) {
-        console.log("Amanat Enhanced RealTime Service starting...");
+    start(env, { bus_service, action, notification, orm }) {
+        console.log("🚀 Amanat Real-Time Service for Odoo 18 starting...");
         
-        // Получаем ID пользователя из разных источников
-        let currentUserId = session.user_id || session.uid || session.user?.id;
+        // Получаем ID текущего пользователя для Odoo 18
+        let currentUserId = null;
         
-        // Пробуем получить из env.services
-        if (!currentUserId) {
-            try {
-                // Проверяем разные возможные названия сервиса пользователя
-                const userService = env.services.user || env.services.auth || env.services.userService;
-                currentUserId = userService?.userId || userService?.user?.id || userService?.uid;
-            } catch (e) {
-                console.warn("Could not get user ID from env.services:", e);
-            }
-        }
-        
-        // Пробуем получить из odoo глобального объекта
-        if (!currentUserId) {
-            try {
-                currentUserId = window.odoo?.session_info?.uid || window.odoo?.session_info?.user_id;
-            } catch (e) {
-                console.warn("Could not get user ID from window.odoo:", e);
-            }
-        }
-        
-        // Последняя попытка - используем фиксированный ID для тестирования
-        if (!currentUserId) {
-            console.warn("Could not determine user ID, using default for testing");
-            currentUserId = 2; // Стандартный admin ID
-        }
-        
-        console.log("🆔 Current user ID:", currentUserId);
-        console.log("📊 Session object:", session);
-        console.log("🔑 Available session keys:", Object.keys(session));
-        console.log("🛠️ Env services keys:", Object.keys(env.services));
-        
-        // Подписываемся на личный канал пользователя для real-time обновлений
-        const userChannel = `res.users,${currentUserId}`;
-        console.log(`🔄 Subscribing to user channel: ${userChannel}...`);
-        console.log("🔄 Bus service:", bus_service);
-        
-        bus_service.subscribe(userChannel, async (message) => {
-            console.log("🔥 RAW received message:", message);
-            console.log("🔥 Message type:", typeof message);
-            console.log("🔥 Message structure:", message ? Object.keys(message) : 'null');
-            console.log("🔥 User channel subscription is ACTIVE for:", userChannel);
-            
-            // В Odoo 18 сообщение может иметь разную структуру
-            let payload = message;
-            
-            // Проверяем разные возможные структуры сообщений
-            if (message.payload) {
-                payload = message.payload;
-            } else if (message.message) {
-                payload = message.message;
-            } else if (message[1]) {
-                // Иногда сообщение приходит как массив [channel, event_type, data]
-                // Для нашего случая это будет [channel, 'amanat_realtime_update', data]
-                payload = message[2] || message[1];
+        try {
+            // Способ 1: Через env.services.user (основной для Odoo 18)
+            if (env.services.user && env.services.user.userId) {
+                currentUserId = env.services.user.userId;
+                console.log("🔍 Method 1: Got user ID from env.services.user:", currentUserId);
             }
             
-            console.log("🔥 Processing payload:", payload);
-
-            if (!payload || !['create', 'update', 'delete'].includes(payload.type)) {
-                console.log("❌ Invalid message format or type:", payload);
-                console.log("❌ Available payload keys:", payload ? Object.keys(payload) : 'null');
-                return;
+            // Способ 2: Через window.odoo.session_info
+            if (!currentUserId && window.odoo && window.odoo.session_info) {
+                currentUserId = window.odoo.session_info.uid || window.odoo.session_info.user_id;
+                console.log("🔍 Method 2: Got user ID from window.odoo.session_info:", currentUserId);
             }
-
-            // Пользователь получает уведомления только от других пользователей
-            // так как в backend мы исключаем текущего пользователя при отправке
-            console.log(`📨 Received real-time update from user ${payload.user_name} (ID: ${payload.user_id})`);
-            console.log(`📨 Current user ID: ${currentUserId}`);
-
-            try {
-                console.log("🚀 Processing realtime update:", payload);
-                await handleRealtimeUpdate(payload, env, notification, orm, editing_state);
-                console.log("✅ Realtime update processed successfully");
-            } catch (error) {
-                console.error("❌ Error handling realtime update:", error);
+            
+            // Способ 3: Через глобальную переменную session
+            if (!currentUserId && typeof session !== 'undefined') {
+                currentUserId = session.user_id || session.uid;
+                console.log("🔍 Method 3: Got user ID from global session:", currentUserId);
             }
-        });
+            
+            // Способ 4: Через env.services (альтернативные пути)
+            if (!currentUserId) {
+                try {
+                    // Проверяем другие возможные сервисы
+                    const userService = env.services.user || env.services.auth || env.services.userService;
+                    if (userService) {
+                        currentUserId = userService.userId || userService.user?.id || userService.uid;
+                        console.log("🔍 Method 4: Got user ID from alternative services:", currentUserId);
+                    }
+                } catch (e) {
+                    console.warn("🔍 Method 4 failed:", e);
+                }
+            }
+            
+            // Способ 5: Попробуем через cookie или localStorage
+            if (!currentUserId) {
+                try {
+                    const sessionData = localStorage.getItem('session_info') || sessionStorage.getItem('session_info');
+                    if (sessionData) {
+                        const parsed = JSON.parse(sessionData);
+                        currentUserId = parsed.uid || parsed.user_id;
+                        console.log("🔍 Method 5: Got user ID from storage:", currentUserId);
+                    }
+                } catch (e) {
+                    console.warn("🔍 Method 5 failed:", e);
+                }
+            }
+            
+            // Способ 6: Пробуем получить из DOM или других источников
+            if (!currentUserId) {
+                try {
+                    const metaElements = document.querySelectorAll('meta[name="user-id"], meta[name="uid"], meta[name="current-user"]');
+                    for (const meta of metaElements) {
+                        if (meta.content) {
+                            currentUserId = parseInt(meta.content);
+                            console.log("🔍 Method 6: Got user ID from meta tags:", currentUserId);
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("🔍 Method 6 failed:", e);
+                }
+            }
+            
+            // Логируем все доступные данные для отладки
+            console.log("🔍 DEBUG: Available data sources:");
+            console.log("  - env.services.user:", env.services.user);
+            console.log("  - window.odoo:", window.odoo);
+            console.log("  - global session:", typeof session !== 'undefined' ? session : 'undefined');
+            console.log("  - env.services keys:", Object.keys(env.services));
+            
+        } catch (e) {
+            console.warn("🔍 Error getting user ID:", e);
+        }
         
-        console.log("Amanat Enhanced RealTime Service started successfully");
-        return {
-            getCurrentUserId: () => currentUserId
-        };
+        // Fallback: используем фиксированный ID для тестирования (только в разработке)
+        if (!currentUserId) {
+            console.warn("🔍 Could not determine user ID, using fallback for testing");
+            currentUserId = 2; // Fallback для тестирования
+        }
+        
+        console.log("🆔 Final user ID:", currentUserId);
+        
+        if (!currentUserId) {
+            console.error("❌ Cannot start real-time service without user ID");
+            // Попробуем получить пользователя асинхронно через RPC
+            console.log("🔍 Trying to get user ID via RPC...");
+            
+            env.services.rpc("/web/session/get_session_info", {}).then((sessionInfo) => {
+                console.log("🔍 RPC session info:", sessionInfo);
+                if (sessionInfo && (sessionInfo.uid || sessionInfo.user_id)) {
+                    const userId = sessionInfo.uid || sessionInfo.user_id;
+                    console.log("✅ Got user ID via RPC:", userId);
+                    // Перезапускаем сервис с полученным ID
+                    startRealtimeService(userId, env, bus_service, action, notification, orm);
+                } else {
+                    console.error("❌ Could not get user ID via RPC either");
+                }
+            }).catch((error) => {
+                console.error("❌ RPC failed:", error);
+            });
+            
+            return {
+                getCurrentUserId: () => null,
+                sendTestMessage: () => console.log("🧪 Service not started - no user ID")
+            };
+        }
+        
+        // Запускаем основной сервис
+        return startRealtimeService(currentUserId, env, bus_service, action, notification, orm);
     },
 };
 
-async function handleRealtimeUpdate(message, env, notification, orm, editingState) {
-    const currentController = env.services.action.currentController;
-    
-    if (!currentController || !currentController.action) {
-        console.log("No current controller or action");
-        return;
-    }
-    
-    const currentModel = currentController.action.res_model;
-    
-    if (currentModel !== message.model) {
-        console.log("Models don't match, skipping update. Current:", currentModel, "Message:", message.model);
-        return;
-    }
-    
-    // Определяем тип текущего представления
-    const viewType = getViewType(currentController);
-    
-    console.log("Current view type:", viewType, "Message type:", message.type);
-    
-    // Обрабатываем разные типы представлений с точечными обновлениями
-    switch (viewType) {
-        case 'list':
-            await handleListViewRealtimeUpdate(currentController, message, env, notification, editingState);
-            break;
-            
-        case 'form':
-            await handleFormViewRealtimeUpdate(currentController, message, env, notification, editingState);
-            break;
-            
-        case 'kanban':
-            await handleKanbanViewRealtimeUpdate(currentController, message, env, notification, editingState);
-            break;
-            
-        default:
-            console.log(`View type ${viewType} not supported for realtime updates`);
-            showFallbackNotification(notification, message);
-    }
-}
-
-function getViewType(controller) {
-    return controller.action.view_mode?.split(',')[0] || 
-           controller.props?.type || 
-           controller.viewType ||
-           'unknown';
-}
-
-async function handleListViewRealtimeUpdate(controller, message, env, notification, editingState) {
-    console.log("Handling list view realtime update");
-    
+// Вынесем основную логику в отдельную функцию
+function startRealtimeService(currentUserId, env, bus_service, action, notification, orm) {
+    console.log("🚀 Starting realtime service with user ID:", currentUserId);
+        
+        // Подписываемся на каналы согласно Odoo 18 API
     try {
-        // Пытаемся найти модель контроллера
-        const model = controller.model;
+        // Канал 1: Кастомный канал для real-time обновлений
+        const customChannel = `amanat_realtime_${currentUserId}`;
+        console.log(`📡 Subscribing to custom channel: ${customChannel}`);
         
-        if (model && model.root && model.root.model) {
-            // Работаем с моделью напрямую
-            await handleModelUpdate(model, message, env, notification);
-        } else {
-            // Fallback к базовой реализации
-            console.log("Using fallback list update");
-            await handleBasicListUpdate(controller, message, env, notification, editingState);
-        }
-        
-    } catch (error) {
-        console.error("Error in handleListViewRealtimeUpdate:", error);
-        await fallbackReload(controller, message, notification);
-    }
-}
-
-async function handleModelUpdate(model, message, env, notification) {
-    try {
-        switch (message.type) {
-            case 'create':
-                // Просто перезагружаем данные для новых записей
-                await model.root.load();
-                showNotification(notification, message, "Новые записи добавлены");
-                break;
-                
-            case 'update':
-                // Обновляем конкретные записи
-                for (const recordData of message.records) {
-                    const record = model.root.records.find(r => r.resId === recordData.id);
-                    if (record) {
-                        // Обновляем только измененные поля
-                        await record.update(recordData, { reload: false });
-                    }
-                }
-                // Перерисовываем представление
-                if (model.root.notify_changes) {
-                    model.root.notify_changes();
-                }
-                showNotification(notification, message, "Записи обновлены");
-                break;
-                
-            case 'delete':
-                // Удаляем записи из модели
-                for (const recordData of message.records) {
-                    model.root.records = model.root.records.filter(r => r.resId !== recordData.id);
-                }
-                if (model.root.notify_changes) {
-                    model.root.notify_changes();
-                }
-                showNotification(notification, message, "Записи удалены");
-                break;
-        }
-        return true;
-    } catch (error) {
-        console.error("Error in model update:", error);
-        return false;
-    }
-}
-
-async function handleBasicListUpdate(controller, message, env, notification, editingState) {
-    // Получаем таблицу списка
-    const listContainer = document.querySelector('.o_list_view');
-    const tableBody = listContainer?.querySelector('tbody.o_list_table_ungrouped');
-    
-    if (!tableBody) {
-        console.log("List table not found, falling back to reload");
-        await fallbackReload(controller, message, notification);
-        return;
-    }
-    
-    switch (message.type) {
-        case 'create':
-            await handleListCreateUpdate(tableBody, message, controller, env, notification);
-            break;
-            
-        case 'update':
-            await handleListUpdateUpdate(tableBody, message, controller, env, notification, editingState);
-            break;
-            
-        case 'delete':
-            await handleListDeleteUpdate(tableBody, message, env, notification);
-            break;
-    }
-}
-
-async function handleListCreateUpdate(tableBody, message, controller, env, notification) {
-    try {
-        // Для создания новых записей лучше всего перезагрузить модель
-        if (controller.model && controller.model.load) {
-            await controller.model.load();
-        } else {
-            // Fallback - полная перезагрузка
-            await fallbackReload(controller, message, notification);
-            return;
-        }
-        
-        showNotification(notification, message, `Добавлено записей: ${message.records.length}`);
-    } catch (error) {
-        console.error("Error in handleListCreateUpdate:", error);
-        await fallbackReload(controller, message, notification);
-    }
-}
-
-async function handleListUpdateUpdate(tableBody, message, controller, env, notification, editingState) {
-    try {
-        let updatedCount = 0;
-        
-        for (const recordData of message.records) {
-            const row = tableBody.querySelector(`tr[data-id="${recordData.id}"]`);
-            if (row) {
-                await updateListRowContent(row, recordData, controller, env);
-                highlightTableRow(row, 'info');
-                updatedCount++;
-            }
-        }
-        
-        if (updatedCount > 0) {
-            showNotification(notification, message, `Обновлено записей: ${updatedCount}`);
-        }
-        
-    } catch (error) {
-        console.error("Error in handleListUpdateUpdate:", error);
-        await fallbackReload(controller, message, notification);
-    }
-}
-
-async function handleListDeleteUpdate(tableBody, message, env, notification) {
-    try {
-        let deletedCount = 0;
-        
-        for (const recordData of message.records) {
-            const row = tableBody.querySelector(`tr[data-id="${recordData.id}"]`);
-            if (row) {
-                highlightTableRow(row, 'danger');
-                setTimeout(() => row.remove(), 1000);
-                deletedCount++;
-            }
-        }
-        
-        if (deletedCount > 0) {
-            showNotification(notification, message, `Удалено записей: ${deletedCount}`);
-        }
-        
-    } catch (error) {
-        console.error("Error in handleListDeleteUpdate:", error);
-    }
-}
-
-async function updateListRowContent(row, recordData, controller, env) {
-    try {
-        // Обновляем ячейки в строке
-        const cells = row.querySelectorAll('td[name]');
-        
-        for (const cell of cells) {
-            const fieldName = cell.getAttribute('name');
-            if (fieldName && recordData.hasOwnProperty(fieldName)) {
-                const value = recordData[fieldName];
-                updateCellContent(cell, value, fieldName);
-            }
-        }
-    } catch (error) {
-        console.error("Error updating row content:", error);
-    }
-}
-
-function updateCellContent(cell, value, fieldName) {
-    try {
-        if (value === null || value === undefined) {
-            cell.textContent = '';
-            return;
-        }
-        
-        // Для Many2one полей
-        if (typeof value === 'object' && value.display_name) {
-            cell.textContent = value.display_name;
-        }
-        // Для обычных полей
-        else if (typeof value === 'string' || typeof value === 'number') {
-            cell.textContent = value;
-        }
-        // Для boolean полей
-        else if (typeof value === 'boolean') {
-            cell.textContent = value ? '✓' : '';
-        }
-        // Для дат
-        else if (fieldName.includes('date') && typeof value === 'string') {
-            cell.textContent = new Date(value).toLocaleDateString();
-        }
-        else {
-            cell.textContent = String(value);
-        }
-    } catch (error) {
-        console.error("Error updating cell content:", error);
-        cell.textContent = String(value);
-    }
-}
-
-function highlightTableRow(row, type = 'info') {
-    const className = `table-${type}`;
-    row.classList.add(className);
-    
-    setTimeout(() => {
-        row.classList.remove(className);
-    }, 3000);
-}
-
-async function handleFormViewRealtimeUpdate(controller, message, env, notification, editingState) {
-    console.log("Handling form view realtime update");
-    
-    const currentRecordId = getCurrentFormRecordId(controller);
-    
-    if (!currentRecordId) {
-        console.log("No current record ID in form view");
-        return;
-    }
-    
-    // Проверяем, касается ли обновление текущей записи
-    const affectedRecord = message.records.find(record => record.id === currentRecordId);
-    
-    if (affectedRecord) {
-        await handleCurrentFormRecordUpdate(controller, message, affectedRecord, env, notification, editingState);
-    }
-}
-
-function getCurrentFormRecordId(controller) {
-    return controller?.model?.root?.resId || 
-           controller?.props?.resId || 
-           controller?.state?.currentId;
-}
-
-async function handleCurrentFormRecordUpdate(controller, message, recordData, env, notification, editingState) {
-    try {
-        // Проверяем наличие несохраненных изменений
-        const hasUnsavedChanges = checkForUnsavedChanges(controller);
-        
-        if (hasUnsavedChanges) {
-            showFormConflictNotification(notification, message, recordData, controller, env);
-            return;
-        }
-        
-        // Обновляем поля формы
-        await updateFormFields(controller, recordData, message.changed_fields);
-        
-        showNotification(notification, message, "Запись обновлена другим пользователем");
-        
-    } catch (error) {
-        console.error("Error in handleCurrentFormRecordUpdate:", error);
-    }
-}
-
-function checkForUnsavedChanges(controller) {
-    try {
-        return controller?.model?.root?.isDirty || 
-               controller?.model?.root?.hasUnsavedChanges ||
-               false;
-    } catch (error) {
-        return false;
-    }
-}
-
-async function updateFormFields(controller, recordData, changedFields) {
-    try {
-        if (controller.model && controller.model.root) {
-            // Обновляем данные модели
-            await controller.model.root.update(recordData, { reload: false });
-        }
-        
-        // Подсвечиваем измененные поля
-        if (changedFields && changedFields.length > 0) {
-            highlightChangedFields(changedFields);
-        }
-        
-    } catch (error) {
-        console.error("Error updating form fields:", error);
-    }
-}
-
-function highlightChangedFields(changedFields) {
-    try {
-        for (const fieldName of changedFields) {
-            const fieldElement = document.querySelector(`[name="${fieldName}"]`);
-            if (fieldElement) {
-                fieldElement.classList.add('field-updated');
-                setTimeout(() => {
-                    fieldElement.classList.remove('field-updated');
-                }, 3000);
-            }
-        }
-    } catch (error) {
-        console.error("Error highlighting changed fields:", error);
-    }
-}
-
-function showFormConflictNotification(notification, message, recordData, controller, env) {
-    try {
-        notification.add(
-            `Запись была изменена пользователем ${message.user_name}. У вас есть несохраненные изменения.`,
-            {
-                title: "Конфликт изменений",
-                type: "warning",
-                sticky: true,
-                buttons: [
-                    {
-                        name: "Перезагрузить",
-                        primary: true,
-                        onClick: async () => {
-                            if (controller.model && controller.model.root) {
-                                await controller.model.root.load();
-                            } else {
-                                window.location.reload();
-                            }
-                        },
-                    },
-                    {
-                        name: "Сохранить мои изменения",
-                        onClick: async () => {
-                            if (controller.model && controller.model.root && controller.model.root.save) {
-                                await controller.model.root.save();
-                            }
-                        },
-                    },
-                ],
-            }
-        );
-    } catch (error) {
-        console.error("Error showing form conflict notification:", error);
-    }
-}
-
-async function handleKanbanViewRealtimeUpdate(controller, message, env, notification, editingState) {
-    console.log("Handling kanban view realtime update");
-    // Для kanban представления пока используем простую перезагрузку
-    await fallbackReload(controller, message, notification);
-}
-
-async function fallbackReload(controller, message, notification) {
-    try {
-        console.log("Performing fallback reload");
-        
-        if (controller && controller.model && controller.model.load) {
-            await controller.model.load();
-            showNotification(notification, message, "Данные обновлены");
-        } else {
-            // Последний resort - перезагрузка страницы (не рекомендуется)
-            console.warn("Full page reload required");
-            showFallbackNotification(notification, message);
-        }
-    } catch (error) {
-        console.error("Error in fallback reload:", error);
-        showFallbackNotification(notification, message);
-    }
-}
-
-function showFallbackNotification(notification, message) {
-    try {
-        notification.add(
-            `Данные были изменены пользователем ${message.user_name}`,
-            {
-                title: "Обновление данных",
-                type: "info",
-                buttons: [
-                    {
-                        name: "Обновить страницу",
-                        primary: true,
-                        onClick: () => window.location.reload(),
-                    },
-                ],
-            }
-        );
-    } catch (error) {
-        console.error("Error showing fallback notification:", error);
-    }
-}
-
-function showNotification(notification, message, defaultText) {
-    try {
-        const text = defaultText || `Данные обновлены пользователем ${message.user_name}`;
-        notification.add(text, {
-            title: "Real-time обновление",
-            type: "info",
+        bus_service.subscribe(customChannel, (payload) => {
+            console.log("🎯 CUSTOM CHANNEL MESSAGE:", payload);
+            handleRealtimeMessage(payload, env);
         });
+        
+        // Канал 2: Личный канал пользователя
+        const userChannel = `res.users,${currentUserId}`;
+        console.log(`📡 Subscribing to user channel: ${userChannel}`);
+        
+        bus_service.subscribe(userChannel, (payload) => {
+            console.log("🎯 USER CHANNEL MESSAGE:", payload);
+            handleRealtimeMessage(payload, env);
+        });
+        
+        // Канал 3: Общий канал для всех amanat обновлений
+        const generalChannel = "amanat_general_updates";
+        console.log(`📡 Subscribing to general channel: ${generalChannel}`);
+        
+        bus_service.subscribe(generalChannel, (payload) => {
+            console.log("🎯 GENERAL CHANNEL MESSAGE:", payload);
+            handleRealtimeMessage(payload, env);
+        });
+        
+        // Запускаем bus сервис (важно для Odoo 18!)
+        bus_service.start();
+        console.log("✅ Bus service started");
+        
     } catch (error) {
-        console.error("Error showing notification:", error);
+        console.error("❌ Error setting up bus subscriptions:", error);
     }
+    
+    // Обработчик real-time сообщений
+    function handleRealtimeMessage(payload, env) {
+        console.log("🔥 HANDLING REAL-TIME MESSAGE:", payload);
+        console.log("🔥 Message type:", typeof payload);
+        console.log("🔥 Message keys:", payload ? Object.keys(payload) : 'null');
+        
+        try {
+            // Извлекаем данные из разных возможных структур
+            let messageData = payload;
+            
+            if (payload.data) {
+                messageData = payload.data;
+                console.log("🔥 Using payload.data:", messageData);
+            } else if (payload.type === 'amanat_realtime_update') {
+                messageData = payload;
+                console.log("🔥 Direct amanat_realtime_update:", messageData);
+            }
+            
+            // Проверяем, что это наше сообщение
+            if (messageData && (
+                messageData.type === 'amanat_realtime_update' ||
+                (messageData.model && messageData.model.includes('amanat')) ||
+                (messageData.type && ['create', 'update', 'delete'].includes(messageData.type))
+            )) {
+                console.log("✅ Valid amanat real-time message detected");
+                
+                // Показываем уведомление
+                showNotification(messageData, notification);
+                
+                // Обновляем интерфейс
+                updateInterface(messageData, env);
+                
+            } else {
+                console.log("🔍 Not an amanat real-time message:", messageData);
+            }
+            
+        } catch (error) {
+            console.error("❌ Error handling real-time message:", error);
+        }
+    }
+    
+    // Показ уведомления пользователю
+    function showNotification(messageData, notification) {
+        try {
+            const actionText = {
+                'create': 'создал',
+                'update': 'обновил',
+                'delete': 'удалил'
+            }[messageData.type] || 'изменил';
+            
+            const userName = messageData.user_name || 'Пользователь';
+            const recordsCount = messageData.records ? messageData.records.length : 1;
+            const modelName = messageData.model_display_name || messageData.model || 'объект';
+            
+            const message = `${userName} ${actionText} ${recordsCount} записей в ${modelName}`;
+            
+            if (notification && notification.add) {
+                notification.add(message, {
+                    title: "🔄 Real-time обновление",
+                    type: "info",
+                    sticky: false
+                });
+            }
+            
+            console.log("📢 Notification shown:", message);
+            
+        } catch (error) {
+            console.error("❌ Error showing notification:", error);
+        }
+    }
+    
+    // Обновление интерфейса
+    function updateInterface(messageData, env) {
+        try {
+            console.log("🔄 Updating interface for:", messageData);
+            
+            // Получаем текущее действие/контроллер
+            const currentAction = env.services.action?.currentController?.action;
+            const currentModel = currentAction?.res_model;
+            
+            console.log("🔄 Current model:", currentModel);
+            console.log("🔄 Message model:", messageData.model);
+            
+            // Проверяем, относится ли обновление к текущей модели
+            if (currentModel && messageData.model && currentModel === messageData.model) {
+                console.log("✅ Models match, updating interface");
+                
+                // Определяем тип представления
+                const viewType = currentAction?.view_mode?.split(',')[0] || 'unknown';
+                console.log("🔄 Current view type:", viewType);
+                
+                // Обновляем в зависимости от типа представления
+                switch (viewType) {
+                    case 'list':
+                        updateListView(messageData);
+                        break;
+                    case 'form':
+                        updateFormView(messageData);
+                        break;
+                    case 'kanban':
+                        updateKanbanView(messageData);
+                        break;
+                    default:
+                        console.log(`🔄 View type ${viewType} not supported for updates`);
+                }
+            } else {
+                console.log("🔄 Models don't match, skipping interface update");
+            }
+            
+        } catch (error) {
+            console.error("❌ Error updating interface:", error);
+        }
+    }
+    
+    // Обновление List View
+    function updateListView(messageData) {
+        console.log("📋 Updating list view");
+        
+        try {
+            const listContainer = document.querySelector('.o_list_view table tbody');
+            if (!listContainer) {
+                console.log("📋 List container not found");
+                return;
+            }
+            
+            // Добавляем CSS анимацию для обновленных строк
+            if (!document.getElementById('amanat-realtime-styles')) {
+                const style = document.createElement('style');
+                style.id = 'amanat-realtime-styles';
+                style.textContent = `
+                    .realtime-updated {
+                        background-color: #d4edda !important;
+                        transition: background-color 0.3s ease;
+                    }
+                    .field-updated {
+                        background-color: #fff3cd !important;
+                        transition: background-color 0.3s ease;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Обновляем записи
+            if (messageData.records) {
+                messageData.records.forEach(record => {
+                    updateListRecord(listContainer, record, messageData);
+                });
+            }
+            
+        } catch (error) {
+            console.error("❌ Error updating list view:", error);
+        }
+    }
+    
+    // Обновление записи в списке
+    function updateListRecord(listContainer, record, messageData) {
+        try {
+            const recordRow = listContainer.querySelector(`tr[data-id="${record.id}"]`);
+            
+            if (recordRow) {
+                console.log(`📋 Updating existing record ${record.id}`);
+                
+                // Обновляем ячейки
+                const cells = recordRow.querySelectorAll('td[name]');
+                cells.forEach(cell => {
+                    const fieldName = cell.getAttribute('name');
+                    if (fieldName && record.hasOwnProperty(fieldName)) {
+                        const newValue = record[fieldName];
+                        const oldValue = cell.textContent.trim();
+                        
+                        if (newValue != oldValue) {
+                            cell.textContent = newValue;
+                            cell.classList.add('field-updated');
+                            
+                            setTimeout(() => {
+                                cell.classList.remove('field-updated');
+                            }, 3000);
+                        }
+                    }
+                });
+                
+                // Подсвечиваем всю строку
+                recordRow.classList.add('realtime-updated');
+                setTimeout(() => {
+                    recordRow.classList.remove('realtime-updated');
+                }, 3000);
+                
+            } else {
+                console.log(`📋 Record ${record.id} not found in current view`);
+            }
+            
+        } catch (error) {
+            console.error("❌ Error updating list record:", error);
+        }
+    }
+    
+    // Обновление Form View
+    function updateFormView(messageData) {
+        console.log("📝 Updating form view");
+        // TODO: Реализовать обновление формы
+    }
+    
+    // Обновление Kanban View
+    function updateKanbanView(messageData) {
+        console.log("📊 Updating kanban view");
+        // TODO: Реализовать обновление kanban
+    }
+    
+    console.log("✅ Amanat Real-Time Service started successfully");
+    
+    // Возвращаем публичные методы
+    return {
+        getCurrentUserId: () => currentUserId,
+        sendTestMessage: () => {
+            console.log("🧪 Sending test message...");
+            // Можно добавить тестовую отправку
+        }
+    };
 }
 
 // Регистрируем сервисы
-// registry.category("services").add("editing_state", editingStateService);
-// registry.category("services").add("amanat_realtime", amanatRealTimeService);
+registry.category("services").add("editing_state", editingStateService);
+registry.category("services").add("amanat_realtime", amanatRealTimeService);
+
+// Глобальные функции для тестирования
+window.testAmanatRealtime = {
+    // Тест стандартного уведомления
+    testSimpleNotification: async () => {
+        console.log("🧪 Testing simple notification...");
+        try {
+            const result = await fetch("/amanat/test_realtime_simple", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "call",
+                    params: {},
+                    id: Math.floor(Math.random() * 1000000)
+                })
+            });
+            const data = await result.json();
+            console.log("🧪 Simple notification result:", data);
+        } catch (error) {
+            console.error("🧪 Simple notification error:", error);
+        }
+    },
+    
+    // Тест кастомного канала
+    testCustomChannel: async () => {
+        console.log("🧪 Testing custom channel...");
+        try {
+            const result = await fetch("/amanat/test_custom_channel", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "call",
+                    params: {},
+                    id: Math.floor(Math.random() * 1000000)
+                })
+            });
+            const data = await result.json();
+            console.log("🧪 Custom channel result:", data);
+        } catch (error) {
+            console.error("🧪 Custom channel error:", error);
+        }
+    },
+    
+    // Тест всех методов
+    testAllMethods: async () => {
+        console.log("🧪 Testing all methods...");
+        try {
+            const result = await fetch("/amanat/test_all_methods", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "call",
+                    params: {},
+                    id: Math.floor(Math.random() * 1000000)
+                })
+            });
+            const data = await result.json();
+            console.log("🧪 All methods result:", data);
+        } catch (error) {
+            console.error("🧪 All methods error:", error);
+        }
+    }
+};
+
+console.log("🧪 Test functions available at window.testAmanatRealtime");
+console.log("🧪 - window.testAmanatRealtime.testSimpleNotification()");
+console.log("🧪 - window.testAmanatRealtime.testCustomChannel()"); 
+console.log("🧪 - window.testAmanatRealtime.testAllMethods()");

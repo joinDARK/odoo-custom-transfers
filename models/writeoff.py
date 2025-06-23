@@ -139,6 +139,10 @@ class WriteOff(models.Model):
         run_automation = vals.get('writeoff_investment', False)
         rec = super().create(vals)
 
+        # Автоматически обновляем состояние контейнера денег
+        if rec.money_id:
+            rec.money_id.update_state_based_on_remainder()
+
         if run_automation:
             try:
                 rec.process_write_off()
@@ -155,6 +159,11 @@ class WriteOff(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
+
+        # Автоматически обновляем состояние контейнера денег
+        for rec in self:
+            if rec.money_id:
+                rec.money_id.update_state_based_on_remainder()
 
         run_automation = vals.get('writeoff_investment', False)
 
@@ -516,3 +525,16 @@ class WriteOff(models.Model):
             _logger.info("Инвестиция %s: начислено за %s дней", inv.id, days_total)
 
         _logger.info("=== Завершено ежедневное начисление процентов и роялти ===")
+
+    def unlink(self):
+        # Сохраняем ссылки на контейнеры денег перед удалением
+        money_containers = self.mapped('money_id')
+        
+        result = super().unlink()
+        
+        # Автоматически обновляем состояние контейнеров денег
+        for container in money_containers:
+            if container.exists():
+                container.update_state_based_on_remainder()
+        
+        return result

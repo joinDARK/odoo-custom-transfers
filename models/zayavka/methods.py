@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-from odoo import models, fields, api
-from odoo.exceptions import UserError
+from odoo import models, api
 
 _logger = logging.getLogger(__name__)
 
@@ -18,6 +17,10 @@ class ZayavkaMethods(models.Model):
         if 'extract_delivery_ids' in vals:
             for rec in self:
                 old_values[rec.id] = rec.extract_delivery_ids.ids.copy()
+        
+        old_payment_rule = self.payment_order_rule_id
+        old_expense_rule = self.expense_rule_id
+        old_money_cost_rule = self.money_cost_rule_id
 
         res = super().write(vals)  # <-- Исправлено!
 
@@ -38,6 +41,14 @@ class ZayavkaMethods(models.Model):
                 else:
                     _logger.info(f"Изменений не обнаружено для заявки {rec.id}")
 
+        if 'deal_closed_date' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'сделка закрыта' для заявки {rec.id}")
+                _logger.info(f"Старое Правило платежки: {old_payment_rule.name}")
+                _logger.info(f"Старое Правило расхода: {old_expense_rule.name}")
+                _logger.info(f"Старое Правило себестоимости: {old_money_cost_rule.name}")
+                rec.apply_rules_by_deal_closed_date()
+
         if trigger:
             for rec in self:
                 rec.run_all_fin_entry_automations()
@@ -56,22 +67,22 @@ class ZayavkaMethods(models.Model):
                 rec.run_for_khalida_automations()
 
         # Триггер для автоматизации привязки прайс-листов при изменении даты фиксации курса
-        # if 'rate_fixation_date' in vals:
-        #     for rec in self:
-        #         _logger.info(f"Изменена дата фиксации курса для заявки {rec.id}, запускаем автоматизацию привязки прайс-листов")
-        #         rec.run_price_list_automation()
+        if 'rate_fixation_date' in vals:
+            for rec in self:
+                _logger.info(f"Изменена дата фиксации курса для заявки {rec.id}, запускаем автоматизацию привязки прайс-листов")
+                rec.run_price_list_automation()
 
         # ... (остальная логика по датам)
-        # if 'date_received_on_pc_auto' in vals:
-        #     for rec in self:
-        #         # Получаем все даты из extract_delivery_ids
-        #         dates = rec.extract_delivery_ids.mapped('date')
-        #         dates = [d for d in dates if d]
-        #         if dates:
-        #             min_date = min(dates)
-        #             max_date = max(dates)
-        #             rec.date_received_on_pc_payment = min_date
-        #             rec.date_agent_on_pc = max_date
+        if 'date_received_on_pc_auto' in vals:
+            for rec in self:
+                # Получаем все даты из extract_delivery_ids
+                dates = rec.extract_delivery_ids.mapped('date')
+                dates = [d for d in dates if d]
+                if dates:
+                    min_date = min(dates)
+                    max_date = max(dates)
+                    rec.date_received_on_pc_payment = min_date
+                    rec.date_agent_on_pc = max_date
         return res
 
     @api.model
@@ -101,21 +112,21 @@ class ZayavkaMethods(models.Model):
             res.run_for_khalida_automations()
 
         # Триггер для автоматизации привязки прайс-листов при создании с датой фиксации курса
-        # if vals.get('rate_fixation_date'):
-        #     _logger.info(f"Создана заявка {res.id} с датой фиксации курса, запускаем автоматизацию привязки прайс-листов")
-        #     res.run_price_list_automation()
+        if vals.get('rate_fixation_date'):
+            _logger.info(f"Создана заявка {res.id} с датой фиксации курса, запускаем автоматизацию привязки прайс-листов")
+            res.run_price_list_automation()
 
         # ... (остальная логика по period_id и т.п.)
-        # if not vals.get('period_id'):
-        #     Period = self.env['amanat.period']
-        #     period = Period.search([('id', '=', 1)], limit=1)
-        #     if not period:
-        #         period = Period.create({
-        #             'name': '1',
-        #             'date_1': '2025-03-01',
-        #             'date_2': '2025-03-21',
-        #         })
-        #     res.period_id = period.id
+        if not vals.get('period_id'):
+            Period = self.env['amanat.period']
+            period = Period.search([('id', '=', 1)], limit=1)
+            if not period:
+                period = Period.create({
+                    'name': '1',
+                    'date_1': '2025-03-01',
+                    'date_2': '2025-03-21',
+                })
+            res.period_id = period.id
         return res
 
     def _clear_related_documents(self):
@@ -161,7 +172,7 @@ class ZayavkaMethods(models.Model):
     def _create_money(self, vals):
         money = self.env['amanat.money'].create(vals)
         _logger.info(
-            f"Создан контейнер (money): holder={vals.get('holder_id')}, amount={vals.get('amount')}, currency={vals.get('currency')}, состояние={vals.get('state')}, ордер={vals.get('order_id')}"
+            f"Создан контейнер (money): partner={vals.get('partner_id')}, amount={vals.get('amount')}, currency={vals.get('currency')}, состояние={vals.get('state')}, ордер={vals.get('order_id')}"
         )
         return money
 
