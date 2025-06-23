@@ -223,8 +223,8 @@ class Extract_delivery(models.Model, AmanatBaseModel):
 
         if vals.get('assign_bulinan'):
             for rec in self.filtered('assign_bulinan'):
-                rec._run_assign_automation()
-                rec._run_assign_automation_2()
+                rec.env['amanat.extract_delivery']._run_matching_automation()
+                rec.env['amanat.extract_delivery']._run_stellar_tdk_logic()
                 rec.assign_bulinan = False
         return res
 
@@ -244,8 +244,8 @@ class Extract_delivery(models.Model, AmanatBaseModel):
             res.create_transfer()
 
         if vals.get('assign_bulinan'):
-            res._run_assign_automation()
-            res._run_assign_automation_2()
+            res.env['amanat.extract_delivery']._run_matching_automation()
+            res.env['amanat.extract_delivery']._run_stellar_tdk_logic()
             res.assign_bulinan = False
 
         return res
@@ -296,6 +296,7 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 _logger.error(f"Ошибка при создании Transfer из Extract_delivery ID={record.id}: {str(e)}")
                 continue
         
+        _logger.info(f"Сопоставление завершено. Обработано заявок: {len(zayavka_records)}, связано выписок: {len(used_extract_ids)}")
         return True
     
     def action_fragment_statement(self):
@@ -445,283 +446,154 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         _logger.info(f"Сопоставление завершено. Обработано заявок: {len(zayavka_records)}, связано выписок: {len(used_extract_ids)}")
         return True
     
-    def _run_assign_automation(self):
+    @api.model
+    def _run_matching_automation(self):
         """
-        Автоматизация сопоставления выписок с заявками.
-        Перенесена логика из JavaScript скрипта.
+        Основная логика сопоставления выписок с заявками,
+        основанная на актуальном скрипте Airtable.
         """
+        _logger.info("Запуск автоматического сопоставления Выписок и Заявок.")
         TOLERANCE = 1.0
+        fields_to_check = [
+            'application_amount_rub_contract',
+            'contract_reward',
+            'total_fact'
+        ]
 
-        _logger.info(f"Запущена первая версия (_run_assign_automation) автоматизации сопоставления выписок с заявками")
+        # 1. Загружаем все необходимые записи один раз для производительности
+        all_zayavki = self.env['amanat.zayavka'].search([('taken_in_work_date', '!=', False)])
         
-        # Поля для проверки сумм в заявках
-        fields_to_check = [
-            'application_amount_rub_contract',  # Заявка по курсу в рублях по договору
-            'contract_reward',                  # Вознаграждение по договору
-            'total_fact'                       # Итого факт
-        ]
-        
-        # Получаем все заявки с заполненной датой "Взята в работу"
-        zayavka_records = self.env['amanat.zayavka'].search([
-            ('taken_in_work_date', '!=', False)
+        # Получаем все выписки, которые еще не связаны ни с какой сделкой или заявкой
+        # Это основной набор кандидатов для сопоставления
+        candidate_extracts = self.env['amanat.extract_delivery'].search([
+            ('deal', '=', False),
+            ('applications', '=', False)
         ])
         
+        # Кэшируем плательщиков для контрагентов, чтобы не запрашивать их в цикле
+        all_contragents = all_zayavki.mapped('agent_id') + all_zayavki.mapped('client_id')
+        contragent_payers_map = {
+            c.id: c.payer_ids.ids for c in all_contragents.filtered(lambda c: c.payer_ids)
+        }
+
+        # 2. Основная логика сопоставления
         used_extract_ids = set()
         updates = []
         
-        for zayavka in zayavka_records:
-            # Собираем кандидатов плательщиков через агента и клиента
-            candidate_payers = []
-            
-            if zayavka.agent_id and zayavka.agent_id.payer_ids:
-                candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
-                
-            if zayavka.client_id and zayavka.client_id.payer_ids:
-                candidate_payers.extend(zayavka.client_id.payer_ids.ids)
-            
-            if not candidate_payers:
+        for zayavka in all_zayavki:
+            # Собираем ID плательщиков-кандидатов для текущей заявки
+            candidate_payer_ids = set()
+            if zayavka.agent_id and zayavka.agent_id.id in contragent_payers_map:
+                candidate_payer_ids.update(contragent_payers_map[zayavka.agent_id.id])
+            if zayavka.client_id and zayavka.client_id.id in contragent_payers_map:
+                candidate_payer_ids.update(contragent_payers_map[zayavka.client_id.id])
+
+            if not candidate_payer_ids:
                 continue
                 
-            # Ищем подходящие выписки
-            candidate_extracts = []
-            
-            # Получаем выписки без связанных заявок и не использованные ранее
-            extract_records = self.env['amanat.extract_delivery'].search([
-                ('applications', '=', False),  # Нет связанных заявок
-                ('id', 'not in', list(used_extract_ids))
-            ])
-            
-            for extract in extract_records:
-                # Проверяем плательщиков и получателей
-                extract_payers = []
-                if extract.payer:
-                    extract_payers.append(extract.payer.id)
-                if extract.recipient:
-                    extract_payers.append(extract.recipient.id)
-                
-                if not extract_payers:
+            # Фильтруем выписки-кандидаты
+            best_match = None
+            matching_extracts = []
+
+            for extract in candidate_extracts:
+                if extract.id in used_extract_ids:
                     continue
                     
-                # Проверяем, что все плательщики/получатели выписки есть среди кандидатов
-                all_matched = all(payer_id in candidate_payers for payer_id in extract_payers)
-                
-                if not all_matched:
+                # Проверка плательщиков: все плательщики и получатели выписки должны быть среди кандидатов
+                extract_party_ids = {p.id for p in (extract.payer, extract.recipient) if p}
+                if not extract_party_ids or not extract_party_ids.issubset(candidate_payer_ids):
                     continue
                     
-                # Проверяем сумму с допуском
-                if extract.amount is None:
-                    continue
-                    
+                # Проверка суммы
                 sum_matches = False
                 for field_name in fields_to_check:
                     zayavka_sum = getattr(zayavka, field_name, None)
-                    if isinstance(zayavka_sum, (int, float)) and zayavka_sum is not None:
-                        if abs(zayavka_sum - extract.amount) <= TOLERANCE:
+                    if isinstance(zayavka_sum, (int, float)) and abs(zayavka_sum - (extract.amount or 0.0)) <= TOLERANCE:
                             sum_matches = True
                             break
                             
                 if not sum_matches:
                     continue
                     
-                candidate_extracts.append(extract)
-            
-            # Если найдены подходящие выписки, выбираем лучшую (самую раннюю по дате)
-            if candidate_extracts:
-                # Сортируем по дате (самая ранняя первая)
-                candidate_extracts.sort(key=lambda x: x.date or fields.Date.today())
-                best_extract = candidate_extracts[0]
-                
-                # Проверяем, что выписка еще не связана с этой заявкой
-                if best_extract.id not in zayavka.extract_delivery_ids.ids:
-                    # Добавляем в список обновлений
-                    updates.append({
-                        'extract': best_extract,
-                        'zayavka': zayavka
-                    })
-                    
-                    used_extract_ids.add(best_extract.id)
-                else:
-                    _logger.info(f"Выписка ID={best_extract.id} уже связана с заявкой ID={zayavka.id}, пропускаем")
-                
-                # Обрабатываем пакетами по 50 записей
-                if len(updates) >= 50:
-                    self._process_extract_updates(updates)
-                    updates = []
+                matching_extracts.append(extract)
+
+            # Если есть совпадения, выбираем лучшее (самое раннее по дате)
+            if matching_extracts:
+                matching_extracts.sort(key=lambda r: r.date or fields.Date.today())
+                best_match = matching_extracts[0]
+
+                updates.append({
+                    'extract_id': best_match.id,
+                    'zayavka_id': zayavka.id,
+                })
+                used_extract_ids.add(best_match.id)
         
-        # Обрабатываем оставшиеся обновления
+        # 3. Применяем обновления пакетами
         if updates:
-            self._process_extract_updates(updates)
+            _logger.info(f"Найдено {len(updates)} сопоставлений. Применение обновлений...")
+            for update in updates:
+                extract_to_update = self.env['amanat.extract_delivery'].browse(update['extract_id'])
+                zayavka_to_link = self.env['amanat.zayavka'].browse(update['zayavka_id'])
+                
+                extract_to_update.write({
+                    'applications': [(4, zayavka_to_link.id)],
+                    'direction_choice': 'applications'
+                })
+                # Odoo автоматически обработает симметричную M2M связь,
+                zayavka_to_link.write({
+                    'extract_delivery_ids': [(4, extract_to_update.id)]
+                })
         
-        _logger.info(f"Автоматизация завершена. Обработано заявок: {len(zayavka_records)}, связано выписок: {len(used_extract_ids)}")
+        _logger.info(f"Процесс сопоставления завершен. Найдено {len(updates)} сопоставлений.")
         return True
     
-    def _process_extract_updates(self, updates):
+    @api.model
+    def _run_stellar_tdk_logic(self):
         """
-        Обрабатывает пакет обновлений выписок
+        Processes records for specific payers ("СТЕЛЛАР", "ТДК", "ИНДОТРЕЙД РФ"),
+        assigns them a default wallet and contragents, and flags them for transfer creation.
         """
-        for update in updates:
-            extract = update['extract']
-            zayavka = update['zayavka']
-            
-            # Проверяем, что выписка еще не связана с этой заявкой
-            if extract.id in zayavka.extract_delivery_ids.ids:
-                _logger.info(f"Выписка ID={extract.id} уже связана с заявкой ID={zayavka.id}, пропускаем")
-                continue
-            
-            # Обновляем выписку
-            extract.write({
-                'direction_choice': 'applications'   # Устанавливаем направление
-            })
-            
-            # Обновляем заявку - добавляем обратную связь
-            old_extract_ids = zayavka.extract_delivery_ids.ids.copy()
-            _logger.info(f"До обновления заявки {zayavka.id}: extract_delivery_ids = {old_extract_ids}")
-            
-            zayavka.write({
-                'extract_delivery_ids': [(4, extract.id)]  # Добавляем связь с выпиской
-            })
-            
-            new_extract_ids = zayavka.extract_delivery_ids.ids.copy()
-            _logger.info(f"После обновления заявки {zayavka.id}: extract_delivery_ids = {new_extract_ids}")
-            _logger.info(f"Связана выписка ID={extract.id} с заявкой ID={zayavka.id}")
-    
-    def _run_assign_automation_2(self):
-        """
-        Вторая версия автоматизации сопоставления выписок с заявками.
-        Перенесена логика из второго JavaScript скрипта.
-        """
-        TOLERANCE = 1.0
-        _logger.info(f"Запущена вторая версия (_run_assign_automation_2) автоматизации сопоставления выписок с заявками")
+        _logger.info("Running Stellar/TDK/Indotrade logic...")
         
-        # Поля для проверки сумм в заявках
-        fields_to_check = [
-            'application_amount_rub_contract',  # Заявка по курсу в рублях по договору
-            'contract_reward',                  # Вознаграждение по договору
-            'total_fact'                       # Итого факт
-        ]
-        
-        # Получаем все заявки с заполненной датой "Взята в работу"
-        zayavka_records = self.env['amanat.zayavka'].search([
-            ('taken_in_work_date', '!=', False)
-        ])
-        
-        used_extract_ids = set()
-        updates = []
-        
-        for zayavka in zayavka_records:
-            # Собираем кандидатов плательщиков через агента и клиента
-            candidate_payers = []
-            
-            if zayavka.agent_id and zayavka.agent_id.payer_ids:
-                candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
-                
-            if zayavka.client_id and zayavka.client_id.payer_ids:
-                candidate_payers.extend(zayavka.client_id.payer_ids.ids)
-            
-            if not candidate_payers:
+        allowed_names = {"СТЕЛЛАР", "ТДК", "ИНДОТРЕЙД РФ"}
+
+        # Find the "Неразмеченные" wallet
+        unassigned_wallet = self.env['amanat.wallet'].search([('name', '=', 'Неразмеченные')], limit=1)
+        if not unassigned_wallet:
+            _logger.warning("Wallet 'Неразмеченные' not found. Skipping Stellar/TDK logic.")
+            return
+
+        # Get records that have no deal assigned yet.
+        records_to_process = self.search([('deal', '=', False)])
+
+        for record in records_to_process:
+            # Payer and Recipient must exist
+            if not record.payer or not record.recipient:
                 continue
                 
-            # Ищем подходящие выписки
-            candidate_extracts = []
-            
-            # Получаем все выписки и не использованные ранее
-            extract_records = self.env['amanat.extract_delivery'].search([
-                ('id', 'not in', list(used_extract_ids))
-            ])
-            
-            for extract in extract_records:
-                # Проверяем, что нет "сделки" И нет связанных заявок
-                if extract.deal or extract.applications:
-                    continue
-                
-                # Проверяем плательщиков и получателей
-                extract_payers = []
-                if extract.payer:
-                    extract_payers.append(extract.payer.id)
-                if extract.recipient:
-                    extract_payers.append(extract.recipient.id)
-                
-                if not extract_payers:
-                    continue
-                    
-                # Проверяем, что все плательщики/получатели выписки есть среди кандидатов
-                all_matched = True
-                for payer_id in extract_payers:
-                    if payer_id not in candidate_payers:
-                        all_matched = False
-                        break
-                
-                if not all_matched:
-                    continue
-                    
-                # Проверяем сумму с допуском
-                if extract.amount is None:
-                    continue
-                    
-                sum_matches = False
-                for field_name in fields_to_check:
-                    zayavka_sum = getattr(zayavka, field_name, None)
-                    if isinstance(zayavka_sum, (int, float)) and zayavka_sum is not None:
-                        if abs(zayavka_sum - extract.amount) <= TOLERANCE:
-                            sum_matches = True
-                            break
-                            
-                if not sum_matches:
-                    continue
-                    
-                candidate_extracts.append(extract)
-            
-            # Если найдены подходящие выписки, выбираем лучшую (самую раннюю по дате)
-            if candidate_extracts:
-                # Сортируем по дате (самая ранняя первая)
-                candidate_extracts.sort(key=lambda x: x.date or fields.Date.today())
-                best_extract = candidate_extracts[0]
-                
-                # Проверяем, что выписка еще не связана с этой заявкой
-                if best_extract.id not in zayavka.extract_delivery_ids.ids:
-                    # Добавляем в список обновлений
-                    updates.append({
-                        'extract': best_extract,
-                        'zayavka': zayavka
-                    })
-                    
-                    used_extract_ids.add(best_extract.id)
-                else:
-                    _logger.info(f"Выписка ID={best_extract.id} уже связана с заявкой ID={zayavka.id}, пропускаем (v2)")
-                
-                # Обрабатываем пакетами по 50 записей
-                if len(updates) >= 50:
-                    self._process_extract_updates_2(updates)
-                    updates = []
+            payer_name = (record.payer.name or "").strip().upper()
+            recipient_name = (record.recipient.name or "").strip().upper()
+
+            if payer_name in allowed_names and recipient_name in allowed_names:
+                payer_contragent = record.payer.contragents_ids[0] if record.payer.contragents_ids else None
+                recipient_contragent = record.recipient.contragents_ids[0] if record.recipient.contragents_ids else None
+
+                update_vals = {
+                    'wallet1': unassigned_wallet.id,
+                    'wallet2': unassigned_wallet.id,
+                    'create_transfer_bulinan': True,
+                }
+                if payer_contragent:
+                    update_vals['counterparty1'] = payer_contragent.id
+                if recipient_contragent:
+                    update_vals['counterparty2'] = recipient_contragent.id
+
+                # Use a try-except block to handle potential errors during write
+                try:
+                    # No need for with_context, the write trigger for create_transfer is intentional
+                    record.write(update_vals)
+                    _logger.info(f"Updated extract_delivery record {record.id} for Stellar/TDK/Indotrade and triggered transfer creation.")
+                except Exception as e:
+                    _logger.error(f"Failed to update record {record.id} in _run_stellar_tdk_logic: {e}")
         
-        # Обрабатываем оставшиеся обновления
-        if updates:
-            self._process_extract_updates_2(updates)
-        
-        _logger.info(f"Автоматизация v2 завершена. Обработано заявок: {len(zayavka_records)}, связано выписок: {len(used_extract_ids)}")
-        return True
-    
-    def _process_extract_updates_2(self, updates):
-        """
-        Обрабатывает пакет обновлений выписок для второй версии автоматизации
-        """
-        for update in updates:
-            extract = update['extract']
-            zayavka = update['zayavka']
-            
-            # Проверяем, что выписка еще не связана с этой заявкой
-            if extract.id in zayavka.extract_delivery_ids.ids:
-                _logger.info(f"Выписка ID={extract.id} уже связана с заявкой ID={zayavka.id}, пропускаем (v2)")
-                continue
-            
-            # Обновляем выписку
-            extract.write({
-                'direction_choice': 'applications'   # Устанавливаем направление
-            })
-            
-            # Обновляем заявку - добавляем обратную связь
-            zayavka.write({
-                'extract_delivery_ids': [(4, extract.id)]  # Добавляем связь с выпиской
-            })
-            
-            _logger.info(f"Связана выписка ID={extract.id} с заявкой ID={zayavka.id} (v2)")
+        _logger.info("Stellar/TDK/Indotrade logic finished.")

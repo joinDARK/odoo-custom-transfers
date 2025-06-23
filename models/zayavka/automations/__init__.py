@@ -5,3 +5,4 @@ from . import get_payment_request
 from . import create_order_zayavka
 from . import for_khalida_automations
 from . import price_list_automation
+from . import rule_for_management

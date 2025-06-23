@@ -5,6 +5,8 @@ from .base_model import AmanatBaseModel
 from collections import defaultdict
 from odoo.exceptions import UserError
 import logging
+import pytz
+from datetime import datetime
 
 _logger = logging.getLogger(__name__)
 
@@ -885,6 +887,21 @@ class Investment(models.Model, AmanatBaseModel):
         Money = self.env['amanat.money']
         Writeoff = self.env['amanat.writeoff']
         today = fields.Date.context_today(self)
+        
+        # Получаем текущее время по Москве
+        moscow_tz = pytz.timezone('Europe/Moscow')
+        moscow_time = datetime.now(moscow_tz)
+        moscow_hour = moscow_time.hour
+        
+        # Определяем дату для начисления: если время до 20:00, то не начисляем на сегодня
+        accrual_date = today
+        if moscow_hour < 20:
+            # Если время до 20:00, начисляем до вчерашнего дня включительно
+            accrual_date = today - timedelta(days=1)
+        
+        _logger.info(f"🕐 Время по Москве: {moscow_time.strftime('%H:%M:%S')} (час: {moscow_hour})")
+        _logger.info(f"📅 Дата начисления: {accrual_date} (сегодня: {today})")
+        
         HOLIDAYS = {
             date(2024,1,1), date(2024,1,2), date(2024,1,3), date(2024,1,4), date(2024,1,5),
             date(2024,1,6), date(2024,1,7), date(2024,1,8), date(2024,2,23), date(2024,3,8),
@@ -896,7 +913,7 @@ class Investment(models.Model, AmanatBaseModel):
             if not raw_date or not inv.percent or not inv.orders:
                 continue
             first_date = raw_date + timedelta(days=1)
-            if today < first_date:
+            if accrual_date < first_date:
                 continue
 
             order = inv.orders[0]
@@ -921,7 +938,7 @@ class Investment(models.Model, AmanatBaseModel):
             period_days = self._get_period_days(inv.period, raw_date)
             day_cursor = first_date
 
-            while day_cursor <= today:
+            while day_cursor <= accrual_date:
                 # Приведение day_cursor к типу date для корректного сравнения с праздниками
                 day_cursor_date = day_cursor
                 if isinstance(day_cursor_date, fields.Date):
@@ -1003,7 +1020,7 @@ class Investment(models.Model, AmanatBaseModel):
             ids_to_del = Writeoff.search([
                 ('money_id', 'in', interest_send.ids + [interest_recv.id] + royalty_conts.ids),
                 ('date', '>=', first_date),
-                ('date', '<=', today),
+                ('date', '<=', accrual_date),
             ]).ids
             if ids_to_del:
                 Writeoff.browse(ids_to_del).unlink()
@@ -1011,6 +1028,8 @@ class Investment(models.Model, AmanatBaseModel):
             # Создаём новые списания пакетно
             for i in range(0, len(write_vals), 50):
                 Writeoff.create(write_vals[i:i+50])
+            
+            _logger.info(f"💰 Начисление для инвестиции {inv.name}: создано {len(write_vals)} списаний до {accrual_date}")
 
     def action_update_rollup_amount(self):
         """
@@ -1032,5 +1051,43 @@ class Investment(models.Model, AmanatBaseModel):
                 'message': _('Сумма роллап списания успешно пересчитана.'),
                 'type': 'success',
                 'sticky': False,
+            }
+        }
+
+    def test_moscow_time_logic(self):
+        """Тестовый метод для проверки логики времени по Москве"""
+        self.ensure_one()
+        
+        # Получаем текущее время по Москве
+        moscow_tz = pytz.timezone('Europe/Moscow')
+        moscow_time = datetime.now(moscow_tz)
+        moscow_hour = moscow_time.hour
+        
+        today = fields.Date.context_today(self)
+        
+        # Определяем дату для начисления
+        accrual_date = today
+        if moscow_hour < 20:
+            accrual_date = today - timedelta(days=1)
+        
+        result = {
+            'moscow_time': moscow_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'moscow_hour': moscow_hour,
+            'today': today.strftime('%Y-%m-%d'),
+            'accrual_date': accrual_date.strftime('%Y-%m-%d'),
+            'will_accrue_today': moscow_hour >= 20,
+            'message': f"Время по Москве: {moscow_time.strftime('%H:%M:%S')}, начисляем до: {accrual_date.strftime('%Y-%m-%d')}"
+        }
+        
+        _logger.info(f"🧪 Тест времени: {result}")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Тест времени по Москве'),
+                'message': result['message'],
+                'type': 'info',
+                'sticky': True,
             }
         }

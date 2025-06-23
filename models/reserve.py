@@ -72,7 +72,7 @@ class Reserve(models.Model, AmanatBaseModel):
     # Комментарий
     comment = fields.Text(
         related='order_ids.comment',
-        string='Комментарии',
+        string='Комментарии (from Ордеры)',
         readonly=True,
         store=True,
         tracking=True

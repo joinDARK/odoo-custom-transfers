@@ -162,3 +162,8 @@ access_amanat_expense_rule_admin,amanat.expense_rule,model_amanat_expense_rule,g
 access_amanat_expense_rule_senior_manager,amanat.expense_rule,model_amanat_expense_rule,group_amanat_senior_manager,1,1,1,1
 access_amanat_expense_rule_manager,amanat.expense_rule,model_amanat_expense_rule,group_amanat_manager,1,1,1,0
 access_amanat_expense_rule_inspector,amanat.expense_rule,model_amanat_expense_rule,group_amanat_inspector,1,0,0,0
+
+access_amanat_test_realtime_admin,amanat.test.realtime,model_amanat_test_realtime,group_amanat_admin,1,1,1,1
+access_amanat_test_realtime_senior_manager,amanat.test.realtime,model_amanat_test_realtime,group_amanat_senior_manager,1,1,1,1
+access_amanat_test_realtime_manager,amanat.test.realtime,model_amanat_test_realtime,group_amanat_manager,1,1,1,0
+access_amanat_test_realtime_inspector,amanat.test.realtime,model_amanat_test_realtime,group_amanat_inspector,1,0,0,0

@@ -69,63 +69,134 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <h1><field name="name" readonly="1"/></h1>
+                </header>
                 <sheet>
-                    <group>
-                        <field name="name"/>
-                        <field name="serial_number"/>
-                        <field name="date"/>
-                        <field name="amount"/>
-                        <field name="payer"/>
-                        <field name="payer_inn"/>
-                        <field name="recipient"/>
-                        <field name="recipient_inn"/>
-                        <field name="payment_purpose"/>
-                        <field name="document_id"/>
-                        <field name="bank_document"/>
-                        <field name="assign_bulinan"/>
-                        <field name="create_transfer_bulinan"/>
-                        <field name="dds_article"/>
-                        <field name="direction_choice"/>
-                        <field name="applications"/>
-                        <field name="currency_reserve"/>
-                        <field name="conversion"/>
-                        <field name="investment"/>
-                        <field name="gold_deal"/>
-                        <field name="counterparty1"/>
-                        <field name="counterparty2"/>
-                        <field name="wallet1"/>
-                        <field name="wallet2"/>
-                        <field name="percent" widget="percentage"/>
-                        <field name="fragment_statement"/>
-                        <field name="deal"/>
-                        <field name="remaining_statement"/>
-                        <field name="range_field"/>
-                        <field name="date_start"/>
-                        <field name="date_end"/>
-                        <field name="range_status"/>
-                    </group>
-                    <group string="Выписка дробь">
-                        <field name="statement_part_1"/>
-                        <field name="statement_part_2"/>
-                        <field name="statement_part_3"/>
-                        <field name="statement_part_4"/>
-                        <field name="statement_part_5"/>
-                        <field name="statement_part_6"/>
-                        <field name="statement_part_7"/>
-                        <field name="statement_part_8"/>
-                        <field name="statement_part_9"/>
-                        <field name="statement_part_10"/>
-                        <field name="statement_part_11"/>
-                        <field name="statement_part_12"/>
-                        <field name="statement_part_13"/>
-                        <field name="statement_part_14"/>
-                        <field name="statement_part_15"/>
-                        <field name="statement_part_16"/>
-                        <field name="statement_part_17"/>
-                        <field name="statement_part_18"/>
-                        <field name="statement_part_19"/>
-                        <field name="statement_part_20"/>
-                    </group>
+                    <notebook>
+                        <page string="Основные">
+                            <group string="Информация о выписке">
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="date"/>
+                                    </group>
+                                    <group>
+                                        <field name="amount"/>
+                                    </group>
+                                    <group>
+                                        <field name="document_id"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="payer"/>
+                                        <field name="recipient"/>
+                                    </group>
+                                    <group>
+                                        <field name="payer_inn"/>
+                                        <field name="recipient_inn"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <group>
+                                <field name="payment_purpose"/>
+                            </group>
+                            <group string="Действия">
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="assign_bulinan"/>
+                                    </group>
+                                    <group>
+                                        <field name="create_transfer_bulinan"/>
+                                    </group>
+                                    <group>
+                                        <field name="fragment_statement"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <group string="Заявка">
+                                <field name="deal"/>
+                                <field name="applications"/>
+                            </group>
+                            <group>
+                                <field name="serial_number"/>
+                                <field name="document_id"/>
+                                <field name="bank_document"/>
+                                <field name="dds_article"/>
+                                <field name="direction_choice"/>
+                                <field name="counterparty1"/>
+                                <field name="counterparty2"/>
+                                <field name="wallet1"/>
+                                <field name="wallet2"/>
+                                <field name="percent" widget="percentage"/>
+                                <field name="remaining_statement"/>
+                            </group>
+                        </page>
+                        <page string="Линки">
+                            <group>
+                                <field name="currency_reserve"/>
+                                <field name="conversion"/>
+                                <field name="investment"/>
+                                <field name="gold_deal"/>
+                            </group>
+                        </page>
+                        <page string="Выписка дробь">
+                            <group>
+                                <field name="statement_part_1"/>
+                                <field name="statement_part_2"/>
+                                <field name="statement_part_3"/>
+                                <field name="statement_part_4"/>
+                                <field name="statement_part_5"/>
+                                <field name="statement_part_6"/>
+                                <field name="statement_part_7"/>
+                                <field name="statement_part_8"/>
+                                <field name="statement_part_9"/>
+                                <field name="statement_part_10"/>
+                                <field name="statement_part_11"/>
+                                <field name="statement_part_12"/>
+                                <field name="statement_part_13"/>
+                                <field name="statement_part_14"/>
+                                <field name="statement_part_15"/>
+                                <field name="statement_part_16"/>
+                                <field name="statement_part_17"/>
+                                <field name="statement_part_18"/>
+                                <field name="statement_part_19"/>
+                                <field name="statement_part_20"/>
+                            </group>
+                        </page>
+                        <page string="Выписка разнос Джесс">
+                            <group>
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="date" readonly="1"/>
+                                        <field name="counterparty1"/>
+                                        <field name="counterparty2"/>
+                                        <field name="create_transfer_bulinan"/>
+                                    </group>
+                                    <group>
+                                        <field name="amount" readonly="1"/>
+                                        <field name="payer"/>
+                                        <field name="recipient"/>
+                                    </group>
+                                    <group>
+                                        <field name="percent" widget="percentage"/>
+                                        <field name="wallet1"/>
+                                        <field name="wallet2"/>
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+                        <page string="Диапазон">
+                            <group>
+                                <field name="range_field"/>
+                                <field name="date_start"/>
+                                <field name="date_end"/>
+                                <field name="range_status"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
                 <!-- Виджет трекинга -->
                 <chatter>

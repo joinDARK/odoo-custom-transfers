@@ -31,7 +31,7 @@ class Transfer(models.Model, AmanatBaseModel):
         default='rub',
         tracking=True
     )
-    amount = fields.Float(string='Сумма', tracking=True)
+    amount = fields.Float(string='Сумма', tracking=True, digits=(16, 3))
 
     sender_id = fields.Many2one(
         'amanat.contragent', 
@@ -64,11 +64,11 @@ class Transfer(models.Model, AmanatBaseModel):
 
     # Royalti
     royalti_Transfer = fields.Boolean(string='Провести роялти', default=False, tracking=True)
-    royalty_percent_1 = fields.Float(string="Процент роялти 1", tracking=True)
-    royalty_percent_2 = fields.Float(string="Процент роялти 2", tracking=True)
-    royalty_percent_3 = fields.Float(string="Процент роялти 3", tracking=True)
-    royalty_percent_4 = fields.Float(string="Процент роялти 4", tracking=True)
-    royalty_percent_5 = fields.Float(string="Процент роялти 5", tracking=True)
+    royalty_percent_1 = fields.Float(string="Процент роялти 1", digits=(16, 2), tracking=True)
+    royalty_percent_2 = fields.Float(string="Процент роялти 2", digits=(16, 2), tracking=True)
+    royalty_percent_3 = fields.Float(string="Процент роялти 3", digits=(16, 2), tracking=True)
+    royalty_percent_4 = fields.Float(string="Процент роялти 4", digits=(16, 2), tracking=True)
+    royalty_percent_5 = fields.Float(string="Процент роялти 5", digits=(16, 2), tracking=True)
 
     royalty_recipient_1 = fields.Many2one('amanat.contragent', string="Получатель роялти 1", tracking=True)
     royalty_recipient_2 = fields.Many2one('amanat.contragent', string="Получатель роялти 2", tracking=True)
@@ -77,7 +77,7 @@ class Transfer(models.Model, AmanatBaseModel):
     royalty_recipient_5 = fields.Many2one('amanat.contragent', string="Получатель роялти 5", tracking=True)
 
     # Delete
-    delete_Transfer = fields.Boolean(string='Удалить поле', default=False, tracking=True)
+    delete_Transfer = fields.Boolean(string='Удалить заявку', default=False, tracking=True)
 
     # Create
     create_order = fields.Boolean(string='Создать', default=False, tracking=True)
@@ -92,12 +92,14 @@ class Transfer(models.Model, AmanatBaseModel):
     intermediary_1_wallet_id = fields.Many2one('amanat.wallet', string='Кошелек посредника 1', tracking=True)
     intermediary_1_sum = fields.Float(
         string='Сумма 1 посредника',
+        digits=(16, 2),
         tracking=True,
         store=True,
         compute='_compute_intermediary_1_sum', 
     )
     intermediary_1_commission_percent = fields.Float(
         string='Процент комиссии по отправке Посредник 1', 
+        digits=(16, 2),
         tracking=True
     )
 
@@ -110,17 +112,19 @@ class Transfer(models.Model, AmanatBaseModel):
     )
     intermediary_2_wallet_id = fields.Many2one('amanat.wallet', string='Кошелек посредника 2', tracking=True)
     intermediary_2_commission_percent = fields.Float(
-        string='Процент комиссии по отправке Посредник 2', 
+        string='Процент комиссии по отправке Посредник 2',
+        digits=(16, 2),
         tracking=True
     )
     intermediary_2_sum = fields.Float(
         string='Сумма 2 посредника',
+        digits=(16, 2),
         tracking=True,
         store=True,
         compute='_compute_intermediary_2_sum',
     )
 
-    sending_commission_percent = fields.Float(string='Процент комиссии по отправке', tracking=True)
+    sending_commission_percent = fields.Float(string='% комиссия', tracking=True, digits=(16, 2))
 
     order_ids = fields.Many2many(
         'amanat.order',

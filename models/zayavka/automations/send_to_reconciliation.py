@@ -606,14 +606,36 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         
         _logger.info(f"Найден контрагент 'Фин рез' (ID={fin_rez_contragent.id})")
 
+        # Ищем ордера с контрагентом "Фин рез" для данной заявки
+        order_model = self.env['amanat.order']
+        fin_rez_orders = order_model.search([
+            ('zayavka_ids', 'in', record_id),
+            '|',
+            ('partner_1_id', '=', fin_rez_contragent.id),
+            ('partner_2_id', '=', fin_rez_contragent.id)
+        ])
+        
+        if not fin_rez_orders:
+            _logger.warning(f"Не найдены ордера с контрагентом 'Фин рез' для заявки {record_id}")
+        
+        _logger.info(f"Найдено {len(fin_rez_orders)} ордеров с контрагентом 'Фин рез'")
+        
+        # Берем первый найденный ордер
+        fin_rez_order = fin_rez_orders[0]
+        _logger.info(f"Используем ордер ID={fin_rez_order.id} для привязки контейнеров")
+
+        wallet_agentka = self.env['amanat.wallet'].search([('name', '=', 'Агентка')], limit=1)
+        if not wallet_agentka:
+            _logger.warning("Кошелёк 'Агентка' не найден.")
+
         # Создаём положительный контейнер для финреза
         positive_container = self._create_money({
             'date': deal_closed_date,
             'partner_id': fin_rez_contragent.id,
             'currency': currency,
             'state': 'positive',
-            'wallet_id': False,  # Кошелёк не указан в скрипте
-            'order_id': False,   # Ордер не создаётся
+            'wallet_id': wallet_agentka.id if wallet_agentka else False,  # Кошелёк не указан в скрипте
+            'order_id': fin_rez_order.id if fin_rez_order else False,  # Привязываем к найденному ордеру
             **self._get_currency_fields(currency, used_fin_rez_sum)
         })
         _logger.info(f"Создан положительный контейнер для 'Фин рез' (ID={positive_container.id}), сумма: {used_fin_rez_sum} {currency}")
@@ -632,8 +654,8 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
             'partner_id': cash_holder.id,
             'currency': currency,
             'state': 'debt',
-            'wallet_id': False,  # Кошелёк не указан в скрипте
-            'order_id': False,   # Ордер не создаётся
+            'wallet_id': wallet_agentka.id if wallet_agentka else False,  # Кошелёк не указан в скрипте
+            'order_id': fin_rez_order.id if fin_rez_order else False,  # Привязываем к тому же ордеру
             **self._get_currency_fields(currency, -used_fin_rez_sum)
         })
         _logger.info(f"Создан долговой контейнер для '{cash_source}' (Держатель: {cash_holder.name}, ID={debt_container.id}), сумма: -{used_fin_rez_sum} {currency}")

@@ -54,51 +54,54 @@
                     <h1><field name="name"/></h1>
                 </header>
                 <sheet>
-                    <!-- Ряд 1: Основаная информация о контрагенте -->
-                    <header>
-                        <h2>Основаная информация о контрагенте</h2>
-                    </header>
-                    <group>
-                        <field name="payer_ids"/>
-                        <field name="payer_inn"/>
-                        <field name="inn"/>
-                        <field name="date_start"/>
-                        <field name="date_end"/>
-
-                    </group>
-                    <!-- Ряд 2: Rollup-поля -->
-                    <header>
-                        <h2>Rollup-поля</h2>
-                    </header>
-                    <group>
-                        <field name="recon_Balance_0"/>
-                        <field name="recon_Balance_1"/>
-                        <field name="recon_Balance_2"/>
-                        <field name="recon_cash_rub"/>
-                        <field name="recon_usdt"/>
-                        <field name="recon_usd"/>
-                        <field name="recon_cash_usd"/>
-                        <field name="recon_euro"/>
-                        <field name="recon_cash_euro"/>
-                        <field name="recon_cny"/>
-                        <field name="recon_cash_cny"/>
-                        <field name="recon_aed"/>
-                        <field name="recon_cash_aed"/>
-                        <field name="recon_eq_dollar"/>
-                        <field name="recon_eq_compare_1"/>
-                        <field name="recon_eq_compare_2"/>
-                        <field name="cont_rub"/>
-                        <field name="cont_usd"/>
-                        <field name="cont_usdt"/>
-                        <field name="cont_aed"/>
-                        <field name="cont_euro"/>
-                        <field name="cont_cny"/>
-                        <field name="cash_cny"/>
-                        <field name="cash_aed"/>
-                        <field name="cash_rub"/>
-                        <field name="cash_euro"/>
-                        <field name="cash_usd"/>
-                    </group>
+                    <notebook>
+                        <page string="Основные">
+                            <header>
+                                <h2>Основаная информация о контрагенте</h2>
+                            </header>
+                            <group>
+                                <field name="payer_ids"/>
+                                <field name="payer_inn"/>
+                                <field name="inn"/>
+                                <field name="date_start"/>
+                                <field name="date_end"/>
+                            </group>
+                        </page>
+                        <page string="Rollup-поля">
+                            <header>
+                                <h2>Rollup-поля</h2>
+                            </header>
+                            <group>
+                                <field name="recon_Balance_0"/>
+                                <field name="recon_Balance_1"/>
+                                <field name="recon_Balance_2"/>
+                                <field name="recon_cash_rub"/>
+                                <field name="recon_usdt"/>
+                                <field name="recon_usd"/>
+                                <field name="recon_cash_usd"/>
+                                <field name="recon_euro"/>
+                                <field name="recon_cash_euro"/>
+                                <field name="recon_cny"/>
+                                <field name="recon_cash_cny"/>
+                                <field name="recon_aed"/>
+                                <field name="recon_cash_aed"/>
+                                <field name="recon_eq_dollar"/>
+                                <field name="recon_eq_compare_1"/>
+                                <field name="recon_eq_compare_2"/>
+                                <field name="cont_rub"/>
+                                <field name="cont_usd"/>
+                                <field name="cont_usdt"/>
+                                <field name="cont_aed"/>
+                                <field name="cont_euro"/>
+                                <field name="cont_cny"/>
+                                <field name="cash_cny"/>
+                                <field name="cash_aed"/>
+                                <field name="cash_rub"/>
+                                <field name="cash_euro"/>
+                                <field name="cash_usd"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
                 <!-- Виджет трекинга -->
                 <chatter>

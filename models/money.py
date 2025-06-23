@@ -1,6 +1,9 @@
 # models/money.py
 from odoo import models, fields, api
 from .base_model import AmanatBaseModel
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class Money(models.Model, AmanatBaseModel):
     _name = 'amanat.money'
@@ -34,7 +37,7 @@ class Money(models.Model, AmanatBaseModel):
     amount = fields.Float(string='Сумма', tracking=True)
     order_id = fields.Many2one(
         'amanat.order',
-        string='Заявка',
+        string='Ордер',
         tracking=True,
     )
     state = fields.Selection([
@@ -192,6 +195,95 @@ class Money(models.Model, AmanatBaseModel):
             rec.remains_aed_cashe = rec.sum_aed_cashe - writeoff_sum if rec.currency == 'aed_cashe' else 0
             rec.remains_thb = rec.sum_thb - writeoff_sum if rec.currency == 'thb' else 0
             rec.remains_thb_cashe = rec.sum_thb_cashe - writeoff_sum if rec.currency == 'thb_cashe' else 0
+
+        # Автоматически обновляем состояние после вычисления остатков
+        self._auto_update_state_after_compute()
+
+    def _auto_update_state_after_compute(self):
+        """
+        Автоматическое обновление состояния после вычисления остатков.
+        Вызывается из _compute_remains_fields.
+        """
+        for record in self:
+            remainder = record.remains
+            
+            # Проверяем, что остаток является числом
+            if not isinstance(remainder, (int, float)):
+                continue
+            
+            # Определяем новое состояние на основе остатка
+            if remainder > 0:
+                new_state = 'positive'
+            elif remainder < 0:
+                new_state = 'debt'
+            else:
+                # remainder === 0
+                new_state = 'empty'
+            
+            # Обновляем поле "Состояние" только если оно изменилось
+            if record.state != new_state:
+                # Используем sudo() для избежания рекурсии в логировании
+                record.sudo().write({'state': new_state})
+                _logger.info(f"Автоматически обновлено состояние контейнера ID={record.id}: {record.state} → {new_state} (остаток: {remainder})")
+
+    def update_state_based_on_remainder(self):
+        """
+        Обновляет состояние контейнера на основе остатка.
+        Используется в других моделях для принудительного обновления.
+        """
+        for record in self:
+            remainder = record.remains
+            
+            # Проверяем, что остаток является числом
+            if not isinstance(remainder, (int, float)):
+                continue
+            
+            # Определяем новое состояние на основе остатка
+            if remainder > 0:
+                new_state = 'positive'
+            elif remainder < 0:
+                new_state = 'debt'
+            else:
+                # remainder === 0
+                new_state = 'empty'
+            
+            # Обновляем поле "Состояние" только если оно изменилось
+            if record.state != new_state:
+                record.write({'state': new_state})
+                _logger.info(f"Обновлено состояние контейнера ID={record.id}: {record.state} → {new_state} (остаток: {remainder})")
+
+    @api.model
+    def auto_update_all_states(self):
+        """
+        Автоматическое обновление состояния для всех контейнеров денег.
+        Используется как cron job каждые 3 секунды.
+        """
+        all_money_records = self.search([])
+        _logger.info(f"Начинаем автоматическое обновление состояния для {len(all_money_records)} контейнеров")
+        
+        for record in all_money_records:
+            remainder = record.remains
+            
+            # Проверяем, что остаток является числом
+            if not isinstance(remainder, (int, float)):
+                _logger.error(f"Поле 'Остаток' не число или не заполнено: {remainder} для записи ID={record.id}")
+                continue
+            
+            # Определяем новое состояние на основе остатка
+            if remainder > 0:
+                new_state = 'positive'
+            elif remainder < 0:
+                new_state = 'debt'
+            else:
+                # remainder === 0
+                new_state = 'empty'
+            
+            # Обновляем поле "Состояние" только если оно изменилось
+            if record.state != new_state:
+                record.write({'state': new_state})
+                _logger.info(f"Состояние контейнера ID={record.id} обновлено на '{new_state}' (остаток: {remainder})")
+        
+        _logger.info("Автоматическое обновление состояния завершено")
 
     def _get_realtime_fields(self):
         """Поля для real-time обновлений в списке контейнеров денег"""
