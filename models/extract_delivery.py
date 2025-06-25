@@ -295,8 +295,7 @@ class Extract_delivery(models.Model, AmanatBaseModel):
             except Exception as e:
                 _logger.error(f"Ошибка при создании Transfer из Extract_delivery ID={record.id}: {str(e)}")
                 continue
-        
-        _logger.info(f"Сопоставление завершено. Обработано заявок: {len(zayavka_records)}, связано выписок: {len(used_extract_ids)}")
+
         return True
     
     def action_fragment_statement(self):

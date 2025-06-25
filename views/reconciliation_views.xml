@@ -72,6 +72,9 @@
                 <sheet>
                     <notebook>
                         <page string="Основные">
+                            <header>
+                                <h2>Основная информация</h2>
+                            </header>
                             <group>
                                 <div class="o-form-group">
                                     <group>
@@ -80,16 +83,17 @@
                                     </group>
                                     <group>
                                         <field name="wallet_id"/>
-                                        <field name="order_id" widget="many2many_tags"/>
+                                        <field name="currency"/>
                                     </group>
                                     <group>
-                                        <field name="currency"/>
                                         <field name="sum"/>
+                                        <field name="exchange"/>
                                     </group>
                                 </div>
                             </group>
+                            
                             <header>
-                                <h2>Участники</h2>
+                                <h2>Участники операции</h2>
                             </header>
                             <group>
                                 <div class="o-form-group-2">
@@ -104,65 +108,165 @@
                                 </div>
                             </group>
                         </page>
-                        <page string="Остальные поля">
-                            <group string="Суммы">
-                                <div class="o-form-group-2">
+
+                        <page string="Суммы по валютам">
+                            <header>
+                                <h2>Основные валюты</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group">
                                     <group>
                                         <field name="sum_rub"/>
                                         <field name="sum_usd"/>
                                         <field name="sum_usdt"/>
-                                        <field name="sum_cny"/>
+                                    </group>
+                                    <group>
                                         <field name="sum_euro"/>
+                                        <field name="sum_cny"/>
                                         <field name="sum_aed"/>
+                                    </group>
+                                    <group>
                                         <field name="sum_thb"/>
                                     </group>
+                                </div>
+                            </group>
+
+                            <header>
+                                <h2>Наличные валюты</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group">
                                     <group>
                                         <field name="sum_rub_cashe"/>
                                         <field name="sum_usd_cashe"/>
-                                        <field name="sum_cny_cashe"/>
+                                    </group>
+                                    <group>
                                         <field name="sum_euro_cashe"/>
+                                        <field name="sum_cny_cashe"/>
+                                    </group>
+                                    <group>
                                         <field name="sum_aed_cashe"/>
                                         <field name="sum_thb_cashe"/>
                                     </group>
                                 </div>
                             </group>
-                            <group string="Диапазон">
+                        </page>
+
+                        <page string="Ордера и расчеты">
+                            <header>
+                                <h2>Связанные ордера</h2>
+                            </header>
+                            <group>
+                                <field name="order_id" widget="many2many_tags"/>
+                                <field name="order_comment" nolabel="1"/>
+                            </group>
+
+                            <header>
+                                <h2>Финансовые данные из ордеров</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="rate"/>
+                                        <field name="award" widget="percentage" options="{'rounding': 2}"/>
+                                    </group>
+                                    <group>
+                                        <field name="rko"/>
+                                        <field name="rko_2"/>
+                                    </group>
+                                    <group>
+                                        <field name="our_percent" widget="percentage" options="{'rounding': 2}"/>
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+
+                        <page string="Диапазоны и курсы">
+                            <header>
+                                <h2>Диапазоны дат</h2>
+                            </header>
+                            <group>
                                 <field name="range"/>
-                                <field name="range_reconciliation_date_1"/>
-                                <field name="range_reconciliation_date_2"/>
-                                <field name="range_date_reconciliation"/>
-                                <field name="compare_balance_date_1"/>
-                                <field name="compare_balance_date_2"/>
-                                <field name="status_comparison_1"/>
-                                <field name="status_comparison_2"/>
-                                <field name="range_date_start"/>
-                                <field name="range_date_end"/>
-                                <field name="status_range"/>
+                                <field name="range_reconciliation_bool"/>
                             </group>
-                            <group string="Курсы">
+                            
+                            <group string="Диапазон сверки">
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="range_reconciliation_date_1"/>
+                                        <field name="range_reconciliation_date_2"/>
+                                    </group>
+                                    <group>
+                                        <field name="range_date_reconciliation"/>
+                                        <field name="range_date_start"/>
+                                    </group>
+                                    <group>
+                                        <field name="range_date_end"/>
+                                        <field name="status_range"/>
+                                    </group>
+                                </div>
+                            </group>
+
+                            <group string="Сравнение балансов">
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="compare_balance_date_1"/>
+                                        <field name="compare_balance_date_2"/>
+                                    </group>
+                                    <group>
+                                        <field name="status_comparison_1"/>
+                                        <field name="status_comparison_2"/>
+                                    </group>
+                                </div>
+                            </group>
+
+                            <header>
+                                <h2>Курсы валют</h2>
+                            </header>
+                            <group>
                                 <field name="rate_id"/>
-                                <field name="rate_euro"/>
-                                <field name="rate_cny"/>
-                                <field name="rate_rub"/>
-                                <field name="rate_aed"/>
-                                <field name="rate_thb"/>
-                                <field name="rate_usd"/>
-                                <field name="rate_usdt"/>
-                            </group>
-                            <group string="Ордеры">
-                                <field name="order_comment"/>
-                                <field name="award" widget="percentage" options="{'rounding': 2}"/>
-                                <field name="rko"/>
-                                <field name="our_percent" widget="percentage" options="{'rounding': 2}"/>
-                                <field name="rate"/>
                             </group>
                             <group>
-                                <field name="exchange"/>
-                                <field name="unload"/>
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="rate_rub"/>
+                                        <field name="rate_usd"/>
+                                        <field name="rate_usdt"/>
+                                    </group>
+                                    <group>
+                                        <field name="rate_euro"/>
+                                        <field name="rate_cny"/>
+                                        <field name="rate_aed"/>
+                                    </group>
+                                    <group>
+                                        <field name="rate_thb"/>
+                                    </group>
+                                </div>
+                            </group>
+
+                            <header>
+                                <h2>Эквивалент</h2>
+                            </header>
+                            <group>
                                 <field name="equivalent"/>
-                                <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                                <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                                <field name="range_reconciliation_bool"/>
+                            </group>
+                        </page>
+
+                        <page string="Действия">
+                            <header>
+                                <h2>Действия с записью</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="unload"/>
+                                        <field name="range_reconciliation_bool"/>
+                                    </group>
+                                    <group>
+                                        <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                        <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                    </group>
+                                </div>
                             </group>
                         </page>
                     </notebook>
@@ -184,7 +288,6 @@
                 <field name="date" string="Дата"/>
                 <field name="partner_id" string="Партнер"/>
                 <field name="currency" string="Валюта"/>
-
                 <field name="wallet_id" string="Кошелек"/>
                 <field name="order_id" string="Заявка"/>
                 <filter name="filter_create_true" string="Только Create=TRUE" domain="[('create_Reconciliation','=',True)]"/>
@@ -198,7 +301,6 @@
         <field name="name">Сверки</field>
         <field name="res_model">amanat.reconciliation</field>
         <field name="view_mode">list,form,search</field>
-        <field name="view_id" ref="reconciliation_list_view"/>
         <field name="target">main</field>
     </record>
 </odoo>

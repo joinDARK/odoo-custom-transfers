@@ -15,6 +15,12 @@
                     <!-- Блок «Основная информация» -->
                     <notebook>
                         <page string="Основные">
+                            <group>
+                                <field name="status"/>
+                                <field name="today_date"/>
+                                <field name="currency"/>
+                                <field name="amount"/>
+                            </group>
                             <header>
                                 <h2>Участники</h2>
                             </header>

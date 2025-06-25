@@ -104,6 +104,9 @@
               </group>
             </div>
           </group>
+          <group>
+            <field name="log_text" nolabel="1" placeholder="Здесь будет отображаться лог обработки..." readonly="1"/>
+          </group>
 
           <!-- 4 поля: Комментарий, Банк, Сумма по инвойсу, Разница -->
           <group>

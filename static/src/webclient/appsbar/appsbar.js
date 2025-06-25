@@ -32,29 +32,44 @@ export class AppsBar extends Component {
                 ],
             },
             {
+                name: "Справочники",
+                items: [
+                    { name: "Контрагенты", action: "amanat.contragent_action" },
+                    { name: "Плательщики", action: "amanat.payer_action" },
+                    { name: "Страны", action: "amanat.country_action" },
+                    { name: "Менеджеры", action: "amanat.manager_action" },
+                ],
+            },
+            {
+                name: "Золото",
+                items: [
+                    { name: "Золото сделка", action: "amanat.gold_deal_action" },
+                    { name: "Партнеры золото", action: "amanat.partner_gold_action" },
+                ],
+            },
+            {
+                name: "Выписки",
+                items: [
+                    { name: "Выписки", action: "amanat.action_amanat_extracts" },
+                    { name: "Выписка разнос", action: "amanat.extract_delivery_action" },
+                ],
+            },
+            {
                 name: "Остальное",
                 items: [
                     { name: "Диапазоны", action: "amanat.ranges_action" },
                     { name: "Курсы к доллару", action: "amanat.rates_action" },
                     { name: "Платежи", action: "amanat.payment_action" },
-                    { name: "Выписка разнос", action: "amanat.extract_delivery_action" },
-                    { name: "Выписки", action: "amanat.action_amanat_extracts" },
                     { name: "Период", action: "amanat.action_amanat_period" },
                     { name: "Сверка файлы", action: "amanat.action_amanat_sverka_files" },
                     { name: "Списания", action: "amanat.writeoff_action" },
-                    { name: "Контрагенты", action: "amanat.contragent_action" },
-                    { name: "Плательщики", action: "amanat.payer_action" },
                     { name: "Кошелек", action: "amanat.wallet_action" },
-                    { name: "Страны", action: "amanat.country_action" },
-                    { name: "Менеджеры", action: "amanat.manager_action" },
                     { name: "Заявки", action: "amanat.zayavka_action" },
                     { name: "Касса Иван", action: "amanat.kassa_ivan_action" },
                     { name: "Касса 2", action: "amanat.kassa_2_action" },
                     { name: "Касса 3", action: "amanat.kassa_3_action" },
                     { name: "Прайс лист партнеры", action: "amanat.price_list_partners_action" },
                     { name: "Прайс лист Плательщика", action: "amanat.price_list_payer_profit_action" },
-                    { name: "Золото сделка", action: "amanat.gold_deal_action" },
-                    { name: "Партнеры золото", action: "amanat.partner_gold_action" },
                 ],
             },
             {

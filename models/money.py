@@ -46,7 +46,7 @@ class Money(models.Model, AmanatBaseModel):
         ('empty',    'Пусто'),        # <-- новый вариант
     ], string='Состояние', default='positive')
 
-    sum = fields.Float(string='Сумма', tracking=True)
+    # sum = fields.Float(string='Сумма', tracking=True)
     sum_rub = fields.Float(string='Сумма RUB', tracking=True)
     sum_usd = fields.Float(string='Сумма USD', tracking=True)
     sum_usdt = fields.Float(string='Сумма USDT', tracking=True)
@@ -163,20 +163,29 @@ class Money(models.Model, AmanatBaseModel):
     )
 
     @api.depends(
-        'sum', 'sum_rub', 'sum_usd', 'sum_usdt', 'sum_cny', 'sum_euro', 'sum_aed',
+        'amount', 'sum_rub', 'sum_usd', 'sum_usdt', 'sum_cny', 'sum_euro', 'sum_aed',
         'sum_rub_cashe', 'sum_usd_cashe', 'sum_cny_cashe', 'sum_euro_cashe', 'sum_aed_cashe',
         'sum_thb', 'sum_thb_cashe', 'writeoff_ids.amount'
     )
     def _compute_remains_fields(self):
         for rec in self:
-            # Вычисляем сумму списаний (rollup)
-            writeoff_sum = sum(rec.writeoff_ids.mapped('amount'))
+            # Убедимся, что writeoff_ids — это Odoo recordset
+            writeoff_ids = rec.writeoff_ids
+            if not hasattr(writeoff_ids, 'mapped'):
+                ids = [w.id for w in writeoff_ids if hasattr(w, 'id') and isinstance(w.id, int)]
+                writeoff_ids = self.env['amanat.writeoff'].browse(ids)
+            writeoff_sum = sum(writeoff_ids.mapped('amount'))
             rec.sum_remains = writeoff_sum
+
+            # Если это процентный контейнер — amount всегда равен сумме по валюте контейнера
+            if rec.percent:
+                currency_field = f'sum_{rec.currency}'
+                rec.amount = getattr(rec, currency_field, 0.0)
 
             # Общий остаток:
             # Если "Сумма" заполнена (не равна нулю), то она считается основной, иначе суммируются конкретные валюты.
-            if rec.sum:
-                rec.remains = rec.sum - writeoff_sum
+            if rec.amount:
+                rec.remains = rec.amount - writeoff_sum
             else:
                 rec.remains = (rec.sum_rub + rec.sum_usd + rec.sum_usdt + rec.sum_cny + rec.sum_euro + rec.sum_aed) - writeoff_sum
 
@@ -289,6 +298,6 @@ class Money(models.Model, AmanatBaseModel):
         """Поля для real-time обновлений в списке контейнеров денег"""
         return [
             'id', 'display_name', 'date', 'wallet_id', 'partner_id', 'currency',
-            'amount', 'sum', 'state', 'order_id', 'remains', 'sum_remains',
+            'amount', 'amount', 'state', 'order_id', 'remains', 'sum_remains',
             'royalty', 'percent', 'comment', 'create_date', 'write_date'
         ]

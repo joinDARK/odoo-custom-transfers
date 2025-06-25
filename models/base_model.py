@@ -78,7 +78,7 @@ class AmanatBaseModel(models.AbstractModel):
             _logger.info(f"🔥 Changed fields: {changed_fields}")
             
             # Используем новый метод из res.users
-            self.env.user.notify_record_change(action, self, changed_fields)
+            # self.env.user.notify_record_change(action, self, changed_fields)
             
             _logger.info("🔥 notify_record_change completed successfully")
             

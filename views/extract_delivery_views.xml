@@ -75,6 +75,42 @@
                 <sheet>
                     <notebook>
                         <page string="Основные">
+                            <group string="Действия">
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="assign_bulinan"/>
+                                    </group>
+                                    <group>
+                                        <field name="create_transfer_bulinan"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <group string="Заявка">
+                                <field name="deal"/>
+                                <field name="applications"/>
+                            </group>
+                            <group>
+                                <field name="serial_number"/>
+                                <field name="document_id"/>
+                                <field name="bank_document"/>
+                                <field name="dds_article"/>
+                                <field name="direction_choice"/>
+                                <field name="counterparty1"/>
+                                <field name="counterparty2"/>
+                                <field name="wallet1"/>
+                                <field name="wallet2"/>
+                                <field name="percent" widget="percentage"/>
+                            </group>
+                        </page>
+                        <page string="Линки">
+                            <group>
+                                <field name="currency_reserve"/>
+                                <field name="conversion"/>
+                                <field name="investment"/>
+                                <field name="gold_deal"/>
+                            </group>
+                        </page>
+                        <page string="Выписка дробь">
                             <group string="Информация о выписке">
                                 <div class="o-form-group">
                                     <group>
@@ -103,67 +139,59 @@
                             <group>
                                 <field name="payment_purpose"/>
                             </group>
-                            <group string="Действия">
-                                <div class="o-form-group">
-                                    <group>
-                                        <field name="assign_bulinan"/>
-                                    </group>
-                                    <group>
-                                        <field name="create_transfer_bulinan"/>
-                                    </group>
+                            <group>
+                                <div class="o-form-group-2">
                                     <group>
                                         <field name="fragment_statement"/>
                                     </group>
+                                    <group>
+                                        <field name="remaining_statement"/>
+                                    </group>
                                 </div>
                             </group>
-                            <group string="Заявка">
-                                <field name="deal"/>
-                                <field name="applications"/>
-                            </group>
                             <group>
-                                <field name="serial_number"/>
-                                <field name="document_id"/>
-                                <field name="bank_document"/>
-                                <field name="dds_article"/>
-                                <field name="direction_choice"/>
-                                <field name="counterparty1"/>
-                                <field name="counterparty2"/>
-                                <field name="wallet1"/>
-                                <field name="wallet2"/>
-                                <field name="percent" widget="percentage"/>
-                                <field name="remaining_statement"/>
-                            </group>
-                        </page>
-                        <page string="Линки">
-                            <group>
-                                <field name="currency_reserve"/>
-                                <field name="conversion"/>
-                                <field name="investment"/>
-                                <field name="gold_deal"/>
-                            </group>
-                        </page>
-                        <page string="Выписка дробь">
-                            <group>
-                                <field name="statement_part_1"/>
-                                <field name="statement_part_2"/>
-                                <field name="statement_part_3"/>
-                                <field name="statement_part_4"/>
-                                <field name="statement_part_5"/>
-                                <field name="statement_part_6"/>
-                                <field name="statement_part_7"/>
-                                <field name="statement_part_8"/>
-                                <field name="statement_part_9"/>
-                                <field name="statement_part_10"/>
-                                <field name="statement_part_11"/>
-                                <field name="statement_part_12"/>
-                                <field name="statement_part_13"/>
-                                <field name="statement_part_14"/>
-                                <field name="statement_part_15"/>
-                                <field name="statement_part_16"/>
-                                <field name="statement_part_17"/>
-                                <field name="statement_part_18"/>
-                                <field name="statement_part_19"/>
-                                <field name="statement_part_20"/>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="statement_part_1"/>
+                                        <field name="statement_part_2" invisible="not statement_part_1"/>
+                                    </group>
+                                    <group>
+                                        <field name="statement_part_3" invisible="not statement_part_2"/>
+                                        <field name="statement_part_4" invisible="not statement_part_3"/>
+                                    </group>
+                                    <group>
+                                        <field name="statement_part_5" invisible="not statement_part_4"/>
+                                        <field name="statement_part_6" invisible="not statement_part_5"/>
+                                    </group>
+                                    <group>
+                                        <field name="statement_part_7" invisible="not statement_part_6"/>
+                                        <field name="statement_part_8" invisible="not statement_part_7"/>
+                                    </group>
+                                    <group>
+                                        <field name="statement_part_9" invisible="not statement_part_8"/>
+                                        <field name="statement_part_10" invisible="not statement_part_9"/>
+                                    </group>
+                                    <group>
+                                        <field name="statement_part_11" invisible="not statement_part_10"/>
+                                        <field name="statement_part_12" invisible="not statement_part_11"/>
+                                    </group>
+                                    <group>
+                                        <field name="statement_part_13" invisible="not statement_part_12"/>
+                                        <field name="statement_part_14" invisible="not statement_part_13"/>
+                                    </group>
+                                    <group>
+                                        <field name="statement_part_15" invisible="not statement_part_14"/>
+                                        <field name="statement_part_16" invisible="not statement_part_15"/>
+                                    </group>
+                                    <group>
+                                        <field name="statement_part_17" invisible="not statement_part_16"/>
+                                        <field name="statement_part_18" invisible="not statement_part_17"/>
+                                    </group>
+                                    <group>
+                                        <field name="statement_part_19" invisible="not statement_part_18"/>
+                                        <field name="statement_part_20" invisible="not statement_part_19"/>
+                                    </group>
+                                </div>
                             </group>
                         </page>
                         <page string="Выписка разнос Джесс">
@@ -173,7 +201,6 @@
                                         <field name="date" readonly="1"/>
                                         <field name="counterparty1"/>
                                         <field name="counterparty2"/>
-                                        <field name="create_transfer_bulinan"/>
                                     </group>
                                     <group>
                                         <field name="amount" readonly="1"/>
@@ -184,6 +211,7 @@
                                         <field name="percent" widget="percentage"/>
                                         <field name="wallet1"/>
                                         <field name="wallet2"/>
+                                        <field name="create_transfer_bulinan"/>
                                     </group>
                                 </div>
                             </group>

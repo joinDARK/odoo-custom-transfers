@@ -6,14 +6,17 @@
         <field name="arch" type="xml">
             <list editable="top">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-                <field name="royalty" width="78"/>
-                <field name="percent" width="102"/>
                 <field name="date" width="200"/>
                 <field name="state" width="200"/>
                 <field name="currency" width="200"/>
+                <field name="amount" width="200"/>
+                <field name="royalty" width="78"/>
+                <field name="percent" width="102"/>
                 <field name="partner_id" width="200"/>
                 <field name="wallet_id" width="200"/>
+                <field name="order_id" width="200"/>
                 <field name="remains" width="200"/>
+                <field name="sum_remains" width="200"/>
                 <field name="remains_rub" width="200"/>
                 <field name="remains_rub_cashe" width="200"/>
                 <field name="remains_usd" width="200"/>
@@ -28,22 +31,18 @@
                 <field name="remains_thb" width="200"/>
                 <field name="remains_thb_cashe" width="200"/>
                 <field name="sum_rub" width="200"/>
+                <field name="sum_rub_cashe" width="200"/>
                 <field name="sum_usd" width="200"/>
+                <field name="sum_usd_cashe" width="200"/>
                 <field name="sum_usdt" width="200"/>
                 <field name="sum_cny" width="200"/>
-                <field name="sum_euro" width="200"/>
-                <field name="sum_aed" width="200"/>
-                <field name="sum_thb" width="200"/>
-                <field name="sum_usd_cashe" width="200"/>
-                <field name="sum_euro_cashe" width="200"/>
-                <field name="sum_aed_cashe" width="200"/>
                 <field name="sum_cny_cashe" width="200"/>
-                <field name="sum_rub_cashe" width="200"/>
+                <field name="sum_euro" width="200"/>
+                <field name="sum_euro_cashe" width="200"/>
+                <field name="sum_aed" width="200"/>
+                <field name="sum_aed_cashe" width="200"/>
+                <field name="sum_thb" width="200"/>
                 <field name="sum_thb_cashe" width="200"/>
-                <field name="sum_remains" width="200"/>
-                <!-- Для Many2one используем стандартный виджет -->
-                <field name="order_id" width="200"/>
-                <field name="amount" width="200"/>
                 <field name="comment" width="200"/>
             </list>
         </field>
@@ -56,8 +55,11 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
-                        <notebook>
-                            <page string="Основные">
+                    <notebook>
+                        <page string="Основные">
+                            <header>
+                                <h2>Общая информация</h2>
+                            </header>
                             <group>
                                 <div class="o-form-group">
                                     <group>
@@ -69,55 +71,142 @@
                                         <field name="amount"/>
                                     </group>
                                     <group>
-                                        <field name="sum_remains"/>
-                                        <field name="remains"/>
-                                    </group>
-                                </div>
-                            </group>
-                            <group>
-                                <div class="o-form-group-2">
-                                    <group>
-                                        <field name="partner_id"/>
-                                        <field name="wallet_id"/>
-                                        <field name="comment"/>
-                                    </group>
-                                    <group>
-                                        <field name="order_id"/>
                                         <field name="royalty"/>
                                         <field name="percent"/>
                                     </group>
                                 </div>
                             </group>
-                        </page>
-                        <page string="Остальные поля">
+                            
+                            <header>
+                                <h2>Связанные записи</h2>
+                            </header>
                             <group>
-                                <field name="remains_rub"/>
-                                <field name="remains_rub_cashe"/>
-                                <field name="remains_usd"/>
-                                <field name="remains_usd_cashe"/>
-                                <field name="remains_usdt"/>
-                                <field name="remains_cny"/>
-                                <field name="remains_cny_cashe"/>
-                                <field name="remains_euro"/>
-                                <field name="remains_euro_cashe"/>
-                                <field name="remains_aed"/>
-                                <field name="remains_aed_cashe"/>
-                                <field name="remains_thb"/>
-                                <field name="remains_thb_cashe"/>
-                                <field name="sum_rub"/>
-                                <field name="sum_usd"/>
-                                <field name="sum_usdt"/>
-                                <field name="sum_cny"/>
-                                <field name="sum_euro"/>
-                                <field name="sum_aed"/>
-                                <field name="sum_thb"/>
-                                <field name="sum_usd_cashe"/>
-                                <field name="sum_euro_cashe"/>
-                                <field name="sum_aed_cashe"/>
-                                <field name="sum_cny_cashe"/>
-                                <field name="sum_rub_cashe"/>
-                                <field name="sum_thb_cashe"/>
-                                <!-- Для Many2one используем стандартный виджет -->
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="partner_id"/>
+                                        <field name="wallet_id"/>
+                                    </group>
+                                    <group>
+                                        <field name="order_id"/>
+                                        <field name="comment"/>
+                                    </group>
+                                </div>
+                            </group>
+                            
+                            <header>
+                                <h2>Основные остатки</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="remains"/>
+                                    </group>
+                                    <group>
+                                        <field name="sum_remains"/>
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+                        
+                        <page string="Остатки по валютам">
+                            <header>
+                                <h2>Рубли (RUB)</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="remains_rub"/>
+                                        <field name="sum_rub"/>
+                                    </group>
+                                    <group>
+                                        <field name="remains_rub_cashe"/>
+                                        <field name="sum_rub_cashe"/>
+                                    </group>
+                                </div>
+                            </group>
+                            
+                            <header>
+                                <h2>Доллары США (USD)</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="remains_usd"/>
+                                        <field name="sum_usd"/>
+                                    </group>
+                                    <group>
+                                        <field name="remains_usd_cashe"/>
+                                        <field name="sum_usd_cashe"/>
+                                    </group>
+                                    <group>
+                                        <field name="remains_usdt"/>
+                                        <field name="sum_usdt"/>
+                                    </group>
+                                </div>
+                            </group>
+                            
+                            <header>
+                                <h2>Юани (CNY)</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="remains_cny"/>
+                                        <field name="sum_cny"/>
+                                    </group>
+                                    <group>
+                                        <field name="remains_cny_cashe"/>
+                                        <field name="sum_cny_cashe"/>
+                                    </group>
+                                </div>
+                            </group>
+                            
+                            <header>
+                                <h2>Евро (EUR)</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="remains_euro"/>
+                                        <field name="sum_euro"/>
+                                    </group>
+                                    <group>
+                                        <field name="remains_euro_cashe"/>
+                                        <field name="sum_euro_cashe"/>
+                                    </group>
+                                </div>
+                            </group>
+                            
+                            <header>
+                                <h2>Дирхамы ОАЭ (AED)</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="remains_aed"/>
+                                        <field name="sum_aed"/>
+                                    </group>
+                                    <group>
+                                        <field name="remains_aed_cashe"/>
+                                        <field name="sum_aed_cashe"/>
+                                    </group>
+                                </div>
+                            </group>
+                            
+                            <header>
+                                <h2>Тайские баты (THB)</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="remains_thb"/>
+                                        <field name="sum_thb"/>
+                                    </group>
+                                    <group>
+                                        <field name="remains_thb_cashe"/>
+                                        <field name="sum_thb_cashe"/>
+                                    </group>
+                                </div>
                             </group>
                         </page>
                     </notebook>

@@ -9,9 +9,10 @@
             <list editable="top">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="name"/>
-                <field name="inn"/>
                 <field width="200" name="contragents_ids" widget="many2many_tags"/>
-                <field name="order_ids" widget="many2many_tags"/>
+                <field name="inn"/>
+                <field name="applications"/>
+                <!-- <field name="order_ids" widget="many2many_tags"/>
                 <field name="reconciliation" widget="many2many_tags"/>
                 <field name="transfer"/>
                 <field width="200" name="currency_reserve"/>
@@ -19,10 +20,9 @@
                 <field width="200" name="investment"/>
                 <field width="200" name="gold_partners" widget="many2many_tags"/>
                 <field name="deductions"/>
-                <field name="applications"/>
                 <field width="320" name="pricelist_conduct"/>
                 <field width="250" name="pricelist_profit"/>
-                <field width="320" name="price_list_profit_id"/>
+                <field width="320" name="price_list_profit_id"/> -->
             </list>
         </field>
     </record>
