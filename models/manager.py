@@ -8,7 +8,7 @@ class Manager(models.Model, AmanatBaseModel):
 
     name = fields.Char(string="Имя")
     phone = fields.Char(string="Телефон")
-    date = fields.Date(string="Дата")
+    date = fields.Date(string="Дата рождения")
     # Предполагается, что модель заявок существует (например, manager.application)
     applications = fields.Many2many(
         'amanat.zayavka',

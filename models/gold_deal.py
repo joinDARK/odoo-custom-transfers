@@ -1,6 +1,8 @@
 from odoo import models, fields, api
 import logging
 from odoo.exceptions import UserError
+from datetime import datetime
+import pytz
 
 _logger = logging.getLogger(__name__)
 
@@ -179,6 +181,9 @@ class GoldDeal(models.Model):
     # 31. Хеш
     hash_flag = fields.Boolean(string="Хеш", default=False, tracking=True)
 
+    # 32. Лог обработки
+    log_text = fields.Text(string="Лог обработки")
+
     # --- Compute методы для Rollup/Formula полей ---
 
     @api.depends("partner_ids.pure_weight")
@@ -354,10 +359,22 @@ class GoldDeal(models.Model):
             rec.order_ids = [(5, 0, 0)]
             rec.mark_for_deletion = False
 
+    def _append_log(self, message):
+        """Добавляет запись в лог с московским временем, новые записи сверху, максимум 10 строк"""
+        tz = pytz.timezone('Europe/Moscow')
+        now_str = datetime.now(tz).strftime('%d.%m.%Y %H:%M:%S')
+        log_line = f"[{now_str}] {message}"
+        log_lines = (self.log_text or '').split('\n')
+        log_lines = [line for line in log_lines if line.strip()]
+        log_lines = [log_line] + log_lines  # новая запись сверху
+        log_lines = log_lines[:10]
+        self.write({'log_text': '\n'.join(log_lines)})
+
     # "Золото вход" контейнеры
     def _action_process_gold_deal_input_logic(self):
         self.ensure_one()  # Убедимся, что работаем с одной записью
         _logger.info(f"Начало обработки 'Вход в сделку Золото' для: {self.name}")
+        self._append_log("[Автоматизация] Проведен вход в сделку.")
 
         # 0. Предварительная очистка (как в Airtable)
         # Эта часть вызывается из write или кнопки, которая сначала вызывает _action_delete
@@ -556,6 +573,7 @@ class GoldDeal(models.Model):
                 "receiver_id": [(6, 0, [gold_payer.id])],  # "Получатель"
                 "order_id": [(6, 0, [partner_order.id])],
                 "wallet_id": gold_wallet.id,
+                "sum": partner_amount_rub,
             }
             verif_partner_vals.update(
                 self._prepare_currency_fields("RUB", partner_amount_rub)
@@ -615,6 +633,7 @@ class GoldDeal(models.Model):
                 "receiver_id": [(6, 0, [vita_payer.id])],
                 "order_id": [(6, 0, [final_order.id])],
                 "wallet_id": gold_wallet.id,
+                "sum": -total_rub_amount_for_vita_order,
             }
             verif_vita_vals.update(
                 self._prepare_currency_fields("RUB", -total_rub_amount_for_vita_order)
@@ -637,6 +656,7 @@ class GoldDeal(models.Model):
     def _action_process_gold_deal_output_logic(self):
         self.ensure_one()  # Убедимся, что работаем с одной записью
         _logger.info(f"Начало обработки 'Выход из сделки Золото' для: {self.name}")
+        self._append_log("[Автоматизация] Проведен выход из сделки.")
         
         # Предварительная очистка (по необходимости)
         # Если требуется удалить предыдущие ордера выхода - добавьте логику очистки
@@ -753,6 +773,7 @@ class GoldDeal(models.Model):
             "date": sale_date,
             "partner_id": self.buyer_id.id,
             "currency": "aed",
+            "sum": aed_amount,
             "sender_id": [(6, 0, [gold_payer.id])],
             "receiver_id": [(6, 0, [buyer_payer.id])],
             "order_id": [(6, 0, [order.id])],
@@ -767,6 +788,7 @@ class GoldDeal(models.Model):
             "date": sale_date,
             "partner_id": gold_contragent.id,
             "currency": "usdt",
+            "sum": -usdt_amount,
             "sender_id": [(6, 0, [gold_payer.id])],
             "receiver_id": [(6, 0, [buyer_payer.id])],
             "order_id": [(6, 0, [order.id])],
@@ -780,12 +802,9 @@ class GoldDeal(models.Model):
         return True
 
     def _action_process_gold_deal_distribution_logic(self):
-        """
-        Метод для распределения USDT между Услугой, Банк сумм, Банк КБ и Курьер
-        Выполняется после _action_process_gold_deal_output_logic
-        """
         self.ensure_one()
         _logger.info(f"Начало обработки 'Распределение USDT' для сделки: {self.name}")
+        self._append_log("[Автоматизация] Проведено распределение USDT.")
         
         # Поиск необходимых моделей
         ContragentModel = self.env["amanat.contragent"]
@@ -922,6 +941,7 @@ class GoldDeal(models.Model):
                     "date": sale_date,
                     "partner_id": service_contragent.id,
                     "currency": currency,
+                    "sum": -service_amount,
                     "sender_id": [(6, 0, [gold_payer.id])],
                     "receiver_id": [(6, 0, [service_payer.id])],
                     "order_id": [(6, 0, [service_order.id])],
@@ -936,6 +956,7 @@ class GoldDeal(models.Model):
                     "date": sale_date,
                     "partner_id": gold_contragent.id,
                     "currency": currency,
+                    "sum": service_amount,
                     "sender_id": [(6, 0, [gold_payer.id])],
                     "receiver_id": [(6, 0, [service_payer.id])],
                     "order_id": [(6, 0, [service_order.id])],
@@ -1005,6 +1026,7 @@ class GoldDeal(models.Model):
                     "date": sale_date,
                     "partner_id": bank_sum_contragent.id,
                     "currency": currency,
+                    "sum": -bank_sum_amount,
                     "sender_id": [(6, 0, [gold_payer.id])],
                     "receiver_id": [(6, 0, [bank_sum_payer.id])],
                     "order_id": [(6, 0, [bank_sum_order.id])],
@@ -1019,6 +1041,7 @@ class GoldDeal(models.Model):
                     "date": sale_date,
                     "partner_id": gold_contragent.id,
                     "currency": currency,
+                    "sum": bank_sum_amount,
                     "sender_id": [(6, 0, [gold_payer.id])],
                     "receiver_id": [(6, 0, [bank_sum_payer.id])],
                     "order_id": [(6, 0, [bank_sum_order.id])],
@@ -1088,6 +1111,7 @@ class GoldDeal(models.Model):
                     "date": sale_date,
                     "partner_id": bank_kb_contragent.id,
                     "currency": currency,
+                    "sum": -bank_kb_amount,
                     "sender_id": [(6, 0, [gold_payer.id])],
                     "receiver_id": [(6, 0, [bank_kb_payer.id])],
                     "order_id": [(6, 0, [bank_kb_order.id])],
@@ -1102,6 +1126,7 @@ class GoldDeal(models.Model):
                     "date": sale_date,
                     "partner_id": gold_contragent.id,
                     "currency": currency,
+                    "sum": bank_kb_amount,
                     "sender_id": [(6, 0, [gold_payer.id])],
                     "receiver_id": [(6, 0, [bank_kb_payer.id])],
                     "order_id": [(6, 0, [bank_kb_order.id])],
@@ -1172,6 +1197,7 @@ class GoldDeal(models.Model):
                     "partner_id": courier_contragent.id,
                     "currency": currency,
                     "sender_id": [(6, 0, [gold_payer.id])],
+                    "sum": -courier_amount,
                     "receiver_id": [(6, 0, [courier_payer.id])],
                     "order_id": [(6, 0, [courier_order.id])],
                     "wallet_id": gold_wallet.id,
@@ -1187,6 +1213,7 @@ class GoldDeal(models.Model):
                     "currency": currency,
                     "sender_id": [(6, 0, [gold_payer.id])],
                     "receiver_id": [(6, 0, [courier_payer.id])],
+                    "sum": courier_amount,
                     "order_id": [(6, 0, [courier_order.id])],
                     "wallet_id": gold_wallet.id,
                 }
@@ -1201,12 +1228,9 @@ class GoldDeal(models.Model):
         return True
 
     def _action_process_gold_deal_profit_distribution_logic(self):
-        """
-        Метод для распределения прибыли между партнерами золота
-        Выполняется после _action_process_gold_deal_output_logic и _action_process_gold_deal_distribution_logic
-        """
         self.ensure_one()
         _logger.info(f"Начало обработки 'Распределение прибыли' для сделки: {self.name}")
+        self._append_log("[Автоматизация] Проведено распределение прибыли.")
         
         # Поиск необходимых моделей
         ContragentModel = self.env["amanat.contragent"]
@@ -1329,6 +1353,7 @@ class GoldDeal(models.Model):
                     "partner_id": partner_contragent.id,
                     "currency": currency,
                     "sender_id": [(6, 0, [gold_payer.id])],
+                    "sum": -profit_amount,
                     "receiver_id": [(6, 0, [partner_payer.id])],
                     "order_id": [(6, 0, [partner_order.id])],
                     "wallet_id": gold_wallet.id,
@@ -1344,6 +1369,7 @@ class GoldDeal(models.Model):
                     "currency": currency,
                     "sender_id": [(6, 0, [gold_payer.id])],
                     "receiver_id": [(6, 0, [partner_payer.id])],
+                    "sum": profit_amount,
                     "order_id": [(6, 0, [partner_order.id])],
                     "wallet_id": gold_wallet.id,
                 }
@@ -1374,12 +1400,9 @@ class GoldDeal(models.Model):
                 rec._action_process_gold_deal_payment_logic()
     
     def _action_process_gold_deal_payment_logic(self):
-        """
-        Метод для обработки платежки в сделке золота
-        Срабатывает при изменении поля extract_delivery_ids (Платежка)
-        """
         self.ensure_one()
         _logger.info(f"Начало обработки платежки для сделки: {self.name}")
+        self._append_log("[Автоматизация] Проведена обработка платежки.")
         
         # Проверка, что платежка существует
         if not self.extract_delivery_ids:
@@ -1477,6 +1500,7 @@ class GoldDeal(models.Model):
                     "date": payment_date,
                     "partner_id": order.partner_1_id.id,
                     "currency": "rub",
+                    "sum": -payment_amount,
                     "sender_id": [(6, 0, [order.payer_1_id.id])] if order.payer_1_id else [(6, 0, [])],
                     "receiver_id": [(6, 0, [order.payer_2_id.id])] if order.payer_2_id else [(6, 0, [])],
                     "order_id": [(6, 0, [order.id])],
@@ -1491,6 +1515,7 @@ class GoldDeal(models.Model):
                     "date": payment_date,
                     "partner_id": order.partner_2_id.id,
                     "currency": "rub",
+                    "sum": payment_amount,
                     "sender_id": [(6, 0, [order.payer_1_id.id])] if order.payer_1_id else [(6, 0, [])],
                     "receiver_id": [(6, 0, [order.payer_2_id.id])] if order.payer_2_id else [(6, 0, [])],
                     "order_id": [(6, 0, [order.id])],

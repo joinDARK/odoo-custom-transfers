@@ -64,85 +64,179 @@
                 <sheet>
                     <notebook>
                         <page string="Основные">
-                            <!-- Ряд 1: Основаная информация о ордере -->
                             <header>
-                                <h2>Основаная информация о ордере</h2>
+                                <h2>Основная информация о ордере</h2>
                             </header>
                             <group>
-                                <div class="o-form-group-2">
-                                    <group>
-                                        <field name="amount"/>
-                                        <field name="type"/>
-                                    </group>
+                                <div class="o-form-group">
                                     <group>
                                         <field name="date"/>
+                                        <field name="status"/>
+                                    </group>
+                                    <group>
                                         <field name="currency"/>
+                                        <field name="amount"/>
+                                    </group>
+                                    <group>
+                                        <field name="type"/>
+                                        <field name="is_confirmed"/>
                                     </group>
                                 </div>
                             </group>
-                            <header><h2>Контрагенты</h2></header>
+                            
+                            <header>
+                                <h2>Участники операции</h2>
+                            </header>
                             <group>
                                 <div class="o-form-group-2">
-                                    <group>
+                                    <group string="Сторона 1">
                                         <field name="partner_1_id"/>
                                         <field name="payer_1_id"/>
                                         <field name="wallet_1_id"/>
                                     </group>
-                                    <group>
+                                    <group string="Сторона 2">
                                         <field name="partner_2_id"/>
                                         <field name="payer_2_id"/>
                                         <field name="wallet_2_id"/>
                                     </group>
                                 </div>
                             </group>
+
+                            <header>
+                                <h2>Финансовые расчеты</h2>
+                            </header>
                             <group>
-                                <field name="comment"/>
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="rate"/>
+                                        <field name="operation_percent" widget="percentage" options="{'rounding': 2}"/>
+                                        <field name="our_percent" widget="percentage" options="{'rounding': 2}"/>
+                                    </group>
+                                    <group>
+                                        <field name="rko"/>
+                                        <field name="amount_1"/>
+                                        <field name="rko_2"/>
+                                    </group>
+                                    <group>
+                                        <field name="amount_2"/>
+                                        <field name="total"/>
+                                    </group>
+                                </div>
                             </group>
+
+                        </page>
+
+                        <page string="Связанные объекты">
                             <header>
                                 <h2>Деньги</h2>
                             </header>
-                            <field name="money_ids"/>
-                        </page>
-                        <page string="Остальные поля">
+                            <group>
+                                <field name="money_ids" nolabel="1"/>
+                            </group>
+
                             <header>
-                                <h2>Оcтальные поля</h2>
+                                <h2>Связанные записи</h2>
                             </header>
                             <group>
-                                <field name="status"/>
-                                <field name="is_confirmed"/>
-                                <field name="rate"/>
-                                <field name="operation_percent" widget="percentage" options="{'rounding': 2}"/>
-                                <field name="rko"/>
-                                <field name="amount_1"/>
-                                <field name="our_percent" widget="percentage" options="{'rounding': 2}"/>
-                                <field name="rko_2"/>
-                                <field name="amount_2"/>
-                                <field name="total"/>
-                                <field name="reserve_ids"/>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="transfer_id" widget="many2many_tags"/>
+                                        <field name="sverka_ids" widget="many2many_tags"/>
+                                        <field name="reserve_ids" widget="many2many_tags"/>
+                                    </group>
+                                    <group>
+                                        <field name="zayavka_ids" widget="many2many_tags"/>
+                                        <field name="currency_from_zayavka"/>
+                                        <field name="converted_sum_from_zayavka"/>
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+
+                        <page string="Конвертация">
+                            <header>
+                                <h2>Конвертация валют</h2>
+                            </header>
+                            <group>
                                 <field name="conversion_ids" widget="many2many_tags"/>
-                                <field name="zayavka_ids" widget="many2many_tags"/>
-                                <field name="currency_from_zayavka"/>
-                                <field name="converted_sum_from_zayavka"/>
+                            </group>
+                            
+                            <header>
+                                <h2>Кросс-конвертация</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="cross_from"/>
+                                        <field name="cross_rate"/>
+                                        <field name="cross_calc"/>
+                                    </group>
+                                    <group>
+                                        <field name="currency_from_conv"/>
+                                        <field name="currency_to_copy"/>
+                                        <field name="cross_currency"/>
+                                    </group>
+                                    <group>
+                                        <field name="amount_after_conv"/>
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+
+                        <page string="Инвестиции и золото">
+                            <header>
+                                <h2>Инвестиции и золото</h2>
+                            </header>
+                            <group>
                                 <field name="investment" widget="many2many_tags"/>
-                                <field name="gold"/>
-                                <field name="cross_from"/>
-                                <field name="cross_rate"/>
-                                <field name="currency_to_copy"/>
-                                <field name="cross_calc"/>
-                                <field name="amount_after_conv"/>
-                                <field name="currency_from_conv"/>
-                                <field name="cross_currency"/>
-                                <field name="partner_gold"/>
-                                <field name="write_off"/>
-                                <field name="rollup_write_off"/>
-                                <button name="button_update_rollup_write_off"
-                                        type="object"
-                                        string="Обновить rollup списания"
-                                        class="btn-secondary"
-                                        groups="base.group_system,amanat.group_amanat_admin"
-                                />
-                                <field name="reconciliation"/>
-                                <field name="remaining_debt"/>
+                                <field name="gold" widget="many2many_tags"/>
+                                <field name="partner_gold" widget="many2many_tags"/>
+                            </group>
+                        </page>
+
+                        <page string="Списания и долги">
+                            <header>
+                                <h2>Списания</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="write_off"/>
+                                        <field name="rollup_write_off"/>
+                                    </group>
+                                    <group>
+                                        <button name="button_update_rollup_write_off"
+                                                type="object"
+                                                string="Обновить rollup списания"
+                                                class="btn-secondary"
+                                                groups="base.group_system,amanat.group_amanat_admin"
+                                        />
+                                    </group>
+                                </div>
+                            </group>
+
+                            <header>
+                                <h2>Задолженности</h2>
+                            </header>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="reconciliation"/>
+                                        <field name="remaining_debt"/>
+                                    </group>
+                                    <group>
+                                        <field name="money"/>
+                                    </group>
+                                </div>
+                            </group>
+                        </page>
+
+                        <page string="Комментарии">
+                            <header>
+                                <h2>Комментарии</h2>
+                            </header>
+                            <group>
+                                <field name="comment" nolabel="1"/>
                             </group>
                         </page>
                     </notebook>

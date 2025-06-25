@@ -8,10 +8,10 @@
         <field name="arch" type="xml">
             <list editable="top">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-                <field name="name"/>
+                <field name="name" width="200"/>
                 <field name="code"/>
                 <field name="full_name"/>
-                <field name="zayavka_id"/>
+                <!-- <field name="zayavka_id"/> -->
             </list>
         </field>
     </record>

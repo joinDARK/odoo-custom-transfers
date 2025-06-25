@@ -423,20 +423,20 @@ class Investment(models.Model, AmanatBaseModel):
 
             # 2) Собираем контейнеры и writeoff-ы
             containers = order.money_ids
-            monthly = defaultdict(lambda: {'sum': 0.0, 'last_date': False, 'cont_id': False})
+            monthly = defaultdict(lambda: {'amount': 0.0, 'last_date': False, 'cont_id': False})
 
             for cont in containers:
                 if cont.percent or cont.royalty:
                     for wf in Writeoff.browse(cont.writeoff_ids.ids):
                         key = (wf.date.year, wf.date.month, cont.id)
-                        monthly[key]['sum'] += wf.amount
+                        monthly[key]['amount'] += wf.amount
                         if not monthly[key]['last_date'] or wf.date > monthly[key]['last_date']:
                             monthly[key]['last_date'] = wf.date
                             monthly[key]['cont_id'] = cont.id
 
             # 3) Создаем записи по процентам и роялти
             for (y, m, cont_id), data in sorted(monthly.items()):
-                total = data['sum']
+                total = data['amount']
                 if not total:
                     continue
                 last_date = data['last_date']
@@ -596,18 +596,12 @@ class Investment(models.Model, AmanatBaseModel):
                     mk(inv.receiver, inv.fixed_amount,              perc=True)
                 # иначе не создаём проценты/фикс вовсе
 
-            # 6) Роялти-контейнеры
-            if inv.has_royalty:
-                for i in range(1, 10):
-                    recv = getattr(inv, f'royalty_recipient_{i}', False)
-                    pct = getattr(inv, f'percent_{i}', 0.0)
-                    if recv and pct:
-                        amt = 0
-                        mk(recv, amt, roy=True, state='empty')
-
             # 7) Создаем помесячные списания и сверки — вызываем ваши методы
             # inv.action_create_writeoffs()
             inv.action_sync_reconciliation()
+
+            # 7.1) Создаём роялти-контейнеры, если есть хотя бы один получатель
+            inv.action_create_royalty_containers()
 
             # 8) Создаем записи сверки по месяцам для процентных и роялти контейнеров
             cur = inv.date.replace(day=1)
@@ -738,33 +732,37 @@ class Investment(models.Model, AmanatBaseModel):
         if not Wallet:
             raise UserError(_('Кошелёк "Инвестиции" не найден'))
 
-        for inv in self.filtered('has_royalty'):
+        for inv in self:
+            # Проверяем, есть ли хотя бы один реально заполненный получатель роялти
+            has_any_recipient = any(
+                getattr(inv, f'royalty_recipient_{i}', False) and hasattr(getattr(inv, f'royalty_recipient_{i}'), 'id') and getattr(inv, f'royalty_recipient_{i}').id and (getattr(inv, f'percent_{i}', 0.0) or 0.0) > 0
+                for i in range(1, 10)
+            )
+            if not has_any_recipient:
+                continue
             # берём первый ордер, если их несколько
             order = inv.orders and inv.orders[0] or None
             for i in range(1, 10):
-                recv = getattr(inv, f'royalty_recipient_{i}')
-                pct  = getattr(inv, f'percent_{i}') or 0.0
-                if not recv or not pct:
+                recv = getattr(inv, f'royalty_recipient_{i}', False)
+                pct  = getattr(inv, f'percent_{i}', 0.0) or 0.0
+                # Проверяем, что получатель реально выбран и процент > 0
+                if not recv or not hasattr(recv, 'id') or not recv.id or pct <= 0:
                     continue
-
                 # соберём поля валют
                 currency_vals = inv._get_currency_fields(inv.currency, 0.0)
-
                 vals = {
                     'date':        inv.date,
                     'state':       'debt',
                     'partner_id':  recv.id,
                     'currency':    inv.currency.lower(),
-                    'amount':      0.0,
+                    'amount':      inv.amount * pct / 100.0,
                     'wallet_id':   Wallet.id,
                     'royalty':     True,
                     **currency_vals,
                 }
-                if order:
+                if order and hasattr(order, 'id'):
                     vals['order_id'] = order.id
-
                 Money.create(vals)
-
         return True
     
 
@@ -825,12 +823,6 @@ class Investment(models.Model, AmanatBaseModel):
         if vals.get('post'):
             for r in self.filtered('post'):
                 r.action_post()
-        if vals.get('royalty_post'):
-            for r in self.filtered('royalty_post'):
-                r.action_create_royalty_containers()
-                r.action_create_writeoffs()
-                r.action_sync_reconciliation()
-                r.royalty_post = False
         if vals.get('close_investment'):
             for r in self.filtered('close_investment'):
                 r.action_close_investment()
@@ -864,11 +856,6 @@ class Investment(models.Model, AmanatBaseModel):
             rec.create_action = False
         if rec.to_delete:
             rec.action_delete()
-        if rec.royalty_post:
-            rec.action_create_royalty_containers()
-            rec.action_create_writeoffs()
-            rec.action_sync_reconciliation()
-            rec.royalty_post = False
         if rec.close_investment:
             rec.action_close_investment()
         if vals.get('accrue', False):
@@ -981,13 +968,13 @@ class Investment(models.Model, AmanatBaseModel):
                     write_vals.append({
                         'date': day_cursor,
                         'amount': interest,
-                        'money_id': interest_send.id,
+                        'money_id': interest_send.id if interest_send else False,
                         'investment_ids': [(4, inv.id)],
                     })
                     write_vals.append({
                         'date': day_cursor,
                         'amount': -interest,
-                        'money_id': interest_recv.id,
+                        'money_id': interest_recv.id if interest_recv else False,
                         'investment_ids': [(4, inv.id)],
                     })
 
@@ -1005,12 +992,11 @@ class Investment(models.Model, AmanatBaseModel):
                                 divisor = self._get_month_days(day_cursor)
                             elif inv.period == 'calendar_year':
                                 divisor = period_days
-                            # Теперь роялти считается от суммы процентов, а не от тела долга
                             roy = interest * (pct / 100.0) / divisor
                             write_vals.append({
                                 'date': day_cursor,
                                 'amount': roy,
-                                'money_id': cont.id,
+                                'money_id': cont[0].id,
                                 'investment_ids': [(4, inv.id)],
                             })
 
@@ -1027,7 +1013,15 @@ class Investment(models.Model, AmanatBaseModel):
 
             # Создаём новые списания пакетно
             for i in range(0, len(write_vals), 50):
-                Writeoff.create(write_vals[i:i+50])
+                # Удаляем некорректные записи без money_id
+                batch = [w for w in write_vals[i:i+50] if w.get('money_id')]
+                if batch:
+                    Writeoff.create(batch)
+            
+            # Обновляем amount у процентных контейнеров
+            for cont in [interest_send, interest_recv]:
+                if cont:
+                    cont.amount = sum(w.amount for w in cont.writeoff_ids)
             
             _logger.info(f"💰 Начисление для инвестиции {inv.name}: создано {len(write_vals)} списаний до {accrual_date}")
 
