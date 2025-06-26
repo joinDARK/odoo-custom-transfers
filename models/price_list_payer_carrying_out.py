@@ -7,8 +7,21 @@ class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
     _description = 'Прайс лист Плательщика За проведение'
 
     name = fields.Char(string="Наименования", tracking=True)
-    payer_partner = fields.Many2one('amanat.payer', string="Плательщик субагенты", tracking=True)
-    counterparties = fields.Many2one('amanat.contragent', string="Контрагенты", tracking=True)
+    payer_partners = fields.Many2many(
+        'amanat.payer',
+        'amanat_price_list_payer_carrying_out_rel',  # имя таблицы-связи
+        'price_list_id',  # поле-ссылка на эту модель
+        'payer_id',       # поле-ссылка на модель плательщика
+        string="Плательщики субагенты",
+        tracking=True
+    )
+    contragent_ids = fields.Many2many(
+        'amanat.contragent',
+        string='Контрагенты',
+        compute='_compute_contragent_ids',
+        store=False,
+        readonly=True
+    )
     date_start = fields.Date(string="Дата начало", tracking=True)
     date_end = fields.Date(string="Дата конец", tracking=True)
     today_date = fields.Date(string="Даты TODAY", default=fields.Date.context_today, tracking=True)
@@ -31,3 +44,8 @@ class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
                 record.period_days = (record.date_end - record.date_start).days
             else:
                 record.period_days = 0
+    
+    @api.depends('payer_partners')
+    def _compute_contragent_ids(self):
+        for rec in self:
+            rec.contragent_ids = rec.payer_partners.mapped('contragents_ids')

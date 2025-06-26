@@ -77,6 +77,7 @@ class ZayavkaMethods(models.Model):
             for rec in self:
                 # Получаем все даты из extract_delivery_ids
                 dates = rec.extract_delivery_ids.mapped('date')
+                _logger.info(f"Даты из extract_delivery_ids: {dates}")
                 dates = [d for d in dates if d]
                 if dates:
                     min_date = min(dates)
@@ -87,6 +88,14 @@ class ZayavkaMethods(models.Model):
 
     @api.model
     def create(self, vals):
+        range_id = vals.get('range_id')
+        if not range_id:
+            range_rec = self.env['amanat.ranges'].browse(1)
+            if range_rec.exists():
+                vals['range_id'] = range_rec.id
+            else:
+                _logger.warning('В таблице "Диапазон" не найдена запись с ID = 1.')
+
         trigger = vals.get('fin_entry_check', False)
         trigger2 = vals.get('for_khalida_temp', False)
         send_to_reconciliation = vals.get('send_to_reconciliation', False)
@@ -127,6 +136,8 @@ class ZayavkaMethods(models.Model):
                     'date_2': '2025-03-21',
                 })
             res.period_id = period.id
+        
+
         return res
 
     def _clear_related_documents(self):

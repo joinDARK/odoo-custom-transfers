@@ -55,6 +55,14 @@ export class AppsBar extends Component {
                 ],
             },
             {
+                name: "Прайс листы",
+                items: [
+                    { name: "Прайс лист партнеры", action: "amanat.price_list_partners_action" },
+                    { name: "Прайс лист Плательщика", action: "amanat.price_list_payer_profit_action" },
+                    { name: "Прайс лист Плательщика За проведение", action: "amanat.price_list_payer_carrying_out_action" },
+                ],
+            },
+            {
                 name: "Остальное",
                 items: [
                     { name: "Диапазоны", action: "amanat.ranges_action" },

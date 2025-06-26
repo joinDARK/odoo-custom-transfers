@@ -1314,7 +1314,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         'amanat.price_list_payer_carrying_out',
         string='Прайс лист',
         tracking=True,
-        domain="[('payer_partner', 'in', subagent_payer_ids)]"
+        domain="[('payer_partners', 'in', subagent_payer_ids)]"
     )
 
     price_list_carrying_out_accrual_percentage = fields.Float(

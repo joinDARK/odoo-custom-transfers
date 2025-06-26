@@ -11,9 +11,11 @@ class PriceListPayerProfit(models.Model):
 
     # Плательщик субагента — связь one2many с моделью amanat.payer.
     # Предполагается, что в модели amanat.payer определено поле Many2one 'price_list_profit_id'
-    payer_subagent_ids = fields.One2many(
+    payer_subagent_ids = fields.Many2many(
         'amanat.payer',
-        'price_list_profit_id',
+        'amanat_payer_pricelist_profit_rel',
+        'pricelist_profit_id',
+        'payer_id',
         string='Плательщик субагента',
         tracking=True
     )

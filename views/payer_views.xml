@@ -20,9 +20,7 @@
                 <field width="200" name="investment"/>
                 <field width="200" name="gold_partners" widget="many2many_tags"/>
                 <field name="deductions"/>
-                <field width="320" name="pricelist_conduct"/>
-                <field width="250" name="pricelist_profit"/>
-                <field width="320" name="price_list_profit_id"/> -->
+                <field width="320" name="price_list_profit_ids"/> -->
             </list>
         </field>
     </record>
@@ -57,9 +55,8 @@
                         <field name="gold_partners"/>
                         <field name="deductions"/>
                         <field name="applications"/>
-                        <field name="pricelist_conduct"/>
-                        <field name="pricelist_profit"/>
-                        <field name="price_list_profit_id"/>
+                        <field name="price_list_profit_ids"/>
+                        <field name="pricelist_partners"/>
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->

@@ -14,90 +14,107 @@ class ForKhalidaAutomations(models.Model):
         """
         _logger.info(f"[Khalida] Запуск автоматизации для заявки {self.id}")
 
-        # 1. Очищаем ссылки на прайс-листы
+        # 1. Очищаем поля, чтобы избежать дублирования
         self.price_list_carrying_out_id = False
         self.price_list_profit_id = False
-        self.price_list_partners_id = False
+        _logger.info(f"[Khalida] Ссылки в заявке {self.id} очищены")
 
-        # 2. Извлекаем нужные поля из заявки
-        subagent_payers = self.subagent_payer_ids  # many2many
-        contractor = self.contragent_id
+        # 2. Используем compute-поле subagent_payer_ids напрямую
+        subagent_payers = self.subagent_payer_ids
         rate_fixation_date = self.rate_fixation_date
         equivalent_sum = self.equivalent_amount_usd
-        reward_percent = self.reward_percent
 
-        # 3. Поиск прайс-листа "Проведение"
-        matched_carrying_out = False
-        if subagent_payers:
-            PriceListCarryingOut = self.env['amanat.price_list_payer_carrying_out']
-            carrying_out_domain = [
-                ('payer_partner', 'in', subagent_payers.ids),
-                ('date_start', '<=', rate_fixation_date),
-                ('date_end', '>=', rate_fixation_date),
-            ]
-            if equivalent_sum is not None:
-                carrying_out_domain += [
-                    '|', ('min_application_amount', '=', False), ('min_application_amount', '<=', equivalent_sum),
-                    '|', ('max_application_amount', '=', False), ('max_application_amount', '>=', equivalent_sum),
-                ]
-            matched_carrying_out = PriceListCarryingOut.search(carrying_out_domain, limit=1)
-            if matched_carrying_out:
-                self.price_list_carrying_out_id = matched_carrying_out.id
-                _logger.info(f"[Khalida] Найден прайс-лист Проведение: {matched_carrying_out.id}")
-            else:
-                _logger.info(f"[Khalida] Не найден прайс-лист Проведение для заявки {self.id}")
+        # 3. Проверяем наличие необходимых полей
+        if not subagent_payers:
+            _logger.warning(f"[PriceList] Пропускаем заявку {self.id}: отсутствует 'Плательщик Субагента' {subagent_payers}")
+            return
+
+        if not rate_fixation_date:
+            _logger.warning(f"[PriceList] Пропускаем заявку {self.id}: отсутствует 'Дата фиксации курса'")
+            return
+
+        if equivalent_sum is None:
+            _logger.warning(f"[PriceList] Пропускаем заявку {self.id}: отсутствует 'Сумма эквивалент $'")
+            return
+
+        # 4. Поиск подходящей записи в "Прайс лист проведение"
+        matched_carrying_out = self._find_matching_carrying_out_record(
+            subagent_payers, rate_fixation_date, equivalent_sum
+        )
+
+        # 5. Поиск подходящей записи в "Прайс лист Плательщика Прибыль"
+        matched_profit = self._find_matching_profit_record(
+            subagent_payers, rate_fixation_date, equivalent_sum
+        )
+
+        # 6. Обновляем заявку ссылками на найденные записи
+        update_vals = {}
+        if matched_carrying_out:
+            update_vals['price_list_carrying_out_id'] = matched_carrying_out.id
+        if matched_profit:
+            update_vals['price_list_profit_id'] = matched_profit.id
+
+        if update_vals:
+            self.write(update_vals)
+
+        _logger.info(f"[PriceList] Заявка {self.id} обновлена: "
+                    f"Прайс лист проведение -> {matched_carrying_out.id if matched_carrying_out else 'нет'}, "
+                    f"Прайс лист Плательщика Прибыль -> {matched_profit.id if matched_profit else 'нет'}")
+    
+    def _find_matching_carrying_out_record(self, subagent_payers, rate_fixation_date, equivalent_sum):
+        """
+        Поиск подходящей записи в модели amanat.price_list_payer_carrying_out
+        """
+        PriceListCarryingOut = self.env['amanat.price_list_payer_carrying_out']
+        
+        # Строим домен для поиска
+        domain = [
+            ('payer_partners', 'in', subagent_payers.ids),
+            ('date_start', '<=', rate_fixation_date),
+            ('date_end', '>=', rate_fixation_date),
+        ]
+
+        # Добавляем условия по сумме заявки
+        domain += [
+            '|', ('min_application_amount', '=', False), ('min_application_amount', '<=', equivalent_sum),
+            '|', ('max_application_amount', '=', False), ('max_application_amount', '>=', equivalent_sum),
+        ]
+
+        # Ищем первую подходящую запись
+        matched_record = PriceListCarryingOut.search(domain, limit=1)
+        
+        if matched_record:
+            _logger.info(f"[PriceList] Найден прайс-лист проведение: {matched_record.id}")
         else:
-            _logger.info(f"[Khalida] Нет плательщика субагента в заявке {self.id}")
+            _logger.info(f"[PriceList] Не найден подходящий прайс-лист проведение для заявки {self.id}")
 
-        # 4. Поиск прайс-листа "Прибыль"
-        matched_profit = False
-        if subagent_payers:
-            PriceListProfit = self.env['amanat.price_list_payer_profit']
-            profit_domain = [
-                ('payer_subagent_ids', 'in', subagent_payers.ids),
-                ('date_start', '<=', rate_fixation_date),
-                ('date_end', '>=', rate_fixation_date),
-            ]
-            if equivalent_sum is not None:
-                profit_domain += [
-                    '|', ('min_zayavka_amount', '=', False), ('min_zayavka_amount', '<=', equivalent_sum),
-                    '|', ('max_zayavka_amount', '=', False), ('max_zayavka_amount', '>=', equivalent_sum),
-                ]
-            matched_profit = PriceListProfit.search(profit_domain, limit=1)
-            if matched_profit:
-                self.price_list_profit_id = matched_profit.id
-                _logger.info(f"[Khalida] Найден прайс-лист Прибыль: {matched_profit.id}")
-            else:
-                _logger.info(f"[Khalida] Не найден прайс-лист Прибыль для заявки {self.id}")
+        return matched_record
+
+    def _find_matching_profit_record(self, subagent_payers, rate_fixation_date, equivalent_sum):
+        """
+        Поиск подходящей записи в модели amanat.price_list_payer_profit
+        """
+        PriceListProfit = self.env['amanat.price_list_payer_profit']
+        
+        # Строим домен для поиска
+        domain = [
+            ('payer_subagent_ids', 'in', subagent_payers.ids),
+            ('date_start', '<=', rate_fixation_date),
+            ('date_end', '>=', rate_fixation_date),
+        ]
+
+        # Добавляем условия по сумме заявки
+        domain += [
+            '|', ('min_zayavka_amount', '=', False), ('min_zayavka_amount', '<=', equivalent_sum),
+            '|', ('max_zayavka_amount', '=', False), ('max_zayavka_amount', '>=', equivalent_sum),
+        ]
+
+        # Ищем первую подходящую запись
+        matched_record = PriceListProfit.search(domain, limit=1)
+        
+        if matched_record:
+            _logger.info(f"[PriceList] Найден прайс-лист прибыль: {matched_record.id}")
         else:
-            _logger.info(f"[Khalida] Нет плательщика субагента в заявке {self.id}")
+            _logger.info(f"[PriceList] Не найден подходящий прайс-лист прибыль для заявки {self.id}")
 
-        # 5. Поиск прайс-листа "Партнеры"
-        matched_partner = False
-        if contractor:
-            PriceListPartners = self.env['amanat.price_list_partners']
-            partners_domain = [
-                ('contragents_ids', 'in', contractor.id),
-                ('date_start', '<=', rate_fixation_date),
-                ('date_end', '>=', rate_fixation_date),
-            ]
-            if equivalent_sum is not None:
-                partners_domain += [
-                    '|', ('min_application_amount', '=', False), ('min_application_amount', '<=', equivalent_sum),
-                ]
-            # Для % вознаграждения (если задан)
-            if reward_percent is not None:
-                partners_domain += [
-                    '|', ('accrual_percentage', '=', False), ('accrual_percentage', '<=', reward_percent)
-                ]
-            matched_partner = PriceListPartners.search(partners_domain, limit=1)
-            if matched_partner:
-                self.price_list_partners_id = matched_partner.id
-                _logger.info(f"[Khalida] Найден прайс-лист Партнеры: {matched_partner.id}")
-            else:
-                _logger.info(f"[Khalida] Не найден прайс-лист Партнеры для заявки {self.id}")
-        else:
-            _logger.info(f"[Khalida] Нет контрагента в заявке {self.id}")
-
-        # 6. Финальный отчет
-        _logger.info(f"[Khalida] Итог для заявки {self.id}: Проведение={matched_carrying_out and matched_carrying_out.id or '-'}, Прибыль={matched_profit and matched_profit.id or '-'}, Партнеры={matched_partner and matched_partner.id or '-'}")
+        return matched_record 
