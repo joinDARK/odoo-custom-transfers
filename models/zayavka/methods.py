@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 from odoo import models, api
+from odoo.fields import Date
 
 _logger = logging.getLogger(__name__)
 
@@ -73,17 +74,37 @@ class ZayavkaMethods(models.Model):
                 rec.run_price_list_automation()
 
         # ... (остальная логика по датам)
-        if 'date_received_on_pc_auto' in vals:
-            for rec in self:
-                # Получаем все даты из extract_delivery_ids
-                dates = rec.extract_delivery_ids.mapped('date')
-                _logger.info(f"Даты из extract_delivery_ids: {dates}")
-                dates = [d for d in dates if d]
-                if dates:
-                    min_date = min(dates)
-                    max_date = max(dates)
-                    rec.date_received_on_pc_payment = min_date
-                    rec.date_agent_on_pc = max_date
+        # if 'date_received_on_pc_auto' in vals:
+        #     for rec in self:
+        #         # Получаем все даты из extract_delivery_ids
+        #         raw_dates = rec.extract_delivery_ids.mapped('date')
+        #         _logger.info(f"===============! Даты из extract_delivery_ids: {raw_dates} !===============")
+
+        #         # Приводим к типу date, фильтруем невалидные
+        #         valid_dates = []
+        #         for d in raw_dates:
+        #             if not d:
+        #                 continue
+        #             # Если d уже date, оставляем, если строка — пробуем преобразовать
+        #             if isinstance(d, str):
+        #                 try:
+        #                     parsed = Date.from_string(d)
+        #                     if parsed:
+        #                         valid_dates.append(parsed)
+        #                 except Exception as e:
+        #                     _logger.warning(f"Ошибка преобразования строки в дату: {d} ({e})")
+        #             else:
+        #                 valid_dates.append(d)
+
+        #         if valid_dates:
+        #             min_date = min(valid_dates)
+        #             max_date = max(valid_dates)
+        #             rec.date_received_on_pc_payment = min_date
+        #             rec.date_agent_on_pc = max_date
+        #             _logger.info(f"Ранняя дата: {min_date}, поздняя дата: {max_date}")
+        #         else:
+        #             _logger.info("Не найдены корректные даты в массиве.")
+
         return res
 
     @api.model
