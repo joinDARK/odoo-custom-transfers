@@ -75,31 +75,54 @@
                 <sheet>
                     <notebook>
                         <page string="Основные">
-                            <group string="Действия">
+                            <group string="Информация о выписке">
                                 <div class="o-form-group">
                                     <group>
-                                        <field name="assign_bulinan"/>
+                                        <field name="date"/>
                                     </group>
                                     <group>
-                                        <field name="create_transfer_bulinan"/>
+                                        <field name="amount"/>
+                                    </group>
+                                    <group>
+                                        <field name="document_id"/>
                                     </group>
                                 </div>
                             </group>
-                            <group string="Заявка">
-                                <field name="deal"/>
-                                <field name="applications"/>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="payer"/>
+                                        <field name="recipient"/>
+                                    </group>
+                                    <group>
+                                        <field name="payer_inn"/>
+                                        <field name="recipient_inn"/>
+                                    </group>
+                                </div>
                             </group>
                             <group>
-                                <field name="serial_number"/>
-                                <field name="document_id"/>
-                                <field name="bank_document"/>
-                                <field name="dds_article"/>
-                                <field name="direction_choice"/>
-                                <field name="counterparty1"/>
-                                <field name="counterparty2"/>
-                                <field name="wallet1"/>
-                                <field name="wallet2"/>
-                                <field name="percent" widget="percentage"/>
+                                <field name="payment_purpose"/>
+                                <div class="o-form-group">
+                                    <group>
+                                        <field name="deal"/>
+                                    </group>
+                                    <group>
+                                        <field name="dds_article"/>
+                                    </group>
+                                    <group>
+                                        <field name="assign_bulinan"/>
+                                    </group>
+                                </div>
+                            </group>
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="serial_number"/>
+                                    </group>
+                                    <group>
+                                        <field name="bank_document"/>
+                                    </group>
+                                </div>
                             </group>
                         </page>
                         <page string="Линки">
@@ -222,6 +245,19 @@
                                 <field name="date_start"/>
                                 <field name="date_end"/>
                                 <field name="range_status"/>
+                            </group>
+                        </page>
+                        <page string="Остальные поля">
+                            <group string="Заявка">
+                                <field name="applications"/>
+                            </group>
+                            <group>
+                                <field name="direction_choice"/>
+                                <field name="counterparty1"/>
+                                <field name="counterparty2"/>
+                                <field name="wallet1"/>
+                                <field name="wallet2"/>
+                                <field name="percent" widget="percentage"/>
                             </group>
                         </page>
                     </notebook>

@@ -155,26 +155,6 @@
                             </group>
                         </page>
                         <page string="Списания и роллапы">
-                            <!-- <header>
-                                <h2>Роллап списания</h2>
-                            </header>
-                            <group>
-                                <div class="o-form-group-2">
-                                    <group>
-                                        <field name="rollup_write_offs"/>
-                                        <field name="rollup_amount"/>
-                                    </group>
-                                    <group>
-                                        <field name="rollup_amount_total"/>
-                                        <button name="button_update_rollup_amount"
-                                                type="object"
-                                                string="Обновить сумму роллап списания"
-                                                class="btn-secondary"
-                                                groups="base.group_system,amanat.group_amanat_admin"
-                                        />
-                                    </group>
-                                </div>
-                            </group> -->
                             <header>
                                 <h2>Списания</h2>
                             </header>
@@ -184,8 +164,14 @@
                                     string="Создать списание"
                                     class="btn-primary"
                                 />
-                                <field name="write_offs" widget="many2many_tags"/>
-                                
+                                <!-- Показываем только первые 10 списаний -->
+                                <field name="write_offs_preview" widget="many2many_tags"/>
+                                <!-- Smart-кнопка -->
+                                <button name="action_show_all_writeoffs"
+                                    type="object"
+                                    string="Показать все списания"
+                                    class="btn-secondary"
+                                />
                             </group>
                         </page>
                         <page string="Роялти">

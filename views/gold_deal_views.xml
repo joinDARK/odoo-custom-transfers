@@ -142,6 +142,7 @@
               <button name="create_partner" string="Создать партнера" type="object" class="btn-primary"/>
               <field name="partner_ids">
                 <list editable="bottom">
+                  <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                   <field name="name"/>
                   <field name="partner_id"/>
                   <field name="pure_weight"/>

@@ -232,7 +232,7 @@ class Order(models.Model, AmanatBaseModel):
         store=True,
         tracking=True
     )
-    reconciliation = fields.Float(string='Сверка', tracking=True)
+    reconciliation = fields.Float(string='Сверка', tracking=True) # TODO: удалить
     remaining_debt = fields.Float(
         string='Остаток долга',
         compute='_compute_remaining_debt',

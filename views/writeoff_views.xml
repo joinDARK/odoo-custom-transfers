@@ -27,8 +27,61 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
-                    <group>
-                        <!-- То же самое: если нужно id, можно добавить <field name="id" readonly="1"/> -->
+                        <header>
+                            <h2>Общая информация о списании</h2>
+                        </header>
+
+                        первое
+                        <div class="o-form-group">
+                            <group>
+                                <field name="id_spisaniya"/>
+                                <field name="date"/>
+                                <field name="amount"/>
+                            </group>
+                            <group>
+                                <field name="sender_id"/>
+                                <field name="sender_payer_id"/>
+                                <field name="sender_wallet_id"/>
+                            </group>
+                            <group>
+                                <!-- <field name="money_id"/>
+                                <field name="investment_ids" widget="many2many_tags"/> -->
+                                <field name="writeoff_investment"/>
+                            </group>
+                        </div>
+
+                        <!-- второе
+                        <div class="o-form-group">
+                            <group>
+                                <field name="id_spisaniya"/>
+                                <field name="date"/>
+                                <field name="amount"/>
+                            </group>
+                        </div>
+
+                        <div class="o-form-group-2">
+                            <group>
+                                <header>
+                                    <h2>Информация об отправителе и получателе</h2>
+                                </header>
+                                <field name="sender_id"/>
+                                <field name="sender_payer_id"/>
+                                <field name="sender_wallet_id"/>
+                            </group>
+
+                            <group>
+                                <header>
+                                    <h2>Контейнеры</h2>
+                                </header>
+                                <field name="money_id"/>
+                                <field name="investment_ids" widget="many2many_tags"/>
+                                <field name="writeoff_investment"/>
+                            </group>
+                        </div> -->
+
+
+                    <!-- <group>
+                        То же самое: если нужно id, можно добавить <field name="id" readonly="1"/>
                         <field name="id_spisaniya"/>
                         <field name="date"/>
                         <field name="sender_id"/>
@@ -37,7 +90,7 @@
                         <field name="amount"/>
                         <field name="investment_ids" widget="many2many_tags"/>
                         <field name="writeoff_investment"/>
-                    </group>
+                    </group> -->
                 </sheet>
             </form>
         </field>
