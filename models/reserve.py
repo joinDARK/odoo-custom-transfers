@@ -1,7 +1,6 @@
 from odoo import models, fields, api
 from .base_model import AmanatBaseModel
 
-
 class Reserve(models.Model, AmanatBaseModel):
     _name = 'amanat.reserve'
     _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]

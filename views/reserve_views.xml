@@ -16,10 +16,16 @@
                     <notebook>
                         <page string="Основные">
                             <group>
-                                <field name="status"/>
-                                <field name="today_date"/>
-                                <field name="currency"/>
-                                <field name="amount"/>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="today_date"/>
+                                        <field name="status"/>
+                                    </group>
+                                    <group>
+                                        <field name="currency"/>
+                                        <field name="amount"/>
+                                    </group>
+                                </div>
                             </group>
                             <header>
                                 <h2>Участники</h2>
@@ -69,10 +75,10 @@
                                 <h2>Роялти</h2>
                             </header>
                             <group>
-                              <field name="has_royalti"/>
+                              <!-- <field name="has_royalti"/> -->
                               <field name="make_royalti"/>
                             </group>
-                            <group invisible="not has_royalti">
+                            <group>
                                 <div class="o-form-group-2">
                                     <group>        
                                     <!-- Прячем поля роялти, если галка has_royalti не стоит -->

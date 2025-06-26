@@ -183,7 +183,6 @@ class Transfer(models.Model, AmanatBaseModel):
     def _compute_intermediary_1_sum(self):
         for record in self:
             comp_sum = record.amount - (record.amount * (record.sending_commission_percent if record.sending_commission_percent else 1))
-            # Сумма 1 посредника = {Сумма} - ({Сумма} * {Процент комиссии по отправке Посредник 1} / 100)
             record.intermediary_1_sum = comp_sum - (comp_sum * record.intermediary_1_commission_percent) if comp_sum else 0.0
 
     @api.depends('intermediary_1_sum', 'intermediary_2_commission_percent')

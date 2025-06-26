@@ -41,7 +41,7 @@
             </form>
         </field>
     </record>
-
+    
     <!-- Действие для открытия списка записей модели "Сверка файлы" -->
     <record id="action_amanat_sverka_files" model="ir.actions.act_window">
         <field name="name">Сверка файлы</field>

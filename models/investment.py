@@ -95,6 +95,13 @@ class Investment(models.Model, AmanatBaseModel):
     # Отношения
     orders = fields.Many2many('amanat.order', 'amanat_order_investment_rel', 'investment_id', 'order_id', string='Ордеры', tracking=True)
     write_offs = fields.Many2many('amanat.writeoff', 'amanat_investment_writeoff_rel', 'investment_id', 'writeoff_id', string='Списания', tracking=True)
+    # Новое вычисляемое поле для предпросмотра первых 10 списаний
+    write_offs_preview = fields.Many2many(
+        'amanat.writeoff',
+        compute='_compute_write_offs_preview',
+        string='Списания (первые 10)',
+        store=False
+    )
 
     # Вычисляемые поля
     principal = fields.Float(string='Тело долга', compute='_compute_principal', store=True, tracking=True)
@@ -1084,4 +1091,27 @@ class Investment(models.Model, AmanatBaseModel):
                 'type': 'info',
                 'sticky': True,
             }
+        }
+
+    @api.depends('write_offs')
+    def _compute_write_offs_preview(self):
+        for rec in self:
+            # Сортируем по дате (или id) и берём первые 10
+            writeoffs = rec.write_offs.sorted(lambda w: (w.date, w.id))[:10]
+            rec.write_offs_preview = writeoffs
+
+    def action_show_all_writeoffs(self):
+        """
+        Открывает act_window со всеми списаниями, связанными с данной инвестицией
+        """
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Все списания',
+            'res_model': 'amanat.writeoff',
+            'view_mode': 'list,form',
+            # 'view_id': self.env.ref('amanat.writeoff_list_view').id,  # убрано для совместимости
+            'domain': [('investment_ids', 'in', self.id)],
+            'target': 'current',
+            'context': dict(self.env.context),
         }
