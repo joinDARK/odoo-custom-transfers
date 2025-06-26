@@ -418,6 +418,9 @@
             </page>
             <page string="Нераспределенные">
               <group>
+                <field name="for_khalida_temp"/>
+              </group>
+              <group>
                 <field name="order_ids"/>
               </group>
               <group>
@@ -430,7 +433,7 @@
               <group string="Фин менеджер Сбер упраавленка">
                 <field name="sber_operating_expenses"/>
               </group>
-              <group string="Прайс лист Проведение">
+              <group string="Прайс лист За проведение">
                 <field name="price_list_carrying_out_id"/>
                 <field name="price_list_carrying_out_accrual_percentage" widget="percentage"/>
                 <field name="price_list_carrying_out_fixed_deal_fee"/>
@@ -449,7 +452,7 @@
                 <field name="money_cost_rule_credit_period"/>
                 <field name="money_cost_rule_extra_days"/>
               </group>
-              <group string="Правило себестоимость денег">
+              <group string="Правило расхода платежа">
                 <field name="expense_rule_id"/>
                 <field name="percent_from_expense_rule" widget="percentage"/>
               </group>

@@ -293,7 +293,7 @@
         id="amanat_menu_price_list_payer_carrying_out" 
         name="Прайс лист Плательщика За проведение"
         parent="amanat_menu_main_group"
-        action="action_price_list_payer_carrying_out"
+        action="price_list_payer_carrying_out_action"
     />
 
     <menuitem

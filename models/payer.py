@@ -45,11 +45,28 @@ class Payer(models.Model, AmanatBaseModel):
     ) # Исправить связь
     deductions = fields.Char(string='Списания', tracking=True) # Исправить связь
     applications = fields.Char(string='Заявки', tracking=True) # Исправить связь
-    pricelist_conduct = fields.Char(string='Прайс лист Плательщика За проведение', tracking=True) # Исправить связь
-    pricelist_profit = fields.Char(string='Прайс лист Плательщика Прибыль', tracking=True) # Исправить связь
+    # pricelist_conduct = fields.Char(string='Прайс лист Плательщика За проведение', tracking=True) # Исправить связь
+    pricelist_partners = fields.One2many(
+        'amanat.price_list_partners',
+        'payer_partner',
+        string='Прайс лист Партнеры',
+        tracking=True
+    )
 
-    price_list_profit_id = fields.Many2one(
+    price_list_carrying_out_ids = fields.Many2many(
+        'amanat.price_list_payer_carrying_out',
+        'amanat_price_list_payer_carrying_out_rel',
+        'payer_id',
+        'price_list_id',
+        string='Прайс листы За проведение',
+        tracking=True
+    )
+
+    price_list_profit_ids = fields.Many2many(
         'amanat.price_list_payer_profit',
+        'amanat_payer_pricelist_profit_rel',
+        'payer_id',
+        'pricelist_profit_id',
         string='Прайс лист Плательщика Прибыль',
         tracking=True
     ) # Исправить связь

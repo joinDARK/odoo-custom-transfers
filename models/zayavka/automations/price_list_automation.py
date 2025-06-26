@@ -19,14 +19,14 @@ class ZayavkaPriceListAutomation(models.Model):
         self.price_list_profit_id = False
         _logger.info(f"[PriceList] Ссылки в заявке {self.id} очищены")
 
-        # 2. Извлекаем нужные поля из заявки
-        subagent_payers = self.subagent_payer_ids  # many2many
+        # 2. Используем compute-поле subagent_payer_ids напрямую
+        subagent_payers = self.subagent_payer_ids
         rate_fixation_date = self.rate_fixation_date
         equivalent_sum = self.equivalent_amount_usd
 
         # 3. Проверяем наличие необходимых полей
         if not subagent_payers:
-            _logger.warning(f"[PriceList] Пропускаем заявку {self.id}: отсутствует 'Плательщик Субагента'")
+            _logger.warning(f"[PriceList] Пропускаем заявку {self.id}: отсутствует 'Плательщик Субагента' {subagent_payers}")
             return
 
         if not rate_fixation_date:
@@ -69,7 +69,7 @@ class ZayavkaPriceListAutomation(models.Model):
         
         # Строим домен для поиска
         domain = [
-            ('payer_partner', 'in', subagent_payers.ids),
+            ('payer_partners', 'in', subagent_payers.ids),
             ('date_start', '<=', rate_fixation_date),
             ('date_end', '>=', rate_fixation_date),
         ]
