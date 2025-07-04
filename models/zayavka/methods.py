@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
 from odoo import models, api
-from odoo.fields import Date
 
 _logger = logging.getLogger(__name__)
 
@@ -41,6 +40,7 @@ class ZayavkaMethods(models.Model):
                     rec._on_extract_delivery_ids_changed(old_ids, new_ids)
                 else:
                     _logger.info(f"Изменений не обнаружено для заявки {rec.id}")
+                rec.run_change_data()
 
         if 'deal_closed_date' in vals:
             for rec in self:
@@ -74,8 +74,6 @@ class ZayavkaMethods(models.Model):
                 rec.run_price_list_automation()
 
         # ... (остальная логика по датам)
-        # if 'date_received_on_pc_auto' in vals:
-        #     for rec in self:
         #         # Получаем все даты из extract_delivery_ids
         #         raw_dates = rec.extract_delivery_ids.mapped('date')
         #         _logger.info(f"===============! Даты из extract_delivery_ids: {raw_dates} !===============")

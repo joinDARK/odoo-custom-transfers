@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="reconciliation_date_range_wizard_form_view" model="ir.ui.view">
+        <field name="name">amanat.reconciliation.date.range.wizard.form</field>
+        <field name="model">amanat.reconciliation.date.range.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Выбор диапазона дат">
+                <group>
+                    <field name="field_name" widget="selection"/>
+                </group>
+                <group string="Быстрый выбор периода">
+                    <field name="quick_filter" widget="radio" options="{'horizontal': false}" nolabel="1"/>
+                </group>
+                <group string="Выбранные даты">
+                    <group>
+                        <field name="date_from"/>
+                    </group>
+                    <group>
+                        <field name="date_to"/>
+                    </group>
+                </group>
+                <footer>
+                    <button string="Выбрать" type="object" name="action_apply_filter" class="btn-primary"/>
+                    <button string="Отмена" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Server Action для открытия wizard -->
+    <record id="action_reconciliation_date_range_wizard" model="ir.actions.act_window">
+        <field name="name">Диапазон дат</field>
+        <field name="res_model">amanat.reconciliation.date.range.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    
+    <!-- Server Action для вызова из представления -->
+    <record id="action_server_reconciliation_date_range" model="ir.actions.server">
+        <field name="name">Выбрать диапазон дат</field>
+        <field name="model_id" ref="model_amanat_reconciliation"/>
+        <field name="binding_model_id" ref="model_amanat_reconciliation"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Диапазон дат',
+    'res_model': 'amanat.reconciliation.date.range.wizard',
+    'view_mode': 'form',
+    'target': 'new',
+}
+        </field>
+    </record>
+</odoo> 

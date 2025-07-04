@@ -1,6 +1,7 @@
 # crm_amanat/models/__init__.py
 from . import list_view_mixin
 from . import base_model
+from . import dashboard
 from . import test_realtime
 from . import activity
 from . import contragent
@@ -36,6 +37,8 @@ from . import price_list_payer_carrying_out
 from . import payment_order_rule
 from . import money_cost_rule
 from . import expense_rule
+from . import zayavka_date_range_wizard
+from . import reconciliation_date_range_wizard
 
 
 

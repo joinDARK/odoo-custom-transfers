@@ -95,7 +95,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
         tracking=True
     )
     order_comment = fields.Text(string='Комментарий (from Ордер)', related='order_id.comment', store=True, tracking=True)
-    unload = fields.Boolean(string='Выгрузить', default=False, tracking=True)
+    # unload = fields.Boolean(string='Выгрузить', default=False, tracking=True)
 
     range = fields.Many2one('amanat.ranges', string='Диапазон', tracking=True)
     range_reconciliation_date_1 = fields.Date(string='Сверка Дата 1 (from Диапазон)', related='range.reconciliation_date_1', store=True, tracking=True)
@@ -234,12 +234,12 @@ class Reconciliation(models.Model, AmanatBaseModel):
             data.append({
                 'id': rec.id,
                 '№': rec.id,
-                'Контрагент': rec.partner_id.name,
+                'Контрагент': [{'name': rec.partner_id.name}] if rec.partner_id else [],
                 'Дата': rec.date.isoformat() if rec.date else '',
-                'Отправитель': ', '.join(rec.sender_id.mapped('name')),
-                'Контрагенты (from Отправитель)': ', '.join(rec.sender_contragent.mapped('name')),
-                'Получатель': ', '.join(rec.receiver_id.mapped('name')),
-                'Валюта': rec.currency,
+                'Отправитель': [{'name': name} for name in rec.sender_id.mapped('name')],
+                'Контрагенты (from Отправитель)': [{'name': name} for name in rec.sender_contragent.mapped('name')],
+                'Получатель': [{'name': name} for name in rec.receiver_id.mapped('name')],
+                'Валюта': {'name': dict(rec._fields['currency'].selection).get(rec.currency, rec.currency)},
                 'Сумма': rec.sum,
                 'Сумма RUB': rec.sum_rub,
                 'Сумма USD': rec.sum_usd,
@@ -256,7 +256,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
                 'Сумма THB КЕШ': rec.sum_thb_cashe,
                 'Ордеры': ', '.join(rec.order_id.mapped('name')),
                 'Комментарий (from Ордер)': rec.order_comment or '',
-                'Сумма_Ордер': rec.order_id and rec.order_id[0].amount_total or 0.0,  # пример
+                'Сумма_Ордер': rec.order_id and rec.order_id[0].amount or 0.0,
                 'Курс': rec.rate,
             })
         return data
@@ -296,5 +296,32 @@ class Reconciliation(models.Model, AmanatBaseModel):
                     'res_model': self._name,
                     'res_id': rec.id,
                 })
+                # --- Новая логика: только одна запись на контрагента ---
+                sverka_file = self.env['amanat.sverka_files'].search([
+                    ('contragent_id', '=', rec.partner_id.id)
+                ], limit=1)
+                vals = {
+                    'name': file_name + ".xlsx",
+                    'contragent_id': rec.partner_id.id,
+                    'file_attachments': [(6, 0, [attachment.id])],
+                }
+                if sverka_file:
+                    sverka_file.write(vals)
+                else:
+                    self.env['amanat.sverka_files'].create(vals)
+                # --- конец новой логики ---
+
+                records_for_notification = self.env['amanat.sverka_files'].search([('contragent_id', '=', rec.partner_id.id)])
+                # сделай отпарвку уведомлений для пользователя
+
+        
+        return True
+    
+    def action_send_selected_to_server(self):
+        """
+        Массовое действие для отправки выбранных записей на сервер.
+        """
+        for rec in self:
+            rec._run_reconciliation_export()
         return True
     

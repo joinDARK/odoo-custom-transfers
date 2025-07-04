@@ -1,0 +1,620 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="amanat.AmanatDashboard" owl="1">
+        <div class="o_amanat_dashboard o_action">
+            <div class="o_amanat_dashboard_content">
+                <t t-if="state.isLoading">
+                    <div class="text-center py-5">
+                        <i class="fa fa-spinner fa-spin fa-3x text-primary"/>
+                        <p class="mt-3">Загрузка данных...</p>
+                    </div>
+                </t>
+
+                <t t-else="">
+                    <!-- Секция выбора диапазонов дат -->
+                    <div class="date-range-selector mb-4">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-lg-5">
+                                <div class="date-range-group">
+                                    <h6 class="mb-2">
+                                        <i class="fa fa-calendar text-primary"/> Период 1 (Синий)
+                                    </h6>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small">От:</label>
+                                            <input type="date" class="form-control form-control-sm" 
+                                                   t-model="state.dateRange1.start"
+                                                   t-on-change="onDateRange1Change"/>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">До:</label>
+                                            <input type="date" class="form-control form-control-sm" 
+                                                   t-model="state.dateRange1.end"
+                                                   t-on-change="onDateRange1Change"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-5">
+                                <div class="date-range-group">
+                                    <h6 class="mb-2">
+                                        <i class="fa fa-calendar text-danger"/> Период 2 Для сравнения (Красный)
+                                    </h6>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small">От:</label>
+                                            <input type="date" class="form-control form-control-sm" 
+                                                   t-model="state.dateRange2.start"
+                                                   t-on-change="onDateRange2Change"/>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">До:</label>
+                                            <input type="date" class="form-control form-control-sm" 
+                                                   t-model="state.dateRange2.end"
+                                                   t-on-change="onDateRange2Change"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2">
+                                <button class="btn btn-primary btn-sm w-100" t-on-click="applyDateRanges">
+                                    <i class="fa fa-filter"/> Применить фильтры
+                                </button>
+                                <button class="btn btn-secondary btn-sm w-100 mt-2" t-on-click="resetDateRanges">
+                                    <i class="fa fa-undo"/> Сбросить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Верхняя секция с основными показателями -->
+                    <div class="row g-3 mb-4">
+                        <!-- Переводы -->
+                        <div class="col-lg-4">
+                            <div class="stat-card clickable" t-on-click="openTransfers">
+                                <div class="stat-header">
+                                    <h5>Переводы</h5>
+                                    <i class="fa fa-external-link-alt stat-link-icon"/>
+                                </div>
+                                <div class="stat-body">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Итого</span>
+                                        <span class="stat-value"><t t-esc="formatNumber(state.transfers.total)"/></span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Сумма</span>
+                                        <span class="stat-value"><t t-esc="formatNumber(state.transfers.amount)"/></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Денежные контейнеры для плательщиков -->
+                        <div class="col-lg-4">
+                            <div class="stat-card clickable" t-on-click="openMoneyContainers">
+                                <div class="stat-header">
+                                    <h5>Денежные контейнеры для плательщиков</h5>
+                                    <i class="fa fa-external-link-alt stat-link-icon"/>
+                                </div>
+                                <div class="stat-body">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Итого</span>
+                                        <span class="stat-value"><t t-esc="formatNumber(state.money.total)"/></span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Активные</span>
+                                        <span class="stat-value"><t t-esc="formatNumber(state.money.positive)"/></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Валютные балансы -->
+                        <div class="col-lg-4">
+                            <div class="stat-card clickable" t-on-click="openMoneyContainers">
+                                <div class="stat-header">
+                                    <h5>Валютные балансы деньгонос</h5>
+                                    <i class="fa fa-external-link-alt stat-link-icon"/>
+                                </div>
+                                <div class="stat-body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="stat-item currency-item" t-on-click="() => openMoneyContainersByCurrency('RUB')">
+                                                <span class="stat-label">RUB</span>
+                                                <span class="stat-value"><t t-esc="formatNumber(state.currencies.rub)"/></span>
+                                            </div>
+                                            <div class="stat-item currency-item" t-on-click="() => openMoneyContainersByCurrency('USD')">
+                                                <span class="stat-label">USD</span>
+                                                <span class="stat-value"><t t-esc="formatNumber(state.currencies.usd)"/></span>
+                                            </div>
+                                            <div class="stat-item currency-item" t-on-click="() => openMoneyContainersByCurrency('USDT')">
+                                                <span class="stat-label">USDT</span>
+                                                <span class="stat-value"><t t-esc="formatNumber(state.currencies.usdt)"/></span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="stat-item currency-item" t-on-click="() => openMoneyContainersByCurrency('EUR')">
+                                                <span class="stat-label">EURO</span>
+                                                <span class="stat-value"><t t-esc="formatNumber(state.currencies.euro)"/></span>
+                                            </div>
+                                            <div class="stat-item currency-item" t-on-click="() => openMoneyContainersByCurrency('CNY')">
+                                                <span class="stat-label">CNY</span>
+                                                <span class="stat-value"><t t-esc="formatNumber(state.currencies.cny)"/></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Второй ряд - Заявки в рамках диапазона (на всю ширину) -->
+                    <div class="row g-3 mb-4">
+                        <!-- Заявки в рамках диапазона (на всю ширину) -->
+                        <div class="col-12">
+                            <div class="stat-card zayavki-comparison-card clickable" t-on-click="openZayavki">
+                                <div class="stat-header">
+                                    <h5>Заявки в рамках диапазона</h5>
+                                    <i class="fa fa-external-link-alt stat-link-icon"/>
+                                </div>
+                                <div class="stat-body">
+                                    <div class="row">
+                                        <!-- Левая колонка (Период 1) -->
+                                        <div class="col-md-6">
+                                            <div class="zayavki-period-box">
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Количество заявок</span>
+                                                    <span class="stat-value">
+                                                        <t t-if="state.comparisonData and state.comparisonData.range1">
+                                                            <t t-esc="formatNumber(state.comparisonData.range1.zayavki_count || 0)"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <t t-esc="formatNumber(state.zayavki.total)"/>
+                                                        </t>
+                                                    </span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Количество закрытых заявок</span>
+                                                    <span class="stat-value">
+                                                        <t t-if="state.comparisonData and state.comparisonData.range1">
+                                                            <t t-esc="formatNumber(state.comparisonData.range1.zayavki_closed || 0)"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <t t-esc="formatNumber(state.zayavki.closed)"/>
+                                                        </t>
+                                                    </span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Сумма закрытых заявок</span>
+                                                    <span class="stat-value">
+                                                        <t t-if="state.comparisonData and state.comparisonData.range1">
+                                                            <t t-esc="formatNumber(state.comparisonData.range1.zayavki_closed_amount || 0)"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <t t-esc="formatNumber(state.zayavki.closedAmount)"/>
+                                                        </t>
+                                                    </span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Эквивалент $ дата фиксации курса сегодня</span>
+                                                    <span class="stat-value">
+                                                        <t t-if="state.comparisonData and state.comparisonData.range1">
+                                                            <t t-esc="formatNumber(state.comparisonData.range1.zayavki_usd_equivalent || 0)"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <t t-esc="formatNumber(state.zayavki.usdEquivalent || 0)"/>
+                                                        </t>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Правая колонка (Период 2) - показываем только если есть данные сравнения -->
+                                        <div class="col-md-6" t-if="state.comparisonData and state.comparisonData.range2">
+                                            <div class="zayavki-period-box">
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Количество заявок</span>
+                                                    <span class="stat-value">
+                                                        <t t-esc="formatNumber(state.comparisonData.range2.zayavki_count || 0)"/>
+                                                    </span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Количество закрытых заявок</span>
+                                                    <span class="stat-value">
+                                                        <t t-esc="formatNumber(state.comparisonData.range2.zayavki_closed || 0)"/>
+                                                    </span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Сумма закрытых заявок</span>
+                                                    <span class="stat-value">
+                                                        <t t-esc="formatNumber(state.comparisonData.range2.zayavki_closed_amount || 0)"/>
+                                                    </span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label"></span>
+                                                    <span class="stat-value">
+                                                        <t t-esc="formatNumber(state.comparisonData.range2.zayavki_usd_equivalent || 0)"/>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Третья колонка для статусов (показываем когда нет сравнения) -->
+                                        <div class="col-md-6" t-if="!state.comparisonData or !state.comparisonData.range2">
+                                            <div class="zayavki-period-box">
+                                                <div class="stat-header mb-3">
+                                                    <h6>Заявки по статусам (топ 5)</h6>
+                                                </div>
+                                                <t t-set="sortedStatuses" t-value="Object.entries(state.zayavki.byStatus || {}).sort((a, b) => b[1] - a[1]).slice(0, 5)"/>
+                                                <t t-foreach="sortedStatuses" t-as="statusEntry" t-key="statusEntry_index">
+                                                    <div class="stat-item">
+                                                        <span class="stat-label"><t t-esc="statusEntry[0]"/></span>
+                                                        <span class="stat-value"><t t-esc="formatNumber(statusEntry[1])"/></span>
+                                                    </div>
+                                                </t>
+                                                <t t-if="!sortedStatuses.length">
+                                                    <div class="stat-item">
+                                                        <span class="stat-label">Нет данных</span>
+                                                        <span class="stat-value">0</span>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Соотношение ИМПОРТ/ЭКСПОРТ -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg-6">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Соотношение ИМПОРТ/ЭКСПОРТ</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="import-export-donut"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Количество заявок под каждого контрагента -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Количество заявок под каждого контрагента</h6>
+                                <div class="chart-container-large">
+                                    <canvas id="contragents-by-zayavki-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Средний чек у Контрагента -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Средний чек у Контрагента</h6>
+                                <div class="chart-container-large">
+                                    <canvas id="contragent-avg-check-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Количество заявок под каждого агента -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Количество заявок под каждого агента</h6>
+                                <div class="chart-container-large">
+                                    <canvas id="agents-by-zayavki-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Количество заявок под каждого клиента -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Количество заявок под каждого клиента</h6>
+                                <div class="chart-container-large">
+                                    <canvas id="clients-by-zayavki-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Средняя сумма заявок по клиентам -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Средняя сумма заявок по клиентам</h6>
+                                <div class="chart-container-large">
+                                    <canvas id="client-avg-amount-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Количество заявок под каждого плательщика субагента -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Количество заявок под каждого плательщика субагента</h6>
+                                <div class="chart-container-large">
+                                    <canvas id="subagent-payers-by-zayavki-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Первый ряд графиков -->
+                    <div class="row g-3 mb-4">
+                        <!-- Переводы по статусам (круговая) -->
+                        <div class="col-lg-3">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Переводы по статусам</h6>
+                                <div class="chart-container-small">
+                                    <canvas id="transfers-status-pie"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ордера по статусам (круговая) -->
+                        <!-- <div class="col-lg-3">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Ордера по статусам</h6>
+                                <div class="chart-container-small">
+                                    <canvas id="orders-status-pie"></canvas>
+                                </div>
+                            </div>
+                        </div> -->
+
+                        <!-- Топ контрагентов -->
+                        <div class="col-lg-3">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Топ контрагентов по переводам</h6>
+                                <div class="chart-container-small">
+                                    <canvas id="top-contragents-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Переводы по валютам -->
+                        <div class="col-lg-3">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Переводы по валютам</h6>
+                                <div class="chart-container-small">
+                                    <canvas id="transfers-currency-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Второй ряд графиков -->
+                    <div class="row g-3 mb-4">
+                        <!-- Переводы по месяцам -->
+                        <div class="col-lg-6">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Переводы по месяцам</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="transfers-monthly-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ордера по месяцам -->
+                        <div class="col-lg-6">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Ордера по месяцам</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="orders-monthly-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Третий ряд графиков -->
+                    <div class="row g-3 mb-4">
+                        <!-- Переводы по странам -->
+                        <div class="col-lg-4">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Переводы по странам</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="transfers-country-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Топ плательщиков -->
+                        <div class="col-lg-4">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Топ плательщиков</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="top-payers-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Эффективность менеджеров -->
+                        <div class="col-lg-4">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Эффективность менеджеров</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="managers-efficiency-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Четвертый ряд - распределение по валютам -->
+                    <div class="row g-3 mb-4">
+                        <!-- Распределение RUB -->
+                        <div class="col-lg-3">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Распределение RUB</h6>
+                                <div class="chart-container-small">
+                                    <canvas id="rub-distribution-pie"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Распределение USD -->
+                        <div class="col-lg-3">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Распределение USD</h6>
+                                <div class="chart-container-small">
+                                    <canvas id="usd-distribution-pie"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Распределение EUR -->
+                        <div class="col-lg-3">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Распределение EUR</h6>
+                                <div class="chart-container-small">
+                                    <canvas id="eur-distribution-pie"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Общий баланс -->
+                        <div class="col-lg-3">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Общий баланс по валютам</h6>
+                                <div class="chart-container-small">
+                                    <canvas id="total-balance-doughnut"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Пятый ряд - динамика -->
+                    <div class="row g-3 mb-4">
+                        <!-- Динамика переводов -->
+                        <div class="col-lg-6">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Динамика переводов (последние 30 дней)</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="transfers-dynamics-line"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Динамика ордеров -->
+                        <div class="col-lg-6">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Динамика ордеров (последние 30 дней)</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="orders-dynamics-line"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Шестой ряд - детальная аналитика -->
+                    <div class="row g-3 mb-4">
+                        <!-- Переводы по типам -->
+                        <div class="col-lg-4">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Переводы по типам операций</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="transfers-type-bar"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Загрузка по дням недели -->
+                        <div class="col-lg-4">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Загрузка по дням недели</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="weekday-load-bar"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Среднее время обработки -->
+                        <div class="col-lg-4">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Среднее время обработки</h6>
+                                <div class="chart-container-medium">
+                                    <canvas id="processing-time-bar"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Сравнение данных по заявкам -->
+                    <div class="comparison-section" t-if="state.comparisonData">
+                        <h3>Сравнение заявок по периодам</h3>
+                        <div class="row g-3 mb-4">
+                            <div class="col-lg-12">
+                                <div class="stat-card">
+                                    <div class="stat-header">
+                                        <h5>Сравнение заявок</h5>
+                                    </div>
+                                    <div class="stat-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Период 1 - Общее количество</span>
+                                                    <span class="stat-value"><t t-esc="formatNumber(state.comparisonData.range1.zayavki_count || 0)"/></span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Период 1 - Закрытые заявки</span>
+                                                    <span class="stat-value"><t t-esc="formatNumber(state.comparisonData.range1.zayavki_closed || 0)"/></span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Период 1 - Сумма закрытых</span>
+                                                    <span class="stat-value"><t t-esc="formatNumber(state.comparisonData.range1.zayavki_closed_amount || 0)"/></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Период 2 - Общее количество</span>
+                                                    <span class="stat-value"><t t-esc="formatNumber(state.comparisonData.range2.zayavki_count || 0)"/></span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Период 2 - Закрытые заявки</span>
+                                                    <span class="stat-value"><t t-esc="formatNumber(state.comparisonData.range2.zayavki_closed || 0)"/></span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Период 2 - Сумма закрытых</span>
+                                                    <span class="stat-value"><t t-esc="formatNumber(state.comparisonData.range2.zayavki_closed_amount || 0)"/></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Разница - Общее количество</span>
+                                                    <span class="stat-value" t-att-class="(state.comparisonData.range1.zayavki_count || 0) - (state.comparisonData.range2.zayavki_count || 0) >= 0 ? 'text-success' : 'text-danger'">
+                                                        <t t-esc="formatNumber((state.comparisonData.range1.zayavki_count || 0) - (state.comparisonData.range2.zayavki_count || 0))"/>
+                                                    </span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Разница - Закрытые заявки</span>
+                                                    <span class="stat-value" t-att-class="(state.comparisonData.range1.zayavki_closed || 0) - (state.comparisonData.range2.zayavki_closed || 0) >= 0 ? 'text-success' : 'text-danger'">
+                                                        <t t-esc="formatNumber((state.comparisonData.range1.zayavki_closed || 0) - (state.comparisonData.range2.zayavki_closed || 0))"/>
+                                                    </span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-label">Разница - Сумма закрытых</span>
+                                                    <span class="stat-value" t-att-class="(state.comparisonData.range1.zayavki_closed_amount || 0) - (state.comparisonData.range2.zayavki_closed_amount || 0) >= 0 ? 'text-success' : 'text-danger'">
+                                                        <t t-esc="formatNumber((state.comparisonData.range1.zayavki_closed_amount || 0) - (state.comparisonData.range2.zayavki_closed_amount || 0))"/>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates> 

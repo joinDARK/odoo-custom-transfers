@@ -1005,7 +1005,7 @@ class ZayavkaComputes(models.Model):
                 f"{d[8:10]}.{d[5:7]}.{d[0:4]}"
                 for d in date_strs if d and len(d) == 10
             ]
-            rec.date_received_on_pc_auto = ', '.join(date_strs) if date_strs else False
+            rec.date_received_on_pc_auto = ', '.join(date_strs) if date_strs else Fals
 
     @api.depends(
         'currency',

@@ -6,6 +6,8 @@
         <field name="arch" type="xml">
             <list editable="top">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Принудительное сопоставление" type="object" name="force_application_matching" icon="fa-link" class="btn-secondary"/>
+                <button width="30" title="Диагностика" type="object" name="show_diagnosis_result" icon="fa-search" class="btn-info"/>
                 <field width="200" name="name"/>
                 <field width="200" name="serial_number"/>
                 <field width="200" name="date"/>
@@ -70,6 +72,21 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button name="manual_match_applications" 
+                            string="Найти заявки" 
+                            type="object" 
+                            class="btn-primary"
+                            confirm="Найти и связать подходящие заявки для этой выписки?"/>
+                    <button name="force_application_matching" 
+                            string="Принудительное сопоставление" 
+                            type="object" 
+                            class="btn-secondary"
+                            confirm="Запустить принудительное сопоставление с детальной диагностикой?"/>
+                    <button name="show_diagnosis_result" 
+                            string="Диагностика" 
+                            type="object" 
+                            class="btn-info"
+                            confirm="Провести диагностику проблем с сопоставлением заявок?"/>
                     <h1><field name="name" readonly="1"/></h1>
                 </header>
                 <sheet>
@@ -127,7 +144,10 @@
                         </page>
                         <page string="Линки">
                             <group>
+                                <field name="direction_choice"/>
+                                <field name="applications"/>
                                 <field name="currency_reserve"/>
+                                <field name="transfer_ids"/>
                                 <field name="conversion"/>
                                 <field name="investment"/>
                                 <field name="gold_deal"/>

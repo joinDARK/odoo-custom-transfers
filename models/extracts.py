@@ -229,9 +229,16 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
                 f"<b>Создано новых записей: {created_count}</b><br/>"
                 f"Пропущено дубликатов: {skipped_duplicate_count}<br/>"
                 f"Пропущено из-за проблем с ИНН: {skipped_inn_count}<br/>"
-                f"Пропущено из-за ошибок парсинга (дата/сумма): {skipped_parsing_count}"
+                f"Пропущено из-за ошибок парсинга (дата/сумма): {skipped_parsing_count}<br/>"
+                f"<i>Автоматическое сопоставление с заявками происходит при создании каждой записи</i>"
             )
             self.message_post(body=summary_message)
+
+            # Автоматический запуск обработки СТЕЛЛАР/ТДК/ИНДОТРЕЙД РФ
+            self.env['amanat.extract_delivery']._run_stellar_tdk_logic()
+            
+            # Примечание: автоматическое сопоставление с заявками теперь происходит
+            # при создании каждой записи extract_delivery в методе create()
 
         except Exception as e:
             _logger.error("Error during record creation for extract %s: %s", self.name, e, exc_info=True)

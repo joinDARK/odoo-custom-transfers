@@ -29,6 +29,7 @@ export class AppsBar extends Component {
                     { name: "Ордер", action: "amanat.order_action" },
                     { name: "Контейнер", action: "amanat.money_action" },
                     { name: "Сверка", action: "amanat.reconciliation_action" },
+                    { name: "Сверка файлы", action: "amanat.action_amanat_sverka_files" },
                 ],
             },
             {
@@ -63,22 +64,17 @@ export class AppsBar extends Component {
                 ],
             },
             {
-                name: "Остальное",
+                name: "Кассы",
                 items: [
-                    { name: "Диапазоны", action: "amanat.ranges_action" },
-                    { name: "Курсы к доллару", action: "amanat.rates_action" },
-                    { name: "Платежи", action: "amanat.payment_action" },
-                    { name: "Период", action: "amanat.action_amanat_period" },
-                    { name: "Сверка файлы", action: "amanat.action_amanat_sverka_files" },
-                    { name: "Списания", action: "amanat.writeoff_action" },
-                    { name: "Кошелек", action: "amanat.wallet_action" },
-                    { name: "Заявки", action: "amanat.zayavka_action" },
                     { name: "Касса Иван", action: "amanat.kassa_ivan_action" },
                     { name: "Касса 2", action: "amanat.kassa_2_action" },
                     { name: "Касса 3", action: "amanat.kassa_3_action" },
-                    { name: "Прайс лист партнеры", action: "amanat.price_list_partners_action" },
-                    { name: "Прайс лист Плательщика", action: "amanat.price_list_payer_profit_action" },
                 ],
+            },
+            {
+                name: "Заявки",
+                action: "amanat.zayavka_action",
+                actionMethod: "openZayvaki",
             },
             {
                 name: "Автоматизации",
@@ -89,6 +85,17 @@ export class AppsBar extends Component {
                 name: "Логи",
                 action: "amanat.activity_action",
                 actionMethod: "openLogs",
+            },
+            {
+                name: "Остальное",
+                items: [
+                    { name: "Диапазоны", action: "amanat.ranges_action" },
+                    { name: "Курсы к доллару", action: "amanat.rates_action" },
+                    { name: "Платежи", action: "amanat.payment_action" },
+                    { name: "Период", action: "amanat.action_amanat_period" },
+                    { name: "Списания", action: "amanat.writeoff_action" },
+                    { name: "Кошелек", action: "amanat.wallet_action" },
+                ],
             },
         ];
 
@@ -221,6 +228,11 @@ export class AppsBar extends Component {
     openAutomations() {
         this.actionService.doAction('amanat.action_automation_for_amanat', { additionalContext: { clear_breadcrumb: true } });
         this.state.activeItem = 'openAutomations';
+    }
+
+    openZayvaki() {
+        this.actionService.doAction('amanat.zayavka_action', { additionalContext: { clear_breadcrumb: true } });
+        this.state.activeItem = 'openZayvaki';
     }
 
     openLogs() {
