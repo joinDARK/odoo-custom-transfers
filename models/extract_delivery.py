@@ -204,6 +204,7 @@ class Extract_delivery(models.Model, AmanatBaseModel):
             elif record.gold_deal:
                 record.deal = ", ".join(record.gold_deal.mapped('name'))
             elif record.applications:
+                # Используем правильное поле zayavka_id для отображения
                 record.deal = ", ".join(record.applications.mapped('zayavka_id'))
             else:
                 record.deal = ""
@@ -228,6 +229,110 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 rec.assign_bulinan = False
         return res
 
+    def _find_matching_applications(self):
+        """
+        Находит заявки, подходящие для текущей записи выписки по критериям:
+        - плательщик и получатель выписки должны быть среди плательщиков заявки  
+        - сумма должна совпадать с допуском ±1 рубль
+        - заявка должна быть взята в работу
+        """
+        self.ensure_one()
+        
+        if not self.payer or not self.recipient or not self.amount:
+            return self.env['amanat.zayavka']
+            
+        TOLERANCE = 1.0
+        
+        # Получаем плательщиков выписки
+        extract_payers = [self.payer.id, self.recipient.id]
+        extract_sum = self.amount
+        
+        # Ищем заявки с заполненной датой "Взята в работу"
+        all_zayavki = self.env['amanat.zayavka'].search([('taken_in_work_date', '!=', False)])
+        
+        matching_zayavki = []
+        
+        for zayavka in all_zayavki:
+            # Собираем плательщиков заявки через контрагентов
+            candidate_payers = []
+            
+            if zayavka.agent_id and zayavka.agent_id.payer_ids:
+                candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
+                
+            if zayavka.client_id and zayavka.client_id.payer_ids:
+                candidate_payers.extend(zayavka.client_id.payer_ids.ids)
+            
+            if not candidate_payers:
+                continue
+            
+            # Проверяем, что все плательщики выписки есть среди кандидатов
+            all_matched = all(payer_id in candidate_payers for payer_id in extract_payers)
+            
+            if not all_matched:
+                continue
+
+            # Проверяем суммы заявки (в порядке приоритета)
+            zayavka_sums = [
+                getattr(zayavka, 'application_amount_rub_contract', None),  # Заявка по курсу в рублях по договору
+                getattr(zayavka, 'total_fact', None),                      # Итого факт
+                getattr(zayavka, 'contract_reward', None)                  # Вознаграждение по договору
+            ]
+            
+            # Находим первую непустую сумму
+            zayavka_sum = None
+            for sum_val in zayavka_sums:
+                if isinstance(sum_val, (int, float)) and sum_val is not None:
+                    zayavka_sum = sum_val
+                    break
+            
+            if zayavka_sum is None:
+                continue
+
+            # Проверяем сумму с допуском
+            if abs(zayavka_sum - extract_sum) <= TOLERANCE:
+                matching_zayavki.append(zayavka)
+                _logger.info(f"Найдено совпадение: выписка {self.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} (сумма {zayavka_sum})")
+        
+        return self.env['amanat.zayavka'].browse([z.id for z in matching_zayavki])
+
+    def manual_match_applications(self):
+        """
+        Ручное сопоставление выписки с заявками.
+        Используется как кнопка или для обработки старых записей.
+        """
+        for record in self:
+            if record.applications:
+                _logger.info(f"Выписка {record.id} уже имеет связанные заявки: {record.applications.mapped('zayavka_id')}")
+                continue
+                
+            if any([record.currency_reserve, record.transfer_ids, record.conversion, 
+                   record.investment, record.gold_deal]):
+                _logger.info(f"Выписка {record.id} уже имеет другие сделки, пропускаем")
+                continue
+                
+            matching_apps = record._find_matching_applications()
+            if matching_apps:
+                record.write({
+                    'applications': [(6, 0, matching_apps.ids)],
+                    'direction_choice': 'applications'
+                })
+                
+                # Обновляем обратную связь в заявках
+                for app in matching_apps:
+                    app.write({
+                        'extract_delivery_ids': [(4, record.id)]
+                    })
+                
+                record.message_post(
+                    body=f"Ручное сопоставление: найдены подходящие заявки: {', '.join(matching_apps.mapped('zayavka_id'))}"
+                )
+                _logger.info(f"Ручное сопоставление: выписка {record.id} связана с заявками: {matching_apps.mapped('zayavka_id')}")
+            else:
+                record.message_post(body="Ручное сопоставление: подходящие заявки не найдены")
+                _logger.info(f"Ручное сопоставление: для выписки {record.id} подходящие заявки не найдены")
+        
+        return True
+
     @api.model
     def create(self, vals):
         res = super().create(vals)
@@ -247,6 +352,31 @@ class Extract_delivery(models.Model, AmanatBaseModel):
             res.env['amanat.extract_delivery']._run_matching_automation()
             res.env['amanat.extract_delivery']._run_stellar_tdk_logic()
             res.assign_bulinan = False
+        
+        # Автоматический поиск и установка подходящих заявок при создании
+        # Только если нет уже связанных заявок и других сделок
+        if (not res.applications and not trigger and not trigger2 and 
+            not vals.get('assign_bulinan') and not any([
+                res.currency_reserve, res.transfer_ids, res.conversion, 
+                res.investment, res.gold_deal
+            ])):
+            try:
+                matching_apps = res._find_matching_applications()
+                if matching_apps:
+                    res.write({
+                        'applications': [(6, 0, matching_apps.ids)],
+                        'direction_choice': 'applications'
+                    })
+                    
+                    # Обновляем обратную связь в заявках
+                    for app in matching_apps:
+                        app.write({
+                            'extract_delivery_ids': [(4, res.id)]
+                        })
+                    
+                    _logger.info(f"Автоматически связана выписка {res.id} с заявками: {matching_apps.mapped('zayavka_id')}")
+            except Exception as e:
+                _logger.error(f"Ошибка при автоматическом сопоставлении заявок для выписки {res.id}: {e}")
 
         return res
     
@@ -448,102 +578,119 @@ class Extract_delivery(models.Model, AmanatBaseModel):
     @api.model
     def _run_matching_automation(self):
         """
-        Основная логика сопоставления выписок с заявками,
-        основанная на актуальном скрипте Airtable.
+        Логика сопоставления выписок с заявками:
+        - Ищем плательщиков заявки через связанных контрагентов (агент и клиент)
+        - Проверяем что плательщики выписки есть среди найденных
+        - Суммы должны совпадать с погрешностью 1 рубль
+        - Одна выписка может быть связана с несколькими заявками
         """
-        _logger.info("Запуск автоматического сопоставления Выписок и Заявок.")
+        _logger.info("Запуск автоматического сопоставления Выписок и Заявок")
         TOLERANCE = 1.0
-        fields_to_check = [
-            'application_amount_rub_contract',
-            'contract_reward',
-            'total_fact'
-        ]
 
-        # 1. Загружаем все необходимые записи один раз для производительности
+        # Получаем все заявки с заполненной датой "Взята в работу"
         all_zayavki = self.env['amanat.zayavka'].search([('taken_in_work_date', '!=', False)])
         
-        # Получаем все выписки, которые еще не связаны ни с какой сделкой или заявкой
-        # Это основной набор кандидатов для сопоставления
+        # Получаем все выписки без связанных заявок
         candidate_extracts = self.env['amanat.extract_delivery'].search([
-            ('deal', '=', False),
             ('applications', '=', False)
         ])
         
-        # Кэшируем плательщиков для контрагентов, чтобы не запрашивать их в цикле
-        all_contragents = all_zayavki.mapped('agent_id') + all_zayavki.mapped('client_id')
-        contragent_payers_map = {
-            c.id: c.payer_ids.ids for c in all_contragents.filtered(lambda c: c.payer_ids)
-        }
-
-        # 2. Основная логика сопоставления
-        used_extract_ids = set()
-        updates = []
+        # Словарь для хранения всех подходящих заявок для каждой выписки
+        extract_to_zayavki = {}
         
-        for zayavka in all_zayavki:
-            # Собираем ID плательщиков-кандидатов для текущей заявки
-            candidate_payer_ids = set()
-            if zayavka.agent_id and zayavka.agent_id.id in contragent_payers_map:
-                candidate_payer_ids.update(contragent_payers_map[zayavka.agent_id.id])
-            if zayavka.client_id and zayavka.client_id.id in contragent_payers_map:
-                candidate_payer_ids.update(contragent_payers_map[zayavka.client_id.id])
-
-            if not candidate_payer_ids:
+        # Проходим по всем выпискам
+        for extract in candidate_extracts:
+            # Проверяем, что нет других "сделок"
+            if (extract.currency_reserve or extract.transfer_ids or 
+                extract.conversion or extract.investment or extract.gold_deal):
                 continue
                 
-            # Фильтруем выписки-кандидаты
-            best_match = None
-            matching_extracts = []
-
-            for extract in candidate_extracts:
-                if extract.id in used_extract_ids:
-                    continue
-                    
-                # Проверка плательщиков: все плательщики и получатели выписки должны быть среди кандидатов
-                extract_party_ids = {p.id for p in (extract.payer, extract.recipient) if p}
-                if not extract_party_ids or not extract_party_ids.issubset(candidate_payer_ids):
-                    continue
-                    
-                # Проверка суммы
-                sum_matches = False
-                for field_name in fields_to_check:
-                    zayavka_sum = getattr(zayavka, field_name, None)
-                    if isinstance(zayavka_sum, (int, float)) and abs(zayavka_sum - (extract.amount or 0.0)) <= TOLERANCE:
-                            sum_matches = True
-                            break
-                            
-                if not sum_matches:
-                    continue
-                    
-                matching_extracts.append(extract)
-
-            # Если есть совпадения, выбираем лучшее (самое раннее по дате)
-            if matching_extracts:
-                matching_extracts.sort(key=lambda r: r.date or fields.Date.today())
-                best_match = matching_extracts[0]
-
-                updates.append({
-                    'extract_id': best_match.id,
-                    'zayavka_id': zayavka.id,
-                })
-                used_extract_ids.add(best_match.id)
-        
-        # 3. Применяем обновления пакетами
-        if updates:
-            _logger.info(f"Найдено {len(updates)} сопоставлений. Применение обновлений...")
-            for update in updates:
-                extract_to_update = self.env['amanat.extract_delivery'].browse(update['extract_id'])
-                zayavka_to_link = self.env['amanat.zayavka'].browse(update['zayavka_id'])
+            # Получаем плательщиков выписки
+            extract_payers = []
+            if extract.payer:
+                extract_payers.append(extract.payer.id)
+            if extract.recipient:
+                extract_payers.append(extract.recipient.id)
                 
-                extract_to_update.write({
-                    'applications': [(4, zayavka_to_link.id)],
+            if not extract_payers:
+                continue
+                
+            extract_sum = extract.amount or 0.0
+            matching_zayavki = []
+            
+            # Проверяем все заявки для этой выписки
+            for zayavka in all_zayavki:
+                # Собираем плательщиков заявки через контрагентов
+                candidate_payers = []
+                
+                if zayavka.agent_id and zayavka.agent_id.payer_ids:
+                    candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
+                    
+                if zayavka.client_id and zayavka.client_id.payer_ids:
+                    candidate_payers.extend(zayavka.client_id.payer_ids.ids)
+                
+                if not candidate_payers:
+                    continue
+                
+                # Проверяем, что все плательщики выписки есть среди кандидатов
+                all_matched = all(payer_id in candidate_payers for payer_id in extract_payers)
+                
+                if not all_matched:
+                    continue
+
+                # Проверяем суммы заявки (в порядке приоритета)
+                zayavka_sums = [
+                    getattr(zayavka, 'application_amount_rub_contract', None),  # Заявка по курсу в рублях по договору
+                    getattr(zayavka, 'total_fact', None),                      # Итого факт
+                    getattr(zayavka, 'contract_reward', None)                  # Вознаграждение по договору
+                ]
+                
+                # Находим первую непустую сумму
+                zayavka_sum = None
+                for sum_val in zayavka_sums:
+                    if isinstance(sum_val, (int, float)) and sum_val is not None:
+                        zayavka_sum = sum_val
+                        break
+                
+                if zayavka_sum is None:
+                    continue
+
+                # Проверяем сумму с допуском
+                if abs(zayavka_sum - extract_sum) <= TOLERANCE:
+                    matching_zayavki.append(zayavka)
+                    _logger.info(f"Найдено совпадение: выписка {extract.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} (сумма {zayavka_sum})")
+            
+            # Если нашли подходящие заявки, сохраняем их
+            if matching_zayavki:
+                extract_to_zayavki[extract] = matching_zayavki
+
+        # Применяем обновления
+        total_links = 0
+        if extract_to_zayavki:
+            _logger.info(f"Найдено {len(extract_to_zayavki)} выписок с подходящими заявками. Применение обновлений...")
+            
+            for extract, zayavki in extract_to_zayavki.items():
+                # Собираем все ID заявок для связывания
+                zayavka_ids = [z.id for z in zayavki]
+                
+                # Обновляем выписку - связываем со всеми найденными заявками
+                extract.write({
+                    'applications': [(6, 0, zayavka_ids)],  # 6,0,ids - заменяет все связи новым списком
                     'direction_choice': 'applications'
                 })
-                # Odoo автоматически обработает симметричную M2M связь,
-                zayavka_to_link.write({
-                    'extract_delivery_ids': [(4, extract_to_update.id)]
-                })
+                
+                # Обновляем каждую заявку - добавляем обратную связь
+                for zayavka in zayavki:
+                    existing_extract_ids = [e.id for e in zayavka.extract_delivery_ids]
+                    if extract.id not in existing_extract_ids:
+                        zayavka.write({
+                            'extract_delivery_ids': [(4, extract.id)]  # 4 - добавить связь
+                        })
+                
+                total_links += len(zayavki)
+                _logger.info(f"Выписка ID={extract.id} связана с {len(zayavki)} заявками: {[z.zayavka_id for z in zayavki]}")
         
-        _logger.info(f"Процесс сопоставления завершен. Найдено {len(updates)} сопоставлений.")
+        _logger.info(f"Процесс сопоставления завершен. Обработано выписок: {len(extract_to_zayavki)}, создано связей: {total_links}")
         return True
     
     @api.model
@@ -596,3 +743,308 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                     _logger.error(f"Failed to update record {record.id} in _run_stellar_tdk_logic: {e}")
         
         _logger.info("Stellar/TDK/Indotrade logic finished.")
+
+    def diagnose_application_matching(self):
+        """
+        Диагностический метод для выявления проблем с сопоставлением заявок.
+        Возвращает подробную информацию о том, почему заявки не находятся.
+        """
+        self.ensure_one()
+        
+        diagnosis = {
+            'extract_id': self.id,
+            'extract_payer': self.payer.name if self.payer else None,
+            'extract_recipient': self.recipient.name if self.recipient else None,
+            'extract_amount': self.amount,
+            'extract_date': str(self.date) if self.date else None,
+            'current_applications': len(self.applications),
+            'issues': [],
+            'potential_matches': [],
+            'total_zayavki_with_date': 0,
+            'total_zayavki_checked': 0
+        }
+        
+        # Проверяем базовые данные выписки
+        if not self.payer:
+            diagnosis['issues'].append("У выписки не заполнен плательщик")
+        if not self.recipient:
+            diagnosis['issues'].append("У выписки не заполнен получатель")
+        if not self.amount:
+            diagnosis['issues'].append("У выписки не заполнена сумма")
+            
+        if diagnosis['issues']:
+            return diagnosis
+            
+        extract_payers = [self.payer.id, self.recipient.id]
+        extract_sum = self.amount
+        TOLERANCE = 1.0
+        
+        # Ищем заявки с заполненной датой "Взята в работу"
+        all_zayavki = self.env['amanat.zayavka'].search([('taken_in_work_date', '!=', False)])
+        diagnosis['total_zayavki_with_date'] = len(all_zayavki)
+        
+        if not all_zayavki:
+            diagnosis['issues'].append("Не найдено заявок с заполненной датой 'Взята в работу'")
+            return diagnosis
+        
+        for zayavka in all_zayavki:
+            diagnosis['total_zayavki_checked'] += 1
+            match_info = {
+                'zayavka_id': zayavka.zayavka_id,
+                'zayavka_db_id': zayavka.id,
+                'agent': zayavka.agent_id.name if zayavka.agent_id else None,
+                'client': zayavka.client_id.name if zayavka.client_id else None,
+                'issues': []
+            }
+            
+            # Собираем плательщиков заявки через контрагентов
+            candidate_payers = []
+            
+            if zayavka.agent_id and zayavka.agent_id.payer_ids:
+                candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
+                match_info['agent_payers'] = [p.name for p in zayavka.agent_id.payer_ids]
+            else:
+                match_info['issues'].append("У агента нет связанных плательщиков")
+                
+            if zayavka.client_id and zayavka.client_id.payer_ids:
+                candidate_payers.extend(zayavka.client_id.payer_ids.ids)
+                match_info['client_payers'] = [p.name for p in zayavka.client_id.payer_ids]
+            else:
+                match_info['issues'].append("У клиента нет связанных плательщиков")
+            
+            if not candidate_payers:
+                match_info['issues'].append("Нет плательщиков ни у агента, ни у клиента")
+                diagnosis['potential_matches'].append(match_info)
+                continue
+            
+            match_info['all_candidate_payers'] = candidate_payers
+            
+            # Проверяем, что все плательщики выписки есть среди кандидатов
+            matched_payers = [p for p in extract_payers if p in candidate_payers]
+            if len(matched_payers) != len(extract_payers):
+                match_info['issues'].append(f"Не все плательщики выписки найдены среди кандидатов. Найдено: {len(matched_payers)} из {len(extract_payers)}")
+                diagnosis['potential_matches'].append(match_info)
+                continue
+            
+            match_info['payers_matched'] = True
+            
+            # Проверяем суммы заявки
+            zayavka_sums = [
+                ('application_amount_rub_contract', getattr(zayavka, 'application_amount_rub_contract', None)),
+                ('total_fact', getattr(zayavka, 'total_fact', None)),
+                ('contract_reward', getattr(zayavka, 'contract_reward', None))
+            ]
+            
+            match_info['available_sums'] = {name: val for name, val in zayavka_sums if val is not None}
+            
+            # Находим первую непустую сумму
+            zayavka_sum = None
+            used_field = None
+            for field_name, sum_val in zayavka_sums:
+                if isinstance(sum_val, (int, float)) and sum_val is not None:
+                    zayavka_sum = sum_val
+                    used_field = field_name
+                    break
+            
+            if zayavka_sum is None:
+                match_info['issues'].append("Все поля с суммами пусты или не числовые")
+                diagnosis['potential_matches'].append(match_info)
+                continue
+                
+            match_info['used_sum_field'] = used_field
+            match_info['used_sum_value'] = zayavka_sum
+            match_info['extract_sum'] = extract_sum
+            match_info['sum_difference'] = abs(zayavka_sum - extract_sum)
+            
+            # Проверяем сумму с допуском
+            if abs(zayavka_sum - extract_sum) <= TOLERANCE:
+                match_info['sum_matched'] = True
+                match_info['is_perfect_match'] = True
+                diagnosis['potential_matches'].append(match_info)
+            else:
+                match_info['sum_matched'] = False
+                match_info['issues'].append(f"Сумма не совпадает. Разница: {abs(zayavka_sum - extract_sum)} (допуск: {TOLERANCE})")
+                diagnosis['potential_matches'].append(match_info)
+        
+        # Подсчитываем идеальные совпадения
+        perfect_matches = [m for m in diagnosis['potential_matches'] if m.get('is_perfect_match')]
+        diagnosis['perfect_matches_count'] = len(perfect_matches)
+        
+        if not perfect_matches:
+            diagnosis['issues'].append("Не найдено ни одного идеального совпадения")
+        
+        return diagnosis
+
+    def force_application_matching(self):
+        """
+        Принудительно запускает сопоставление заявок для текущих записей.
+        Использует улучшенную логику с детальным логированием.
+        """
+        matched_count = 0
+        
+        for record in self:
+            # Пропускаем записи, которые уже имеют заявки или другие сделки
+            if record.applications:
+                _logger.info(f"Выписка {record.id} уже имеет связанные заявки: {record.applications.mapped('zayavka_id')}")
+                continue
+                
+            if any([record.currency_reserve, record.transfer_ids, record.conversion, 
+                   record.investment, record.gold_deal]):
+                _logger.info(f"Выписка {record.id} уже имеет другие сделки, пропускаем")
+                continue
+            
+            _logger.info(f"Принудительное сопоставление для выписки {record.id}")
+            
+            try:
+                matching_apps = record._find_matching_applications()
+                if matching_apps:
+                    record.write({
+                        'applications': [(6, 0, matching_apps.ids)],
+                        'direction_choice': 'applications'
+                    })
+                    
+                    # Обновляем обратную связь в заявках
+                    for app in matching_apps:
+                        app.write({
+                            'extract_delivery_ids': [(4, record.id)]
+                        })
+                    
+                    matched_count += 1
+                    record.message_post(
+                        body=f"Принудительное сопоставление: найдены и связаны заявки: {', '.join(matching_apps.mapped('zayavka_id'))}"
+                    )
+                    _logger.info(f"Принудительное сопоставление: выписка {record.id} связана с заявками: {matching_apps.mapped('zayavka_id')}")
+                else:
+                    record.message_post(body="Принудительное сопоставление: подходящие заявки не найдены")
+                    _logger.info(f"Принудительное сопоставление: для выписки {record.id} подходящие заявки не найдены")
+                    
+                    # Запускаем диагностику для выяснения причин
+                    diagnosis = record.diagnose_application_matching()
+                    if diagnosis['issues']:
+                        issues_text = "; ".join(diagnosis['issues'])
+                        record.message_post(body=f"Диагностика показала проблемы: {issues_text}")
+                        _logger.info(f"Диагностика выписки {record.id}: {issues_text}")
+                        
+            except Exception as e:
+                _logger.error(f"Ошибка при принудительном сопоставлении заявок для выписки {record.id}: {e}")
+                record.message_post(body=f"Ошибка при принудительном сопоставлении: {e}")
+        
+        if matched_count > 0:
+            message = f"Принудительное сопоставление завершено. Обработано записей: {matched_count}"
+        else:
+            message = "Принудительное сопоставление завершено. Новых связей не создано."
+            
+        _logger.info(message)
+        
+        # Возвращаем сообщение пользователю
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Принудительное сопоставление',
+                'message': message,
+                'type': 'success' if matched_count > 0 else 'info',
+                'sticky': False,
+            }
+        }
+
+    @api.model 
+    def diagnose_all_unmatched_extracts(self):
+        """
+        Запускает диагностику для всех несопоставленных выписок.
+        Возвращает сводную информацию о проблемах.
+        """
+        unmatched_extracts = self.search([
+            ('applications', '=', False),
+            ('currency_reserve', '=', False),
+            ('transfer_ids', '=', False),
+            ('conversion', '=', False),
+            ('investment', '=', False),
+            ('gold_deal', '=', False),
+        ])
+        
+        _logger.info(f"Найдено {len(unmatched_extracts)} несопоставленных выписок для диагностики")
+        
+        summary = {
+            'total_unmatched': len(unmatched_extracts),
+            'common_issues': {},
+            'extracts_with_perfect_matches': 0,
+            'extracts_with_partial_matches': 0,
+            'extracts_with_no_matches': 0
+        }
+        
+        for extract in unmatched_extracts[:10]:  # Ограничиваем для производительности
+            diagnosis = extract.diagnose_application_matching()
+            
+            # Подсчитываем типы совпадений
+            if diagnosis['perfect_matches_count'] > 0:
+                summary['extracts_with_perfect_matches'] += 1
+            elif diagnosis['potential_matches']:
+                summary['extracts_with_partial_matches'] += 1
+            else:
+                summary['extracts_with_no_matches'] += 1
+            
+            # Собираем общие проблемы
+            for issue in diagnosis['issues']:
+                if issue in summary['common_issues']:
+                    summary['common_issues'][issue] += 1
+                else:
+                    summary['common_issues'][issue] = 1
+        
+        _logger.info(f"Диагностика завершена: {summary}")
+        return summary
+
+    def show_diagnosis_result(self):
+        """
+        Показывает результаты диагностики пользователю в удобном виде.
+        """
+        self.ensure_one()
+        diagnosis = self.diagnose_application_matching()
+        
+        # Формируем детальное сообщение
+        message_parts = []
+        message_parts.append(f"<h3>Диагностика выписки {self.name}</h3>")
+        message_parts.append(f"<p><strong>Плательщик:</strong> {diagnosis['extract_payer']}</p>")
+        message_parts.append(f"<p><strong>Получатель:</strong> {diagnosis['extract_recipient']}</p>")
+        message_parts.append(f"<p><strong>Сумма:</strong> {diagnosis['extract_amount']}</p>")
+        message_parts.append(f"<p><strong>Дата:</strong> {diagnosis['extract_date']}</p>")
+        message_parts.append(f"<p><strong>Текущих заявок:</strong> {diagnosis['current_applications']}</p>")
+        
+        if diagnosis['issues']:
+            message_parts.append("<h4 style='color: red;'>Обнаруженные проблемы:</h4>")
+            message_parts.append("<ul>")
+            for issue in diagnosis['issues']:
+                message_parts.append(f"<li>{issue}</li>")
+            message_parts.append("</ul>")
+        
+        message_parts.append(f"<p><strong>Всего заявок с датой 'Взята в работу':</strong> {diagnosis['total_zayavki_with_date']}</p>")
+        message_parts.append(f"<p><strong>Проверено заявок:</strong> {diagnosis['total_zayavki_checked']}</p>")
+        message_parts.append(f"<p><strong>Идеальных совпадений:</strong> {diagnosis['perfect_matches_count']}</p>")
+        
+        if diagnosis['potential_matches']:
+            message_parts.append("<h4>Потенциальные совпадения:</h4>")
+            message_parts.append("<ul>")
+            for match in diagnosis['potential_matches'][:5]:  # Показываем только первые 5
+                match_issues = ", ".join(match.get('issues', []))
+                if match.get('is_perfect_match'):
+                    message_parts.append(f"<li style='color: green;'><strong>✓ {match['zayavka_id']}</strong> - ИДЕАЛЬНОЕ СОВПАДЕНИЕ</li>")
+                else:
+                    message_parts.append(f"<li><strong>{match['zayavka_id']}</strong> - Проблемы: {match_issues}</li>")
+            message_parts.append("</ul>")
+        
+        message = "".join(message_parts)
+        
+        # Отправляем сообщение в чат записи
+        self.message_post(body=message)
+        
+        # Возвращаем уведомление
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Диагностика завершена',
+                'message': f'Найдено {diagnosis["perfect_matches_count"]} идеальных совпадений. Детали см. в чате записи.',
+                'type': 'success' if diagnosis['perfect_matches_count'] > 0 else 'warning',
+                'sticky': True,
+            }
+        }

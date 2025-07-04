@@ -5,6 +5,18 @@
         <field name="model">amanat.reconciliation</field>
         <field name="arch" type="xml">
             <list editable="top">
+                <header>
+                    <button name="action_send_selected_to_server"
+                            type="object"
+                            string="Выгрузить в Excel"
+                            class="btn-primary"
+                            icon="fa-upload"/>
+                    <button name="%(action_reconciliation_date_range_wizard)d" 
+                            string="Диапазон" 
+                            type="action" 
+                            class="btn-primary"
+                            icon="fa-calendar"/>
+                </header>
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="partner_id"/>
                 <field width="200" name="wallet_id"/>
@@ -35,7 +47,7 @@
                 <field width="200" name="exchange"/>
                 <field width="200" name="order_id" widget="many2many_tags"/>
                 <field width="200" name="order_comment"/>
-                <field width="200" name="unload"/>
+                <!-- <field width="200" name="unload"/> -->
                 <field width="200" name="range"/>
                 <field width="200" name="range_reconciliation_date_1"/>
                 <field width="200" name="range_reconciliation_date_2"/>
@@ -257,16 +269,16 @@
                                 <h2>Действия с записью</h2>
                             </header>
                             <group>
-                                <div class="o-form-group-2">
-                                    <group>
+                                <!-- <div class="o-form-group-2"> -->
+                                    <!-- <group>
                                         <field name="unload"/>
                                         <field name="range_reconciliation_bool"/>
-                                    </group>
-                                    <group>
+                                    </group> -->
+                                    <!-- <group> -->
                                         <field name="create_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
                                         <field name="royalti_Reconciliation" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                                    </group>
-                                </div>
+                                    <!-- </group> -->
+                                <!-- </div> -->
                             </group>
                         </page>
                     </notebook>
@@ -285,14 +297,22 @@
         <field name="model">amanat.reconciliation</field>
         <field name="arch" type="xml">
             <search>
-                <field name="date" string="Дата"/>
+                <field name="date" string="Дата" filter_domain="[('date','&gt;=',self),('date','&lt;=',self)]"/>
                 <field name="partner_id" string="Партнер"/>
                 <field name="currency" string="Валюта"/>
                 <field name="wallet_id" string="Кошелек"/>
                 <field name="order_id" string="Заявка"/>
+                <separator/>
                 <filter name="filter_create_true" string="Только Create=TRUE" domain="[('create_Reconciliation','=',True)]"/>
                 <filter name="filter_royalti_true" string="Только Royalti=TRUE" domain="[('royalti_Reconciliation','=',True)]"/>
                 <field name="range_reconciliation_bool" string="Сверка по диапазону"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_date" string="Дата" context="{'group_by':'date'}"/>
+                    <filter name="group_by_partner" string="Контрагент" context="{'group_by':'partner_id'}"/>
+                    <filter name="group_by_currency" string="Валюта" context="{'group_by':'currency'}"/>
+                    <filter name="group_by_month" string="Месяц" context="{'group_by':'date:month'}"/>
+                </group>
             </search>
         </field>
     </record>

@@ -9,197 +9,211 @@
           <h1><field name="zayavka_id" readonly="1"/></h1>
         </header>
         <sheet>
-          <group string="Основная информация">
-            <field name="zayavka_num"/>
-            <field name="status"/>
-            <field name="manager_ids"/>
-            <field name="checker_ids"/>
-            <field name="date_placement"/>
-            <field name="taken_in_work_date"/>
-            <field name="contragent_id"/>
-            <field name="agent_id"/>
-            <field name="client_id"/>
-            <field name="inn"/>
-            <field name="client_inn"/>
-            <field name="exporter_importer_name"/>
-            <field name="bank_swift"/>
-            <field name="country_id"/>
-            <field name="comment"/>
-            <field name="is_cross"/>
-          </group>
-          <group string="Расчет реального курса (Кросс)">
-            <field name="currency_pair"/>
-            <field name="bank_cross_rate"/>
-            <field name="xe_rate"/>
-            <field name="cross_rate_usd_rub"/>
-            <field name="conversion_percent" widget="percentage" options="{'rounding': 4}"/>
-            <field name="conversion_ratio" widget="percentage"/>
-            <field name="real_cross_rate"/>
-            <!-- <field name="rate_field"/> -->
-            <field name="error_in_bank_rate"/>
-            <field name="error_in_xe_rate"/>
-            <field name="bank_select"/>
-            <field name="xe_select"/>
-          </group>
-          <group string="Сравнение курса">
-            <field name="investing_rate"/>
-            <field name="cb_rate"/>
-            <field name="cross_rate"/>
-            <field name="exchange_rate_1"/>
-            <field name="exchange_rate_2"/>
-            <field name="exchange_rate_3"/>
-            <field name="best_rate_name"/>
-            <field name="best_rate"/>
-          </group>
-          <group string="Ввод данных Клиент">
-            <field name="payment_conditions"/>
-            <field name="deal_type"/>
-            <field name="export_agent_flag"/>
-            <field name="instruction_number"/>
-            <field name="instruction_signed_date"/>
-            <field name="currency"/>
-            <field name="amount"/>
-            <!-- <field name="rate_real"/> -->
-            <field name="rate_field"/>
-            <field name="best_rate"/>
-            <field name="hidden_rate"/>
-            <field name="rate_fixation_date"/>
-            <field name="hide_in_dashboard"/>
-            <field name="hand_reward_percent" widget="percentage"/>
-            <field name="plus_dollar"/>
-            <field name="dollar_cross_rate"/>
-            <field name="plus_currency"/>
-            <field name="invoice_plus_percent" widget="percentage"/>
-            <field name="reward_percent" widget="percentage"/>
-            <field name="conversion_auto" widget="percentage"/>
-            <field name="hidden_commission" widget="percentage"/>
-            <field name="xe_rate"/>
-            <field name="jess_rate"/>
-          </group>
-          <group string="Клиент">
-            <field name="application_amount_rub_contract"/>
-            <field name="client_reward"/>
-            <field name="total_client"/>
-          </group>
-          <!-- <group string="Управленка клиент">
-            <field name="real_post_conversion_rate"/>
-            <field name="rate_real"/>
-            <field name="client_currency_bought"/>
-            <field name="our_client_reward"/>
-            <field name="non_our_client_reward"/>
-            <field name="total_client_management"/>
-          </group> -->
-          <group string="Ввод данных Сбербанк">
-            <field name="payment_conditions"/> <!-- Repeated as per example -->
-            <field name="deal_type"/>
-            <field name="export_agent_flag"/>
-            <field name="instruction_number"/>
-            <field name="instruction_signed_date"/>
-            <field name="currency"/>
-            <field name="amount"/>
-            <field name="rate_real_sber"/>
-            <field name="best_rate"/>
-            <field name="hidden_rate"/>
-            <field name="rate_fixation_date"/>
-            <field name="hide_in_dashboard"/>
-            <field name="hand_reward_percent" widget="percentage"/>
-            <field name="plus_dollar"/>
-            <field name="dollar_cross_rate"/>
-            <field name="plus_currency"/>
-            <field name="invoice_plus_percent" widget="percentage"/>
-            <field name="reward_percent" widget="percentage"/>
-            <field name="conversion_auto" widget="percentage"/>
-            <field name="calculated_percent" widget="percentage"/>
-            <field name="jess_rate"/>
-          </group>
-          <group string="Клиент Сбербанк">
-            <field name="application_amount_rub_contract"/>
-            <field name="sber_reward"/>
-            <field name="total_sber"/>
-          </group>
-          <group string="Ввод данных Совкомбанк">
-            <field name="payment_conditions"/> <!-- Repeated as per example -->
-            <field name="deal_type"/>
-            <field name="export_agent_flag"/>
-            <field name="instruction_number"/>
-            <field name="instruction_signed_date"/>
-            <field name="currency"/>
-            <field name="amount"/>
-            <field name="rate_real"/>
-            <field name="hidden_rate"/>
-            <field name="rate_field"/>
-            <field name="best_rate"/>
-            <field name="rate_fixation_date"/>
-            <field name="hide_in_dashboard"/>
-            <field name="hand_reward_percent" widget="percentage"/>
-            <field name="plus_dollar"/>
-            <field name="dollar_cross_rate"/>
-            <field name="plus_currency"/>
-            <field name="invoice_plus_percent" widget="percentage"/>
-            <field name="reward_percent" widget="percentage"/>
-            <field name="overall_sovok_percent"/>
-            <field name="calculated_percent"/>
-            <field name="error_sovok"/>
-            <field name="jess_rate"/>
-            <field name="error_in_rate"/>
-          </group>
-          <group string="Клиент Совкомбанк">
-            <field name="application_amount_rub_contract"/>
-            <field name="sovok_reward"/>
-            <field name="total_sovok"/>
-          </group>
-          <group string="Даты">
-            <field name="with_accreditive"/>
-            <field name="received_initial_docs"/>
-            <field name="invoice_date"/>
-            <field name="agent_contract_date"/>
-            <field name="bank_registration_date"/>
-            <field name="accreditive_open_date"/>
-            <field name="supplier_currency_paid_date"/>
-            <field name="payment_date"/>
-            <field name="supplier_currency_received_date"/>
-            <field name="client_ruble_paid_date"/>
-            <field name="accreditive_revealed_date"/>
-            <field name="act_report_signed_date"/>
-            <field name="deal_closed_date"/>
-            <field name="date_received_on_pc_payment"/>
-            <field name="deal_cycle_days"/>
-          </group>
-          <group string="Субагент">
-            <field name="payment_purpose"/>
-            <field name="subagent_docs_prepared_date"/>
-            <field name="subagent_ids"/>
-            <field name="subagent_payer_ids"/>
-            <field name="application_sequence"/>
-          </group>
-          <group string="SWIFT">
-            <field name="swift_received_date"/>
-            <field name="swift_status"/>
-            <field name="swift_103_requested_date"/>
-            <field name="swift_103_received_date"/>
-            <field name="swift_199_requested_date"/>
-            <field name="swift_199_received_date"/>
-            <field name="return_requested_date"/>
-            <field name="return_money_received_date"/>
-          </group>
-          <group string="Документы">
-            <field name="zayavka_file"/>
-            <field name="invoice_file"/>
-            <field name="assignment_file"/>
-            <field name="swift_file"/>
-            <field name="swift103_file"/>
-            <field name="swift199_file"/>
-            <field name="report_file"/>
-          </group>
-          <group string="Проблемы">
-            <field name="is_money_stuck"/>
-            <field name="problem_stage"/>
-            <field name="problem_comment"/>
-            <field name="currency_stuck"/>
-            <field name="sum_stuck"/>
-            <field name="whose_mistake"/>
-            <field name="zayavka_mistake"/>
-          </group>
+          <notebook>
+            <page string="Основное">
+              <group string="Основная информация">
+                <field name="zayavka_num"/>
+                <field name="status"/>
+                <field name="manager_ids" widget="many2many_tags"/>
+                <field name="checker_ids" widget="many2many_tags"/>
+                <field name="date_placement"/>
+                <field name="taken_in_work_date"/>
+                <field name="contragent_id"/>
+                <field name="agent_id"/>
+                <field name="client_id"/>
+                <field name="inn"/>
+                <field name="client_inn"/>
+                <field name="exporter_importer_name"/>
+                <field name="bank_swift"/>
+                <field name="country_id"/>
+                <field name="comment"/>
+                <field name="is_cross"/>
+              </group>
+              <group string="Субагент">
+                <field name="payment_purpose"/>
+                <field name="subagent_docs_prepared_date"/>
+                <field name="subagent_ids"/>
+                <field name="subagent_payer_ids"/>
+                <field name="application_sequence"/>
+              </group>
+              <group string="Сравнение курса">
+                <field name="investing_rate"/>
+                <field name="cb_rate"/>
+                <field name="cross_rate"/>
+                <field name="exchange_rate_1"/>
+                <field name="exchange_rate_2"/>
+                <field name="exchange_rate_3"/>
+                <field name="best_rate_name"/>
+                <field name="best_rate"/>
+              </group>
+              <group string="Ввод данных Клиент">
+                <field name="payment_conditions"/>
+                <field name="deal_type"/>
+                <field name="export_agent_flag"/>
+                <field name="instruction_number"/>
+                <field name="instruction_signed_date"/>
+                <field name="currency"/>
+                <field name="amount"/>
+                <!-- <field name="rate_real"/> -->
+                <field name="rate_field"/>
+                <field name="best_rate"/>
+                <field name="hidden_rate"/>
+                <field name="rate_fixation_date"/>
+                <field name="hide_in_dashboard"/>
+                <field name="hand_reward_percent" widget="percentage"/>
+                <field name="plus_dollar"/>
+                <field name="dollar_cross_rate"/>
+                <field name="plus_currency"/>
+                <field name="invoice_plus_percent" widget="percentage"/>
+                <field name="reward_percent" widget="percentage"/>
+                <field name="conversion_auto" widget="percentage"/>
+                <field name="hidden_commission" widget="percentage"/>
+                <field name="xe_rate"/>
+                <field name="jess_rate"/>
+              </group>
+              <group string="Клиент">
+                <field name="application_amount_rub_contract"/>
+                <field name="client_reward"/>
+                <field name="total_client"/>
+              </group>
+              <!-- <group string="Управленка клиент">
+                <field name="real_post_conversion_rate"/>
+                <field name="rate_real"/>
+                <field name="client_currency_bought"/>
+                <field name="our_client_reward"/>
+                <field name="non_our_client_reward"/>
+                <field name="total_client_management"/>
+              </group> -->
+              <group string="Ввод данных Сбербанк">
+                <field name="payment_conditions"/> <!-- Repeated as per example -->
+                <field name="deal_type"/>
+                <field name="export_agent_flag"/>
+                <field name="instruction_number"/>
+                <field name="instruction_signed_date"/>
+                <field name="currency"/>
+                <field name="amount"/>
+                <field name="rate_real_sber"/>
+                <field name="best_rate"/>
+                <field name="hidden_rate"/>
+                <field name="rate_fixation_date"/>
+                <field name="hide_in_dashboard"/>
+                <field name="hand_reward_percent" widget="percentage"/>
+                <field name="plus_dollar"/>
+                <field name="dollar_cross_rate"/>
+                <field name="plus_currency"/>
+                <field name="invoice_plus_percent" widget="percentage"/>
+                <field name="reward_percent" widget="percentage"/>
+                <field name="conversion_auto" widget="percentage"/>
+                <field name="calculated_percent" widget="percentage"/>
+                <field name="jess_rate"/>
+              </group>
+              <group string="Клиент Сбербанк">
+                <field name="application_amount_rub_contract"/>
+                <field name="sber_reward"/>
+                <field name="total_sber"/>
+              </group>
+              <group string="Ввод данных Совкомбанк">
+                <field name="payment_conditions"/> <!-- Repeated as per example -->
+                <field name="deal_type"/>
+                <field name="export_agent_flag"/>
+                <field name="instruction_number"/>
+                <field name="instruction_signed_date"/>
+                <field name="currency"/>
+                <field name="amount"/>
+                <field name="rate_real"/>
+                <field name="hidden_rate"/>
+                <field name="rate_field"/>
+                <field name="best_rate"/>
+                <field name="rate_fixation_date"/>
+                <field name="hide_in_dashboard"/>
+                <field name="hand_reward_percent" widget="percentage"/>
+                <field name="plus_dollar"/>
+                <field name="dollar_cross_rate"/>
+                <field name="plus_currency"/>
+                <field name="invoice_plus_percent" widget="percentage"/>
+                <field name="reward_percent" widget="percentage"/>
+                <field name="overall_sovok_percent"/>
+                <field name="calculated_percent"/>
+                <field name="error_sovok"/>
+                <field name="jess_rate"/>
+                <field name="error_in_rate"/>
+              </group>
+              <group string="Клиент Совкомбанк">
+                <field name="application_amount_rub_contract"/>
+                <field name="sovok_reward"/>
+                <field name="total_sovok"/>
+              </group>
+            </page>
+            <page string="Расчет реального курса">
+              <group>
+                <field name="currency_pair"/>
+                <field name="bank_cross_rate"/>
+                <field name="xe_rate"/>
+                <field name="cross_rate_usd_rub"/>
+                <field name="conversion_percent" widget="percentage" options="{'rounding': 4}"/>
+                <field name="conversion_ratio" widget="percentage"/>
+                <field name="real_cross_rate"/>
+                <!-- <field name="rate_field"/> -->
+                <field name="error_in_bank_rate"/>
+                <field name="error_in_xe_rate"/>
+                <field name="bank_select"/>
+                <field name="xe_select"/>
+              </group>
+            </page>
+            <page string="SWIFT">
+              <group>
+                <field name="swift_received_date"/>
+                <field name="swift_status"/>
+                <field name="swift_103_requested_date"/>
+                <field name="swift_103_received_date"/>
+                <field name="swift_199_requested_date"/>
+                <field name="swift_199_received_date"/>
+                <field name="return_requested_date"/>
+                <field name="return_money_received_date"/>
+              </group>
+            </page>
+            <page string="Документы">
+              <group>
+                <field name="zayavka_file"/>
+                <field name="invoice_file"/>
+                <field name="assignment_file"/>
+                <field name="swift_file"/>
+                <field name="swift103_file"/>
+                <field name="swift199_file"/>
+                <field name="report_file"/>
+              </group>
+            </page>
+            <page string="Проблемы">
+              <group string="Проблемы">
+                <field name="is_money_stuck"/>
+                <field name="problem_stage"/>
+                <field name="problem_comment"/>
+                <field name="currency_stuck"/>
+                <field name="sum_stuck"/>
+                <field name="whose_mistake"/>
+                <field name="zayavka_mistake"/>
+              </group>
+            </page>
+            <page string="Даты">
+              <group string="Даты">
+                <field name="with_accreditive"/>
+                <field name="received_initial_docs"/>
+                <field name="invoice_date"/>
+                <field name="agent_contract_date"/>
+                <field name="bank_registration_date"/>
+                <field name="accreditive_open_date"/>
+                <field name="supplier_currency_paid_date"/>
+                <field name="payment_date"/>
+                <field name="supplier_currency_received_date"/>
+                <field name="client_ruble_paid_date"/>
+                <field name="accreditive_revealed_date"/>
+                <field name="act_report_signed_date"/>
+                <field name="deal_closed_date"/>
+                <field name="date_received_on_pc_payment"/>
+                <field name="deal_cycle_days"/>
+              </group>
+            </page>
+          </notebook>
           <notebook>
             <page string="Управленка Клиент">
               <group>
@@ -499,6 +513,13 @@
     <field name="model">amanat.zayavka</field>
     <field name="arch" type="xml">
       <list editable="top">
+        <header>
+            <button name="%(action_zayavka_date_range_wizard)d" 
+                    string="Диапазон" 
+                    type="action" 
+                    class="btn-primary"
+                    icon="fa-calendar"/>
+        </header>
         <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
         <field name="zayavka_id"/>
         <field width="200" name="zayavka_num"/>
@@ -787,5 +808,35 @@
     <field name="res_model">amanat.zayavka</field>
     <field name="view_mode">list,form</field>
     <field name="target">main</field>
+  </record>
+
+  <record id="zayavka_search_view" model="ir.ui.view">
+    <field name="name">zayavka.search</field>
+    <field name="model">amanat.zayavka</field>
+    <field name="arch" type="xml">
+      <search string="Поиск заявок">
+        <field name="zayavka_num" string="№ заявки"/>
+        <field name="status"/>
+        <field name="date_placement" string="Дата размещения" filter_domain="[('date_placement','&gt;=',self),('date_placement','&lt;=',self)]"/>
+        <field name="taken_in_work_date" string="Взята в работу" filter_domain="[('taken_in_work_date','&gt;=',self),('taken_in_work_date','&lt;=',self)]"/>
+        <field name="contragent_id"/>
+        <field name="agent_id"/>
+        <field name="client_id"/>
+        <field name="deal_type"/>
+        <field name="range_id" string="Диапазон"/>
+        <separator/>
+        <filter name="filter_in_range" string="В диапазоне" domain="[('range_id','!=',False)]"/>
+        <separator/>
+        <group expand="0" string="Group By">
+            <filter name="group_by_date" string="Дата размещения" context="{'group_by':'date_placement'}"/>
+            <filter name="group_by_taken_date" string="Взята в работу" context="{'group_by':'taken_in_work_date'}"/>
+            <filter name="group_by_status" string="Статус" context="{'group_by':'status'}"/>
+            <filter name="group_by_contragent" string="Контрагент" context="{'group_by':'contragent_id'}"/>
+            <filter name="group_by_agent" string="Агент" context="{'group_by':'agent_id'}"/>
+            <filter name="group_by_month" string="Месяц размещения" context="{'group_by':'date_placement:month'}"/>
+            <filter name="group_by_taken_month" string="Месяц взятия в работу" context="{'group_by':'taken_in_work_date:month'}"/>
+        </group>
+      </search>
+    </field>
   </record>
 </odoo>

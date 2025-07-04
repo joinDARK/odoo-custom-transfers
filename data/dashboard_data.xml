@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Создаем основной дашборд -->
+        <record id="dashboard_main" model="amanat.dashboard">
+            <field name="name">Основной дашборд</field>
+        </record>
+    </data>
+</odoo> 
