@@ -60,8 +60,7 @@ export class AmanatDashboard extends Component {
                 contragentAvgCheck: [],
                 agentsByZayavki: [],
                 clientsByZayavki: [],
-                clientAvgAmount: [],
-                subagentPayersByZayavki: []
+                clientAvgAmount: []
             },
             contragents: [],
             payers: [],
@@ -264,8 +263,7 @@ export class AmanatDashboard extends Component {
             'contragent-avg-check-chart',
             'agents-by-zayavki-chart',
             'clients-by-zayavki-chart',
-            'client-avg-amount-chart',
-            'subagent-payers-by-zayavki-chart'
+            'client-avg-amount-chart'
         ];
         
         const missingCanvasIds = expectedCanvasIds.filter(id => !document.getElementById(id));
@@ -541,23 +539,6 @@ export class AmanatDashboard extends Component {
                             const index = elements[0].index;
                             const clientName = this.state.zayavki.clientAvgAmount[index].name;
                             this.openZayavkiByClient(clientName);
-                        }
-                    }
-                });
-            }
-
-            // 25. Количество заявок под каждого плательщика субагента (горизонтальная столбчатая)
-            if (this.state.zayavki.subagentPayersByZayavki && this.state.zayavki.subagentPayersByZayavki.length > 0) {
-                this.renderHorizontalBarChart('subagent-payers-by-zayavki-chart', {
-                    labels: this.state.zayavki.subagentPayersByZayavki.map(sp => sp.name),
-                    data: this.state.zayavki.subagentPayersByZayavki.map(sp => sp.count),
-                    title: 'Количество заявок под каждого плательщика субагента',
-                    clickable: true,
-                    onClick: (event, elements) => {
-                        if (elements.length > 0) {
-                            const index = elements[0].index;
-                            const subagentPayerName = this.state.zayavki.subagentPayersByZayavki[index].name;
-                            this.openZayavkiBySubagentPayer(subagentPayerName);
                         }
                     }
                 });
@@ -927,8 +908,8 @@ export class AmanatDashboard extends Component {
             type: "ir.actions.act_window",
             name: "Заявки",
             res_model: "amanat.zayavka",
-            view_mode: "list,form",
-            views: [[false, "list"], [false, "form"]],
+            view_mode: "tree,form",
+            views: [[false, "tree"], [false, "form"]],
             target: "current",
             domain: []
         };
@@ -950,8 +931,8 @@ export class AmanatDashboard extends Component {
             type: "ir.actions.act_window",
             name: `Заявки контрагента: ${contragentName}`,
             res_model: "amanat.zayavka",
-            view_mode: "list,form",
-            views: [[false, "list"], [false, "form"]],
+            view_mode: "tree,form",
+            views: [[false, "tree"], [false, "form"]],
             target: "current",
             domain: [['contragent_id.name', '=', contragentName]]
         };
@@ -976,8 +957,8 @@ export class AmanatDashboard extends Component {
             type: "ir.actions.act_window",
             name: `Заявки агента: ${agentName}`,
             res_model: "amanat.zayavka",
-            view_mode: "list,form",
-            views: [[false, "list"], [false, "form"]],
+            view_mode: "tree,form",
+            views: [[false, "tree"], [false, "form"]],
             target: "current",
             domain: [['agent_id.name', '=', agentName]]
         };
@@ -1002,8 +983,8 @@ export class AmanatDashboard extends Component {
             type: "ir.actions.act_window",
             name: `Заявки клиента: ${clientName}`,
             res_model: "amanat.zayavka",
-            view_mode: "list,form",
-            views: [[false, "list"], [false, "form"]],
+            view_mode: "tree,form",
+            views: [[false, "tree"], [false, "form"]],
             target: "current",
             domain: [['client_id.name', '=', clientName]]
         };
@@ -1013,32 +994,6 @@ export class AmanatDashboard extends Component {
             action.domain = [
                 '&',
                 ['client_id.name', '=', clientName],
-                '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
-            ];
-        }
-        
-        this.actionService.doAction(action);
-    }
-
-    async openZayavkiBySubagentPayer(subagentPayerName) {
-        // Открываем заявки с фильтром по плательщику субагента
-        const action = {
-            type: "ir.actions.act_window",
-            name: `Заявки плательщика субагента: ${subagentPayerName}`,
-            res_model: "amanat.zayavka",
-            view_mode: "list,form",
-            views: [[false, "list"], [false, "form"]],
-            target: "current",
-            domain: [['subagent_payer_ids.name', '=', subagentPayerName]]
-        };
-        
-        // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
-            action.domain = [
-                '&',
-                ['subagent_payer_ids.name', '=', subagentPayerName],
                 '&',
                 ['date_placement', '>=', this.state.dateRange1.start],
                 ['date_placement', '<=', this.state.dateRange1.end]
@@ -1204,8 +1159,7 @@ export class AmanatDashboard extends Component {
                 contragentAvgCheck: data.contragent_avg_check || [],
                 agentsByZayavki: data.agent_zayavki_list || [],
                 clientsByZayavki: data.client_zayavki_list || [],
-                clientAvgAmount: data.client_avg_amount_list || [],
-                subagentPayersByZayavki: data.subagent_payer_zayavki_list || []
+                clientAvgAmount: data.client_avg_amount_list || []
             };
             
             // Дополнительные данные для графиков

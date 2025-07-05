@@ -1,4 +1,4 @@
-from odoo import models, fields
+from odoo import models, fields, api
 from ..base_model import AmanatBaseModel
 
 class Zayavka(models.Model, AmanatBaseModel):
@@ -1725,3 +1725,23 @@ class Zayavka(models.Model, AmanatBaseModel):
         compute='_compute_application_amount_rub_contract',
         store=True  # Если нужно хранить в БД
     )
+
+    is_sberbank_contragent = fields.Boolean(
+        string='Контрагент — Сбербанк',
+        compute='_compute_contragent_flags',
+        store=True
+    )
+    is_sovcombank_contragent = fields.Boolean(
+        string='Контрагент — Совкомбанк',
+        compute='_compute_contragent_flags',
+        store=True
+    )
+    @api.depends('contragent_id.name')
+    def _compute_contragent_flags(self):
+        for record in self:
+            if record.contragent_id:
+                name = (record.contragent_id.name or '').strip().lower()
+            else:
+                name = ''
+            record.is_sberbank_contragent = name == 'сбербанк'
+            record.is_sovcombank_contragent = name == 'совкомбанк'

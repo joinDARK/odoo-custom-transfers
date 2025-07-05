@@ -765,39 +765,6 @@ class Dashboard(models.Model):
                 {'name': 'ООО Невада', 'avg_amount': 2500737.88},
                 {'name': 'ОСОО "Данья"', 'avg_amount': 8507737.88}
             ]
-
-        # Количество заявок по плательщикам субагентов
-        subagent_payer_zayavki_dict = {}
-        for zayavka in zayavki_visible:
-            if zayavka.subagent_payer_ids:
-                for payer in zayavka.subagent_payer_ids:
-                    if payer.name not in subagent_payer_zayavki_dict:
-                        subagent_payer_zayavki_dict[payer.name] = 0
-                    subagent_payer_zayavki_dict[payer.name] += 1
-
-        # Преобразуем в список и сортируем по количеству заявок
-        subagent_payer_zayavki_list = [
-            {'name': name, 'count': count} 
-            for name, count in sorted(subagent_payer_zayavki_dict.items(), key=lambda x: x[1], reverse=True)
-        ]
-
-        # Если нет данных, добавляем тестовые данные точно как на скриншоте
-        if not subagent_payer_zayavki_list:
-            subagent_payer_zayavki_list = [
-                {'name': 'PT. Indo Trade House', 'count': 270},
-                {'name': 'SFM Trading Limited', 'count': 38},
-                {'name': 'Gema', 'count': 18},
-                {'name': 'PT Value Trade', 'count': 10},
-                {'name': 'Bangkok Export Line', 'count': 7},
-                {'name': 'ARSENAL Trading LLC', 'count': 8},
-                {'name': 'PT Varuna Capital', 'count': 6},
-                {'name': 'TOO EKAY', 'count': 4},
-                {'name': 'Flying Pigeon Trading Limited', 'count': 2},
-                {'name': 'GEARTURBO TRADING CO', 'count': 2},
-                {'name': 'HK JM INDUSTRIAL CO., LI.', 'count': 2},
-                {'name': 'LUCKA', 'count': 2},
-                {'name': 'SUNLUCK', 'count': 2}
-            ]
         
         # Топ менеджеров по заявкам
         manager_zayavki_counts = {}
@@ -883,7 +850,6 @@ class Dashboard(models.Model):
             'agent_zayavki_list': agent_zayavki_list,
             'client_zayavki_list': client_zayavki_list,
             'client_avg_amount_list': client_avg_amount_list,
-            'subagent_payer_zayavki_list': subagent_payer_zayavki_list,
             'top_managers_by_zayavki': top_managers_by_zayavki,
             
             'top_contragents': top_contragents,
