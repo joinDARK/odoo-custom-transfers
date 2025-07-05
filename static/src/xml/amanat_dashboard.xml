@@ -338,18 +338,6 @@
                         </div>
                     </div>
 
-                    <!-- Количество заявок под каждого плательщика субагента -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
-                            <div class="chart-card">
-                                <h6 class="chart-title">Количество заявок под каждого плательщика субагента</h6>
-                                <div class="chart-container-large">
-                                    <canvas id="subagent-payers-by-zayavki-chart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Первый ряд графиков -->
                     <div class="row g-3 mb-4">
                         <!-- Переводы по статусам (круговая) -->

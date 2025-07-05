@@ -641,8 +641,8 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 # Проверяем суммы заявки (в порядке приоритета)
                 zayavka_sums = [
                     getattr(zayavka, 'application_amount_rub_contract', None),  # Заявка по курсу в рублях по договору
-                    getattr(zayavka, 'total_fact', None),                      # Итого факт
-                    getattr(zayavka, 'contract_reward', None)                  # Вознаграждение по договору
+                    getattr(zayavka, 'total_fact', None),                # Итого факт
+                    getattr(zayavka, 'contract_reward', None)            # Вознаграждение по договору
                 ]
                 
                 # Находим первую непустую сумму
