@@ -1,0 +1,79 @@
+/* Базовые стили для аналитического дашборда */
+
+.analytics-dashboard {
+    padding: 20px;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+.analytics-dashboard .dashboard-header {
+    margin-bottom: 30px;
+}
+
+.analytics-dashboard .dashboard-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.analytics-dashboard .dashboard-subtitle {
+    margin: 10px 0 0 0;
+    color: #666;
+    font-size: 1rem;
+}
+
+.analytics-dashboard .date-range-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.analytics-dashboard .form-group {
+    margin-bottom: 20px;
+}
+
+.analytics-dashboard .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.analytics-dashboard .form-control {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    background: white;
+    transition: border-color 0.3s ease;
+}
+
+.analytics-dashboard .form-control:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.analytics-dashboard .form-control:hover {
+    border-color: #bbb;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .analytics-dashboard {
+        padding: 15px;
+    }
+    
+    .analytics-dashboard .date-range-card {
+        padding: 20px;
+    }
+    
+    .analytics-dashboard .dashboard-header h2 {
+        font-size: 1.5rem;
+    }
+}

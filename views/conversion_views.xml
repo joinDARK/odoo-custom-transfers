@@ -115,7 +115,7 @@
     <field name="name">conversion.list</field>
     <field name="model">amanat.conversion</field>
     <field name="arch" type="xml">
-      <list editable="top">
+      <list editable="top" multi_edit="1">
         <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
         <field width="200" name="name"/>
         <field width="200" name="state"/>

@@ -4,7 +4,7 @@
         <field name="name">extract_delivery.list</field>
         <field name="model">amanat.extract_delivery</field>
         <field name="arch" type="xml">
-            <list editable="top">
+            <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <button width="30" title="Принудительное сопоставление" type="object" name="force_application_matching" icon="fa-link" class="btn-secondary"/>
                 <button width="30" title="Диагностика" type="object" name="show_diagnosis_result" icon="fa-search" class="btn-info"/>
@@ -141,10 +141,12 @@
                                     </group>
                                 </div>
                             </group>
+                            <group>
+                                <field name="direction_choice"/>
+                            </group>
                         </page>
                         <page string="Линки">
                             <group>
-                                <field name="direction_choice"/>
                                 <field name="applications"/>
                                 <field name="currency_reserve"/>
                                 <field name="transfer_ids"/>

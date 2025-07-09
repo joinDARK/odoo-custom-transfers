@@ -6,7 +6,7 @@
         <field name="model">amanat.extracts</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list editable="top">
+            <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name"/>
                 <field name="vypiska_ids"/>

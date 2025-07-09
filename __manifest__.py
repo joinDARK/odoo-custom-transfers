@@ -5,7 +5,7 @@
     "description": "Модуль проекта Amanat",
     "author": "IncubeAI (Мирас, Комрад и Эдуард)",
     "category": "Amanat",
-    "depends": ["base", "mail", "base_automation", "web", "base_setup", "bus"],
+    "depends": ["base", "mail", "mail_bot", "base_automation", "web", "base_setup", "bus", "server_action_mass_edit"],
     "data": [
         "templates/webclient.xml",
         "views/res_users.xml",
@@ -57,6 +57,10 @@
         "views/manager_views.xml",
         "views/test_realtime_views.xml",
         "views/dashboard_views.xml",
+        "views/analytics_dashboard_views.xml",
+        "views/zayavka_fiks_dashboard_views.xml",
+        "views/contragent_gold_view.xml",
+        "views/swift_api_config_views.xml",
         "views/menu.xml",
         # 6) Остальные файлы
         "data/transfer_sequence.xml",
@@ -77,6 +81,9 @@
         "data/amanat_writeoff_sequence.xml",
         "data/extract_delivery_sequence.xml",
         "data/dashboard_data.xml",
+        "data/analytics_dashboard_data.xml",
+        "data/zayavka_fiks_dashboard_data.xml",
+        # "data/mass_editing_actions.xml",
     ],
     "assets": {
         "web._assets_primary_variables": [
@@ -103,8 +110,13 @@
             # "amanat/static/src/js/writeoff_context.js",
             "amanat/static/src/js/list_view_numbering.js",
             "amanat/static/src/js/chatter_toggle.js",
+            "amanat/static/src/js/swift_commands.js",
             "amanat/static/src/js/amanat_dashboard.js",
+            "amanat/static/src/js/analytics_dashboard.js",
+            "amanat/static/src/js/zayavka_fiks_dashboard.js",
             "amanat/static/src/xml/amanat_dashboard.xml",
+            "amanat/static/src/xml/analytics_dashboard.xml",
+            "amanat/static/src/xml/zayavka_fiks_dashboard.xml",
             (
                 "after",
                 "web/static/src/webclient/webclient.js",
@@ -135,6 +147,8 @@
             "amanat/static/src/css/style.css",
             "amanat/static/src/css/realtime_highlight.css",
             "amanat/static/src/css/amanat_dashboard.css",
+            "amanat/static/src/scss/analytics_dashboard.scss",
+            "amanat/static/src/scss/zayavka_fiks_dashboard.scss",
         ],
     },
     "installable": True,

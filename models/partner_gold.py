@@ -508,12 +508,21 @@ class PartnerGold(models.Model):
         tracking=True,
     )
 
-    @api.depends("lookup_invoice_amount", "partner_percentage")
+    @api.depends("amount_rub", "gold_deal_ids.difference", "gold_deal_ids.pure_weight_sum", "pure_weight")
     def _compute_partner_invoice_amount(self):
         for rec in self:
-            rec.partner_invoice_amount = (
-                rec.lookup_invoice_amount * rec.partner_percentage / 100
-            )
+            if rec.gold_deal_ids and rec.gold_deal_ids[0].pure_weight_sum:
+                # Берем значения из первой связанной записи gold_deal
+                difference = rec.gold_deal_ids[0].difference
+                pure_weight_sum = rec.gold_deal_ids[0].pure_weight_sum
+                
+                # Рассчитываем по формуле: amount_rub + ((difference / pure_weight_sum) * pure_weight)
+                rec.partner_invoice_amount = (
+                    rec.amount_rub + ((difference / pure_weight_sum) * rec.pure_weight)
+                )
+            else:
+                # Если нет связанных записей или pure_weight_sum равно 0, используем только amount_rub
+                rec.partner_invoice_amount = rec.amount_rub
 
     @api.model
     def create(self, vals):

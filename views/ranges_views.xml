@@ -4,7 +4,7 @@
         <field name="name">ranges.list</field>
         <field name="model">amanat.ranges</field>
         <field name="arch" type="xml">
-            <list editable="top">
+            <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="range_id"/>
                 <field width="200" name="date_start"/>

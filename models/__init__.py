@@ -2,6 +2,8 @@
 from . import list_view_mixin
 from . import base_model
 from . import dashboard
+from . import analytics_dashboard
+from . import zayavka_fiks_dashboard
 from . import test_realtime
 from . import activity
 from . import contragent
@@ -39,8 +41,14 @@ from . import money_cost_rule
 from . import expense_rule
 from . import zayavka_date_range_wizard
 from . import reconciliation_date_range_wizard
+from . import contragent_gold
 
-
+# SWIFT integration
+from . import swift
+from . import swift_api_config
+from . import mail_bot_extension
+from . import zayavka_swift_extension
+from . import discuss_channel_extension
 
 # sidebar
 from . import ir_http

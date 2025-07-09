@@ -5,7 +5,7 @@
         <field name="name">price.list.payer.profit.list</field>
         <field name="model">amanat.price_list_payer_profit</field>
         <field name="arch" type="xml">
-            <list editable="top">
+            <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="name"/>
                 <field width="200" name="date_start"/>

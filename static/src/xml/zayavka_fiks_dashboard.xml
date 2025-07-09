@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <t t-name="amanat.ZayavkaFiksDashboard" owl="1">
+        <div class="zayavka-fiks-dashboard">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="dashboard-header">
+                            <h2>Заявки</h2>
+                        </div>
+                        
+                        <!-- Средние курсы и данные за сегодня -->
+                        <div class="today-section" t-if="state.dashboardData and state.dashboardData.today_data">
+                            <div class="section-header">
+                                <h3>Сегодня</h3>
+                            </div>
+                            
+                            <!-- Первая строка: Заявки и курсы -->
+                            <div class="row">
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">Заявки</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.total_count"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">Курс USD</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.average_rates.usd"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">Курс CNY</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.average_rates.cny"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">Курс EURO</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.average_rates.euro"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">Курс AED</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.average_rates.aed"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Вторая строка: Эквивалент в $ и суммы по валютам -->
+                            <div class="row">
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">Экв. $</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.equivalent_usd"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">USD</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.usd_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">CNY</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.cny_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">EURO</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.euro_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">AED</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.aed_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- График за сегодня -->
+                            <div class="chart-section">
+                                <div class="chart-card today-chart">
+                                    <div class="chart-header">
+                                        <h3>График сегодня</h3>
+                                    </div>
+                                    <div class="chart-container">
+                                        <canvas id="todayCurrencyChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            
+
+                        </div>
+                        
+                        <!-- Блок выбора диапазона дат -->
+                        <div class="date-range-card">
+                            <div class="date-range-header">
+                                <h3>Период</h3>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="date_from_fiks">Дата начало</label>
+                                        <input type="date" id="date_from_fiks" class="form-control" 
+                                               t-model="state.dateFrom" 
+                                               t-on-change="onDateFromChange"
+                                               placeholder="Выберите дату начала"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="date_to_fiks">Дата конец</label>
+                                        <input type="date" id="date_to_fiks" class="form-control" 
+                                               t-model="state.dateTo" 
+                                               t-on-change="onDateToChange"
+                                               placeholder="Выберите дату конца"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Метрики за период -->
+                        <div class="metrics-section" t-if="state.dashboardData">
+                            <div class="section-title">Средний курс в рамках диапазона</div>
+                            <!-- Первая строка: Заявки и курсы по договору -->
+                            <div class="row">
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">Заявки</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.total_count"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">USD договор</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.average_rates.usd"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">CNY договор</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.average_rates.cny"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">EURO договор</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.average_rates.euro"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">AED договор</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.average_rates.aed"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Вторая строка: Эквивалент в $ и суммы по валютам -->
+                            <div class="row">
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">Экв. $</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.equivalent_usd"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">USD</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.usd_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">CNY</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.cny_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">EURO</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.euro_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">AED</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.aed_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Показываем если данные загружаются -->
+                        <div t-if="state.loading" class="loading-dashboard">
+                            <div class="text-center">
+                                <i class="fa fa-spinner fa-spin fa-3x"></i>
+                                <p>Загрузка данных...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Показываем если нет данных -->
+                        <div t-if="!state.dashboardData and !state.loading" class="no-data-dashboard">
+                            <div class="text-center">
+                                <i class="fa fa-exclamation-triangle fa-3x text-warning"></i>
+                                <p>Данные не найдены</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Блок с графиком -->
+                        <div class="chart-section" t-if="state.dashboardData">
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h3>График периода</h3>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="currencyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates> 

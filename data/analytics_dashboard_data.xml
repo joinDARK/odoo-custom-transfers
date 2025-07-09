@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Создание аналитического дашборда по умолчанию -->
+        <record id="analytics_dashboard_default" model="amanat.analytics_dashboard">
+            <field name="name">Диапазон по умолчанию</field>
+            <field name="date_from" eval="(datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')"/>
+            <field name="date_to" eval="datetime.datetime.now().strftime('%Y-%m-%d')"/>
+        </record>
+
+        <!-- Тестовые данные курсов валют -->
+        <record id="currency_rates_sample" model="amanat.rates">
+            <field name="euro">1.0900</field>
+            <field name="cny">0.1400</field>
+            <field name="rub">0.0120</field>
+            <field name="aed">0.2700</field>
+            <field name="thb">0.0300</field>
+            <field name="usd">1.0000</field>
+            <field name="usdt">1.0000</field>
+        </record>
+    </data>
+</odoo> 

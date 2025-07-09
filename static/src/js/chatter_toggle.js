@@ -9,8 +9,11 @@
         if (toggleButton) return; // Кнопка уже создана
         
         // Находим место в верхнем меню для вставки кнопки
-        const navbar = document.querySelector('.o_main_navbar .navbar-nav.ms-auto, .o_main_navbar .o_menu_systray');
-        if (!navbar) return;
+        const navbar = document.querySelector('.o_main_navbar .o_menu_systray');
+        if (!navbar) {
+            console.log('Chatter Toggle: navbar не найден');
+            return;
+        }
         
         toggleButton = document.createElement('button');
         toggleButton.className = 'chatter-toggle-btn';
@@ -52,17 +55,20 @@
         
         // Вставляем кнопку прямо в navbar без li контейнера
         navbar.insertBefore(toggleButton, navbar.firstChild);
+        console.log('Chatter Toggle: кнопка создана и добавлена в navbar');
     }
     
     function removeToggleButton() {
         if (toggleButton) {
             toggleButton.remove();
             toggleButton = null;
+            console.log('Chatter Toggle: кнопка удалена');
         }
     }
     
     function toggleChatter() {
-        const chatters = document.querySelectorAll('.o_chatter, .o-mail-ChatterContainer, .o-mail-Form-chatter');
+        const chatters = document.querySelectorAll('.o-mail-Chatter, .o-mail-ChatterContainer, .o-mail-Form-chatter');
+        console.log('Chatter Toggle: найдено чэттеров:', chatters.length);
         
         if (chatterVisible) {
             // Скрываем chatter
@@ -73,6 +79,7 @@
             toggleButton.title = 'Показать логи';
             toggleButton.style.color = '#6c757d';
             chatterVisible = false;
+            console.log('Chatter Toggle: чэттеры скрыты');
         } else {
             // Показываем chatter
             chatters.forEach(chatter => {
@@ -82,6 +89,7 @@
             toggleButton.title = 'Скрыть логи';
             toggleButton.style.color = '#dc3545';
             chatterVisible = true;
+            console.log('Chatter Toggle: чэттеры показаны');
         }
     }
     
@@ -92,7 +100,7 @@
         
         // Проверяем наличие различных chatter элементов
         const hasChatter = (
-            document.querySelector('.o_chatter') || 
+            document.querySelector('.o-mail-Chatter') || 
             document.querySelector('.o-mail-ChatterContainer') || 
             document.querySelector('.o-mail-Form-chatter') ||
             // Проверяем в DOM наличие полей chatter
@@ -103,7 +111,7 @@
             document.querySelector('.oe_chatter') ||
             document.querySelector('.o_mail_thread') ||
             // Проверяем наличие form view с mail.thread наследованием
-            document.querySelector('.o_form_view .o_chatter')
+            document.querySelector('.o_form_view .o-mail-Chatter')
         );
         
         return hasForm && hasChatter;
@@ -111,8 +119,10 @@
     
     function initChatterToggle() {
         if (checkIfFormWithChatter()) {
+            console.log('Chatter Toggle: форма с чэттером найдена');
             createToggleButton();
         } else {
+            console.log('Chatter Toggle: форма с чэттером не найдена');
             removeToggleButton();
         }
     }
@@ -160,7 +170,7 @@ if (typeof $ !== 'undefined') {
             function addChatterToggleJQuery() {
                 const isFormWithChatter = (
                     $('.o_form_view').length > 0 &&
-                    ($('.o_chatter').length > 0 ||
+                    ($('.o-mail-Chatter').length > 0 ||
                      $('.o-mail-ChatterContainer').length > 0 ||
                      $('.o-mail-Form-chatter').length > 0 ||
                      $('[name="message_ids"]').length > 0 ||

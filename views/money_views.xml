@@ -4,7 +4,7 @@
         <field name="name">money.list</field>
         <field name="model">amanat.money</field>
         <field name="arch" type="xml">
-            <list editable="top">
+            <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="date" width="200"/>
                 <field name="state" width="200"/>

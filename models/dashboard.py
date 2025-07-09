@@ -520,7 +520,11 @@ class Dashboard(models.Model):
         zayavki_count = len(zayavki)
         
         # Закрытые заявки (статус = 'close')
-        closed_zayavki = zayavki.filtered(lambda z: z.status == 'close')
+        # Используем только основные фильтры для корректного подсчета
+        closed_zayavki = zayavki.filtered(lambda z: (
+            z.status == 'close' and
+            not z.hide_in_dashboard
+        ))
         zayavki_closed = len(closed_zayavki)
         
         # Сумма закрытых заявок
@@ -583,23 +587,8 @@ class Dashboard(models.Model):
         for name, count in sorted(contragent_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
             top_contragents_by_zayavki.append({'name': name, 'count': count})
         
-        # Если нет данных, добавляем тестовые данные для демонстрации
-        if not top_contragents_by_zayavki:
-            top_contragents_by_zayavki = [
-                {'name': 'Совкомбанк', 'count': 200},
-                {'name': 'Сбербанк', 'count': 150},
-                {'name': 'Стаут', 'count': 45},
-                {'name': 'Олег', 'count': 25},
-                {'name': 'ВТБ', 'count': 20},
-                {'name': 'Норвен', 'count': 15},
-                {'name': 'Компрессорные Технологии', 'count': 10},
-                {'name': 'ООО ГОУ Мобайл', 'count': 8},
-                {'name': 'Платежи ТВ/ТДК', 'count': 5},
-                {'name': 'Платежи Рустем', 'count': 3},
-                {'name': 'Расим', 'count': 2},
-                {'name': 'Росбанк', 'count': 2},
-                {'name': 'ЭнергоПром-Альянс', 'count': 1}
-            ]
+        # Если нет данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
 
         # Средний чек у контрагентов
         # Фильтруем заявки которые не скрыты в дашборде
@@ -624,30 +613,8 @@ class Dashboard(models.Model):
         # Сортируем по убыванию среднего чека
         contragent_avg_check.sort(key=lambda x: x['avg_amount'], reverse=True)
         
-        # Если нет данных, добавляем тестовые данные для демонстрации
-        if not contragent_avg_check:
-            contragent_avg_check = [
-                {'name': 'Fin Platform', 'avg_amount': 30000000.0},
-                {'name': 'Orange', 'avg_amount': 25000000.0},
-                {'name': 'Payments', 'avg_amount': 20000000.0},
-                {'name': 'Норвен', 'avg_amount': 45000000.0},
-                {'name': 'Олег', 'avg_amount': 40000000.0},
-                {'name': 'Платежи ТВ/ТДК', 'avg_amount': 27000000.0},
-                {'name': 'ЭнергоПром-Альянс', 'avg_amount': 35000000.0},
-                {'name': 'Стаут', 'avg_amount': 22000000.0},
-                {'name': 'Совкомбанк', 'avg_amount': 8000000.0},
-                {'name': 'Сбербанк', 'avg_amount': 7000000.0},
-                {'name': 'Росбанк', 'avg_amount': 4000000.0},
-                {'name': 'Расим', 'avg_amount': 6000000.0},
-                {'name': 'Платежи Рустем', 'avg_amount': 5000000.0},
-                {'name': 'ВТБ', 'avg_amount': 9000000.0},
-                {'name': 'Булат', 'avg_amount': 8500000.0},
-                {'name': 'Компрессорные Технологии', 'avg_amount': 3000000.0},
-                {'name': 'ООО ГОУ Мобайл', 'avg_amount': 12000000.0},
-                {'name': 'Roman', 'avg_amount': 1000000.0},
-                {'name': 'SQL', 'avg_amount': 500000.0},
-                {'name': 'Александр Креско', 'avg_amount': 800000.0}
-            ]
+        # Если нет данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
 
         # Количество заявок по агентам
         # Фильтруем заявки которые не скрыты в дашборде
@@ -666,15 +633,8 @@ class Dashboard(models.Model):
         for name, count in sorted(agent_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
             agent_zayavki_list.append({'name': name, 'count': count})
         
-        # Если нет данных, добавляем тестовые данные для демонстрации
-        if not agent_zayavki_list:
-            agent_zayavki_list = [
-                {'name': 'СТЕЛЛАР', 'count': 228},
-                {'name': 'ТДК', 'count': 110},
-                {'name': 'Индотрейд РФ', 'count': 19},
-                {'name': 'Тезер', 'count': 17},
-                {'name': 'ОООР "Глобал Интернешнл Трейд"', 'count': 2}
-            ]
+        # Если нет данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
 
         # Количество заявок по клиентам
         # Фильтруем заявки которые не скрыты в дашборде
@@ -691,33 +651,78 @@ class Dashboard(models.Model):
         for name, count in sorted(client_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
             client_zayavki_list.append({'name': name, 'count': count})
         
-        # Если нет данных, добавляем тестовые данные для демонстрации
-        if not client_zayavki_list:
-            client_zayavki_list = [
-                {'name': 'Совком', 'count': 195},
-                {'name': 'Транзакции и Расчеты', 'count': 95},
-                {'name': 'Трэк', 'count': 11},
-                {'name': 'ЭНЕРДЖИ ФЛОУ СОЛЮШЕ...', 'count': 9},
-                {'name': 'ЭнергоПром-Альянс', 'count': 7},
-                {'name': 'АО "Р-ГАРНЕТ"', 'count': 4},
-                {'name': 'БРАЙТ АЙДИАС ТРЕЙДИНГ', 'count': 3},
-                {'name': 'Вайзитек', 'count': 4},
-                {'name': 'ГРУППА КОМПАНИЙ АВАН...', 'count': 1},
-                {'name': 'Газпром цифльпроект', 'count': 1},
-                {'name': 'Истлинк', 'count': 1},
-                {'name': 'Компрессорные Технологии', 'count': 4},
-                {'name': 'МЕРУКНА ТРЕЙДИНГ ЭЛ.ЭЛ.', 'count': 1},
-                {'name': 'ООО "Волжанин"', 'count': 1},
-                {'name': 'ООО "ЧИПДЕВАЙС"', 'count': 6},
-                {'name': 'ООО ГОУ Мобайл', 'count': 2},
-                {'name': 'ООО КубаньТрейдинг', 'count': 3},
-                {'name': 'ООО Невада', 'count': 2},
-                {'name': 'ООО ПК Царь упаковка', 'count': 1},
-                {'name': 'ОСОО "ДЕМИРМЕТСЕРВИС"', 'count': 1},
-                {'name': 'Общество с ограниченной...', 'count': 1},
-                {'name': 'Оптима', 'count': 1},
-                {'name': 'ОСОО "Данья"', 'count': 1}
-            ]
+        # Если нет данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
+
+        # Количество заявок по субагентам
+        # Фильтруем заявки которые не скрыты в дашборде
+        subagent_zayavki_counts = {}
+        for zayavka in zayavki_visible:
+            if zayavka.subagent_ids:
+                for subagent in zayavka.subagent_ids:
+                    if subagent.name:
+                        subagent_name = subagent.name
+                        if subagent_name not in subagent_zayavki_counts:
+                            subagent_zayavki_counts[subagent_name] = 0
+                        subagent_zayavki_counts[subagent_name] += 1
+        
+        # Сортируем по убыванию количества заявок
+        subagent_zayavki_list = []
+        for name, count in sorted(subagent_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
+            subagent_zayavki_list.append({'name': name, 'count': count})
+        
+        # Если нет данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
+
+        # Количество заявок по платежщикам субагентов
+        # Фильтруем заявки которые не скрыты в дашборде
+        payer_zayavki_counts = {}
+        for zayavka in zayavki_visible:
+            if zayavka.subagent_payer_ids:
+                for payer in zayavka.subagent_payer_ids:
+                    if payer.name:
+                        payer_name = payer.name
+                        if payer_name not in payer_zayavki_counts:
+                            payer_zayavki_counts[payer_name] = 0
+                        payer_zayavki_counts[payer_name] += 1
+        
+        # Сортируем по убыванию количества заявок
+        payer_zayavki_list = []
+        for name, count in sorted(payer_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
+            payer_zayavki_list.append({'name': name, 'count': count})
+        
+        # Если нет данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
+
+        # Средняя сумма заявок по агентам
+        agent_avg_amount_dict = {}
+        for zayavka in zayavki_visible:
+            if zayavka.agent_id and zayavka.agent_id.name and zayavka.total_fact:
+                agent_name = zayavka.agent_id.name
+                if agent_name not in agent_avg_amount_dict:
+                    agent_avg_amount_dict[agent_name] = {'total_amount': 0, 'count': 0}
+                agent_avg_amount_dict[agent_name]['total_amount'] += zayavka.total_fact
+                agent_avg_amount_dict[agent_name]['count'] += 1
+
+        # Формируем список средних сумм заявок по агентам
+        agent_avg_amount_list = []
+        for agent_name, data in agent_avg_amount_dict.items():
+            if data['count'] > 0:
+                avg_amount = data['total_amount'] / data['count']
+                agent_avg_amount_list.append({
+                    'name': agent_name,
+                    'avg_amount': avg_amount,
+                    'count': data['count']
+                })
+
+        # Сортируем по убыванию средней суммы
+        agent_avg_amount_list = sorted(agent_avg_amount_list, key=lambda x: x['avg_amount'], reverse=True)
+
+        # Ограничиваем до топ-10 агентов
+        agent_avg_amount_list = agent_avg_amount_list[:10]
+
+        # Если нет данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
 
         # Средняя сумма заявок по клиентам
         client_avg_amount_dict = {}
@@ -738,33 +743,8 @@ class Dashboard(models.Model):
         # Сортируем по убыванию средней суммы
         client_avg_amount_list.sort(key=lambda x: x['avg_amount'], reverse=True)
         
-        # Если нет данных, добавляем тестовые данные как на скриншоте
-        if not client_avg_amount_list:
-            client_avg_amount_list = [
-                {'name': 'БРАЙТ АЙДИАС ТРЕЙДИНГ', 'avg_amount': 43816681.49},
-                {'name': 'ЭнергоПром-Альянс', 'avg_amount': 31450938.89},
-                {'name': 'Трэк', 'avg_amount': 30659651.48},
-                {'name': 'Газпром цифльпроект', 'avg_amount': 25002581.81},
-                {'name': 'Совком', 'avg_amount': 18617659.28},
-                {'name': 'ООО ГОУ Мобайл', 'avg_amount': 15700569.35},
-                {'name': 'ЭНЕРДЖИ ФЛОУ СОЛЮШЕ...', 'avg_amount': 15648605.97},
-                {'name': 'Оптима', 'avg_amount': 14838547.60},
-                {'name': 'АО "Р-ГАРНЕТ"', 'avg_amount': 12048528.88},
-                {'name': 'Вайзитек', 'avg_amount': 12333153.41},
-                {'name': 'ООО "ЧИПДЕВАЙС"', 'avg_amount': 11998114.61},
-                {'name': 'ООО КубаньТрейдинг', 'avg_amount': 39234704.74},
-                {'name': 'Транзакции и Расчеты', 'avg_amount': 7344645.61},
-                {'name': 'Истлинк', 'avg_amount': 4710626.76},
-                {'name': 'ГРУППА КОМПАНИЙ АВАН...', 'avg_amount': 3508261.20},
-                {'name': 'Компрессорные Технологии', 'avg_amount': 2315635.08},
-                {'name': 'ООО "Волжанин"', 'avg_amount': 2167737.68},
-                {'name': 'ОСОО "ДЕМИРМЕТСЕРВИС"', 'avg_amount': 358989.70},
-                {'name': 'ООО ПК Царь упаковка', 'avg_amount': 1869709.27},
-                {'name': 'Общество с ограниченной...', 'avg_amount': 2135171.76},
-                {'name': 'МЕРУКНА ТРЕЙДИНГ ЭЛ.ЭЛ.', 'avg_amount': 1016372.70},
-                {'name': 'ООО Невада', 'avg_amount': 2500737.88},
-                {'name': 'ОСОО "Данья"', 'avg_amount': 8507737.88}
-            ]
+        # Если нет данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
         
         # Топ менеджеров по заявкам
         manager_zayavki_counts = {}
@@ -848,8 +828,11 @@ class Dashboard(models.Model):
             'top_contragents_by_zayavki': top_contragents_by_zayavki,
             'contragent_avg_check': contragent_avg_check,
             'agent_zayavki_list': agent_zayavki_list,
+            'agent_avg_amount_list': agent_avg_amount_list,
             'client_zayavki_list': client_zayavki_list,
             'client_avg_amount_list': client_avg_amount_list,
+            'subagent_zayavki_list': subagent_zayavki_list,
+            'payer_zayavki_list': payer_zayavki_list,
             'top_managers_by_zayavki': top_managers_by_zayavki,
             
             'top_contragents': top_contragents,
@@ -859,14 +842,369 @@ class Dashboard(models.Model):
             'processing_time': processing_time,
             
             'recent_operations': recent_operations,
+            
+            # ==================== НОВЫЕ ГРАФИКИ МЕНЕДЖЕРОВ ====================
+            'managers_by_zayavki': self.get_managers_by_zayavki_data(date_from, date_to),
+            'managers_closed_zayavki': self.get_managers_closed_zayavki_data(date_from, date_to),
+            'zayavki_status_distribution': self.get_zayavki_status_distribution_data(date_from, date_to),
+            'zayavki_deal_cycles': self.get_zayavki_deal_cycles_data(date_from, date_to),
+            'contragent_avg_reward_percent': self.get_contragent_avg_reward_percent_data(date_from, date_to),
+            'managers_efficiency_data': self.get_managers_efficiency_data(date_from, date_to),
         }
+
+    @api.model
+    def get_managers_by_zayavki_data(self, date_from=None, date_to=None):
+        """Получить данные по заявкам, закрепленным за менеджерами (с фильтрами как на скриншоте)"""
+        
+        # Фильтры из скриншота:
+        # 1. hide_in_dashboard != True
+        # 2. status_range содержит "Да" 
+        # 3. status != "отменено клиентом" 
+        
+        domain = [
+            ('hide_in_dashboard', '!=', True),  # Не отображать в дашборде != True
+            ('status', '!=', 'cancel')          # Статус != "отменено клиентом"
+        ]
+        
+        # Добавляем фильтрацию по датам
+        if date_from and date_to:
+            domain.extend([('date_placement', '>=', date_from), ('date_placement', '<=', date_to)])
+        elif date_from:
+            domain.append(('date_placement', '>=', date_from))
+        elif date_to:
+            domain.append(('date_placement', '<=', date_to))
+        
+        # Получаем заявки с учетом фильтров
+        zayavki = self.env['amanat.zayavka'].search(domain)
+        
+        # Считаем количество заявок по каждому менеджеру
+        manager_counts = {}
+        for zayavka in zayavki:
+            if zayavka.manager_ids:
+                # Если заявка закреплена за несколькими менеджерами, учитываем всех
+                for manager in zayavka.manager_ids:
+                    manager_name = manager.name
+                    if manager_name not in manager_counts:
+                        manager_counts[manager_name] = 0
+                    manager_counts[manager_name] += 1
+        
+        # Преобразуем в список для графика
+        managers_list = []
+        for manager_name, count in manager_counts.items():
+            managers_list.append({
+                'name': manager_name,
+                'count': count
+            })
+        
+        # Сортируем по убыванию количества заявок
+        managers_list.sort(key=lambda x: x['count'], reverse=True)
+        
+        # Если нет реальных данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
+        
+        return managers_list
     
     @api.model
-    def get_zayavki_comparison_data(self, date_from1=None, date_to1=None, date_from2=None, date_to2=None):
-        """Получить данные по заявкам для сравнения двух диапазонов дат"""
+    def get_managers_closed_zayavki_data(self, date_from=None, date_to=None):
+        """Получить данные по заявкам, закрытым менеджерами (как на скриншоте)"""
         
-        def get_zayavki_data(date_from, date_to):
-            """Получить данные по заявкам для конкретного диапазона"""
+        # Фильтры из скриншота:
+        # 1. hide_in_dashboard != True (не отображать в дашборде пустое)
+        # 2. status_range содержит "Да" 
+        # 3. status = "заявка закрыта"
+        
+        domain = [
+            ('hide_in_dashboard', '!=', True),    # Не отображать в дашборде != True
+            ('status', '=', 'close')              # Статус = "заявка закрыта"
+        ]
+        
+        # Добавляем фильтрацию по датам
+        if date_from and date_to:
+            domain.extend([('date_placement', '>=', date_from), ('date_placement', '<=', date_to)])
+        elif date_from:
+            domain.append(('date_placement', '>=', date_from))
+        elif date_to:
+            domain.append(('date_placement', '<=', date_to))
+        
+        # Получаем заявки с учетом фильтров
+        zayavki = self.env['amanat.zayavka'].search(domain)
+        
+        # Считаем количество заявок по каждому менеджеру
+        manager_counts = {}
+        for zayavka in zayavki:
+            if zayavka.manager_ids:
+                # Если заявка закреплена за несколькими менеджерами, учитываем всех
+                for manager in zayavka.manager_ids:
+                    manager_name = manager.name
+                    if manager_name not in manager_counts:
+                        manager_counts[manager_name] = 0
+                    manager_counts[manager_name] += 1
+        
+        # Преобразуем в список для графика
+        managers_list = []
+        for manager_name, count in manager_counts.items():
+            managers_list.append({
+                'name': manager_name,
+                'count': count
+            })
+        
+        # Сортируем по убыванию количества заявок
+        managers_list.sort(key=lambda x: x['count'], reverse=True)
+        
+        # Если нет реальных данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
+        
+        return managers_list
+    
+    @api.model
+    def get_zayavki_status_distribution_data(self, date_from=None, date_to=None):
+        """Получить данные по распределению статусов заявок (как на скриншоте)"""
+        
+        # Фильтры из скриншота:
+        # 1. status_range содержит "Да" 
+        # 2. hide_in_dashboard is пустое (т.е. != True)
+        
+        domain = [
+            ('hide_in_dashboard', '!=', True)     # Не отображать в дашборде is пустое
+        ]
+        
+        # Добавляем фильтрацию по датам
+        if date_from and date_to:
+            domain.extend([('date_placement', '>=', date_from), ('date_placement', '<=', date_to)])
+        elif date_from:
+            domain.append(('date_placement', '>=', date_from))
+        elif date_to:
+            domain.append(('date_placement', '<=', date_to))
+        
+        # Получаем заявки с учетом фильтров
+        zayavki = self.env['amanat.zayavka'].search(domain)
+        
+        # Считаем количество заявок по каждому статусу
+        status_counts = {}
+        for zayavka in zayavki:
+            status = zayavka.status or 'Без статуса'
+            
+            # Мапим статусы для красивого отображения
+            status_display_name = status
+            if status == 'close':
+                status_display_name = 'заявка закрыта'
+            elif status == 'cancel':
+                status_display_name = 'отменено клиентом'
+            elif status == 'return':
+                status_display_name = '15. возврат'
+            
+            if status_display_name not in status_counts:
+                status_counts[status_display_name] = 0
+            status_counts[status_display_name] += 1
+        
+        # Преобразуем в список для графика
+        status_list = []
+        for status_name, count in status_counts.items():
+            status_list.append({
+                'name': status_name,
+                'count': count
+            })
+        
+        # Сортируем по убыванию количества
+        status_list.sort(key=lambda x: x['count'], reverse=True)
+        
+        # Если нет реальных данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
+        
+        return status_list
+    
+    @api.model
+    def get_zayavki_deal_cycles_data(self, date_from=None, date_to=None):
+        """Получить данные по циклам сделок (как на скриншоте)"""
+        
+        # Фильтры для заявок:
+        # 1. hide_in_dashboard != True
+        # 2. status_range = 'yes'
+        
+        domain = [
+            ('hide_in_dashboard', '!=', True)
+        ]
+        
+        # Добавляем фильтрацию по датам
+        if date_from and date_to:
+            domain.extend([('date_placement', '>=', date_from), ('date_placement', '<=', date_to)])
+        elif date_from:
+            domain.append(('date_placement', '>=', date_from))
+        elif date_to:
+            domain.append(('date_placement', '<=', date_to))
+        
+        # Получаем заявки с учетом фильтров
+        zayavki = self.env['amanat.zayavka'].search(domain)
+        
+        # Считаем циклы сделок
+        cycles_count = {}
+        for zayavka in zayavki:
+            # Используем готовое поле deal_cycle_days если оно есть
+            if hasattr(zayavka, 'deal_cycle_days') and zayavka.deal_cycle_days is not False:
+                cycle_days = int(zayavka.deal_cycle_days)
+            elif zayavka.date_placement and zayavka.deal_closed_date:
+                # Вычисляем цикл как разность дат
+                cycle = (zayavka.deal_closed_date - zayavka.date_placement).days
+                cycle_days = max(0, cycle)  # Не может быть отрицательным
+            else:
+                continue  # Пропускаем заявки без данных для вычисления цикла
+            
+            if cycle_days not in cycles_count:
+                cycles_count[cycle_days] = 0
+            cycles_count[cycle_days] += 1
+        
+        # Преобразуем в список для графика и сортируем по циклу
+        cycles_list = []
+        for cycle_days, count in cycles_count.items():
+            cycles_list.append({
+                'cycle_days': cycle_days,
+                'count': count
+            })
+        
+        # Сортируем по количеству дней
+        cycles_list.sort(key=lambda x: x['cycle_days'])
+        
+        # Если нет реальных данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
+        
+        return cycles_list
+
+    @api.model
+    def get_contragent_avg_reward_percent_data(self, date_from=None, date_to=None):
+        """Получить данные о среднем проценте вознаграждения по контрагентам"""
+        
+        # Фильтры как на скриншоте:
+        # 1. hide_in_dashboard != True (статус диалога "Да") 
+        # 2. Не отображать в дашборде != True
+        
+        domain = [
+            ('hide_in_dashboard', '!=', True),    # Не отображать в дашборде != True
+            ('reward_percent', '>', 0),           # Процент вознаграждения больше 0
+            ('contragent_id', '!=', False)        # Контрагент указан
+        ]
+        
+        # Добавляем фильтрацию по датам
+        if date_from and date_to:
+            domain.extend([('date_placement', '>=', date_from), ('date_placement', '<=', date_to)])
+        elif date_from:
+            domain.append(('date_placement', '>=', date_from))
+        elif date_to:
+            domain.append(('date_placement', '<=', date_to))
+        
+        # Получаем заявки с учетом фильтров
+        zayavki = self.env['amanat.zayavka'].search(domain)
+        
+        # Группируем по контрагентам и считаем средний процент
+        contragent_rewards = {}
+        for zayavka in zayavki:
+            contragent_name = zayavka.contragent_id.name
+            if contragent_name not in contragent_rewards:
+                contragent_rewards[contragent_name] = []
+            contragent_rewards[contragent_name].append(zayavka.reward_percent)
+        
+        # Вычисляем медианные значения процентов для каждого контрагента
+        import statistics
+        contragent_avg_list = []
+        for contragent_name, rewards in contragent_rewards.items():
+            if rewards:  # Проверяем что есть данные
+                # Используем медиану как на скриншоте (Median: % Вознаграждение)
+                median_reward = statistics.median(rewards)
+                contragent_avg_list.append({
+                    'name': contragent_name,
+                    'avg_reward_percent': median_reward
+                })
+        
+        # Сортируем по убыванию медианного процента
+        contragent_avg_list.sort(key=lambda x: x['avg_reward_percent'], reverse=True)
+        
+        # Если нет реальных данных, возвращаем пустой список
+        # Frontend покажет сообщение "Нет данных по этому диапазону"
+        
+        return contragent_avg_list
+
+    @api.model
+    def get_managers_efficiency_data(self, date_from=None, date_to=None):
+        """Получить данные об эффективности менеджеров в процентах"""
+        
+        # Получаем всех активных менеджеров  
+        managers = self.env['amanat.manager'].search([])
+        
+        # Логирование для отладки
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info(f"Найдено менеджеров: {len(managers)}")
+        
+        # Если передана фильтрация по датам, нужно вычислить эффективность на основе заявок за период
+        if date_from or date_to:
+            # Получаем заявки за период для вычисления эффективности
+            zayavka_domain = [('hide_in_dashboard', '!=', True)]  # Основной фильтр
+            if date_from and date_to:
+                zayavka_domain.extend([('date_placement', '>=', date_from), ('date_placement', '<=', date_to)])
+            elif date_from:
+                zayavka_domain.append(('date_placement', '>=', date_from))
+            elif date_to:
+                zayavka_domain.append(('date_placement', '<=', date_to))
+            
+            # Если есть фильтры по датам, вычисляем эффективность по заявкам за период
+            managers_efficiency_list = []
+            for manager in managers:
+                # Получаем заявки этого менеджера за период
+                manager_zayavki = self.env['amanat.zayavka'].search(
+                    zayavka_domain + [('manager_ids', 'in', manager.id)]
+                )
+                
+                _logger.info(f"Менеджер {manager.name}: найдено {len(manager_zayavki)} заявок за период")
+                
+                if manager_zayavki:
+                    # Считаем эффективность как процент успешно закрытых заявок
+                    total_applications = len(manager_zayavki)
+                    wrong_applications = len(manager_zayavki.filtered(lambda z: z.status == 'cancel'))
+                    efficiency_percent = ((total_applications - wrong_applications) / total_applications * 100) if total_applications > 0 else 0
+                    
+                    managers_efficiency_list.append({
+                        'name': manager.name,
+                        'efficiency': efficiency_percent
+                    })
+                    
+                    _logger.info(f"Менеджер {manager.name}: эффективность {efficiency_percent}%")
+            
+            # Сортируем по убыванию эффективности
+            managers_efficiency_list.sort(key=lambda x: x['efficiency'], reverse=True)
+            
+            _logger.info(f"Результат для периода: {managers_efficiency_list}")
+            return managers_efficiency_list
+        
+        # Обычный режим - без фильтрации по датам
+        managers_efficiency_list = []
+        for manager in managers:
+            # Получаем эффективность в процентах из вычисляемого поля efficiency
+            # efficiency уже вычисляется как (total_applications - wrong_applications) / total_applications
+            efficiency_percent = (manager.efficiency or 0.0) * 100  # Преобразуем в проценты
+            
+            _logger.info(f"Менеджер {manager.name}: общая эффективность {efficiency_percent}% (заявок: {manager.total_applications}, ошибочных: {manager.wrong_applications})")
+            
+            # Добавляем менеджера в список только если у него есть заявки
+            if manager.total_applications > 0:
+                managers_efficiency_list.append({
+                    'name': manager.name,
+                    'efficiency': efficiency_percent
+                })
+        
+        # Сортируем по убыванию эффективности
+        managers_efficiency_list.sort(key=lambda x: x['efficiency'], reverse=True)
+        
+        _logger.info(f"Результат общий: {managers_efficiency_list}")
+        
+        return managers_efficiency_list
+
+    @api.model
+    def get_comparison_chart_data(self, date_from1=None, date_to1=None, date_from2=None, date_to2=None):
+        """Получить данные для сравнения графиков за два периода"""
+        
+        def get_period_data(date_from, date_to):
+            """Получить данные для одного периода"""
+            
+            # Базовый домен для фильтрации заявок
             zayavka_domain = []
             if date_from and date_to:
                 zayavka_domain = [('date_placement', '>=', date_from), ('date_placement', '<=', date_to)]
@@ -875,33 +1213,288 @@ class Dashboard(models.Model):
             elif date_to:
                 zayavka_domain = [('date_placement', '<=', date_to)]
             
+            # Получаем заявки для периода
             zayavki = self.env['amanat.zayavka'].search(zayavka_domain)
-            closed_zayavki = zayavki.filtered(lambda z: z.status == 'close')
-            closed_amount = sum(closed_zayavki.mapped('amount') or [0])
+            zayavki_visible = zayavki.filtered(lambda z: not z.hide_in_dashboard)
             
-            # USD эквивалент
-            usd_rate = 100.0
-            usd_equivalent = closed_amount / usd_rate if closed_amount > 0 else 0.0
+            # 1. Количество заявок под каждого контрагента
+            contragent_zayavki_counts = {}
+            for zayavka in zayavki_visible:
+                if zayavka.contragent_id and zayavka.contragent_id.name:
+                    if zayavka.contragent_id.name not in contragent_zayavki_counts:
+                        contragent_zayavki_counts[zayavka.contragent_id.name] = 0
+                    contragent_zayavki_counts[zayavka.contragent_id.name] += 1
+            
+            contragents_by_zayavki = []
+            for name, count in sorted(contragent_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
+                contragents_by_zayavki.append({'name': name, 'count': count})
+            
+            # 2. Средний чек у контрагентов
+            contragent_avg_amounts = {}
+            for zayavka in zayavki_visible:
+                if zayavka.contragent_id and zayavka.contragent_id.name and zayavka.amount:
+                    contragent_name = zayavka.contragent_id.name
+                    if contragent_name not in contragent_avg_amounts:
+                        contragent_avg_amounts[contragent_name] = {'total_amount': 0, 'count': 0}
+                    contragent_avg_amounts[contragent_name]['total_amount'] += zayavka.amount
+                    contragent_avg_amounts[contragent_name]['count'] += 1
+            
+            contragent_avg_check = []
+            for name, data in contragent_avg_amounts.items():
+                if data['count'] > 0:
+                    avg_amount = data['total_amount'] / data['count']
+                    contragent_avg_check.append({'name': name, 'avg_amount': avg_amount})
+            contragent_avg_check.sort(key=lambda x: x['avg_amount'], reverse=True)
+            
+            # 3. Вознаграждение средний процент по контрагентам
+            contragent_rewards = {}
+            for zayavka in zayavki.filtered(lambda z: not z.hide_in_dashboard and z.reward_percent > 0 and z.contragent_id):
+                contragent_name = zayavka.contragent_id.name
+                if contragent_name not in contragent_rewards:
+                    contragent_rewards[contragent_name] = []
+                contragent_rewards[contragent_name].append(zayavka.reward_percent)
+            
+            import statistics
+            contragent_reward_percent = []
+            for contragent_name, rewards in contragent_rewards.items():
+                if rewards:
+                    median_reward = statistics.median(rewards)
+                    contragent_reward_percent.append({
+                        'name': contragent_name,
+                        'avg_reward_percent': median_reward
+                    })
+            contragent_reward_percent.sort(key=lambda x: x['avg_reward_percent'], reverse=True)
+            
+            # 4. Количество заявок под каждого агента
+            agent_zayavki_counts = {}
+            for zayavka in zayavki_visible:
+                if zayavka.agent_id and zayavka.agent_id.name:
+                    agent_name = zayavka.agent_id.name
+                    if agent_name not in agent_zayavki_counts:
+                        agent_zayavki_counts[agent_name] = 0
+                    agent_zayavki_counts[agent_name] += 1
+            
+            agents_by_zayavki = []
+            for name, count in sorted(agent_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
+                agents_by_zayavki.append({'name': name, 'count': count})
+            
+            # 5. Средняя сумма заявок под каждого агента
+            agent_avg_amount_dict = {}
+            for zayavka in zayavki_visible:
+                if zayavka.agent_id and zayavka.agent_id.name and zayavka.total_fact:
+                    agent_name = zayavka.agent_id.name
+                    if agent_name not in agent_avg_amount_dict:
+                        agent_avg_amount_dict[agent_name] = {'total_amount': 0, 'count': 0}
+                    agent_avg_amount_dict[agent_name]['total_amount'] += zayavka.total_fact
+                    agent_avg_amount_dict[agent_name]['count'] += 1
+
+            agent_avg_amount = []
+            for agent_name, data in agent_avg_amount_dict.items():
+                if data['count'] > 0:
+                    avg_amount = data['total_amount'] / data['count']
+                    agent_avg_amount.append({
+                        'name': agent_name,
+                        'avg_amount': avg_amount,
+                        'count': data['count']
+                    })
+            agent_avg_amount = sorted(agent_avg_amount, key=lambda x: x['avg_amount'], reverse=True)[:10]
+            
+            # 6. Количество заявок под каждого клиента
+            client_zayavki_counts = {}
+            for zayavka in zayavki_visible:
+                if zayavka.client_id and zayavka.client_id.name:
+                    client_name = zayavka.client_id.name
+                    if client_name not in client_zayavki_counts:
+                        client_zayavki_counts[client_name] = 0
+                    client_zayavki_counts[client_name] += 1
+            
+            clients_by_zayavki = []
+            for name, count in sorted(client_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
+                clients_by_zayavki.append({'name': name, 'count': count})
+            
+            # 7. Количество заявок по платежщикам субагентов
+            payer_zayavki_counts = {}
+            for zayavka in zayavki_visible:
+                if zayavka.subagent_payer_ids:
+                    for payer in zayavka.subagent_payer_ids:
+                        if payer.name:
+                            payer_name = payer.name
+                            if payer_name not in payer_zayavki_counts:
+                                payer_zayavki_counts[payer_name] = 0
+                            payer_zayavki_counts[payer_name] += 1
+            
+            payers_by_zayavki = []
+            for name, count in sorted(payer_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
+                payers_by_zayavki.append({'name': name, 'count': count})
+            
+            # 8. Количество заявок под каждого субагента
+            subagent_zayavki_counts = {}
+            for zayavka in zayavki_visible:
+                if zayavka.subagent_ids:
+                    for subagent in zayavka.subagent_ids:
+                        if subagent.name:
+                            subagent_name = subagent.name
+                            if subagent_name not in subagent_zayavki_counts:
+                                subagent_zayavki_counts[subagent_name] = 0
+                            subagent_zayavki_counts[subagent_name] += 1
+            
+            subagents_by_zayavki = []
+            for name, count in sorted(subagent_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
+                subagents_by_zayavki.append({'name': name, 'count': count})
+            
+            # 9. Средняя сумма заявок по клиентам
+            client_avg_amount_dict = {}
+            for zayavka in zayavki_visible:
+                if zayavka.client_id and zayavka.client_id.name and zayavka.total_fact:
+                    client_name = zayavka.client_id.name
+                    if client_name not in client_avg_amount_dict:
+                        client_avg_amount_dict[client_name] = {'total_amount': 0, 'count': 0}
+                    client_avg_amount_dict[client_name]['total_amount'] += zayavka.total_fact
+                    client_avg_amount_dict[client_name]['count'] += 1
+            
+            client_avg_amount = []
+            for client_name, data in client_avg_amount_dict.items():
+                avg_amount = data['total_amount'] / data['count'] if data['count'] > 0 else 0
+                client_avg_amount.append({'name': client_name, 'avg_amount': avg_amount})
+            client_avg_amount.sort(key=lambda x: x['avg_amount'], reverse=True)
+            
+            # 10. Циклы сделок
+            cycles_count = {}
+            for zayavka in zayavki.filtered(lambda z: not z.hide_in_dashboard):
+                if hasattr(zayavka, 'deal_cycle_days') and zayavka.deal_cycle_days is not False:
+                    cycle_days = int(zayavka.deal_cycle_days)
+                elif zayavka.date_placement and zayavka.deal_closed_date:
+                    cycle = (zayavka.deal_closed_date - zayavka.date_placement).days
+                    cycle_days = max(0, cycle)
+                else:
+                    continue
+                
+                if cycle_days not in cycles_count:
+                    cycles_count[cycle_days] = 0
+                cycles_count[cycle_days] += 1
+            
+            deal_cycles = []
+            for cycle_days, count in cycles_count.items():
+                deal_cycles.append({
+                    'cycle_days': cycle_days,
+                    'count': count
+                })
+            deal_cycles.sort(key=lambda x: x['cycle_days'])
+            
+            # 11. Типы сделок (ИМПОРТ/ЭКСПОРТ)
+            deal_types_count = {}
+            for zayavka in zayavki.filtered(lambda z: not z.hide_in_dashboard):
+                deal_type = zayavka.deal_type or 'Не указан'
+                deal_type_name = 'Импорт' if deal_type == 'import' else ('Экспорт' if deal_type == 'export' else 'Не указан')
+                if deal_type_name not in deal_types_count:
+                    deal_types_count[deal_type_name] = 0
+                deal_types_count[deal_type_name] += 1
+            
+            # 12. Заявки закрепленные за менеджерами
+            manager_zayavki_counts = {}
+            for zayavka in zayavki.filtered(lambda z: not z.hide_in_dashboard and z.status != 'cancel'):
+                if zayavka.manager_ids:
+                    for manager in zayavka.manager_ids:
+                        manager_name = manager.name
+                        if manager_name not in manager_zayavki_counts:
+                            manager_zayavki_counts[manager_name] = 0
+                        manager_zayavki_counts[manager_name] += 1
+            
+            managers_by_zayavki = []
+            for manager_name, count in manager_zayavki_counts.items():
+                managers_by_zayavki.append({
+                    'name': manager_name,
+                    'count': count
+                })
+            managers_by_zayavki.sort(key=lambda x: x['count'], reverse=True)
+            
+            # 13. Заявки закрытые менеджерами
+            manager_closed_counts = {}
+            for zayavka in zayavki.filtered(lambda z: not z.hide_in_dashboard and z.status == 'close'):
+                if zayavka.manager_ids:
+                    for manager in zayavka.manager_ids:
+                        manager_name = manager.name
+                        if manager_name not in manager_closed_counts:
+                            manager_closed_counts[manager_name] = 0
+                        manager_closed_counts[manager_name] += 1
+            
+            managers_closed_zayavki = []
+            for manager_name, count in manager_closed_counts.items():
+                managers_closed_zayavki.append({
+                    'name': manager_name,
+                    'count': count
+                })
+            managers_closed_zayavki.sort(key=lambda x: x['count'], reverse=True)
             
             return {
-                'zayavki_count': len(zayavki),
-                'zayavki_closed': len(closed_zayavki),
-                'zayavki_closed_amount': closed_amount,
-                'zayavki_usd_equivalent': usd_equivalent,
-                'period_label': f"{date_from or 'Начало'} - {date_to or 'Конец'}"
+                'contragents_by_zayavki': contragents_by_zayavki,
+                'contragent_avg_check': contragent_avg_check,
+                'contragent_reward_percent': contragent_reward_percent,
+                'agents_by_zayavki': agents_by_zayavki,
+                'agent_avg_amount': agent_avg_amount,
+                'clients_by_zayavki': clients_by_zayavki,
+                'payers_by_zayavki': payers_by_zayavki,
+                'subagents_by_zayavki': subagents_by_zayavki,
+                'client_avg_amount': client_avg_amount,
+                'deal_cycles': deal_cycles,
+                'deal_types': deal_types_count,
+                'managers_by_zayavki': managers_by_zayavki,
+                'managers_closed_zayavki': managers_closed_zayavki
             }
         
-        # Получаем данные для обоих диапазонов
-        range1_data = get_zayavki_data(date_from1, date_to1)
-        range2_data = get_zayavki_data(date_from2, date_to2)
+        # Получаем данные для обоих периодов
+        period1_data = get_period_data(date_from1, date_to1)
+        period2_data = get_period_data(date_from2, date_to2)
         
         return {
-            'range1': range1_data,
-            'range2': range2_data,
-            'comparison': {
-                'count_diff': range1_data['zayavki_count'] - range2_data['zayavki_count'],
-                'closed_diff': range1_data['zayavki_closed'] - range2_data['zayavki_closed'],
-                'closed_amount_diff': range1_data['zayavki_closed_amount'] - range2_data['zayavki_closed_amount'],
-                'usd_equivalent_diff': range1_data['zayavki_usd_equivalent'] - range2_data['zayavki_usd_equivalent']
+            'period1': period1_data,
+            'period2': period2_data
+        }
+
+    @api.model
+    def get_zayavki_comparison_data(self, date_from1=None, date_to1=None, date_from2=None, date_to2=None):
+        """Получить данные для сравнения заявок за два периода (базовые показатели)"""
+        
+        def get_zayavki_period_stats(date_from, date_to):
+            """Получить статистику заявок для одного периода"""
+            
+            # Базовый домен для фильтрации заявок
+            zayavka_domain = []
+            if date_from and date_to:
+                zayavka_domain = [('date_placement', '>=', date_from), ('date_placement', '<=', date_to)]
+            elif date_from:
+                zayavka_domain = [('date_placement', '>=', date_from)]
+            elif date_to:
+                zayavka_domain = [('date_placement', '<=', date_to)]
+            
+            # Получаем заявки для периода
+            zayavki = self.env['amanat.zayavka'].search(zayavka_domain)
+            zayavki_visible = zayavki.filtered(lambda z: not z.hide_in_dashboard)
+            
+            # Закрытые заявки (статус = 'close')
+            closed_zayavki = zayavki_visible.filtered(lambda z: z.status == 'close')
+            zayavki_closed = len(closed_zayavki)
+            
+            # Сумма закрытых заявок
+            zayavki_closed_amount = sum(closed_zayavki.mapped('amount') or [0])
+            
+            # Эквивалент в USD (используем курс 1 USD = 100 RUB для примера)
+            usd_rate = 100.0
+            zayavki_usd_equivalent = zayavki_closed_amount / usd_rate if zayavki_closed_amount > 0 else 0.0
+            
+            return {
+                'zayavki_count': len(zayavki_visible),
+                'zayavki_closed': zayavki_closed,
+                'zayavki_closed_amount': zayavki_closed_amount,
+                'zayavki_usd_equivalent': zayavki_usd_equivalent,
+                'period_label': f"{date_from} - {date_to}" if date_from and date_to else "Все время"
             }
+        
+        # Получаем данные для обоих периодов
+        range1_stats = get_zayavki_period_stats(date_from1, date_to1)
+        range2_stats = get_zayavki_period_stats(date_from2, date_to2)
+        
+        return {
+            'range1': range1_stats,
+            'range2': range2_stats
         } 

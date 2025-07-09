@@ -29,14 +29,33 @@ class Manager(models.Model, AmanatBaseModel):
     )
     # Поле "Задачник" реализовано как ссылка на модель задач (например, manager.task)
     task_manager = fields.Many2one('amanat.task', string="Задачник")
-    total_applications = fields.Integer(string="Количество заявок за менеджером")
-    wrong_applications = fields.Integer(string="Количество ошибочных заявок за менеджером")
+    total_applications = fields.Integer(
+        string="Количество заявок за менеджером",
+        compute="_compute_applications_stats",
+        store=True
+    )
+    wrong_applications = fields.Integer(
+        string="Количество ошибочных заявок за менеджером",
+        compute="_compute_applications_stats",
+        store=True
+    )
     efficiency = fields.Float(
         string="Эффективность менеджера",
         compute="_compute_efficiency",
         store=True,
         digits=(16, 2)
     )
+
+    @api.depends('applications', 'applications.status', 'applications.hide_in_dashboard')
+    def _compute_applications_stats(self):
+        for rec in self:
+            # Считаем только заявки, которые не скрыты в дашборде
+            visible_applications = rec.applications.filtered(lambda z: not z.hide_in_dashboard)
+            rec.total_applications = len(visible_applications)
+            
+            # Ошибочные заявки - это заявки со статусом 'cancel' (отменено клиентом)
+            wrong_applications = visible_applications.filtered(lambda z: z.status == 'cancel')
+            rec.wrong_applications = len(wrong_applications)
 
     @api.depends('total_applications', 'wrong_applications')
     def _compute_efficiency(self):

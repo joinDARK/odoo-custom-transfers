@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <t t-name="amanat.AnalyticsDashboard" owl="1">
+        <div class="analytics-dashboard">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+            <div class="dashboard-header">
+                            <h2>Диапазон</h2>
+                            <p class="dashboard-subtitle">Настройка диапазона</p>
+            </div>
+
+                        <div class="date-range-card">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="date_from">Дата начало</label>
+                                        <input type="date" id="date_from" class="form-control" 
+                                               t-model="state.dateFrom" 
+                                               t-on-change="onDateFromChange"/>
+            </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="date_to">Дата конец</label>
+                                        <input type="date" id="date_to" class="form-control" 
+                                               t-model="state.dateTo" 
+                                               t-on-change="onDateToChange"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                        <!-- Блок курсов валют -->
+                        <div class="currency-rates-card">
+                                                <div class="rates-header">
+                        <div class="rates-title-container">
+                            <h3>Курс к доллару</h3>
+                            <div class="rates-buttons">
+                                <button class="btn btn-primary btn-sm refresh-rates-btn" 
+                                        t-on-click="onRefreshRatesClick"
+                                        t-att-disabled="state.loadingRates">
+                                    <i class="fa fa-refresh" t-att-class="{'fa-spin': state.loadingRates}"></i>
+                                    Обновить
+                                </button>
+                            </div>
+                        </div>
+                        <!-- <p class="rates-description">Add a description</p> -->
+                    </div>
+                    
+                            <div class="rates-table-wrapper">
+                                <table class="rates-table" t-if="state.currencyRates">
+                                    <thead>
+                                        <tr>
+                                            <th>euro</th>
+                                            <th>cny</th>
+                                            <th>rub</th>
+                                            <th>aed</th>
+                                            <th>thb</th>
+                                            <th>usd</th>
+                                            <th>usdt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control rate-input" 
+                                                       t-model="state.currencyRates.euro"
+                                                       t-on-change="onCurrencyRateChange"/>
+                                            </td>
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control rate-input" 
+                                                       t-model="state.currencyRates.cny"
+                                                       t-on-change="onCurrencyRateChange"/>
+                                            </td>
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control rate-input" 
+                                                       t-model="state.currencyRates.rub"
+                                                       t-on-change="onCurrencyRateChange"/>
+                                            </td>
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control rate-input" 
+                                                       t-model="state.currencyRates.aed"
+                                                       t-on-change="onCurrencyRateChange"/>
+                                            </td>
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control rate-input" 
+                                                       t-model="state.currencyRates.thb"
+                                                       t-on-change="onCurrencyRateChange"/>
+                                            </td>
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control rate-input" 
+                                                       t-model="state.currencyRates.usd"
+                                                       t-on-change="onCurrencyRateChange"/>
+                                            </td>
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control rate-input" 
+                                                       t-model="state.currencyRates.usdt"
+                                                       t-on-change="onCurrencyRateChange"/>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                
+                                <!-- Показываем если данные загружаются -->
+                                <div t-if="state.loading" class="loading-rates">
+                                    <p>Загрузка курсов...</p>
+                    </div>
+                    
+                                <!-- Показываем если нет данных -->
+                                <div t-if="!state.currencyRates and !state.loading" class="no-rates">
+                                    <p>Курсы валют не найдены</p>
+                        </div>
+                    </div>
+                </div>
+
+                        <!-- Блок балансов контрагентов -->
+                        <div class="contragents-balance-card">
+                            <div class="balance-header">
+                                <h3>Баланс Контрагентов в рамках диапазона</h3>
+                                <!-- <p class="balance-description">Add a description</p> -->
+                    </div>
+                    
+                            <!-- Поле поиска -->
+                            <div class="search-field">
+                                <input type="text" 
+                                       class="form-control search-input" 
+                                       placeholder="Поиск по наименованию..."
+                                       t-model="state.balanceSearchQuery"
+                                       t-on-input="onBalanceSearchChange"/>
+                </div>
+
+                            <div class="balance-table-wrapper">
+                                <table class="balance-table" t-if="state.contragentsBalance">
+                                        <thead>
+                                            <tr>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('name')">
+                                                Наименование <span class="sort-icon" t-esc="getBalanceSortIcon('name')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_usd')">
+                                                Баланс Эквивалент $ <span class="sort-icon" t-esc="getBalanceSortIcon('balance_usd')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_rub')">
+                                                Баланс RUB сверка <span class="sort-icon" t-esc="getBalanceSortIcon('balance_rub')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_rub_cash')">
+                                                Баланс RUB сверка КЭШ <span class="sort-icon" t-esc="getBalanceSortIcon('balance_rub_cash')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_aed')">
+                                                Баланс AED сверка <span class="sort-icon" t-esc="getBalanceSortIcon('balance_aed')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_aed_cash')">
+                                                Баланс AED сверка КЭШ <span class="sort-icon" t-esc="getBalanceSortIcon('balance_aed_cash')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_cny')">
+                                                Баланс CNY сверка <span class="sort-icon" t-esc="getBalanceSortIcon('balance_cny')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_cny_cash')">
+                                                Баланс CNY сверка КЭШ <span class="sort-icon" t-esc="getBalanceSortIcon('balance_cny_cash')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_eur')">
+                                                Баланс EUR сверка <span class="sort-icon" t-esc="getBalanceSortIcon('balance_eur')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_eur_cash')">
+                                                Баланс EUR сверка КЭШ <span class="sort-icon" t-esc="getBalanceSortIcon('balance_eur_cash')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_thb')">
+                                                Баланс THB сверка <span class="sort-icon" t-esc="getBalanceSortIcon('balance_thb')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_thb_cash')">
+                                                Баланс THB сверка КЭШ <span class="sort-icon" t-esc="getBalanceSortIcon('balance_thb_cash')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_usd')">
+                                                Баланс USD сверка <span class="sort-icon" t-esc="getBalanceSortIcon('balance_usd')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_usd_cash')">
+                                                Баланс USD сверка КЭШ <span class="sort-icon" t-esc="getBalanceSortIcon('balance_usd_cash')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_usdt')">
+                                                Баланс USDT сверка <span class="sort-icon" t-esc="getBalanceSortIcon('balance_usdt')"></span>
+                                            </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr t-foreach="filteredContragentsBalance" t-as="contragent" t-key="contragent.id">
+                                            <td class="contragent-name"><t t-esc="contragent.name"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_usd"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_rub"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_rub_cash"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_aed"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_aed_cash"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_cny"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_cny_cash"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_eur"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_eur_cash"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_thb"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_thb_cash"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_usd"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_usd_cash"/></td>
+                                            <td class="balance-amount"><t t-esc="contragent.balance_usdt"/></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                
+                                <div t-if="state.loading" class="loading-balance">
+                                    <p>Загрузка балансов контрагентов...</p>
+                                </div>
+                                
+                                <div t-if="!state.contragentsBalance and !state.loading" class="no-balance">
+                                    <p>Данные о балансах контрагентов не найдены</p>
+                                </div>
+                                
+                                <div t-if="state.contragentsBalance and filteredContragentsBalance.length === 0 and state.balanceSearchQuery.trim()" class="no-search-results">
+                                    <p>По запросу "<t t-esc="state.balanceSearchQuery"/>" ничего не найдено</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Блок сравнения балансов контрагентов -->
+                        <div class="contragents-comparison-card">
+                            <div class="comparison-header">
+                                <h3>Баланс Контрагентов Сравнение</h3>
+                                <!-- <p class="comparison-description">Add a description</p> -->
+                    </div>
+                    
+                            <!-- Поле поиска -->
+                            <div class="search-field">
+                                <input type="text" 
+                                       class="form-control search-input" 
+                                       placeholder="Поиск по наименованию..."
+                                       t-model="state.comparisonSearchQuery"
+                                       t-on-input="onComparisonSearchChange"/>
+                            </div>
+                            
+                            <div class="comparison-table-wrapper">
+                                <table class="comparison-table" t-if="state.contragentsComparison">
+                                        <thead>
+                                            <tr>
+                                            <th class="sortable" t-on-click="() => this.onComparisonHeaderClick('name')">
+                                                Наименование <span class="sort-icon" t-esc="getComparisonSortIcon('name')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onComparisonHeaderClick('balance_comparison_1')">
+                                                Баланс Эквивалент $ сравнение 1 <span class="sort-icon" t-esc="getComparisonSortIcon('balance_comparison_1')"></span>
+                                            </th>
+                                            <th class="sortable" t-on-click="() => this.onComparisonHeaderClick('balance_comparison_2')">
+                                                Баланс Эквивалент $ сравнение 2 <span class="sort-icon" t-esc="getComparisonSortIcon('balance_comparison_2')"></span>
+                                            </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr t-foreach="filteredContragentsComparison" t-as="comparison" t-key="comparison.id">
+                                            <td class="contragent-name"><t t-esc="comparison.name"/></td>
+                                            <td class="balance-amount"><t t-esc="comparison.balance_comparison_1"/></td>
+                                            <td class="balance-amount"><t t-esc="comparison.balance_comparison_2"/></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                
+                                <div t-if="state.loading" class="loading-comparison">
+                                    <p>Загрузка данных сравнения...</p>
+                                </div>
+                                
+                                <div t-if="!state.contragentsComparison and !state.loading" class="no-comparison">
+                                    <p>Данные для сравнения не найдены</p>
+                </div>
+
+                                <div t-if="state.contragentsComparison and filteredContragentsComparison.length === 0 and state.comparisonSearchQuery.trim()" class="no-search-results">
+                                    <p>По запросу "<t t-esc="state.comparisonSearchQuery"/>" ничего не найдено</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates> 

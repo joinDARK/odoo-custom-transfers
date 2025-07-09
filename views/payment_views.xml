@@ -50,7 +50,7 @@
         <field name="model">amanat.payment</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list string="Платежи" editable="top">
+            <list string="Платежи" editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="date"/>
                 <field width="200" name="currency"/>
