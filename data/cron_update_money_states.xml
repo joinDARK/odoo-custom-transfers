@@ -9,7 +9,6 @@
       <!-- запускаем каждую минуту -->
       <field name="interval_number">1</field>
       <field name="interval_type">minutes</field>
-      <field name="nextcall">2025-01-01 00:00:00</field>
       <field name="active">True</field>
     </record>
   </data>

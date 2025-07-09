@@ -4,7 +4,7 @@
         <field name="name">reconciliation.list</field>
         <field name="model">amanat.reconciliation</field>
         <field name="arch" type="xml">
-            <list editable="top">
+            <list editable="top" multi_edit="1">
                 <header>
                     <button name="action_send_selected_to_server"
                             type="object"

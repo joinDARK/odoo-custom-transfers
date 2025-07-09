@@ -1,5 +1,13 @@
+// Базовые стили для полной высоты
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 .o_web_client {
 	display: grid !important;
+    height: 100vh; // Фиксированная высота на всю высоту экрана
     grid-template-areas:
         "banner banner"
         "navbar navbar"

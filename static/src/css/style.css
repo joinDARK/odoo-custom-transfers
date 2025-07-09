@@ -11,6 +11,10 @@
     column-gap: 10px;
 }
 
+.o-form-group-2.top {
+    align-items: start;
+}
+
 .o-form-group-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -314,11 +318,11 @@
 }
 
 /* Анимация для показа/скрытия chatter */
-.o_chatter {
+.o-mail-Chatter, .o-mail-ChatterContainer, .o-mail-Form-chatter {
     transition: all 0.3s ease !important;
 }
 
-.o_chatter.hidden {
+.o-mail-Chatter.hidden, .o-mail-ChatterContainer.hidden, .o-mail-Form-chatter.hidden {
     opacity: 0 !important;
     transform: translateX(100%) !important;
     pointer-events: none !important;

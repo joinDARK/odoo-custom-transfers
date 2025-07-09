@@ -17,6 +17,16 @@
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager"
     />
 
+    <!-- Меню для аналитического дашборда -->
+    <menuitem 
+        id="amanat_menu_analytics_dashboard" 
+        name="Аналитика"
+        parent="amanat_menu_root"
+        action="action_amanat_analytics_dashboard_js"
+        sequence="1"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager"
+    />
+
     
 
 

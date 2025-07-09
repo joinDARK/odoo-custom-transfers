@@ -106,7 +106,7 @@
         <field name="name">amanat.reserve.list</field>
         <field name="model">amanat.reserve</field>
         <field name="arch" type="xml">
-            <list string="Список валютных резервов" editable="top">
+            <list string="Список валютных резервов" editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name" width="150"/>
                 <field name="status"/>

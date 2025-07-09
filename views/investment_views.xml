@@ -5,7 +5,7 @@
         <field name="model">amanat.investment</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list editable="top">
+            <list editable="top" multi_edit="1">
                 <button title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name" width="70"/>
                 <field name="status" width="100"/>

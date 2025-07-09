@@ -5,7 +5,7 @@
     <field name="name">partner.gold.list</field>
     <field name="model">amanat.partner_gold</field>
     <field name="arch" type="xml">
-      <list editable="top">
+      <list editable="top" multi_edit="1">
         <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
         <field width="200" name="name"/>
         <field width="200" name="deal_date"/>
@@ -179,7 +179,7 @@
                 <field name="deal_percentage" widget="percentage"/>
                 <field name="final_rate"/>
               </group>
-              <group string="Выход 2">
+              <!-- <group string="Выход 2">
                 <field name="sale_date"/>
                 <field name="initial_price_per_oz"/>
                 <field name="sale_discount_per_oz"/>
@@ -234,7 +234,7 @@
                 <field name="profit"/>
                 <field name="deal_percentage" widget="percentage"/>
                 <field name="final_rate"/>
-              </group>
+              </group> -->
             </page>
             <page string="Роялти">
               <group>

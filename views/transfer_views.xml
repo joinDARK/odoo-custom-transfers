@@ -5,7 +5,7 @@
         <field name="model">amanat.transfer</field>
         <field name="type">list</field>
         <field name="arch" type="xml">
-            <list editable="top">
+            <list editable="top" multi_edit="1">
                 <button width="30" title="Кнопка формы" string="" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="name"/> 
                 <field width="100" name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>

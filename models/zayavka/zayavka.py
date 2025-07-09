@@ -1039,7 +1039,12 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     deal_closed_date = fields.Date(string='сделка закрыта', tracking=True)
 
-    deal_cycle_days = fields.Integer(string='Цикл сделки, дн', tracking=True)
+    deal_cycle_days = fields.Integer(
+        string='Цикл сделки, дн', 
+        compute='_compute_deal_cycle_days',
+        store=True,
+        tracking=True
+    )
 
     payment_purpose = fields.Text(string='Назначение платежа', tracking=True)
 
@@ -1288,6 +1293,7 @@ class Zayavka(models.Model, AmanatBaseModel):
             ('error', 'Ошибка в курсе')
         ],
         string='Ошибка в курсе',
+        default='error',
         store=True,
         tracking=True
     )
@@ -1297,6 +1303,7 @@ class Zayavka(models.Model, AmanatBaseModel):
             ('error', 'Ошибка в курсе банка')
         ],
         string='Ошибка в курсе банка',
+        default='error',
         store=True,
         tracking=True
     )
@@ -1306,6 +1313,7 @@ class Zayavka(models.Model, AmanatBaseModel):
             ('error', 'Ошибка в курсе XE')
         ],
         string='Ошибка в курсе XE',
+        default='error',
         store=True,
         tracking=True
     )

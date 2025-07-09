@@ -72,6 +72,14 @@ export class AppsBar extends Component {
                 ],
             },
             {
+                name: "Анализ",
+                items: [
+                    { name: "Аналитический дашборд", action: "amanat.action_amanat_analytics_dashboard_js" },
+                    { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
+                    { name: "Фикс заявка", action: "amanat.zayavka_fiks_dashboard_action_menu" },
+                ],
+            },
+            {
                 name: "Заявки",
                 action: "amanat.zayavka_action",
                 actionMethod: "openZayvaki",

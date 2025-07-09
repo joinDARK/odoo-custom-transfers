@@ -37,13 +37,13 @@
                 <field name="comment"/>
               </group>
               <group string="Субагент">
-                <field name="payment_purpose"/>
-                <field name="subagent_docs_prepared_date"/>
                 <div class="o-form-group-2">
                   <group>
+                    <field name="payment_purpose"/>
                     <field name="subagent_ids" widget="many2many_tags"/>
                   </group>
                   <group>
+                    <field name="subagent_docs_prepared_date"/>
                     <field name="subagent_payer_ids" widget="many2many_tags"/>
                   </group>
                 </div>
@@ -76,288 +76,870 @@
                 </div>
               </group>
               <group string="Ввод данных Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
-                <field name="payment_conditions"/>
-                <field name="deal_type"/>
-                <field name="export_agent_flag"/>
-                <field name="instruction_number"/>
-                <field name="instruction_signed_date"/>
-                <field name="currency"/>
-                <field name="amount"/>
-                <!-- <field name="rate_real"/> -->
-                <field name="rate_field"/>
-                <field name="best_rate"/>
-                <field name="hidden_rate"/>
-                <field name="rate_fixation_date"/>
-                <field name="hide_in_dashboard"/>
-                <field name="hand_reward_percent" widget="percentage"/>
-                <field name="plus_dollar"/>
-                <field name="dollar_cross_rate"/>
-                <field name="plus_currency"/>
-                <field name="invoice_plus_percent" widget="percentage"/>
-                <field name="reward_percent" widget="percentage"/>
-                <field name="conversion_auto" widget="percentage"/>
-                <field name="hidden_commission" widget="percentage"/>
-                <field name="xe_rate"/>
-                <field name="jess_rate"/>
-              </group>
-              <group string="Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
-                <field name="application_amount_rub_contract"/>
-                <field name="client_reward"/>
-                <field name="total_client"/>
-              </group>
-              <!-- <group string="Управленка клиент">
-                <field name="real_post_conversion_rate"/>
-                <field name="rate_real"/>
-                <field name="client_currency_bought"/>
-                <field name="our_client_reward"/>
-                <field name="non_our_client_reward"/>
-                <field name="total_client_management"/>
-              </group> -->
-              <group string="Ввод данных Сбербанк" invisible="not is_sberbank_contragent">
-                <field name="payment_conditions"/> <!-- Repeated as per example -->
-                <field name="deal_type"/>
-                <field name="export_agent_flag"/>
-                <field name="instruction_number"/>
-                <field name="instruction_signed_date"/>
-                <field name="currency"/>
-                <field name="amount"/>
-                <field name="rate_real_sber"/>
-                <field name="best_rate"/>
-                <field name="hidden_rate"/>
-                <field name="rate_fixation_date"/>
-                <field name="hide_in_dashboard"/>
-                <field name="hand_reward_percent" widget="percentage"/>
-                <field name="plus_dollar"/>
-                <field name="dollar_cross_rate"/>
-                <field name="plus_currency"/>
-                <field name="invoice_plus_percent" widget="percentage"/>
-                <field name="reward_percent" widget="percentage"/>
-                <field name="conversion_auto" widget="percentage"/>
-                <field name="calculated_percent" widget="percentage"/>
-                <field name="jess_rate"/>
-              </group>
-              <group string="Клиент Сбербанк" invisible="not is_sberbank_contragent">
-                <field name="application_amount_rub_contract"/>
-                <field name="sber_reward"/>
-                <field name="total_sber"/>
-              </group>
-              <group string="Ввод данных Совкомбанк" invisible="not is_sovcombank_contragent">
-                <div class="o-form-group-2">
+                <div class="o-form-group-2 top">
                   <group>
                     <field name="payment_conditions"/>
                     <field name="instruction_number"/>
                     <field name="currency"/>
                     <field name="rate_field"/>
-                    <field name="export_agent_flag"/>
                     <field name="rate_fixation_date"/>
+                    <field name="plus_dollar"/>
+                    <field name="xe_rate"/>
+                    <field name="export_agent_flag" invisible="deal_type != 'export'"/>
                   </group>
                   <group>
                     <field name="deal_type"/>
                     <field name="instruction_signed_date"/>
                     <field name="amount"/>
                     <field name="best_rate"/>
-                    <field name="hide_in_dashboard"/>
+                    <field name="hand_reward_percent" widget="percentage"/>
+                    <field name="dollar_cross_rate"/>
+                    <field name="jess_rate"/>
                   </group>
                 </div>
-                <field name="rate_real"/>
-                <field name="hidden_rate"/>
-                <field name="hand_reward_percent" widget="percentage"/>
-                <field name="plus_dollar"/>
-                <field name="dollar_cross_rate"/>
-                <field name="plus_currency"/>
-                <field name="invoice_plus_percent" widget="percentage"/>
-                <field name="reward_percent" widget="percentage"/>
-                <field name="overall_sovok_percent"/>
-                <field name="calculated_percent"/>
-                <field name="error_sovok"/>
-                <field name="jess_rate"/>
+              </group>
+              <group invisible="is_sovcombank_contragent or is_sberbank_contragent">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="plus_currency"/>
+                  </group>
+                  <group>
+                    <field name="invoice_plus_percent" widget="percentage"/>
+                  </group>
+                </div>
+              </group>
+              <group invisible="is_sovcombank_contragent or is_sberbank_contragent">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="conversion_auto" widget="percentage"/>
+                  </group>
+                  <group>
+                    <field name="reward_percent" widget="percentage"/>
+                  </group>
+                </div>
+                <field name="hidden_commission" widget="percentage"/>
+              </group>
+              <group string="Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
+                <div class="o-form-group">
+                  <group>
+                    <field name="application_amount_rub_contract"/>
+                  </group>
+                  <group>
+                    <field name="client_reward"/>
+                  </group>
+                  <group>
+                    <field name="total_client"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Управленка Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
+                <div class="o-form-group">
+                  <group>
+                    <field name="rate_real"/>
+                  </group>
+                  <group>
+                    <field name="our_client_reward"/>
+                  </group>
+                  <group>
+                    <field name="non_our_client_reward"/>
+                  </group>
+                </div>
+                <field name="total_client_management"/>
+              </group>
+              <group string="Ввод данных Сбербанк" invisible="not is_sberbank_contragent">
+                <div class="o-form-group-2 top">
+                  <group>
+                    <field name="payment_conditions"/>
+                    <field name="instruction_number"/>
+                    <field name="currency"/>
+                    <field name="rate_field"/>
+                    <field name="rate_fixation_date"/>
+                    <field name="plus_dollar"/>
+                    <field name="xe_rate"/>
+                    <field name="export_agent_flag" invisible="deal_type != 'export'"/>
+                  </group>
+                  <group>
+                    <field name="deal_type"/>
+                    <field name="instruction_signed_date"/>
+                    <field name="amount"/>
+                    <field name="best_rate"/>
+                    <field name="hand_reward_percent" widget="percentage"/>
+                    <field name="dollar_cross_rate"/>
+                    <field name="jess_rate"/>
+                  </group>
+                </div>
+              </group>
+              <group invisible="not is_sberbank_contragent">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="plus_currency"/>
+                  </group>
+                  <group>
+                    <field name="invoice_plus_percent" widget="percentage"/>
+                  </group>
+                </div>
+              </group>
+              <group invisible="not is_sberbank_contragent">
+                <div class="o-form-group">
+                  <group>
+                    <field name="conversion_auto" widget="percentage"/>
+                  </group>
+                  <group>
+                    <field name="reward_percent" widget="percentage"/>
+                  </group>
+                  <group>
+                    <field name="calculated_percent" widget="percentage"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Клиент Сбербанк" invisible="not is_sberbank_contragent">
+                <div class="o-form-group">
+                  <group>
+                    <field name="application_amount_rub_contract"/>
+                  </group>
+                  <group>
+                    <field name="sber_reward"/>
+                  </group>
+                  <group>
+                    <field name="total_sber"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Управленка Сбербанк" invisible="not is_sberbank_contragent">
+                <div class="o-form-group">
+                  <group>
+                    <field name="rate_real"/>
+                  </group>
+                  <group>
+                    <field name="our_sber_reward"/>
+                  </group>
+                  <group>
+                    <field name="total_sber_management"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Ввод данных Совкомбанк" invisible="not is_sovcombank_contragent">
+                <div class="o-form-group-2 top">
+                  <group>
+                    <field name="payment_conditions"/>
+                    <field name="instruction_number"/>
+                    <field name="currency"/>
+                    <field name="rate_field"/>
+                    <field name="rate_fixation_date"/>
+                    <field name="plus_dollar"/>
+                    <field name="xe_rate"/>
+                    <field name="export_agent_flag" invisible="deal_type != 'export'"/>
+                  </group>
+                  <group>
+                    <field name="deal_type"/>
+                    <field name="instruction_signed_date"/>
+                    <field name="amount"/>
+                    <field name="best_rate"/>
+                    <field name="hand_reward_percent" widget="percentage"/>
+                    <field name="dollar_cross_rate"/>
+                    <field name="jess_rate"/>
+                  </group>
+                </div>
+              </group>
+              <group invisible="not is_sovcombank_contragent">
+                <div class="o-form-group-4">
+                  <group>
+                    <field name="rate_real"/>
+                  </group>
+                  <group>
+                    <field name="plus_currency"/>
+                  </group>
+                  <group>
+                    <field name="invoice_plus_percent" widget="percentage"/>
+                  </group>
+                  <group>
+                    <field name="reward_percent" widget="percentage"/>
+                  </group>
+                </div>
+              </group>
+              <group invisible="not is_sovcombank_contragent">
+                <div class="o-form-group">
+                  <group>
+                    <field name="overall_sovok_percent"/>
+                  </group>
+                  <group>
+                    <field name="calculated_percent"/>
+                  </group>
+                  <group>
+                    <field name="error_sovok"/>
+                  </group>
+                </div>
                 <field name="error_in_rate"/>
               </group>
               <group string="Клиент Совкомбанк" invisible="not is_sovcombank_contragent">
-                <field name="application_amount_rub_contract"/>
-                <field name="sovok_reward"/>
-                <field name="total_sovok"/>
+                <div class="o-form-group">
+                  <group>
+                    <field name="application_amount_rub_contract"/>
+                  </group>
+                  <group>
+                    <field name="sovok_reward"/>
+                  </group>
+                  <group>
+                    <field name="total_sovok"/>
+                  </group>
+                </div>
               </group>
-              <notebook>
-                <page string="Управленка Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
+              <group string="Управленка Совкомбанк" invisible="not is_sovcombank_contragent">
+                <div class="o-form-group">
                   <group>
-                    <!-- <field name="real_post_conversion_rate"/> -->
-                    <!-- <field name="client_currency_bought"/> -->
                     <field name="rate_real"/>
-                    <field name="our_client_reward"/>
-                    <field name="non_our_client_reward"/>
-                    <field name="total_client_management"/>
                   </group>
-                </page>
-                <page string="Управленка Сбербанк" invisible="not is_sberbank_contragent">
                   <group>
-                    <!-- <field name="real_post_conversion_rate"/> -->
-                    <!-- <field name="kupili_valyutu_sber"/> -->
-                    <!-- <field name="non_our_sber_reward"/> -->
-                    <field name="rate_real"/>
-                    <field name="our_sber_reward"/>
-                    <field name="total_sber_management"/>
-                  </group>
-                </page>
-                <page string="Управленка Совкомбанк" invisible="not is_sovcombank_contragent">
-                  <group>
-                    <!-- <field name="real_post_conversion_rate"/> -->
-                    <!-- <field name="kupili_valyutu_sovok_partner"/> -->
-                    <field name="rate_real"/>
                     <field name="our_sovok_reward"/>
+                  </group>
+                  <group>
                     <field name="total_sovok_management"/>
                   </group>
-                </page>
+                </div>
+              </group>
+              <notebook>
                 <page string="Фин. менеджер Совком Управленка" invisible="not is_sovcombank_contragent">
+                  <group string="Правило платежка">
+                    <field name="payment_order_rule_id"/>
+                    <field name="percent_from_payment_order_rule" widget="percentage"/>
+                  </group>
+                  <group string="Правило себестоимость денег">
+                    <field name="money_cost_rule_id"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="money_cost_rule_credit_rate" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="money_cost_rule_credit_period"/>
+                      </group>
+                      <group>
+                        <field name="money_cost_rule_extra_days"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Правило расхода платежа">
+                    <field name="expense_rule_id"/>
+                    <field name="percent_from_expense_rule" widget="percentage"/>
+                  </group>
+                  <group string="Прайс лист Плательщика Прибыль">
+                    <field name="price_list_profit_id"/>
+                    <field name="price_list_percent_accrual" widget="percentage"/>
+                  </group>
+                  <group string="Прайс лист За проведение">
+                    <field name="price_list_carrying_out_id"/>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="price_list_carrying_out_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_carrying_out_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Прайс лист Партнеры">
+                    <field name="price_list_partners_id"/>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="price_list_partners_id_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_2" invisible="not price_list_partners_id"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id">
+                      <group>
+                        <field name="price_list_partners_id_2_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_2_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_3" invisible="not price_list_partners_id_2"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id_2">
+                      <group>
+                        <field name="price_list_partners_id_3_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_3_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_4" invisible="not price_list_partners_id_3"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id_3">
+                      <group>
+                        <field name="price_list_partners_id_4_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_4_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_5" invisible="not price_list_partners_id_4"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id_4">
+                      <group>
+                        <field name="price_list_partners_id_5_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_5_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                  </group>
                   <group string="Курсы и конвертация">
-                    <field name="real_post_conversion_rate"/>
-                    <field name="payer_cross_rate_usd"/>
-                    <field name="payer_cross_rate_rub"/>
-                    <field name="payment_order_rf_sovok"/>
+                    <div class="o-form-group-4">
+                      <group>
+                        <field name="real_post_conversion_rate"/>
+                      </group>
+                      <group>
+                        <field name="payer_cross_rate_usd"/>
+                      </group>
+                      <group>
+                        <field name="payer_cross_rate_rub"/>
+                      </group>
+                      <group>
+                        <field name="payment_order_rf_sovok"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Финансовые результаты Совок">
-                    <field name="fin_res_sovok_real"/>
-                    <field name="fin_res_sovok_real_usd"/>
-                    <field name="fin_res_sovok_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="fin_res_sovok_real"/>
+                      </group>
+                      <group>
+                        <field name="fin_res_sovok_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="fin_res_sovok_real_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Купили валюту Совок реал">
-                    <field name="kupili_valyutu_sovok_real"/>
-                    <field name="kupili_valyutu_sovok_real_usd"/>
-                    <field name="kupili_valyutu_sovok_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="kupili_valyutu_sovok_real"/>
+                      </group>
+                      <group>
+                        <field name="kupili_valyutu_sovok_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="kupili_valyutu_sovok_real_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Себестоимость денег Совок">
-                    <field name="sebestoimost_denej_sovok_real"/>
-                    <field name="sebestoimost_denej_sovok_real_usd"/>
-                    <field name="sebestoimost_denej_sovok_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="sebestoimost_denej_sovok_real"/>
+                      </group>
+                      <group>
+                        <field name="sebestoimost_denej_sovok_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="sebestoimost_denej_sovok_real_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Операционные расходы Совок">
-                    <field name="operating_expenses_sovok_real"/>
-                    <field name="operating_expenses_sovok_real_usd"/>
-                    <field name="operating_expenses_sovok_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="operating_expenses_sovok_real"/>
+                      </group>
+                      <group>
+                        <field name="operating_expenses_sovok_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="operating_expenses_sovok_real_rub"/>
+                      </group>
+                    </div>
                     <field name="correction"/>
                   </group>
                   <group string="Скрытые комиссии партнера">
-                    <field name="hidden_partner_commission_real"/>
-                    <field name="hidden_partner_commission_real_usd"/>
-                    <field name="hidden_partner_commission_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="hidden_partner_commission_real"/>
+                      </group>
+                      <group>
+                        <field name="hidden_partner_commission_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="hidden_partner_commission_real_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Расходы платежей Совок">
-                    <field name="payment_cost_sovok"/>
-                    <field name="payment_cost_sovok_real_usd"/>
-                    <field name="payment_cost_sovok_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payment_cost_sovok"/>
+                      </group>
+                      <group>
+                        <field name="payment_cost_sovok_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="payment_cost_sovok_real_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Прибыль плательщика">
-                    <field name="payer_profit_currency"/>
-                    <field name="payer_profit_usd"/>
-                    <field name="payer_profit_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payer_profit_currency"/>
+                      </group>
+                      <group>
+                        <field name="payer_profit_usd"/>
+                      </group>
+                      <group>
+                        <field name="payer_profit_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Прочие поля">
-                    <field name="payment_order_rf_sovok"/>
-                    <field name="send_to_reconciliation"/>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="currency" readonly="1"/>
+                      </group>
+                      <group>
+                        <field name="send_to_reconciliation"/>
+                      </group>
+                    </div>
                   </group>
                 </page>
                 <page string="Фин менеджер Сбер управленка" invisible="not is_sberbank_contragent">
-                  <group string="Курсы и конвертация">
-                    <field name="payer_cross_rate_usd"/>
-                    <field name="payer_cross_rate_rub"/>
-                    <field name="real_post_conversion_rate_usd"/>
-                    <field name="real_post_conversion_rate_rub"/>
+                  <group string="Правило платежка">
+                    <field name="payment_order_rule_id"/>
+                    <field name="percent_from_payment_order_rule" widget="percentage"/>
+                  </group>
+                  <group string="Правило себестоимость денег">
+                    <field name="money_cost_rule_id"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="money_cost_rule_credit_rate" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="money_cost_rule_credit_period"/>
+                      </group>
+                      <group>
+                        <field name="money_cost_rule_extra_days"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Правило расхода платежа">
+                    <field name="expense_rule_id"/>
+                    <field name="percent_from_expense_rule" widget="percentage"/>
+                  </group>
+                  <group string="Прайс лист Плательщика Прибыль">
+                    <field name="price_list_profit_id"/>
+                    <field name="price_list_percent_accrual" widget="percentage"/>
+                  </group>
+                  <group string="Прайс лист За проведение">
+                    <field name="price_list_carrying_out_id"/>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="price_list_carrying_out_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_carrying_out_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Прайс лист Партнеры">
+                    <field name="price_list_partners_id"/>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="price_list_partners_id_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_2" invisible="not price_list_partners_id"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id">
+                      <group>
+                        <field name="price_list_partners_id_2_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_2_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_3" invisible="not price_list_partners_id_2"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id_2">
+                      <group>
+                        <field name="price_list_partners_id_3_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_3_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_4" invisible="not price_list_partners_id_3"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id_3">
+                      <group>
+                        <field name="price_list_partners_id_4_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_4_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_5" invisible="not price_list_partners_id_4"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id_4">
+                      <group>
+                        <field name="price_list_partners_id_5_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_5_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Курсы">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payment_order_rf_sber"/>
+                      </group>
+                      <group>
+                        <field name="payer_cross_rate_usd"/>
+                      </group>
+                      <group>
+                        <field name="payer_cross_rate_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Финансовые результаты Сбер">
-                    <field name="fin_res_sber_real"/>
-                    <field name="fin_res_sber_real_usd"/>
-                    <field name="fin_res_sber_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="fin_res_sber_real"/>
+                      </group>
+                      <group>
+                        <field name="fin_res_sber_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="fin_res_sber_real_rub"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Курсы и конвертация">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="real_post_conversion_rate"/>
+                      </group>
+                      <group>
+                        <field name="real_post_conversion_rate_usd"/>
+                      </group>
+                      <group>
+                        <field name="real_post_conversion_rate_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Купили валюту Сбер">
-                    <field name="kupili_valyutu_sber_real"/>
-                    <field name="kupili_valyutu_sber_real_usd"/>
-                    <field name="kupili_valyutu_sber_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="kupili_valyutu_sber_real"/>
+                      </group>
+                      <group>
+                        <field name="kupili_valyutu_sber_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="kupili_valyutu_sber_real_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Себестоимость денег Сбер">
-                    <field name="sebestoimost_denej_sber_real"/>
-                    <field name="sebestoimost_denej_sber_real_usd"/>
-                    <field name="sebestoimost_denej_sber_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="sebestoimost_denej_sber_real"/>
+                      </group>
+                      <group>
+                        <field name="sebestoimost_denej_sber_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="sebestoimost_denej_sber_real_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Операционные расходы Сбер">
-                    <!-- <field name="sber_operating_expenses"/> -->
-                    <field name="sber_operating_expenses_real"/>
-                    <field name="sber_operating_expenses_real_usd"/>
-                    <field name="sber_operating_expenses_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="sber_operating_expenses_real"/>
+                      </group>
+                      <group>
+                        <field name="sber_operating_expenses_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="sber_operating_expenses_real_rub"/>
+                      </group>
+                    </div>
                     <field name="correction"/>
                   </group>
                   <group string="Скрытые комиссии партнера">
-                    <field name="hidden_partner_commission_real"/>
-                    <field name="hidden_partner_commission_real_usd"/>
-                    <field name="hidden_partner_commission_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="hidden_partner_commission_real"/>
+                      </group>
+                      <group>
+                        <field name="hidden_partner_commission_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="hidden_partner_commission_real_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Расходы платежей Сбер">
-                    <field name="sber_payment_cost"/>
-                    <field name="sber_payment_cost_usd"/>
-                    <field name="sber_payment_cost_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="sber_payment_cost"/>
+                      </group>
+                      <group>
+                        <field name="sber_payment_cost_usd"/>
+                      </group>
+                      <group>
+                        <field name="sber_payment_cost_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Прибыль плательщика">
-                    <field name="payer_profit_currency"/>
-                    <field name="payer_profit_usd"/>
-                    <field name="payer_profit_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payer_profit_currency"/>
+                      </group>
+                      <group>
+                        <field name="payer_profit_usd"/>
+                      </group>
+                      <group>
+                        <field name="payer_profit_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Прочие поля">
-                    <field name="payment_order_rf_sber"/>
-                    <field name="send_to_reconciliation"/>
-                    <field name="conversion_expenses_currency"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="currency" readonly="1"/>
+                      </group>
+                      <group>
+                        <field name="send_to_reconciliation"/>
+                      </group>
+                      <group>
+                        <field name="conversion_expenses_currency"/>
+                      </group>
+                    </div>
                   </group>
                 </page>
                 <page string="Фин менеджер Клиент управленка" invisible="is_sovcombank_contragent or is_sberbank_contragent">
-                  <group string="Курсы и конвертация">
-                    <field name="payer_cross_rate_usd"/>
-                    <field name="payer_cross_rate_rub"/>
-                    <field name="real_post_conversion_rate_usd"/>
-                    <field name="real_post_conversion_rate_rub"/>
+                  <group string="Правило платежка">
+                    <field name="payment_order_rule_id"/>
+                    <field name="percent_from_payment_order_rule" widget="percentage"/>
                   </group>
-                  <group string="Финансовые результаты Клиент">
-                    <field name="fin_res_client_real"/>
-                    <field name="fin_res_client_real_usd"/>
-                    <field name="fin_res_client_real_rub"/>
+                  <group string="Правило себестоимость денег">
+                    <field name="money_cost_rule_id"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="money_cost_rule_credit_rate" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="money_cost_rule_credit_period"/>
+                      </group>
+                      <group>
+                        <field name="money_cost_rule_extra_days"/>
+                      </group>
+                    </div>
                   </group>
-                  <group string="Купили валюту Клиент">
-                    <field name="client_currency_bought_real"/>
-                    <field name="client_currency_bought_real_usd"/>
-                    <field name="client_currency_bought_real_rub"/>
+                  <group string="Правило расхода платежа">
+                    <field name="expense_rule_id"/>
+                    <field name="percent_from_expense_rule" widget="percentage"/>
                   </group>
-                  <group string="Себестоимость денег Клиент">
-                    <field name="cost_of_money_client_real"/>
-                    <field name="cost_of_money_client_real_usd"/>
-                    <field name="cost_of_money_client_real_rub"/>
+                  <group string="Прайс лист Плательщика Прибыль">
+                    <field name="price_list_profit_id"/>
+                    <field name="price_list_percent_accrual" widget="percentage"/>
                   </group>
-                  <group string="Операционные расходы Клиент">
-                    <field name="client_real_operating_expenses"/>
-                    <field name="client_real_operating_expenses_usd"/>
-                    <field name="client_real_operating_expenses_rub"/>
+                  <group string="Прайс лист За проведение">
+                    <field name="price_list_carrying_out_id"/>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="price_list_carrying_out_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_carrying_out_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Прайс лист Партнеры">
+                    <field name="price_list_partners_id"/>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="price_list_partners_id_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_2" invisible="not price_list_partners_id"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id">
+                      <group>
+                        <field name="price_list_partners_id_2_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_2_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_3" invisible="not price_list_partners_id_2"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id_2">
+                      <group>
+                        <field name="price_list_partners_id_3_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_3_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_4" invisible="not price_list_partners_id_3"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id_3">
+                      <group>
+                        <field name="price_list_partners_id_4_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_4_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                    <field name="price_list_partners_id_5" invisible="not price_list_partners_id_4"/>
+                    <div class="o-form-group-2" invisible="not price_list_partners_id_4">
+                      <group>
+                        <field name="price_list_partners_id_5_accrual_percentage" widget="percentage"/>
+                      </group>
+                      <group>
+                        <field name="price_list_partners_id_5_fixed_deal_fee"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Курсы">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payment_order_rf_client"/>
+                      </group>
+                      <group>
+                        <field name="payer_cross_rate_usd"/>
+                      </group>
+                      <group>
+                        <field name="payer_cross_rate_rub"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Финансовые результаты">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="fin_res_client_real"/>
+                      </group>
+                      <group>
+                        <field name="fin_res_client_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="fin_res_client_real_rub"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Курс после конвертации">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="real_post_conversion_rate"/>
+                      </group>
+                      <group>
+                        <field name="real_post_conversion_rate_usd"/>
+                      </group>
+                      <group>
+                        <field name="real_post_conversion_rate_rub"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Купили валюту">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="client_currency_bought_real"/>
+                      </group>
+                      <group>
+                        <field name="client_currency_bought_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="client_currency_bought_real_rub"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Себестоимость денег">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="cost_of_money_client_real"/>
+                      </group>
+                      <group>
+                        <field name="cost_of_money_client_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="cost_of_money_client_real_rub"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group string="Операционные расходы">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="client_real_operating_expenses"/>
+                      </group>
+                      <group>
+                        <field name="client_real_operating_expenses_usd"/>
+                      </group>
+                      <group>
+                        <field name="client_real_operating_expenses_rub"/>
+                      </group>
+                    </div>
                     <field name="correction"/>
                   </group>
                   <group string="Скрытые комиссии партнера">
-                    <field name="hidden_partner_commission_real"/>
-                    <field name="hidden_partner_commission_real_usd"/>
-                    <field name="hidden_partner_commission_real_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="hidden_partner_commission_real"/>
+                      </group>
+                      <group>
+                        <field name="hidden_partner_commission_real_usd"/>
+                      </group>
+                      <group>
+                        <field name="hidden_partner_commission_real_rub"/>
+                      </group>
+                    </div>
                   </group>
-                  <group string="Расходы платежей Клиент">
-                    <field name="client_payment_cost"/>
-                    <field name="client_payment_cost_usd"/>
-                    <field name="client_payment_cost_rub"/>
+                  <group string="Расходы платежей">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="client_payment_cost"/>
+                      </group>
+                      <group>
+                        <field name="client_payment_cost_usd"/>
+                      </group>
+                      <group>
+                        <field name="client_payment_cost_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Прибыль плательщика">
-                    <field name="payer_profit_currency"/>
-                    <field name="payer_profit_usd"/>
-                    <field name="payer_profit_rub"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payer_profit_currency"/>
+                      </group>
+                      <group>
+                        <field name="payer_profit_usd"/>
+                      </group>
+                      <group>
+                        <field name="payer_profit_rub"/>
+                      </group>
+                    </div>
                   </group>
                   <group string="Прочие поля">
-                    <field name="payment_order_rf_client"/>
-                    <field name="send_to_reconciliation"/>
-                    <field name="conversion_expenses_currency"/>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="currency" readonly="1"/>
+                      </group>
+                      <group>
+                        <field name="send_to_reconciliation"/>
+                      </group>
+                      <group>
+                        <field name="conversion_expenses_currency"/>
+                      </group>
+                    </div>
                   </group>
                 </page>
                 <page string="Нераспределенные">
                   <group>
                     <field name="for_khalida_temp"/>
+                    <field name="bank_cross_rate"/>
                   </group>
                   <group>
                     <field name="order_ids"/>
@@ -369,48 +951,8 @@
                     <field name="date_agent_on_pc"/>
                     <field name="date_received_tezera"/>
                   </group>
-                  <group string="Фин менеджер Сбер упраавленка">
+                  <group string="Фин менеджер Сбер управленка">
                     <field name="sber_operating_expenses"/>
-                  </group>
-                  <group string="Прайс лист За проведение">
-                    <field name="price_list_carrying_out_id"/>
-                    <field name="price_list_carrying_out_accrual_percentage" widget="percentage"/>
-                    <field name="price_list_carrying_out_fixed_deal_fee"/>
-                  </group>
-                  <group string="Правило платежка">
-                    <field name="payment_order_rule_id"/>
-                    <field name="percent_from_payment_order_rule" widget="percentage"/>
-                  </group>
-                  <group string="Прайс лист Плательщика Прибыль">
-                    <field name="price_list_profit_id"/>
-                    <field name="price_list_percent_accrual" widget="percentage"/>
-                  </group>
-                  <group string="Правило себестоимость денег">
-                    <field name="money_cost_rule_id"/>
-                    <field name="money_cost_rule_credit_rate" widget="percentage"/>
-                    <field name="money_cost_rule_credit_period"/>
-                    <field name="money_cost_rule_extra_days"/>
-                  </group>
-                  <group string="Правило расхода платежа">
-                    <field name="expense_rule_id"/>
-                    <field name="percent_from_expense_rule" widget="percentage"/>
-                  </group>
-                  <group string="Прайс лист Партнеры">
-                    <field name="price_list_partners_id"/>
-                    <field name="price_list_partners_id_accrual_percentage" widget="percentage"/>
-                    <field name="price_list_partners_id_fixed_deal_fee"/>
-                    <field name="price_list_partners_id_2"/>
-                    <field name="price_list_partners_id_2_accrual_percentage" widget="percentage"/>
-                    <field name="price_list_partners_id_2_fixed_deal_fee"/>
-                    <field name="price_list_partners_id_3"/>
-                    <field name="price_list_partners_id_3_accrual_percentage" widget="percentage"/>
-                    <field name="price_list_partners_id_3_fixed_deal_fee"/>
-                    <field name="price_list_partners_id_4"/>
-                    <field name="price_list_partners_id_4_accrual_percentage" widget="percentage"/>
-                    <field name="price_list_partners_id_4_fixed_deal_fee"/>
-                    <field name="price_list_partners_id_5"/>
-                    <field name="price_list_partners_id_5_accrual_percentage" widget="percentage"/>
-                    <field name="price_list_partners_id_5_fixed_deal_fee"/>
                   </group>
                   <group string="Диапазон">
                     <field name="range_id"/>
@@ -420,6 +962,9 @@
                     <field name="range_date_end_copy"/>
                     <field name="status_range"/>
                     <field name="status_range_copy"/>
+                  </group>
+                  <group string="Прочие поля">
+                    <field name="hidden_rate"/>
                   </group>
                 </page>
                 <page string="Compute-поля">
@@ -431,7 +976,6 @@
                     <field name="client_payment_cost"/>
                     <field name="payment_cost_sovok"/>
                     <field name="course_profitable"/>
-                    <field name="cross_rate_pair"/>
                     <field name="equivalent_amount_usd"/>
                     <field name="contract_reward"/>
                     <field name="bank_vypiska"/>
@@ -463,33 +1007,84 @@
                 </page>
               </notebook>
             </page>
-            <page string="Расчет реального курса">
+            <page string="Калькулятор кросс курса">
               <group>
-                <field name="is_cross"/>
+                <div class="text-uppercase fw-bolder small">Кросс <span class="o_stat_value"><field name="is_cross" class="o_field_boolean mb-0"/></span></div>
+              </group>
+              <group invisible="not is_cross">
                 <field name="currency_pair"/>
-                <field name="bank_cross_rate"/>
-                <field name="xe_rate"/>
-                <field name="cross_rate_usd_rub"/>
-                <field name="conversion_percent" widget="percentage" options="{'rounding': 4}"/>
-                <field name="conversion_ratio" widget="percentage"/>
+                <div class="o-form-group">
+                  <group>
+                    <field name="cross_rate_pair"/>
+                  </group>
+                  <group>
+                    <field name="xe_rate"/>
+                  </group>
+                  <group>
+                    <field name="cross_rate_usd_rub"/>
+                  </group>
+                </div>
+              </group>
+              <group invisible="not is_cross">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="conversion_ratio" widget="percentage"/>
+                  </group>
+                  <group>
+                    <field name="conversion_percent" widget="percentage" options="{'rounding': 4}"/>
+                  </group>
+                </div>
                 <field name="real_cross_rate"/>
                 <!-- <field name="rate_field"/> -->
-                <field name="error_in_bank_rate"/>
-                <field name="error_in_xe_rate"/>
-                <field name="bank_select"/>
-                <field name="xe_select"/>
+                <div>
+                  <field name="error_in_bank_rate" invisible="not ((currency_pair == 'cny_usd' and cross_rate_pair &lt; 5) or (currency_pair == 'euro_usd' and cross_rate_pair &gt; 1) or (currency_pair == 'usd_cny' and cross_rate_pair &gt; 0.5) or (currency_pair == 'usd_euro' and cross_rate_pair &lt; 1) or (currency_pair == 'aed_usd' and cross_rate_pair &lt; 2) or (currency_pair == 'usd_aed' and cross_rate_pair &gt; 0.7))" class="alert alert-danger text-center fw-bold" style="background-color: #dc3545; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;" readonly="1" nolabel="1"/>
+                  <field name="error_in_xe_rate" invisible="not ((currency_pair == 'cny_usd' and xe_rate &lt; 5) or (currency_pair == 'euro_usd' and xe_rate &gt; 1) or (currency_pair == 'usd_cny' and xe_rate &gt; 0.5) or (currency_pair == 'usd_euro' and xe_rate &lt; 1) or (currency_pair == 'aed_usd' and xe_rate &lt; 2) or (currency_pair == 'usd_aed' and xe_rate &gt; 0.7))" class="alert alert-danger text-center fw-bold"  style="background-color: #dc3545; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;" readonly="1" nolabel="1"/>
+                  <field name="bank_select" invisible="not ((currency_pair == 'usd_cny' and conversion_ratio &gt; 0) or (currency_pair == 'usd_euro' and conversion_ratio &gt; 0) or (currency_pair == 'usd_aed' and conversion_ratio &gt; 0) or (currency_pair == 'usd_thb' and conversion_ratio &gt; 0) or (currency_pair == 'cny_usd' and conversion_ratio &lt; 0) or (currency_pair == 'euro_usd' and conversion_ratio &lt; 0) or (currency_pair == 'aed_usd' and conversion_ratio &lt; 0) or (currency_pair == 'thb_usd' and conversion_ratio &lt; 0))" class="alert alert-success text-center fw-bold" style="background-color: #28a745; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;" readonly="1" nolabel="1"/>
+                  <field name="xe_select" invisible="not ((currency_pair == 'usd_cny' and conversion_ratio &lt; 0) or (currency_pair == 'usd_euro' and conversion_ratio &lt; 0) or (currency_pair == 'usd_aed' and conversion_ratio &lt; 0) or (currency_pair == 'usd_thb' and conversion_ratio &lt; 0) or (currency_pair == 'cny_usd' and conversion_ratio &gt; 0) or (currency_pair == 'euro_usd' and conversion_ratio &gt; 0) or (currency_pair == 'aed_usd' and conversion_ratio &gt; 0) or (currency_pair == 'thb_usd' and conversion_ratio &gt; 0))" class="alert alert-success text-center fw-bold"  style="background-color: #28a745; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;" readonly="1" nolabel="1"/>
+                </div>
               </group>
             </page>
-            <page string="SWIFT">
+            <page string="Даты">
               <group>
-                <field name="swift_received_date"/>
-                <field name="swift_status"/>
-                <field name="swift_103_requested_date"/>
-                <field name="swift_103_received_date"/>
-                <field name="swift_199_requested_date"/>
-                <field name="swift_199_received_date"/>
-                <field name="return_requested_date"/>
-                <field name="return_money_received_date"/>
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="with_accreditive"/>
+                    <field name="invoice_date"/>
+                    <field name="bank_registration_date"/>
+                  </group>
+                  <group>
+                    <field name="received_initial_docs"/>
+                    <field name="agent_contract_date"/>
+                    <field name="accreditive_open_date"/>
+                  </group>
+                </div>
+              </group>
+              <group>
+                <div class="o-form-group">
+                  <group>
+                    <field name="payment_date"/>
+                  </group>
+                  <group>
+                    <field name="supplier_currency_paid_date"/>
+                  </group>
+                  <group>
+                    <field name="supplier_currency_received_date"/>
+                  </group>
+                </div>
+              </group>
+              <group>
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="client_ruble_paid_date"/>
+                    <field name="act_report_signed_date"/>
+                    <field name="date_received_on_pc_payment"/>
+                  </group>
+                  <group>
+                    <field name="accreditive_revealed_date"/>
+                    <field name="deal_closed_date"/>
+                    <field name="deal_cycle_days"/>
+                  </group>
+                </div>
               </group>
             </page>
             <page string="Документы">
@@ -503,34 +1098,65 @@
                 <field name="report_file"/>
               </group>
             </page>
-            <page string="Проблемы">
-              <group string="Проблемы">
-                <field name="is_money_stuck"/>
-                <field name="problem_stage"/>
-                <field name="problem_comment"/>
-                <field name="currency_stuck"/>
-                <field name="sum_stuck"/>
-                <field name="whose_mistake"/>
-                <field name="zayavka_mistake"/>
+            <page string="SWIFT">
+              <group>
+                <div class="o-form-group-2">
+                  <group>
+                     <field name="swift_received_date"/>
+                     <field name="swift_103_requested_date"/>
+                     <field name="swift_199_requested_date"/>
+                     <field name="return_requested_date"/>
+                  </group>
+                  <group>
+                    <field name="swift_status"/>
+                    <field name="swift_103_received_date"/>
+                    <field name="swift_199_received_date"/>
+                    <field name="return_money_received_date"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Информация о SWIFT коде">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="swift_id"/>
+                    <field name="swift_code"/>
+                    <field name="swift_bank_name"/>
+                    <field name="swift_country"/>
+                  </group>
+                  <group>
+                    <field name="swift_status_display"/>
+                    <field name="swift_auto_filled" readonly="1"/>
+                    <field name="swift_last_updated" readonly="1"/>
+                    <button name="action_fetch_swift_info" type="object" string="Получить SWIFT информацию" class="btn-primary"/>
+                  </group>
+                </div>
+                <field name="swift_status_info" nolabel="1"/>
               </group>
             </page>
-            <page string="Даты">
-              <group string="Даты">
-                <field name="with_accreditive"/>
-                <field name="received_initial_docs"/>
-                <field name="invoice_date"/>
-                <field name="agent_contract_date"/>
-                <field name="bank_registration_date"/>
-                <field name="accreditive_open_date"/>
-                <field name="supplier_currency_paid_date"/>
-                <field name="payment_date"/>
-                <field name="supplier_currency_received_date"/>
-                <field name="client_ruble_paid_date"/>
-                <field name="accreditive_revealed_date"/>
-                <field name="act_report_signed_date"/>
-                <field name="deal_closed_date"/>
-                <field name="date_received_on_pc_payment"/>
-                <field name="deal_cycle_days"/>
+            <page string="Проблемы">
+              <group>
+                <div class="o-form-group">
+                  <group>
+                    <field name="is_money_stuck"/>
+                  </group>
+                  <group>
+                    <field name="hide_in_dashboard"/>
+                  </group>
+                  <group>
+                    <field name="problem_stage"/>
+                  </group>
+                </div>
+                <field name="problem_comment"/>
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="currency_stuck"/>
+                  </group>
+                  <group>
+                    <field name="sum_stuck"/>
+                  </group>
+                </div>
+                <field name="whose_mistake"/>
+                <field name="zayavka_mistake"/>
               </group>
             </page>
           </notebook>

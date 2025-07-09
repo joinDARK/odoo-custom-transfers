@@ -151,9 +151,9 @@ class GoldDeal(models.Model):
         string="Разница", compute="_compute_difference", store=True, tracking=True
     )
 
-    # 27. Банк – выбор из: Вита, СКБ, Альфа
-    bank = fields.Selection(
-        [("vita", "Вита"), ("skb", "СКБ"), ("alfa", "Альфа")],
+    # 27. Банк – связь с контрагентом банка, который может проводить сделки с золотом
+    bank = fields.Many2one(
+        "amanat.contragent.gold",
         string="Банк",
         tracking=True,
     )
@@ -410,7 +410,10 @@ class GoldDeal(models.Model):
         # 2. Поиск необходимых справочных записей
         # Контрагенты
         gold_contragent = ContragentModel.search([("name", "=", "Золото")], limit=1)
-        vita_contragent = ContragentModel.search([("name", "=", "Вита")], limit=1)
+        bank_gold_contragent = self.bank.contragent_id
+
+        if not bank_gold_contragent:
+            raise UserError(f"Не найден контрагент банка для сделки: {self.name}")
 
         # Создаем контрагентов, если они не найдены
         if not gold_contragent:
@@ -418,12 +421,6 @@ class GoldDeal(models.Model):
                 "name": "Золото",
             })
             _logger.info("Создан контрагент 'Золото'")
-
-        if not vita_contragent:
-            vita_contragent = ContragentModel.create({
-                "name": "Вита",
-            })
-            _logger.info("Создан контрагент 'Вита'")
 
         # Кошельки
         gold_wallet = WalletModel.search([("name", "=", "Золото")], limit=1)
@@ -435,7 +432,7 @@ class GoldDeal(models.Model):
 
         # Плательщики
         gold_payer = PayerModel.search([("name", "=", "Золото")], limit=1)
-        vita_payer = PayerModel.search([("name", "=", "Вита")], limit=1)
+        bank_gold_payer = self.bank.contragent_id.payer_ids[0]
 
         # Создаем плательщиков и связываем с контрагентами, если они не найдены
         if not gold_payer:
@@ -449,16 +446,16 @@ class GoldDeal(models.Model):
             })
             _logger.info("Создан плательщик 'Золото' и связан с контрагентом 'Золото'")
 
-        if not vita_payer:
-            vita_payer = PayerModel.create({
-                "name": "Вита",
-                "contragents_ids": [(6, 0, [vita_contragent.id])]
+        if not bank_gold_payer:
+            bank_gold_payer = PayerModel.create({
+                "name": bank_gold_contragent.name,
+                "contragents_ids": [(6, 0, [bank_gold_contragent.id])]
             })
             # Обновляем связь с обратной стороны
-            vita_contragent.write({
-                "payer_ids": [(6, 0, [vita_payer.id])]
+            bank_gold_contragent.write({
+                "payer_ids": [(6, 0, [bank_gold_payer.id])]
             })
-            _logger.info("Создан плательщик 'Вита' и связан с контрагентом 'Вита'")
+            _logger.info(f"Создан плательщик '{bank_gold_contragent.name}' и связан с контрагентом '{bank_gold_contragent.name}'")
 
         total_rub_amount_for_vita_order = 0.0
         created_orders_for_deal = []
@@ -583,17 +580,17 @@ class GoldDeal(models.Model):
 
             total_rub_amount_for_vita_order += partner_amount_rub
 
-        # 4. Создаем финальный ордер: Золото -> Вита
+        # 4. Создаем финальный ордер
         if total_rub_amount_for_vita_order > 0:
             _logger.info(
-                f"Создание финального ордера Золото -> Вита, общая сумма: {total_rub_amount_for_vita_order}"
+                f"Создание финального ордера Золото -> {bank_gold_contragent.name}, общая сумма: {total_rub_amount_for_vita_order}"
             )
             final_order_vals = {
                 "date": deal_date,
                 "partner_1_id": gold_contragent.id,
                 "payer_1_id": gold_payer.id,
-                "partner_2_id": vita_contragent.id,
-                "payer_2_id": vita_payer.id,
+                "partner_2_id": bank_gold_contragent.id,
+                "payer_2_id": bank_gold_payer.id,
                 "amount": total_rub_amount_for_vita_order,
                 "type": "transfer",
                 "currency": "rub",
@@ -608,10 +605,10 @@ class GoldDeal(models.Model):
                 f"Создан финальный ордер: {final_order.name if hasattr(final_order, 'name') else final_order.id}"
             )
 
-            # Создаем долговой денежный контейнер для Вита
+            # Создаем долговой денежный контейнер
             money_debt_vals = {
                 "date": deal_date,
-                "partner_id": vita_contragent.id,
+                "partner_id": bank_gold_contragent.id,
                 "currency": "rub",
                 "amount": -total_rub_amount_for_vita_order,  # Отрицательная сумма
                 "state": "debt",  # Предположим, значение 'debt' для "Долг"
@@ -622,15 +619,15 @@ class GoldDeal(models.Model):
                 self._prepare_currency_fields("RUB", -total_rub_amount_for_vita_order)
             )
             MoneyModel.create(money_debt_vals)
-            _logger.info("Создан долговой денежный контейнер для Вита")
+            _logger.info(f"Создан долговой денежный контейнер для {bank_gold_contragent.name}")
 
             # Создаем сверку для стороны Виты
             verif_vita_vals = {
                 "date": deal_date,
-                "partner_id": vita_contragent.id,
+                "partner_id": bank_gold_contragent.id,
                 "currency": "rub",
                 "sender_id": [(6, 0, [gold_payer.id])],
-                "receiver_id": [(6, 0, [vita_payer.id])],
+                "receiver_id": [(6, 0, [bank_gold_payer.id])],
                 "order_id": [(6, 0, [final_order.id])],
                 "wallet_id": gold_wallet.id,
                 "sum": -total_rub_amount_for_vita_order,
@@ -639,10 +636,10 @@ class GoldDeal(models.Model):
                 self._prepare_currency_fields("RUB", -total_rub_amount_for_vita_order)
             )
             VerificationModel.create(verif_vita_vals)
-            _logger.info("Создана сверка для Вита")
+            _logger.info(f"Создана сверка для {bank_gold_contragent.name}")
         else:
             _logger.warning(
-                f"Общая сумма для финального ордера Золото->Вита равна нулю или меньше для сделки {self.name}. Финальный ордер не создан."
+                f"Общая сумма для финального ордера Золото->{bank_gold_contragent.name} равна нулю или меньше для сделки {self.name}. Финальный ордер не создан."
             )
 
         # Обновляем поле order_ids в текущей сделке Золото
@@ -1411,17 +1408,18 @@ class GoldDeal(models.Model):
         
         # Берем первую платежку (в скрипте Airtable также использовалась первая привязанная платежка)
         payment = self.extract_delivery_ids[0]
+        bank_gold_payer = self.bank.contragent_id.payer_ids[0]
         
         # Проверка получателя в платежке
-        # В скрипте Airtable проверяется, что получатель - "Вита"
+        # В скрипте Airtable проверяется, что получатель - контрагент банка
         if not hasattr(payment, 'recipient') or not payment.recipient:
             _logger.warning(f"Не указан получатель в платежке для сделки: {self.name}")
         
-        if payment.recipient.name != "Вита":
-            _logger.warning(f"Получатель платежки не 'Вита', завершаем обработку для сделки: {self.name}")
+        if payment.recipient.name != bank_gold_payer.name:
+            _logger.warning(f"Получатель платежки не {bank_gold_payer.name}, завершаем обработку для сделки: {self.name}")
             return False
         
-        _logger.info(f"Проверка получателя платежки: 'Вита', продолжаем обработку")
+        _logger.info(f"Проверка получателя платежки: {bank_gold_payer.name}, продолжаем обработку")
         
         # Получаем дату из платежки
         if not hasattr(payment, 'date') or not payment.date:
@@ -1436,7 +1434,7 @@ class GoldDeal(models.Model):
         MoneyModel = self.env["amanat.money"]
         VerificationModel = self.env["amanat.reconciliation"]
         
-        # Находим связанные ордера, где Контрагент 2 - "Вита"
+        # Находим связанные ордера, где Контрагент 2
         # В Odoo можно использовать domain для фильтрации
         domain = [
             ('gold', 'in', [self.id]),  # поле 'gold' содержит ID текущей сделки
@@ -1447,20 +1445,20 @@ class GoldDeal(models.Model):
         
         processed_orders = []
         
-        # Обрабатываем каждый ордер, где Контрагент 2 - Вита
+        # Обрабатываем каждый ордер, где Контрагент 2
         for order in related_orders:
-            # Проверяем, что Контрагент 2 - Вита
-            if not order.partner_2_id or order.partner_2_id.name != "Вита":
-                _logger.info(f"Пропускаем ордер {order.name} - Контрагент 2 не 'Вита'")
+            # Проверяем, что Контрагент 2
+            if not order.partner_2_id or order.partner_2_id.name != bank_gold_payer.name:
+                _logger.info(f"Пропускаем ордер {order.name} - Контрагент 2 не {bank_gold_payer.name}")
                 continue
             
             try:
-                _logger.info(f"Обработка ордера с Вита {order.name}:")
+                _logger.info(f"Обработка ордера с {bank_gold_payer.name} {order.name}:")
                 _logger.info(f"- Контрагент 1: {order.partner_1_id.name}")
                 _logger.info(f"- Сумма: {payment_amount} RUB")
                 
                 # Обновляем комментарий ордера
-                order.write({"comment": "Перевод денег на Виту по сделке Золото"})
+                order.write({"comment": f"Перевод денег на {bank_gold_payer.name} по сделке Золото"})
                 
                 # Проверяем наличие необходимых данных
                 if not order.partner_1_id or not order.wallet_1_id:
@@ -1481,7 +1479,7 @@ class GoldDeal(models.Model):
                 MoneyModel.create(money_debt_vals)
                 _logger.info(f"Создан долговой контейнер для {order.partner_1_id.name}")
                 
-                # Создаем положительный контейнер для Вита
+                # Создаем положительный контейнер
                 money_positive_vals = {
                     "date": payment_date,
                     "partner_id": order.partner_2_id.id,
@@ -1493,7 +1491,7 @@ class GoldDeal(models.Model):
                 }
                 money_positive_vals.update(self._prepare_currency_fields("RUB", payment_amount))
                 MoneyModel.create(money_positive_vals)
-                _logger.info(f"Создан положительный контейнер для Вита")
+                _logger.info(f"Создан положительный контейнер для {bank_gold_payer.name}")
                 
                 # Создаем сверку для Контрагента 1 (отрицательная сумма)
                 verif_partner1_vals = {
@@ -1510,7 +1508,7 @@ class GoldDeal(models.Model):
                 VerificationModel.create(verif_partner1_vals)
                 _logger.info(f"Создана сверка для {order.partner_1_id.name} с суммой -{payment_amount} RUB")
                 
-                # Создаем сверку для Контрагента 2 (Вита) (положительная сумма)
+                # Создаем сверку для Контрагента 2 (положительная сумма)
                 verif_partner2_vals = {
                     "date": payment_date,
                     "partner_id": order.partner_2_id.id,
@@ -1531,9 +1529,9 @@ class GoldDeal(models.Model):
                 _logger.error(f"Ошибка при обработке ордера {order.name}: {e}")
         
         if processed_orders:
-            _logger.info(f"Успешно обработано {len(processed_orders)} ордеров с Вита")
+            _logger.info(f"Успешно обработано {len(processed_orders)} ордеров с {bank_gold_payer.name}")
         else:
-            _logger.warning("Не найдено ордеров с Вита для обработки или еще не сохранена платежка в золоте")
+            _logger.warning(f"Не найдено ордеров с {bank_gold_payer.name} для обработки или еще не сохранена платежка в золоте")
         
         _logger.info(f"Скрипт обработки платежки успешно завершён для: {self.name}!")
         return True

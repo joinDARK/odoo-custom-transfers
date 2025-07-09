@@ -3,12 +3,16 @@
     background-color: $mk-appbar-background;
     min-width: 200px;
     width: 300px; // Стандартная ширина
+    height: 100%; // Занимает всю высоту grid-области
+    min-height: 100vh; // Минимальная высота на всю высоту экрана
     overflow-y: auto;
     transition: none; // Убираем анимацию для плавного изменения размера
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
     overflow: auto;
     white-space: nowrap;
     position: relative; // Для позиционирования разделителя
+    display: flex; // Для flex-контейнера
+    flex-direction: column; // Вертикальное расположение
 
     .mk_apps_sidebar_toggle {
         padding: 8px;
@@ -43,10 +47,12 @@
 
     .mk_apps_sidebar {
         height: 100%;
+        min-height: 100vh; // Минимальная высота на всю высоту экрана
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         white-space: nowrap;
+        flex: 1; // Занимает всю доступную высоту
 
         .mk_apps_sidebar_menu {
             padding: 0;
@@ -193,89 +199,8 @@
     width: 100%;
 }
 
-// scroll-bar
-.mk_apps_sidebar_panel {
-    @include mk-disable-scrollbar();
-    background-color: $mk-appbar-background;
-    min-width: 200px;
-    width: 50%;
-    overflow-y: auto; // fallback
-    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-    overflow: auto;
-    white-space: nowrap;
-
-    // Добавим поддержку overlay, если браузер позволяет
-    @supports (overflow: overlay) {
-        overflow-y: overlay;
-    }
-
-    .mk_apps_sidebar_toggle {
-        padding: 8px;
-        cursor: pointer;
-        text-align: right;
-        color: $mk-appbar-color;
-        background: $mk-appbar-active;
-        transition: background 0.2s ease;
-
-        &:hover {
-            background: darken($mk-appbar-active, 5%);
-        }
-    }
-
-    &.mk_apps_sidebar_collapsed {
-        min-width: 50px;
-        width: 50px;
-
-        .mk_apps_sidebar_name {
-            display: none;
-        }
-    }
-
-    .mk_apps_sidebar_menu>li.active>a {
-        background: $mk-appbar-active;
-    }
-
-
-    .mk_apps_sidebar {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        white-space: nowrap;
-
-        .mk_apps_sidebar_menu {
-            padding: 0;
-            margin: 0;
-
-            >li {
-                list-style: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-
-                >a {
-                    display: flex;
-                    align-items: center;
-                    cursor: pointer;
-                    font-size: 13px;
-                    font-weight: 300;
-                    overflow: hidden;
-                    padding: 8px 11px;
-                    text-decoration: none;
-                    color: $mk-appbar-color;
-                    text-overflow: ellipsis;
-                    transition: background 0.2s ease;
-
-                    &:hover {
-                        background: darken($mk-appbar-background, 10%);
-                    }
-                }
-
-                &.active>a {
-                    background: $mk-appbar-active;
-                }
-            }
-        }
-    }
-}
+// Убрали дублирующий блок стилей для .mk_apps_sidebar_panel 
+// Основные стили находятся в начале файла
 
 // Стили для разных вариаций сайдбара
 .mk_sidebar_type_large {
@@ -524,7 +449,7 @@
 // Кнопка сворачивания/разворачивания сайдбара (соприкасается)
 .mk_sidebar_toggle_button {
     position: fixed;
-    bottom: 0; // Позиция снизу
+    bottom: 20px; // Позиция от низа с отступом
     width: 32px;
     height: 32px;
     background: $mk-appbar-background; // Тот же цвет что и сайдбар
@@ -613,4 +538,3 @@
         transform-origin: center;
     }
 }
-

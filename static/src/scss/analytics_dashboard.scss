@@ -1,0 +1,783 @@
+// Базовые стили для аналитического дашборда - Простой стиль как в Zayavka Fiks
+
+.analytics-dashboard {
+    padding: 20px;
+    background-color: #ffffff;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    height: calc(100vh - 60px);
+    font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+    color: #333333;
+    
+    .dashboard-header {
+        margin-bottom: 20px;
+        
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333333;
+            margin: 0;
+        }
+        
+        .dashboard-subtitle {
+            color: #666666;
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+    }
+    
+    .date-range-card,
+    .currency-rates-card,
+    .contragents-balance-card,
+    .contragents-comparison-card {
+        background: #ffffff;
+        padding: 20px;
+        border: 1px solid #dee2e6;
+        margin-bottom: 30px;
+        border-radius: 4px;
+        transition: box-shadow 0.2s ease;
+        
+        &:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+    }
+    
+    .date-range-card {
+        .form-group {
+            margin-bottom: 15px;
+            
+            label {
+                font-weight: 500;
+                color: #666666;
+                margin-bottom: 5px;
+                display: block;
+                font-size: 13px;
+            }
+            
+            .form-control {
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                padding: 8px 12px;
+                font-size: 14px;
+                background: #ffffff;
+                color: #333333;
+                transition: border-color 0.2s ease;
+                
+                &:focus {
+                    border-color: #007bff;
+                    outline: none;
+                    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+                }
+            }
+        }
+    }
+    
+    // Простые стили для блока курсов валют
+    .currency-rates-card {
+        .rates-header {
+            margin-bottom: 20px;
+            
+            .rates-title-container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+                
+                h3 {
+                    font-size: 1.2rem;
+                    font-weight: 600;
+                    color: #333333;
+                    margin: 0;
+                }
+                
+                .rates-buttons {
+                    display: flex;
+                    gap: 8px;
+                    
+                    .refresh-rates-btn {
+                        background: #007bff;
+                        border: 1px solid #007bff;
+                        border-radius: 4px;
+                        padding: 8px 16px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        color: white;
+                        transition: all 0.2s ease;
+                        
+                        &:hover:not(:disabled) {
+                            background: #0056b3;
+                            border-color: #0056b3;
+                        }
+                        
+                        &:disabled {
+                            opacity: 0.6;
+                            cursor: not-allowed;
+                        }
+                        
+                        i {
+                            margin-right: 5px;
+                        }
+                    }
+                }
+            }
+        }
+        
+        .rates-table-wrapper {
+            .rates-table {
+                width: 100%;
+                border-collapse: collapse;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                overflow: hidden;
+                background: #ffffff;
+                
+                thead {
+                    background-color: #f8f9fa;
+                    
+                    th {
+                        padding: 12px 15px;
+                        text-align: center;
+                        font-weight: 600;
+                        font-size: 14px;
+                        color: #333333;
+                        border-right: 1px solid #dee2e6;
+                        text-transform: uppercase;
+                        
+                        &:last-child {
+                            border-right: none;
+                        }
+                    }
+                }
+                
+                tbody {
+                    tr {
+                        background: #ffffff;
+                        
+                        &:nth-child(even) {
+                            background: #f8f9fa;
+                        }
+                        
+                        &:hover {
+                            background: #e9ecef;
+                        }
+                    }
+                    
+                    td {
+                        padding: 12px 15px;
+                        text-align: center;
+                        font-size: 14px;
+                        font-weight: 500;
+                        color: #333333;
+                        border-right: 1px solid #dee2e6;
+                        border-top: 1px solid #dee2e6;
+                        
+                        &:last-child {
+                            border-right: none;
+                        }
+                        
+                        .rate-input {
+                            border: 1px solid #ccc;
+                            border-radius: 4px;
+                            padding: 6px 10px;
+                            font-size: 14px;
+                            font-weight: 500;
+                            text-align: center;
+                            background: #ffffff;
+                            color: #333333;
+                            width: 100%;
+                            transition: border-color 0.2s ease;
+                            
+                            &:focus {
+                                outline: none;
+                                border-color: #007bff;
+                                box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+                            }
+                            
+                            &:hover {
+                                border-color: #999999;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            .loading-rates {
+                text-align: center;
+                padding: 30px 20px;
+                color: #666666;
+                font-size: 14px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                
+                p {
+                    margin-bottom: 0;
+                    font-weight: 500;
+                }
+            }
+            
+            .no-rates {
+                text-align: center;
+                padding: 30px 20px;
+                color: #666666;
+                font-size: 14px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                
+                p {
+                    margin-bottom: 0;
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+    
+    // Простые стили для блока балансов контрагентов
+    .contragents-balance-card {
+        .balance-header {
+            margin-bottom: 20px;
+            
+            h3 {
+                font-size: 1.2rem;
+                font-weight: 600;
+                color: #333333;
+                margin: 0;
+            }
+        }
+        
+        .search-field {
+            margin-bottom: 20px;
+            
+            .search-input {
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                padding: 8px 12px;
+                font-size: 14px;
+                background: #ffffff;
+                color: #333333;
+                transition: border-color 0.2s ease;
+                
+                &:focus {
+                    border-color: #007bff;
+                    outline: none;
+                    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+                }
+                
+                &::placeholder {
+                    color: #999999;
+                }
+            }
+        }
+        
+        .balance-table-wrapper {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            
+            .balance-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #ffffff;
+                min-width: 1200px;
+                
+                thead {
+                    background-color: #f8f9fa;
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
+                    
+                    th {
+                        padding: 12px 15px;
+                        text-align: center;
+                        font-weight: 600;
+                        font-size: 14px;
+                        color: #333333;
+                        border-right: 1px solid #dee2e6;
+                        white-space: nowrap;
+                        
+                        &:last-child {
+                            border-right: none;
+                        }
+                        
+                        &:first-child {
+                            text-align: left;
+                            min-width: 200px;
+                        }
+                        
+                        &.sortable {
+                            cursor: pointer;
+                            user-select: none;
+                            transition: background-color 0.2s ease;
+                            
+                            &:hover {
+                                background-color: #e9ecef;
+                                color: #007bff;
+                            }
+                            
+                            .sort-icon {
+                                display: inline-block;
+                                margin-left: 5px;
+                                font-size: 12px;
+                                opacity: 0.7;
+                                color: #666666;
+                            }
+                            
+                            &:hover .sort-icon {
+                                opacity: 1;
+                                color: #007bff;
+                            }
+                        }
+                    }
+                }
+                
+                tbody {
+                    tr {
+                        background: #ffffff;
+                        
+                        &:nth-child(even) {
+                            background: #f8f9fa;
+                        }
+                        
+                        &:hover {
+                            background: #e9ecef;
+                        }
+                    }
+                    
+                    td {
+                        padding: 12px 15px;
+                        text-align: center;
+                        font-size: 14px;
+                        font-weight: 500;
+                        color: #333333;
+                        border-right: 1px solid #dee2e6;
+                        border-top: 1px solid #dee2e6;
+                        
+                        &:last-child {
+                            border-right: none;
+                        }
+                        
+                        &.contragent-name {
+                            text-align: left;
+                            font-weight: 600;
+                            color: #333333;
+                            max-width: 200px;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                        }
+                        
+                        &.balance-amount {
+                            font-family: 'Courier New', monospace;
+                            font-weight: 600;
+                            color: #333333;
+                        }
+                    }
+                }
+            }
+            
+            .loading-balance {
+                text-align: center;
+                padding: 30px 20px;
+                color: #666666;
+                font-size: 14px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                
+                p {
+                    margin-bottom: 0;
+                }
+            }
+            
+            .no-balance {
+                text-align: center;
+                padding: 30px 20px;
+                color: #666666;
+                font-size: 14px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                
+                p {
+                    margin-bottom: 0;
+                }
+            }
+            
+            .no-search-results {
+                text-align: center;
+                padding: 30px 20px;
+                color: #666666;
+                font-size: 14px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                
+                p {
+                    margin-bottom: 0;
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+    
+    // Простые стили для блока сравнения балансов контрагентов
+    .contragents-comparison-card {
+        .comparison-header {
+            margin-bottom: 20px;
+            
+            h3 {
+                font-size: 1.2rem;
+                font-weight: 600;
+                color: #333333;
+                margin: 0;
+            }
+        }
+        
+        .search-field {
+            margin-bottom: 20px;
+            
+            .search-input {
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                padding: 8px 12px;
+                font-size: 14px;
+                background: #ffffff;
+                color: #333333;
+                transition: border-color 0.2s ease;
+                
+                &:focus {
+                    border-color: #007bff;
+                    outline: none;
+                    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+                }
+                
+                &::placeholder {
+                    color: #999999;
+                }
+            }
+        }
+        
+        .comparison-table-wrapper {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            
+            .comparison-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #ffffff;
+                min-width: 600px;
+                
+                thead {
+                    background-color: #f8f9fa;
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
+                    
+                    th {
+                        padding: 12px 15px;
+                        text-align: center;
+                        font-weight: 600;
+                        font-size: 14px;
+                        color: #333333;
+                        border-right: 1px solid #dee2e6;
+                        white-space: nowrap;
+                        
+                        &:last-child {
+                            border-right: none;
+                        }
+                        
+                        &:first-child {
+                            text-align: left;
+                            min-width: 200px;
+                        }
+                        
+                        &.sortable {
+                            cursor: pointer;
+                            user-select: none;
+                            transition: background-color 0.2s ease;
+                            
+                            &:hover {
+                                background-color: #e9ecef;
+                                color: #007bff;
+                            }
+                            
+                            .sort-icon {
+                                display: inline-block;
+                                margin-left: 5px;
+                                font-size: 12px;
+                                opacity: 0.7;
+                                color: #666666;
+                            }
+                            
+                            &:hover .sort-icon {
+                                opacity: 1;
+                                color: #007bff;
+                            }
+                        }
+                    }
+                }
+                
+                tbody {
+                    tr {
+                        background: #ffffff;
+                        
+                        &:nth-child(even) {
+                            background: #f8f9fa;
+                        }
+                        
+                        &:hover {
+                            background: #e9ecef;
+                        }
+                    }
+                    
+                    td {
+                        padding: 12px 15px;
+                        text-align: center;
+                        font-size: 14px;
+                        font-weight: 500;
+                        color: #333333;
+                        border-right: 1px solid #dee2e6;
+                        border-top: 1px solid #dee2e6;
+                        
+                        &:last-child {
+                            border-right: none;
+                        }
+                        
+                        &.contragent-name {
+                            text-align: left;
+                            font-weight: 600;
+                            color: #333333;
+                            max-width: 200px;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                        }
+                        
+                        &.balance-amount {
+                            font-family: 'Courier New', monospace;
+                            font-weight: 600;
+                            color: #333333;
+                        }
+                    }
+                }
+            }
+            
+            .loading-comparison {
+                text-align: center;
+                padding: 30px 20px;
+                color: #666666;
+                font-size: 14px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                
+                p {
+                    margin-bottom: 0;
+                }
+            }
+            
+            .no-comparison {
+                text-align: center;
+                padding: 30px 20px;
+                color: #666666;
+                font-size: 14px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                
+                p {
+                    margin-bottom: 0;
+                }
+            }
+            
+            .no-search-results {
+                text-align: center;
+                padding: 30px 20px;
+                color: #666666;
+                font-size: 14px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                
+                p {
+                    margin-bottom: 0;
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+}
+
+// Адаптивность для мобильных устройств
+@media (max-width: 768px) {
+    .analytics-dashboard {
+        padding: 15px;
+        
+        .dashboard-header {
+            margin-bottom: 15px;
+            
+            h2 {
+                font-size: 1.3rem;
+            }
+            
+            .dashboard-subtitle {
+                font-size: 0.9rem;
+            }
+        }
+        
+        .date-range-card,
+        .currency-rates-card,
+        .contragents-balance-card,
+        .contragents-comparison-card {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .currency-rates-card {
+            .rates-header {
+                .rates-title-container {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 10px;
+                    
+                    h3 {
+                        font-size: 1.1rem;
+                    }
+                    
+                    .rates-buttons {
+                        align-self: flex-end;
+                        gap: 4px;
+                        
+                        .refresh-rates-btn {
+                            font-size: 12px;
+                            padding: 6px 12px;
+                            
+                            i {
+                                margin-right: 3px;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            .rates-table-wrapper {
+                overflow-x: auto;
+                
+                .rates-table {
+                    min-width: 600px;
+                    font-size: 12px;
+                    
+                    thead th {
+                        padding: 10px 8px;
+                        font-size: 11px;
+                    }
+                    
+                    tbody td {
+                        padding: 10px 8px;
+                        font-size: 12px;
+                        
+                        .rate-input {
+                            font-size: 12px;
+                            padding: 4px 6px;
+                        }
+                    }
+                }
+            }
+        }
+        
+        .contragents-balance-card,
+        .contragents-comparison-card {
+            .balance-header h3,
+            .comparison-header h3 {
+                font-size: 1.1rem;
+            }
+            
+            .search-field .search-input {
+                font-size: 13px;
+                padding: 6px 10px;
+            }
+            
+            .balance-table-wrapper,
+            .comparison-table-wrapper {
+                max-height: 450px;
+                
+                .balance-table,
+                .comparison-table {
+                    font-size: 12px;
+                    
+                    thead th {
+                        padding: 8px 6px;
+                        font-size: 11px;
+                        
+                        &:first-child {
+                            min-width: 150px;
+                        }
+                    }
+                    
+                    tbody td {
+                        padding: 8px 6px;
+                        font-size: 11px;
+                        
+                        &.contragent-name {
+                            max-width: 150px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 576px) {
+    .analytics-dashboard {
+        padding: 10px;
+        
+        .currency-rates-card,
+        .contragents-balance-card,
+        .contragents-comparison-card {
+            padding: 12px;
+        }
+    }
+}
+
+// Стили для скроллбара
+.analytics-dashboard {
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+        
+        &:hover {
+            background: #a8a8a8;
+        }
+    }
+    
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+// Стили для Bootstrap сетки
+.analytics-dashboard {
+    .row {
+        margin-left: -7.5px;
+        margin-right: -7.5px;
+    }
+    
+    .col, [class*="col-"] {
+        padding-left: 7.5px;
+        padding-right: 7.5px;
+    }
+}

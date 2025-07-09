@@ -23,7 +23,7 @@
         <field name="name">amanat.money_cost_rule.list</field>
         <field name="model">amanat.money_cost_rule</field>
         <field name="arch" type="xml">
-            <list editable="top">
+            <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name"/>
                 <field name="credit_rate" widget="percentage"/>

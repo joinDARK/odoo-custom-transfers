@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="contragent_gold_list_view" model="ir.ui.view">
+        <field name="name">contragent.gold.list</field>
+        <field name="model">amanat.contragent.gold</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list editable="top" multi_edit="1">
+                <field name="name" width="800"/>
+                <field name="contragent_id" width="800"/>
+            </list>
+        </field>
+    </record>
+    
+    <record id="contragent_gold_action" model="ir.actions.act_window">
+        <field name="name">Контрагенты Золото</field>
+        <field name="res_model">amanat.contragent.gold</field>
+        <field name="view_mode">list</field>
+        <field name="target">main</field>
+    </record>
+</odoo>

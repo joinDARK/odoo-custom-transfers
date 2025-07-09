@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Mass Edit Contragent -->
+    <record id="mass_editing_contragent" model="ir.actions.server">
+        <field name="state">mass_edit</field>
+        <field name="name">Массовое редактирование</field>
+        <field name="model_id" ref="amanat.model_amanat_contragent"/>
+    </record>
+    <record id="mass_editing_contragent_line_1" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_contragent"/>
+        <field name="field_id" ref="amanat.field_amanat_contragent__name"/>
+    </record>
+
+    <!-- Mass Edit Transfer -->
+    <record id="mass_editing_transfer" model="ir.actions.server">
+        <field name="state">mass_edit</field>
+        <field name="name">Массовое редактирование</field>
+        <field name="model_id" ref="amanat.model_amanat_transfer"/>
+    </record>
+    <record id="mass_editing_transfer_line_1" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__create_order"/>
+    </record>
+    <record id="mass_editing_transfer_line_2" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalti_Transfer"/>
+    </record>
+    <record id="mass_editing_transfer_line_3" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__delete_Transfer"/>
+    </record>
+    <record id="mass_editing_transfer_line_4" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__state"/>
+    </record>
+    <record id="mass_editing_transfer_line_5" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__date"/>
+    </record>
+    <record id="mass_editing_transfer_line_6" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__currency"/>
+    </record>
+    <record id="mass_editing_transfer_line_7" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__amount"/>
+    </record>
+    <record id="mass_editing_transfer_line_8" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__sender_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_9" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__sender_payer_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_10" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__sender_wallet_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_11" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__receiver_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_12" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__hash"/>
+    </record>
+    <record id="mass_editing_transfer_line_13" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__receiver_payer_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_14" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__receiver_wallet_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_15" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_percent_1"/>
+    </record>
+    <record id="mass_editing_transfer_line_16" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_percent_2"/>
+    </record>
+    <record id="mass_editing_transfer_line_17" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_percent_3"/>
+    </record>
+    <record id="mass_editing_transfer_line_18" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_percent_4"/>
+    </record>
+    <record id="mass_editing_transfer_line_19" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_percent_5"/>
+    </record>
+    <record id="mass_editing_transfer_line_20" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_recipient_1"/>
+    </record>
+    <record id="mass_editing_transfer_line_21" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_recipient_2"/>
+    </record>
+    <record id="mass_editing_transfer_line_22" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_recipient_3"/>
+    </record>
+    <record id="mass_editing_transfer_line_23" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_recipient_4"/>
+    </record>
+    <record id="mass_editing_transfer_line_24" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__royalty_recipient_5"/>
+    </record>
+    <record id="mass_editing_transfer_line_25" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__is_complex"/>
+    </record>
+    <record id="mass_editing_transfer_line_26" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__intermediary_1_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_27" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__intermediary_1_payer_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_28" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__intermediary_1_wallet_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_29" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__intermediary_1_commission_percent"/>
+    </record>
+    <record id="mass_editing_transfer_line_30" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__intermediary_2_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_31" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__intermediary_2_payer_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_32" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__intermediary_2_wallet_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_33" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__intermediary_2_commission_percent"/>
+    </record>
+    <record id="mass_editing_transfer_line_34" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__sending_commission_percent"/>
+    </record>
+    <record id="mass_editing_transfer_line_35" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__comment"/>
+    </record>
+    <record id="mass_editing_transfer_line_36" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__manager_id"/>
+    </record>
+    <record id="mass_editing_transfer_line_37" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_transfer"/>
+        <field name="field_id" ref="amanat.field_amanat_transfer__inspector_id"/>
+    </record>
+
+    <!-- Mass Edit Conversion -->
+    <record id="mass_editing_conversion" model="ir.actions.server">
+        <field name="state">mass_edit</field>
+        <field name="name">Массовое редактирование</field>
+        <field name="model_id" ref="amanat.model_amanat_conversion"/>
+    </record>
+    <record id="mass_editing_conversion_line_1" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_conversion"/>
+        <field name="field_id" ref="amanat.field_amanat_conversion__create_conversion"/>
+    </record>
+    <record id="mass_editing_conversion_line_2" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_conversion"/>
+        <field name="field_id" ref="amanat.field_amanat_conversion__make_royalty"/>
+    </record>
+    <record id="mass_editing_conversion_line_3" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_conversion"/>
+        <field name="field_id" ref="amanat.field_amanat_conversion__delete_conversion"/>
+    </record>
+
+    <!-- Mass Edit Reserve -->
+    <record id="mass_editing_reserve" model="ir.actions.server">
+        <field name="state">mass_edit</field>
+        <field name="name">Массовое редактирование</field>
+        <field name="model_id" ref="amanat.model_amanat_reserve"/>
+    </record>
+    <record id="mass_editing_reserve_line_1" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_reserve"/>
+        <field name="field_id" ref="amanat.field_amanat_reserve__create_reserve"/>
+    </record>
+    <record id="mass_editing_reserve_line_2" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_reserve"/>
+        <field name="field_id" ref="amanat.field_amanat_reserve__make_royalti"/>
+    </record>
+    <record id="mass_editing_reserve_line_3" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_reserve"/>
+        <field name="field_id" ref="amanat.field_amanat_reserve__complete_reserve"/>
+    </record>
+    <record id="mass_editing_reserve_line_4" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_reserve"/>
+        <field name="field_id" ref="amanat.field_amanat_reserve__delete_reserve"/>
+    </record>
+
+    <!-- Mass Edit Extracts -->
+    <record id="mass_editing_extracts" model="ir.actions.server">
+        <field name="state">mass_edit</field>
+        <field name="name">Массовое редактирование</field>
+        <field name="model_id" ref="amanat.model_amanat_extracts"/>
+    </record>
+    <record id="mass_editing_extracts_line_1" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_extracts"/>
+        <field name="field_id" ref="amanat.field_amanat_extracts__raznesti"/>
+    </record>
+    <record id="mass_editing_extracts_line_2" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_extracts"/>
+        <field name="field_id" ref="amanat.field_amanat_extracts__delete_deliveries"/>
+    </record>
+
+    <!-- Mass Edit WriteOff -->
+    <record id="mass_editing_writeoff" model="ir.actions.server">
+        <field name="state">mass_edit</field>
+        <field name="name">Массовое редактирование</field>
+        <field name="model_id" ref="amanat.model_amanat_writeoff"/>
+    </record>
+    <record id="mass_editing_writeoff_line_1" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_writeoff"/>
+        <field name="field_id" ref="amanat.field_amanat_writeoff__writeoff_investment"/>
+    </record>
+
+    <!-- Mass Edit Extract Delivery -->
+    <record id="mass_editing_extract_delivery" model="ir.actions.server">
+        <field name="state">mass_edit</field>
+        <field name="name">Массовое редактирование</field>
+        <field name="model_id" ref="amanat.model_amanat_extract_delivery"/>
+    </record>
+    <record id="mass_editing_extract_delivery_line_1" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_extract_delivery"/>
+        <field name="field_id" ref="amanat.field_amanat_extract_delivery__assign_bulinan"/>
+    </record>
+    <record id="mass_editing_extract_delivery_line_2" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_extract_delivery"/>
+        <field name="field_id" ref="amanat.field_amanat_extract_delivery__create_transfer_bulinan"/>
+    </record>
+    <record id="mass_editing_extract_delivery_line_3" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_extract_delivery"/>
+        <field name="field_id" ref="amanat.field_amanat_extract_delivery__fragment_statement"/>
+    </record>
+
+    <!-- Mass Edit Gold Deal -->
+    <record id="mass_editing_gold_deal" model="ir.actions.server">
+        <field name="state">mass_edit</field>
+        <field name="name">Массовое редактирование</field>
+        <field name="model_id" ref="amanat.model_amanat_gold_deal"/>
+    </record>
+    <record id="mass_editing_gold_deal_line_1" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_gold_deal"/>
+        <field name="field_id" ref="amanat.field_amanat_gold_deal__conduct_in"/>
+    </record>
+    <record id="mass_editing_gold_deal_line_2" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_gold_deal"/>
+        <field name="field_id" ref="amanat.field_amanat_gold_deal__conduct_out"/>
+    </record>
+    <record id="mass_editing_gold_deal_line_6" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_gold_deal"/>
+        <field name="field_id" ref="amanat.field_amanat_gold_deal__mark_for_deletion"/>
+    </record>
+
+    <!-- Mass Edit Partner Gold -->
+    <record id="mass_editing_partner_gold" model="ir.actions.server">
+        <field name="state">mass_edit</field>
+        <field name="name">Массовое редактирование</field>
+        <field name="model_id" ref="amanat.model_amanat_partner_gold"/>
+    </record>
+    <record id="mass_editing_partner_gold_line_1" model="ir.actions.server.mass.edit.line">
+        <field name="server_action_id" ref="mass_editing_partner_gold"/>
+        <field name="field_id" ref="amanat.field_amanat_partner_gold__conduct_gold_transfer"/>
+    </record>
+
+    <!-- Добавим контекстные действия для всех server actions -->
+    <function model="ir.actions.server" name="create_action">
+        <value eval="[ref('mass_editing_contragent'), ref('mass_editing_transfer'), ref('mass_editing_conversion'), ref('mass_editing_reserve'), ref('mass_editing_extracts'), ref('mass_editing_writeoff'), ref('mass_editing_extract_delivery'), ref('mass_editing_gold_deal'), ref('mass_editing_partner_gold')]" />
+    </function>
+</odoo> 

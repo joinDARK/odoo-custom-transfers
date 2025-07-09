@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Действие для дашборда заявок -->
+    <record id="action_zayavka_fiks_dashboard" model="ir.actions.client">
+        <field name="name">Дашборд заявок</field>
+        <field name="tag">zayavka_fiks_dashboard_action</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- Пункт меню для дашборда заявок -->
+    <menuitem 
+        id="menu_zayavka_fiks_dashboard" 
+        name="Дашборд заявок" 
+        action="action_zayavka_fiks_dashboard" 
+        parent="amanat_menu_root" 
+        sequence="2"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager"/>
+</odoo> 
