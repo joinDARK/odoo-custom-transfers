@@ -575,6 +575,9 @@ class Dashboard(models.Model):
                 zayavki_by_deal_type[deal_type_name] = 0
             zayavki_by_deal_type[deal_type_name] += 1
         
+        # Заявки по типам сделок по месяцам (для линейного графика)
+        zayavki_import_export_by_month = self.get_import_export_by_month_data(zayavki)
+        
         # Топ контрагентов по заявкам
         contragent_zayavki_counts = {}
         for zayavka in zayavki:
@@ -825,6 +828,7 @@ class Dashboard(models.Model):
             'zayavki_by_month': zayavki_by_month,
             'zayavki_by_currency': zayavki_by_currency,
             'zayavki_by_deal_type': zayavki_by_deal_type,
+            'zayavki_import_export_by_month': zayavki_import_export_by_month,
             'top_contragents_by_zayavki': top_contragents_by_zayavki,
             'contragent_avg_check': contragent_avg_check,
             'agent_zayavki_list': agent_zayavki_list,
@@ -1426,6 +1430,9 @@ class Dashboard(models.Model):
                 })
             managers_closed_zayavki.sort(key=lambda x: x['count'], reverse=True)
             
+            # 14. Данные по импорт/экспорт по месяцам для линейного графика
+            import_export_by_month = self.get_import_export_by_month_data(zayavki)
+            
             return {
                 'contragents_by_zayavki': contragents_by_zayavki,
                 'contragent_avg_check': contragent_avg_check,
@@ -1438,6 +1445,7 @@ class Dashboard(models.Model):
                 'client_avg_amount': client_avg_amount,
                 'deal_cycles': deal_cycles,
                 'deal_types': deal_types_count,
+                'import_export_by_month': import_export_by_month,
                 'managers_by_zayavki': managers_by_zayavki,
                 'managers_closed_zayavki': managers_closed_zayavki
             }
@@ -1497,4 +1505,51 @@ class Dashboard(models.Model):
         return {
             'range1': range1_stats,
             'range2': range2_stats
+        }
+
+    @api.model
+    def get_import_export_by_month_data(self, zayavki):
+        """Получить данные по импорт/экспорт по месяцам для линейного графика"""
+        
+        from collections import defaultdict
+        from datetime import datetime, timedelta
+        from dateutil.relativedelta import relativedelta
+        
+        # Фильтруем заявки которые не скрыты в дашборде
+        zayavki_visible = zayavki.filtered(lambda z: not z.hide_in_dashboard)
+        
+        # Группируем заявки по месяцам и типам сделок
+        monthly_data = defaultdict(lambda: {'Импорт': 0, 'Экспорт': 0})
+        
+        for zayavka in zayavki_visible:
+            if zayavka.date_placement:
+                # Получаем месяц и год из даты размещения
+                month_key = zayavka.date_placement.strftime('%Y-%m')
+                
+                # Определяем тип сделки
+                deal_type = zayavka.deal_type or 'Не указан'
+                if deal_type == 'import':
+                    monthly_data[month_key]['Импорт'] += 1
+                elif deal_type == 'export':
+                    monthly_data[month_key]['Экспорт'] += 1
+        
+        # Создаем список месяцев за последние 12 месяцев
+        today = datetime.today()
+        months = []
+        import_data = []
+        export_data = []
+        
+        for i in range(11, -1, -1):
+            month_date = today - relativedelta(months=i)
+            month_key = month_date.strftime('%Y-%m')
+            month_label = month_date.strftime('%b %Y')
+            
+            months.append(month_label)
+            import_data.append(monthly_data[month_key]['Импорт'])
+            export_data.append(monthly_data[month_key]['Экспорт'])
+        
+        return {
+            'labels': months,
+            'import_data': import_data,
+            'export_data': export_data
         } 

@@ -20,3 +20,10 @@ class KassaIvan(models.Model, AmanatBaseModel):
         required=True,
         tracking=True
     )
+
+    percent = fields.Float(
+        string='Процент',
+        default=0.0,
+        digits=(16, 2),
+        tracking=True
+    )

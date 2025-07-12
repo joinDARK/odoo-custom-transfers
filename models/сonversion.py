@@ -128,7 +128,11 @@ class Conversion(models.Model, AmanatBaseModel):
         string='% первого', widget='percentage', digits=(16, 2), tracking=True
     )
     royalty_amount_1 = fields.Float(
-        string='Сумма роялти 1', compute='_compute_royalty_amount_1', store=True, tracking=True
+        string='Сумма роялти 1', 
+        compute='_compute_royalty_amount_1', 
+        store=True, 
+        tracking=True,
+        readonly=False,
     )
     royalty_recipient_2 = fields.Many2one(
         'amanat.contragent', string='Получатель роялти 2', tracking=True
@@ -137,7 +141,11 @@ class Conversion(models.Model, AmanatBaseModel):
         string='% второго', widget='percentage', digits=(16, 2), tracking=True
     )
     royalty_amount_2 = fields.Float(
-        string='Сумма роялти 2', compute='_compute_royalty_amount_2', store=True, tracking=True
+        string='Сумма роялти 2', 
+        compute='_compute_royalty_amount_2', 
+        store=True, 
+        tracking=True,
+        readonly=False,
     )
 
     @api.onchange('sender_id')

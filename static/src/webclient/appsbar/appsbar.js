@@ -12,6 +12,7 @@ export class AppsBar extends Component {
         this.actionService = useService("action");
         this.companyService = useService('company');
         this.appMenuService = useService('app_menu');
+        this.orm = useService('orm');
 
         this.menuData = [
             {
@@ -115,6 +116,7 @@ export class AppsBar extends Component {
             activeItem: null,
             activeMainMenuIndex: null,
             sidebarWidth: this.getSavedSidebarWidth(),
+            userGroups: {},
         });
         
         // Переменные для изменения размера
@@ -125,6 +127,9 @@ export class AppsBar extends Component {
         // Привязываем методы для обработчиков событий
         this.boundOnMouseMove = this.onMouseMove.bind(this);
         this.boundStopResize = this.stopResize.bind(this);
+
+        // Загружаем группы пользователя
+        this.loadUserGroups();
 
         const refreshMenuState = () => {
             const currentApp = this.appMenuService.getCurrentApp();
@@ -194,6 +199,40 @@ export class AppsBar extends Component {
                 id: this.companyService.currentCompany.id,
             });
         }
+    }
+
+    async loadUserGroups() {
+        try {
+            this.state.userGroups = await this.orm.call('res.users', 'check_user_groups', []);
+        } catch (error) {
+            console.error('Error loading user groups:', error);
+            this.state.userGroups = {};
+        }
+    }
+
+    getFilteredMenuData() {
+        // Если пользователь - менеджер, показываем только ограниченное меню
+        if (this.state.userGroups.is_manager && !this.state.userGroups.is_senior_manager && !this.state.userGroups.is_admin) {
+            return [
+                {
+                    name: "Справочники",
+                    items: [
+                        { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "Страны", action: "amanat.country_action" },
+                        { name: "Плательщики", action: "amanat.payer_action" },
+                        { name: "Менеджеры", action: "amanat.manager_action" },
+                    ],
+                },
+                {
+                    name: "Заявки",
+                    action: "amanat.zayavka_action",
+                    actionMethod: "openZayvaki",
+                },
+            ];
+        }
+        
+        // Для остальных пользователей возвращаем полное меню
+        return this.menuData;
     }
 
     handleMenuClick(menu, menu_index) {

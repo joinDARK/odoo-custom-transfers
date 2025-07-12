@@ -38,6 +38,7 @@ class PriceListPayerProfit(models.Model):
     period_days = fields.Integer(
         string='Период дней',
         compute='_compute_period_days',
+        readonly=False,
         store=True,
         tracking=True
     )

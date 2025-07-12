@@ -16,11 +16,11 @@
                 <field name="receiver" width="200"/>
                 <field name="payer_receiver" width="180"/>
                 <field name="percent" width="80" widget="percentage" options="{'rounding': 2}"/>
-                <field name="fixed_amount" width="160"/>
+                <!-- <field name="fixed_amount" width="160"/> -->
                 <field name="period" width="120"/>
                 <field name="amount" width="120"/>
                 <field name="currency" width="100"/>
-                <field name="principal" width="120"/>
+                <!-- <field name="principal" width="120"/> -->
                 <field name="calendar_days" width="110"/>
                 <field name="work_days" width="140"/>
                 <field name="orders" width="180" widget="many2many_tags"/>
@@ -30,7 +30,7 @@
                 <field name="create_action" width="100"/> 
                 <field name="post" width="100"/>
                 <!-- <field name="repost" width="100"/> -->
-                <field name="close_investment" width="120"/>
+                <!-- <field name="close_investment" width="120"/> -->
                 <field name="today_date" width="100"/>
                 <field name="to_delete" width="100"/>
                 <field name="accrue" width="100"/>
@@ -93,11 +93,11 @@
                                     <group>
                                         <field name="currency"/>
                                         <field name="amount"/>
-                                        <field name="principal"/>
+                                        <!-- <field name="principal"/> -->
                                     </group>
                                     <group>
                                         <field name="percent" widget="percentage" options="{'rounding': 2}"/>
-                                        <field name="fixed_amount"/>
+                                        <!-- <field name="fixed_amount"/> -->
                                         <field name="period"/>
                                     </group>
                                 </div>
@@ -142,7 +142,7 @@
                                         <field name="post"/>
                                     </group>
                                     <group>
-                                        <field name="close_investment"/>
+                                        <!-- <field name="close_investment"/> -->
                                         <field name="to_delete"/>
                                     </group>
                                 </div>

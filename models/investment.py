@@ -104,38 +104,53 @@ class Investment(models.Model, AmanatBaseModel):
     )
 
     # Вычисляемые поля
-    principal = fields.Float(string='Тело долга', compute='_compute_principal', store=True, tracking=True)
+    principal = fields.Float(
+        string='Тело долга', 
+        compute='_compute_principal', 
+        store=True, 
+        tracking=True,
+        readonly=False,
+    )
     calendar_days = fields.Integer(
         string='Календарных дней',
         compute='_compute_calendar_and_work_days',
         store=False,
         tracking=True,
+        readonly=False,
     )
     work_days = fields.Integer(
         string='Рабочих дней',
         compute='_compute_calendar_and_work_days',
         store=False,
         tracking=True,
+        readonly=False,
     )
     today_date = fields.Date(
         string='Дата сегодня',
         compute='_compute_calendar_and_work_days',
         store=False,
         tracking=True,
+        readonly=False,
     )
-    rollup_write_offs = fields.Float(string='Роллап списания', compute='_compute_rollup_write_offs', store=True, tracking=True)
+    rollup_write_offs = fields.Float(
+        string='Роллап списания', 
+        compute='_compute_rollup_write_offs', 
+        store=True, 
+        tracking=True,
+        readonly=False,
+    )
     rollup_amount = fields.Float(string='Сумма роллап списания', tracking=True)
     rollup_amount_total = fields.Float(string='Сумма RollUp (from Погасить)', tracking=True)
 
-    royalty_amount_1 = fields.Float(string='Сумма роялти 1', compute='_compute_royalty_amounts', store=True, tracking=True)
-    royalty_amount_2 = fields.Float(string='Сумма роялти 2', compute='_compute_royalty_amounts', store=True, tracking=True)
-    royalty_amount_3 = fields.Float(string='Сумма роялти 3', compute='_compute_royalty_amounts', store=True, tracking=True)
-    royalty_amount_4 = fields.Float(string='Сумма роялти 4', compute='_compute_royalty_amounts', store=True, tracking=True)
-    royalty_amount_5 = fields.Float(string='Сумма роялти 5', compute='_compute_royalty_amounts', store=True, tracking=True)
-    royalty_amount_6 = fields.Float(string='Сумма роялти 6', compute='_compute_royalty_amounts', store=True, tracking=True)
-    royalty_amount_7 = fields.Float(string='Сумма роялти 7', compute='_compute_royalty_amounts', store=True, tracking=True)
-    royalty_amount_8 = fields.Float(string='Сумма роялти 8', compute='_compute_royalty_amounts', store=True, tracking=True)
-    royalty_amount_9 = fields.Float(string='Сумма роялти 9', compute='_compute_royalty_amounts', store=True, tracking=True)
+    royalty_amount_1 = fields.Float(string='Сумма роялти 1', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
+    royalty_amount_2 = fields.Float(string='Сумма роялти 2', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
+    royalty_amount_3 = fields.Float(string='Сумма роялти 3', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
+    royalty_amount_4 = fields.Float(string='Сумма роялти 4', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
+    royalty_amount_5 = fields.Float(string='Сумма роялти 5', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
+    royalty_amount_6 = fields.Float(string='Сумма роялти 6', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
+    royalty_amount_7 = fields.Float(string='Сумма роялти 7', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
+    royalty_amount_8 = fields.Float(string='Сумма роялти 8', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
+    royalty_amount_9 = fields.Float(string='Сумма роялти 9', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
 
     @api.onchange('sender')
     def _onchange_sender(self):

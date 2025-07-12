@@ -1,0 +1,101 @@
+/* Принудительное переопределение размеров графиков дашборда */
+/* Этот файл специально создан для уменьшения высоты всех графиков */
+
+/* Контейнеры графиков - основные размеры */
+.chart-container-large,
+.chart-container-medium,
+.chart-container-small,
+.chart-container-extra-compact,
+div[class*="chart-container"] {
+    height: 180px !important;
+    max-height: 180px !important;
+    min-height: 180px !important;
+}
+
+/* Все canvas элементы графиков */
+canvas,
+canvas[id*="chart"],
+canvas[id*="line"], 
+canvas[id*="pie"],
+canvas[id*="donut"] {
+    height: 180px !important;
+    max-height: 180px !important;
+    min-height: 180px !important;
+}
+
+/* Конкретные ID canvas элементов */
+#import-export-line-comparison,
+#contragents-by-zayavki-chart,
+#contragent-avg-check-chart,
+#contragent-reward-percent-chart,
+#agents-by-zayavki-chart,
+#agent-avg-amount-chart,
+#clients-by-zayavki-chart,
+#payers-by-zayavki-chart,
+#subagents-by-zayavki-chart,
+#managers-by-zayavki-pie,
+#managers-by-zayavki-pie-2,
+#managers-closed-zayavki-pie,
+#managers-closed-zayavki-pie-2,
+#managers-efficiency-chart,
+#zayavki-status-donut,
+#zayavki-status-donut-2,
+#client-avg-amount-chart,
+#deal-cycles-line {
+    height: 180px !important;
+    max-height: 180px !important;
+    min-height: 180px !important;
+}
+
+/* Родительские контейнеры */
+.chart-card {
+    padding: 10px !important;
+}
+
+.chart-title {
+    font-size: 12px !important;
+    margin-bottom: 8px !important;
+    padding-bottom: 6px !important;
+}
+
+/* Отступы между графиками */
+.row.g-3.mb-2 {
+    margin-bottom: 0.5rem !important;
+}
+
+/* Общие контейнеры */
+.o_amanat_dashboard_content {
+    padding: 10px !important;
+}
+
+/* Адаптивные размеры */
+@media (max-width: 1200px) {
+    .chart-container-large,
+    .chart-container-medium,
+    .chart-container-small,
+    canvas {
+        height: 150px !important;
+        max-height: 150px !important;
+        min-height: 150px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-container-large,
+    .chart-container-medium,
+    .chart-container-small,
+    canvas {
+        height: 140px !important;
+        max-height: 140px !important;
+        min-height: 140px !important;
+    }
+    
+    .chart-card {
+        padding: 8px !important;
+    }
+    
+    .chart-title {
+        font-size: 11px !important;
+        margin-bottom: 6px !important;
+    }
+} 

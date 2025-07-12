@@ -1,6 +1,9 @@
 # models/transfer.py
 from odoo import models, fields, api
 from .base_model import AmanatBaseModel
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class Transfer(models.Model, AmanatBaseModel):
     _name = 'amanat.transfer'
@@ -95,6 +98,7 @@ class Transfer(models.Model, AmanatBaseModel):
         digits=(16, 2),
         tracking=True,
         store=True,
+        readonly=False,
         compute='_compute_intermediary_1_sum', 
     )
     intermediary_1_commission_percent = fields.Float(
@@ -121,6 +125,7 @@ class Transfer(models.Model, AmanatBaseModel):
         digits=(16, 2),
         tracking=True,
         store=True,
+        readonly=False,
         compute='_compute_intermediary_2_sum',
     )
 
@@ -179,40 +184,58 @@ class Transfer(models.Model, AmanatBaseModel):
             self.intermediary_2_payer_id = False
 
     # Новые формулы для вычисления суммы посредников
-    @api.depends('amount', 'intermediary_1_commission_percent')
+    @api.depends('amount', 'sending_commission_percent','intermediary_1_commission_percent')
     def _compute_intermediary_1_sum(self):
         for record in self:
-            comp_sum = record.amount - (record.amount * (record.sending_commission_percent if record.sending_commission_percent else 1))
-            record.intermediary_1_sum = comp_sum - (comp_sum * record.intermediary_1_commission_percent) if comp_sum else 0.0
+            # Исправляем обработку процентов
+            sending_percent = record.sending_commission_percent / 100 if record.sending_commission_percent and record.sending_commission_percent > 1 else (record.sending_commission_percent or 0)
+            intermediary_1_percent = record.intermediary_1_commission_percent / 100 if record.intermediary_1_commission_percent and record.intermediary_1_commission_percent > 1 else (record.intermediary_1_commission_percent or 0)
+            
+            comp_sum = record.amount - (record.amount * sending_percent)
+            record.intermediary_1_sum = comp_sum - (comp_sum * intermediary_1_percent)
 
     @api.depends('intermediary_1_sum', 'intermediary_2_commission_percent')
     def _compute_intermediary_2_sum(self):
         for record in self:
+            # Исправляем обработку процентов
+            intermediary_2_percent = record.intermediary_2_commission_percent / 100 if record.intermediary_2_commission_percent and record.intermediary_2_commission_percent > 1 else (record.intermediary_2_commission_percent or 0)
+            
             # Сумма 2 посредника = {Сумма 1 посредника} - ({Сумма 1 посредника} * {Процент комиссии по отправке Посредник 2} / 100)
-            record.intermediary_2_sum = record.intermediary_1_sum - (record.intermediary_1_sum * record.intermediary_2_commission_percent) if record.intermediary_1_sum else 0.0
+            record.intermediary_2_sum = record.intermediary_1_sum - (record.intermediary_1_sum * intermediary_2_percent)
 
     def create_transfer_orders(self):
         for record in self:
+            _logger.info(f"Начинаем создание ордеров для перевода {record.name}")
+            
             # Удаляем старые ордера (через каскад удалятся и контейнеры, и сверки)
             if record.order_ids:
                 record._delete_related_records()
 
-            # Определяем, какой сценарий: без посредников, 1 посредник или 2
-            if record.is_complex:
-                if record.intermediary_1_id and record.intermediary_2_id:
-                    self._create_two_intermediary_transfer(record)
-                elif record.intermediary_1_id and not record.intermediary_2_id:
-                    self._create_one_intermediary_transfer(record)
+            try:
+                # Определяем, какой сценарий: без посредников, 1 посредник или 2
+                if record.is_complex:
+                    if record.intermediary_1_id and record.intermediary_2_id:
+                        _logger.info("Создаем перевод с двумя посредниками")
+                        self._create_two_intermediary_transfer(record)
+                    elif record.intermediary_1_id and not record.intermediary_2_id:
+                        _logger.info("Создаем перевод с одним посредником")
+                        self._create_one_intermediary_transfer(record)
+                    else:
+                        _logger.info("Создаем простой перевод (is_complex=True, но нет посредников)")
+                        self._create_simple_transfer(record)
                 else:
+                    _logger.info("Создаем простой перевод")
                     self._create_simple_transfer(record)
-            else:
-                self._create_simple_transfer(record)
+                    
+                _logger.info(f"Успешно создали ордера для перевода {record.name}")
+            except Exception as e:
+                _logger.error(f"Ошибка при создании ордеров для перевода {record.name}: {str(e)}")
+                raise e
 
     # ================================
     # 1) Без посредников
     # ================================
     def _create_simple_transfer(self, record):
-        comp_sum = record.amount - (record.amount * (record.sending_commission_percent if record.sending_commission_percent else 1))
         order = self.env['amanat.order'].create({
             'date': record.date,
             'type': 'transfer',
@@ -223,14 +246,15 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_1_id': record.sender_payer_id.id,
             'payer_2_id': record.receiver_payer_id.id,
             'currency': record.currency,
-            'amount': comp_sum,
+            'amount': record.amount,
             'comment': record.comment,
             'operation_percent': record.sending_commission_percent,
             # Используем команду для Many2many: (6, 0, [record.id])
             'transfer_id': [(6, 0, [record.id])],
         })
         
-        amount_1, amount_2 = self._calculate_amounts(comp_sum, record.sending_commission_percent)
+        amount_1, amount_2 = self._calculate_amounts(record.amount, record.sending_commission_percent)
+        _logger.info(f"amount_1: {amount_1}, amount_2: {amount_2}")
 
         # Деньги/Сверки: сначала списываем со счета отправителя, затем зачисляем получателю
         self._create_money_and_reconciliation(
@@ -251,7 +275,9 @@ class Transfer(models.Model, AmanatBaseModel):
         A) Отправитель -> Посредник_1 (сумма = record.amount)
         B) Посредник_1 -> Получатель (сумма = record.intermediary_1_sum)
         """
-        comp_sum = record.amount - (record.amount * (record.sending_commission_percent if record.sending_commission_percent else 1))
+        # Исправляем обработку процентов
+        sending_percent = record.sending_commission_percent / 100 if record.sending_commission_percent and record.sending_commission_percent > 1 else (record.sending_commission_percent or 0)
+        comp_sum = record.amount - (record.amount * sending_percent)
         # A) Отправитель -> Посредник_1
         order_a = self.env['amanat.order'].create({
             'date': record.date,
@@ -263,14 +289,14 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_1_id': record.sender_payer_id.id,
             'payer_2_id': record.intermediary_1_payer_id.id,
             'currency': record.currency,
-            'amount': comp_sum,
+            'amount': record.amount,
             'comment': record.comment,
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
         self._create_money_and_reconciliation(
             order_a, record.sender_wallet_id, record.sender_id,
-            -comp_sum, record.sender_payer_id, record.intermediary_1_payer_id
+            -record.amount, record.sender_payer_id, record.intermediary_1_payer_id
         )
         self._create_money_and_reconciliation(
             order_a, record.intermediary_1_wallet_id, record.intermediary_1_id,
@@ -289,7 +315,7 @@ class Transfer(models.Model, AmanatBaseModel):
                 'payer_1_id': record.intermediary_1_payer_id.id,
                 'payer_2_id': record.receiver_payer_id.id,
                 'currency': record.currency,
-                'amount': record.intermediary_1_sum,
+                'amount': comp_sum,
                 'comment': record.comment,
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
@@ -313,7 +339,9 @@ class Transfer(models.Model, AmanatBaseModel):
         B) Посредник_1 -> Посредник_2 (сумма = record.intermediary_1_sum)
         C) Посредник_2 -> Получатель (сумма = record.intermediary_2_sum)
         """
-        comp_sum = record.amount - (record.amount * (record.sending_commission_percent if record.sending_commission_percent else 1))
+        # Исправляем обработку процентов
+        sending_percent = record.sending_commission_percent / 100 if record.sending_commission_percent and record.sending_commission_percent > 1 else (record.sending_commission_percent or 0)
+        comp_sum = record.amount - (record.amount * sending_percent)
 
         # A) Отправитель -> Посредник_1
         order_a = self.env['amanat.order'].create({
@@ -326,14 +354,14 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_1_id': record.sender_payer_id.id,
             'payer_2_id': record.intermediary_1_payer_id.id,
             'currency': record.currency,
-            'amount': comp_sum,
+            'amount': record.amount,
             'comment': record.comment,
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
         self._create_money_and_reconciliation(
             order_a, record.sender_wallet_id, record.sender_id,
-            -comp_sum, record.sender_payer_id, record.intermediary_1_payer_id
+            -record.amount, record.sender_payer_id, record.intermediary_1_payer_id
         )
         self._create_money_and_reconciliation(
             order_a, record.intermediary_1_wallet_id, record.intermediary_1_id,
@@ -396,32 +424,73 @@ class Transfer(models.Model, AmanatBaseModel):
     # Создание записей Money и Reconciliation
     # ========================================
     def _create_money_and_reconciliation(self, order, wallet, partner, amount, sender_payer, receiver_payer):
-        currency_fields = self._get_currency_fields(order.currency, amount)
+        try:
+            _logger.info(f"Создаем денежный контейнер и сверку для ордера {order.id}, сумма: {amount}")
+            
+            currency_fields = self._get_currency_fields(order.currency, amount)
+            _logger.info(f"Валютные поля: {currency_fields}")
+            
+            # Создание записи в модели amanat.money
+            money_vals = {
+                'date': order.date,
+                'wallet_id': wallet.id,
+                'partner_id': partner.id,
+                'currency': order.currency,
+                'amount': amount,
+                'order_id': order.id,
+                'state': 'positive' if amount > 0 else 'debt',
+                **currency_fields
+            }
+            _logger.info(f"Создаем money с данными: {money_vals}")
+            
+            money_record = self.env['amanat.money'].create(money_vals)
+            _logger.info(f"Успешно создан денежный контейнер с ID: {money_record.id}")
 
-        # Создание записи в модели amanat.money
-        self.env['amanat.money'].create({
-            'date': order.date,
-            'wallet_id': wallet.id,
-            'partner_id': partner.id,
-            'currency': order.currency,
-            'amount': amount,
-            'order_id': order.id,
-            'state': 'positive' if amount > 0 else 'debt',
-            **currency_fields
-        })
-
-        # Создание записи в модели amanat.reconciliation
-        self.env['amanat.reconciliation'].create({
-            'date': order.date,
-            'partner_id': partner.id,
-            'currency': order.currency,
-            'sum': amount,
-            'order_id': [(6, 0, [order.id])],
-            'wallet_id': wallet.id,
-            'sender_id': [(6, 0, [sender_payer.id])] if sender_payer else [(6, 0, [])],
-            'receiver_id': [(6, 0, [receiver_payer.id])] if receiver_payer else [(6, 0, [])],
-            **currency_fields
-        })
+            # Создание записи в модели amanat.reconciliation
+            # Исправляем обработку None значений payer_id
+            sender_ids = [(6, 0, [sender_payer.id])] if sender_payer else []
+            receiver_ids = [(6, 0, [receiver_payer.id])] if receiver_payer else []
+            
+            reconciliation_vals = {
+                'date': order.date,
+                'partner_id': partner.id,
+                'currency': order.currency,
+                'sum': amount,
+                'order_id': [(6, 0, [order.id])],
+                'wallet_id': wallet.id,
+                'sender_id': sender_ids,
+                'receiver_id': receiver_ids,
+                **currency_fields
+            }
+            _logger.info(f"Создаем reconciliation с данными: {reconciliation_vals}")
+            
+            reconciliation_record = self.env['amanat.reconciliation'].create(reconciliation_vals)
+            _logger.info(f"Успешно создана сверка с ID: {reconciliation_record.id}")
+            
+            # Проверим, что записи действительно созданы
+            created_money = self.env['amanat.money'].search([('id', '=', money_record.id)])
+            created_reconciliation = self.env['amanat.reconciliation'].search([('id', '=', reconciliation_record.id)])
+            
+            _logger.info(f"Проверка существования записей:")
+            _logger.info(f"Money record exists: {bool(created_money)}")
+            _logger.info(f"Reconciliation record exists: {bool(created_reconciliation)}")
+            
+            # Проверим, что мы в правильном состоянии транзакции
+            _logger.info(f"Состояние транзакции: {self.env.cr.closed}")
+            _logger.info(f"Создание записей завершено без ошибок")
+            
+        except Exception as e:
+            _logger.error(f"ОШИБКА при создании денежного контейнера и сверки: {str(e)}")
+            _logger.error(f"Тип исключения: {type(e).__name__}")
+            import traceback
+            _logger.error(f"Полный traceback: {traceback.format_exc()}")
+            # Удаляем созданный ордер в случае ошибки
+            try:
+                order.unlink()
+                _logger.info(f"Удален ордер {order.id} из-за ошибки")
+            except:
+                _logger.error(f"Не удалось удалить ордер {order.id}")
+            raise e
 
     def _get_currency_fields(self, currency, amount):
         mapping = {
@@ -431,58 +500,106 @@ class Transfer(models.Model, AmanatBaseModel):
             'cny_cashe': 'sum_cny_cashe', 'aed_cashe': 'sum_aed_cashe', 'thb_cashe': 'sum_thb_cashe'
         }
         field = mapping.get(currency)
-        return {field: amount} if field else {}
+        if field:
+            return {field: amount}
+        else:
+            _logger.warning(f"Неизвестная валюта: {currency}")
+            return {}
 
     def _calculate_amounts(self, amount, percent):
         amount_1 = amount
-        amount_2 = amount - (amount * percent / 100) if percent else amount
+        # Исправляем обработку процентов - делим на 100 если процент больше 1
+        if percent:
+            if percent > 1:
+                percent = percent / 100
+            amount_2 = amount - (amount * percent)
+        else:
+            amount_2 = amount
+        _logger.info(f"_calculate_amounts — amount: {amount}, percent: {percent}, amount_1: {amount_1}, amount_2: {amount_2}")
         return amount_1, amount_2
 
     def write(self, vals):
         if self.env.context.get('skip_automation'):
             return super(Transfer, self).write(vals)
 
+        _logger.info(f"Transfer write() вызван с vals: {vals}")
         res = super(Transfer, self).write(vals)
 
         # Удаление
         to_archive = self.filtered(lambda rec: rec.delete_Transfer)
         if to_archive:
-            for rec in to_archive:
-                if not rec.order_ids:
-                    rec.create_transfer_orders()
-                rec._delete_related_records()
-            to_archive.with_context(skip_automation=True).write({'delete_Transfer': False, 'state': 'archive'})
+            _logger.info(f"Обрабатываем удаление для записей: {[rec.name for rec in to_archive]}")
+            try:
+                for rec in to_archive:
+                    if not rec.order_ids:
+                        rec.create_transfer_orders()
+                    rec._delete_related_records()
+                to_archive.with_context(skip_automation=True).write({'delete_Transfer': False, 'state': 'archive'})
+                _logger.info("Завершили обработку удаления")
+            except Exception as e:
+                _logger.error(f"ОШИБКА при обработке удаления: {str(e)}")
+                raise e
 
         # Роялти
         to_process_royalty = self.filtered(lambda rec: rec.royalti_Transfer)
         if to_process_royalty:
-            for rec in to_process_royalty:
-                rec._process_royalty_distribution()
-            to_process_royalty.with_context(skip_automation=True).write({'royalti_Transfer': False})
+            _logger.info(f"Обрабатываем роялти для записей: {[rec.name for rec in to_process_royalty]}")
+            try:
+                for rec in to_process_royalty:
+                    rec._process_royalty_distribution()
+                to_process_royalty.with_context(skip_automation=True).write({'royalti_Transfer': False})
+                _logger.info("Завершили обработку роялти")
+            except Exception as e:
+                _logger.error(f"ОШИБКА при обработке роялти: {str(e)}")
+                raise e
 
         # Создание
         to_create = self.filtered(lambda rec: rec.create_order and rec.state == 'open')
         if to_create:
-            for rec in to_create:
-                rec.create_transfer_orders()
-            to_create.with_context(skip_automation=True).write({'create_order': False})
+            _logger.info(f"Обрабатываем создание ордеров для записей: {[rec.name for rec in to_create]}")
+            try:
+                for rec in to_create:
+                    _logger.info(f"Вызываем create_transfer_orders для {rec.name}")
+                    rec.create_transfer_orders()
+                    _logger.info(f"Завершили create_transfer_orders для {rec.name}")
+                    
+                    # Проверим, что ордера действительно созданы
+                    created_orders = self.env['amanat.order'].search([('transfer_id', 'in', [rec.id])])
+                    _logger.info(f"Найдено ордеров для {rec.name}: {len(created_orders)}")
+                    
+                _logger.info("Сбрасываем флаг create_order")
+                to_create.with_context(skip_automation=True).write({'create_order': False})
+                _logger.info("Завершили обработку создания ордеров")
+            except Exception as e:
+                _logger.error(f"ОШИБКА при обработке создания ордеров: {str(e)}")
+                import traceback
+                _logger.error(f"Полный traceback: {traceback.format_exc()}")
+                raise e
 
+        _logger.info(f"Transfer write() завершен успешно")
         return res
     
     def _delete_related_records(self):
         for transfer in self:
+            _logger.info(f"Удаляем связанные записи для перевода {transfer.name}")
             for order in transfer.order_ids:
+                _logger.info(f"Обрабатываем ордер {order.id}")
                 # Найдём связанные деньги
-                moneys = self.env['amanat.money'].search([('order_id', 'in', order.ids)])
+                moneys = self.env['amanat.money'].search([('order_id', '=', order.id)])
+                _logger.info(f"Найдено денежных записей: {len(moneys)}")
                 for money in moneys:
-                    money.writeoff_ids.unlink()
+                    # Проверим, есть ли поле writeoff_ids
+                    if hasattr(money, 'writeoff_ids'):
+                        money.writeoff_ids.unlink()
                     money.unlink()
 
                 # Найдём связанные сверки
-                reconciliations = self.env['amanat.reconciliation'].search([('order_id', 'in', order.ids)])
+                reconciliations = self.env['amanat.reconciliation'].search([('order_id', 'in', [order.id])])
+                _logger.info(f"Найдено сверок: {len(reconciliations)}")
                 reconciliations.unlink()
 
                 # Удаляем сам ордер
+                _logger.info(f"Удаляем ордер {order.id}")
                 order.unlink()
         
     def _process_royalty_distribution(self):
@@ -563,6 +680,8 @@ class Transfer(models.Model, AmanatBaseModel):
 
     @api.model
     def create(self, vals):
+        _logger.info(f"Transfer create() вызван с vals: {vals}")
+        
         # Найдём или создадим кошелёк «Неразмеченные»
         Wallet = self.env['amanat.wallet']
         unmarked = Wallet.search([('name', '=', 'Неразмеченные')], limit=1)
@@ -580,12 +699,16 @@ class Transfer(models.Model, AmanatBaseModel):
 
         # Создание записи
         record = super(Transfer, self).create(vals)
+        _logger.info(f"Создана запись перевода с ID: {record.id}")
 
         # Автоматически создать ордера, если установлен флаг
         if record.create_order and record.state == 'open':
+            _logger.info(f"Автоматически создаем ордера для перевода {record.name}")
             record.create_transfer_orders()
             record.with_context(skip_automation=True).write({'create_order': False})
+            _logger.info("Завершили автоматическое создание ордеров")
 
+        _logger.info(f"Transfer create() завершен успешно для записи {record.name}")
         return record
 
     def _get_realtime_fields(self):

@@ -25,7 +25,7 @@ class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
     date_start = fields.Date(string="Дата начало", tracking=True)
     date_end = fields.Date(string="Дата конец", tracking=True)
     today_date = fields.Date(string="Даты TODAY", default=fields.Date.context_today, tracking=True)
-    period_days = fields.Integer(string="Период дней", compute="_compute_period_days", store=True)
+    period_days = fields.Integer(string="Период дней", compute="_compute_period_days", store=True, readonly=False, tracking=True)
     accrual_percentage = fields.Float(string="% Начисления", tracking=True)
     fixed_deal_fee = fields.Float(string="Фикс за сделку в $", tracking=True)
     min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)

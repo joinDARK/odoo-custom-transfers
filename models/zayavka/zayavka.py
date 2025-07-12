@@ -16,9 +16,9 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     status = fields.Selection(
         [
+            ('1_no_chat', '1. не создан чат'),
             ('close', 'заявка закрыта'),
             ('cancel', 'отменено клиентом'),
-            ('1_no_chat', '1. не создан чат'),
             ('export_recipient_agreed', 'согласован получатель (только для Экспорта)'),
             ('10_swift_received', '10. получен свифт'),
             ('1_chat_created', "1'. создан чат"),
@@ -43,7 +43,7 @@ class Zayavka(models.Model, AmanatBaseModel):
             ('get_pp', 'Получена пп'),
         ],
         string='Статус',
-        default='close',
+        default='1_no_chat',
         tracking=True,
     )
 
@@ -768,7 +768,7 @@ class Zayavka(models.Model, AmanatBaseModel):
             ('thb', 'THB'), ('thb_cashe', 'THB КЭШ')
         ],
         string='Валюта',
-        default='rub',
+        default='usd',
         tracking=True
     )
 
@@ -936,7 +936,6 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     rate_fixation_date = fields.Date(
         string='Дата фиксации курса',
-        default=fields.Date.today,
         tracking=True
     )
 
@@ -1019,17 +1018,17 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     received_initial_docs = fields.Boolean(string='Получили первичные документы', tracking=True)
 
-    invoice_date = fields.Date(string='выставлен инвойс', tracking=True, default=fields.Date.today)
+    invoice_date = fields.Date(string='выставлен инвойс', tracking=True)
 
-    agent_contract_date = fields.Date(string='подписан агент. / субагент. договор', tracking=True, default=fields.Date.today)
+    agent_contract_date = fields.Date(string='подписан агент. / субагент. договор', tracking=True)
 
-    bank_registration_date = fields.Date(string='поставлен на учет в банке', tracking=True, default=fields.Date.today)
+    bank_registration_date = fields.Date(string='поставлен на учет в банке', tracking=True)
 
-    accreditive_open_date = fields.Date(string='Открыт аккредитив', tracking=True, default=fields.Date.today)
+    accreditive_open_date = fields.Date(string='Открыт аккредитив', tracking=True)
 
-    supplier_currency_paid_date = fields.Date(string='оплачена валюта поставщику (импорт) / субагенту (экспорт)', tracking=True, default=fields.Date.today)
+    supplier_currency_paid_date = fields.Date(string='оплачена валюта поставщику (импорт) / субагенту (экспорт)', tracking=True)
 
-    payment_date = fields.Date(string='передано в оплату (импорт) / оплачена валюта (экспорт)', tracking=True, default=fields.Date.today)
+    payment_date = fields.Date(string='передано в оплату (импорт) / оплачена валюта (экспорт)', tracking=True)
 
     supplier_currency_received_date = fields.Date(string='получена валюта поставщиком (импорт) / субагентом (экспорт)', tracking=True)
 
@@ -1225,7 +1224,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     date_agent_on_pc = fields.Date(
-        string='Дата агентского на PC',
+        string='Постеупление на PC',
         tracking=True,
     )
 

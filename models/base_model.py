@@ -73,19 +73,19 @@ class AmanatBaseModel(models.AbstractModel):
 
     def _send_realtime_notification(self, action, changed_fields=None):
         """Отправляем real-time уведомление с детальной информацией"""
-        try:
-            _logger.info(f"🔥 _send_realtime_notification called: action={action}, model={self._name}, records={len(self)}")
-            _logger.info(f"🔥 Changed fields: {changed_fields}")
+        # try:
+            # _logger.info(f"🔥 _send_realtime_notification called: action={action}, model={self._name}, records={len(self)}")
+            # _logger.info(f"🔥 Changed fields: {changed_fields}")
             
             # Используем новый метод из res.users
             # self.env.user.notify_record_change(action, self, changed_fields)
             
-            _logger.info("🔥 notify_record_change completed successfully")
+            # _logger.info("🔥 notify_record_change completed successfully")
             
-        except Exception as e:
-            _logger.error(f"❌ Ошибка при отправке real-time уведомления: {e}")
-            import traceback
-            _logger.error(f"❌ Traceback: {traceback.format_exc()}")
+        # except Exception as e:
+        #     _logger.error(f"❌ Ошибка при отправке real-time уведомления: {e}")
+        #     import traceback
+        #     _logger.error(f"❌ Traceback: {traceback.format_exc()}")
 
     def _log_activity(self, action, changes=None):
         if not self._should_log():
@@ -118,7 +118,20 @@ class AmanatBaseModel(models.AbstractModel):
         
         for vals in vals_list:
             if user.has_group('amanat.group_amanat_manager'):
-                vals['manager_id'] = user.id
+                # Для модели заявки используем manager_ids (Many2many)
+                if self._name == 'amanat.zayavka' and 'manager_ids' in self._fields:
+                    # Находим или создаем менеджера для текущего пользователя
+                    manager = self.env['amanat.manager'].find_or_create_manager(user.id)
+                    
+                    if manager:
+                        vals['manager_ids'] = [(4, manager.id)]  # Добавляем в Many2many
+                        _logger.info(f"Назначен менеджер {manager.name} (ID: {manager.id}) для заявки")
+                    else:
+                        _logger.warning(f"Не удалось назначить менеджера для пользователя {user.name}")
+                
+                # Для других моделей используем manager_id (Many2one)
+                elif 'manager_id' in self._fields:
+                    vals['manager_id'] = user.id
         
         records = super().create(vals_list)
         
@@ -134,8 +147,8 @@ class AmanatBaseModel(models.AbstractModel):
         return records
 
     def write(self, vals):
-        _logger.info(f"🔥 BASE_MODEL WRITE CALLED: model={self._name}, vals={vals}")
-        _logger.info(f"🔥 Records count: {len(self)}")
+        # _logger.info(f"🔥 BASE_MODEL WRITE CALLED: model={self._name}, vals={vals}")
+        # _logger.info(f"🔥 Records count: {len(self)}")
         
         changed_fields = list(vals.keys())
         
@@ -208,9 +221,9 @@ class AmanatBaseModel(models.AbstractModel):
                 _logger.error(f"Ошибка при логировании удаления: {e}")
         
         # Отправляем real-time уведомление об удалении
-        try:
-            self.env.user.notify_record_change('delete', records_for_notification, None)
-        except Exception as e:
-            _logger.error(f"Ошибка при отправке уведомления об удалении: {e}")
+        # try:
+        #     self.env.user.notify_record_change('delete', records_for_notification, None)
+        # except Exception as e:
+        #     _logger.error(f"Ошибка при отправке уведомления об удалении: {e}")
         
         return result

@@ -37,6 +37,48 @@ class ResUsers(models.Model):
     )
 
     #----------------------------------------------------------
+    # Methods
+    #----------------------------------------------------------
+    
+    @api.model
+    def check_user_groups(self):
+        """Проверка групп текущего пользователя для фильтрации меню"""
+        user = self.env.user
+        return {
+            'is_manager': user.has_group('amanat.group_amanat_manager'),
+            'is_senior_manager': user.has_group('amanat.group_amanat_senior_manager'),
+            'is_admin': user.has_group('amanat.group_amanat_admin'),
+            'is_inspector': user.has_group('amanat.group_amanat_inspector'),
+        }
+
+    def write(self, vals):
+        """Автоматическое создание записи менеджера при назначении в группу"""
+        res = super().write(vals)
+        
+        # Если изменяются группы пользователей
+        if 'groups_id' in vals:
+            for user in self:
+                # Проверяем, стал ли пользователь менеджером
+                if user.has_group('amanat.group_amanat_manager'):
+                    # Проверяем, есть ли уже запись менеджера для этого пользователя
+                    existing_manager = self.env['amanat.manager'].search([('user_id', '=', user.id)], limit=1)
+                    if not existing_manager:
+                        try:
+                            manager = self.env['amanat.manager'].create([{
+                                'name': user.name,
+                                'user_id': user.id,
+                            }])
+                            import logging
+                            _logger = logging.getLogger(__name__)
+                            _logger.info(f"Автоматически создан менеджер {manager.name} (ID: {manager.id}) для пользователя {user.name}")
+                        except Exception as e:
+                            import logging
+                            _logger = logging.getLogger(__name__)
+                            _logger.error(f"Ошибка при создании менеджера для пользователя {user.name}: {e}")
+        
+        return res
+
+    #----------------------------------------------------------
     # Real-time notification methods
     #----------------------------------------------------------
     

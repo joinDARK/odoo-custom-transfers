@@ -28,7 +28,7 @@ class Price_list_partners(models.Model, AmanatBaseModel):
     date_start = fields.Date(string="Дата начало")
     date_end = fields.Date(string="Дата конец")
     today_date = fields.Date(string="TODAY", default=fields.Date.context_today)
-    period_days = fields.Integer(string="Период дней", compute="_compute_period_days", store=True)
+    period_days = fields.Integer(string="Период дней", compute="_compute_period_days", store=True, readonly=False, tracking=True)
     currency_type = fields.Selection(
         [
             ('foreign_currency', 'Ин валюта'),

@@ -123,6 +123,27 @@
                             <div class="date-range-header">
                                 <h3>Период</h3>
                             </div>
+                            
+                            <!-- Кнопки быстрого выбора периодов -->
+                            <div class="quick-period-buttons">
+                                <button class="btn btn-outline-primary btn-sm period-btn" 
+                                        t-on-click="() => this.setQuickPeriod('week')">
+                                    За неделю
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm period-btn" 
+                                        t-on-click="() => this.setQuickPeriod('month')">
+                                    За месяц
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm period-btn" 
+                                        t-on-click="() => this.setQuickPeriod('3months')">
+                                    За 3 месяца
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm period-btn" 
+                                        t-on-click="() => this.setQuickPeriod('all')">
+                                    За всё время
+                                </button>
+                            </div>
+                            
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
