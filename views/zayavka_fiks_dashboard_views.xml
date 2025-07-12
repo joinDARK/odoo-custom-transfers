@@ -8,11 +8,11 @@
     </record>
 
     <!-- Пункт меню для дашборда заявок -->
-    <menuitem 
+    <!-- <menuitem 
         id="menu_zayavka_fiks_dashboard" 
         name="Дашборд заявок" 
         action="action_zayavka_fiks_dashboard" 
         parent="amanat_menu_root" 
         sequence="2"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager"/>
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager"/> -->
 </odoo> 

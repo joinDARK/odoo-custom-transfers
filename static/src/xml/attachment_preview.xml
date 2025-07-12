@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="amanat.attachment_preview_modal">
+        <!-- Модальное окно для предпросмотра файлов -->
+        <div id="xlsx_preview" class="modal">
+            <div class="modal-content" id="MyPreview_content">
+                <span class="close" id="stop-preview-button">×</span>
+                <h1 id="FileHead"></h1>
+                <div class="XlsxTable"></div>
+                <div class="MyDocs"></div>
+            </div>
+        </div>
+    </t>
+</templates> 

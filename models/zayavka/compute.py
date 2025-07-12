@@ -2624,3 +2624,17 @@ class ZayavkaComputes(models.Model):
     def _compute_total_amount(self):
         for rec in self:
             rec.total_amount = (rec.application_amount_rub_contract or 0.0) + (rec.agent_reward or 0.0)
+
+    @api.depends('deal_closed_date', 'taken_in_work_date')
+    def _compute_deal_cycle_days(self):
+        for rec in self:
+            if not rec.taken_in_work_date:
+                rec.deal_cycle_days = 0
+                continue
+            
+            # Определяем конечную дату: дата закрытия или сегодня
+            end_date = rec.deal_closed_date if rec.deal_closed_date else fields.Date.today()
+            
+            # Вычисляем разность в днях
+            delta = end_date - rec.taken_in_work_date
+            rec.deal_cycle_days = delta.days

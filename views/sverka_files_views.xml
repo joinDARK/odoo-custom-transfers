@@ -10,7 +10,7 @@
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name"/>
                 <field name="contragent_id"/>
-                <field name="file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                <field name="file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
             </list>
         </field>
     </record>
@@ -27,9 +27,11 @@
                         <field name="name"/>
                         <field name="contragent_id"/>
                         <!-- Поле для прямой загрузки документов -->
-                        <field name="file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}" 
+                               help="Основные файлы сверок - Excel, PDF и другие документы"/>
                         <!-- Поле для отображения всех вложений -->
-                        <field name="attachment_ids" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="attachment_ids" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"
+                               help="Все вложения записи с расширенными возможностями просмотра и редактирования"/>
                     </group>
                 </sheet>
                 <!-- Виджет чата -->

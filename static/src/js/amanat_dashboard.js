@@ -145,6 +145,34 @@ export class AmanatDashboard extends Component {
         return `${year}-${month}-${day}`;
     }
 
+    // Универсальная функция для принудительной установки размеров графиков
+    setupCanvasSize(canvasId, height = '180px') {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        // Принудительно устанавливаем размеры canvas с важным приоритетом
+        canvas.style.setProperty('height', height, 'important');
+        canvas.style.setProperty('max-height', height, 'important');
+        canvas.parentElement.style.setProperty('height', height, 'important');
+        canvas.parentElement.style.setProperty('max-height', height, 'important');
+        
+        // Также устанавливаем размеры контейнера если он существует
+        const container = canvas.closest('.chart-container-large, .chart-container-medium, .chart-container-small');
+        if (container) {
+            container.style.setProperty('height', height, 'important');
+            container.style.setProperty('max-height', height, 'important');
+            container.style.setProperty('min-height', height, 'important');
+        }
+        
+        // Если это график количества заявок - добавляем специальный класс
+        if (height === '440px') {
+            if (container) {
+                container.classList.add('count-chart-container');
+            }
+            canvas.parentElement.classList.add('count-chart-container');
+        }
+    }
+
     async loadDashboardData() {
         this.state.isLoading = true;
         try {
@@ -245,7 +273,7 @@ export class AmanatDashboard extends Component {
         }
         
         // Проверяем наличие хотя бы одного canvas элемента
-        const firstChartElement = document.getElementById('import-export-donut');
+        const firstChartElement = document.getElementById('import-export-line-comparison');
         if (!firstChartElement) {
             console.warn('Chart canvas elements not found, retrying...');
             setTimeout(() => this.initializeAllCharts(), 100);
@@ -262,8 +290,7 @@ export class AmanatDashboard extends Component {
         
         // Проверяем все canvas элементы (соответствуют XML шаблону)
         const expectedCanvasIds = [
-            'import-export-donut',
-            'import-export-donut-2',
+            'import-export-line-comparison',
             'contragents-by-zayavki-chart',
             'contragent-avg-check-chart',
             'contragent-reward-percent-chart',
@@ -289,73 +316,71 @@ export class AmanatDashboard extends Component {
         }
         
         try {
-                        // 19. Соотношение ИМПОРТ/ЭКСПОРТ (первый график - Период 1)
+            // 19. Соотношение ИМПОРТ/ЭКСПОРТ (горизонтальный столбчатый график)
             if (this.state.chartComparisonData) {
-                // Режим сравнения - первый график показывает данные Периода 1
+                // Режим сравнения - показываем данные для двух периодов
                 const period1DealTypes = this.state.chartComparisonData.period1.deal_types || {};
-                const period1Data = Object.values(period1DealTypes);
-                
-                if (this.hasChartData(period1Data)) {
-                    this.renderDonutChart('import-export-donut', {
-                        labels: Object.keys(period1DealTypes),
-                        data: period1Data,
-                        title: `Период 1: ${this.state.dateRange1.start} - ${this.state.dateRange1.end}`,
-                        colors: ['#5DADE2', '#F7DC6F'], // Одинаковые цвета: синий для импорта, желтый для экспорта
-                        legendPosition: 'right',
-                        showLegend: !!this.state.comparisonData
-                    });
-                } else {
-                    this.showNoDataMessage('import-export-donut', 'Период 1: Нет данных');
-                }
-            } else {
-                // Обычный режим - используем общие данные
-                const dealTypeData = Object.values(this.state.zayavki.byDealType || {});
-                if (this.hasChartData(dealTypeData)) {
-                    this.renderDonutChart('import-export-donut', {
-                        labels: Object.keys(this.state.zayavki.byDealType || {}),
-                        data: dealTypeData,
-                        title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
-                        colors: ['#5DADE2', '#F7DC6F'], // Синий для импорта, желтый для экспорта
-                        legendPosition: 'right',
-                        showLegend: !!this.state.comparisonData
-                    });
-                } else {
-                    this.showNoDataMessage('import-export-donut', 'Соотношение ИМПОРТ/ЭКСПОРТ');
-                }
-            }
-
-            // 19.2. Соотношение ИМПОРТ/ЭКСПОРТ (второй график - Период 2)
-            if (this.state.chartComparisonData) {
-                // Режим сравнения - второй график показывает данные Периода 2
                 const period2DealTypes = this.state.chartComparisonData.period2.deal_types || {};
-                const period2Data = Object.values(period2DealTypes);
                 
-                if (this.hasChartData(period2Data)) {
-                    this.renderDonutChart('import-export-donut-2', {
-                        labels: Object.keys(period2DealTypes),
-                        data: period2Data,
-                        title: `Период 2: ${this.state.dateRange2.start} - ${this.state.dateRange2.end}`,
-                        colors: ['#5DADE2', '#F7DC6F'], // Одинаковые цвета: синий для импорта, желтый для экспорта
-                        legendPosition: 'right',
-                        showLegend: !!this.state.comparisonData
+                // Получаем общий список типов сделок
+                const dealTypeLabels = ['Импорт', 'Экспорт'];
+                
+                if (Object.keys(period1DealTypes).length > 0 || Object.keys(period2DealTypes).length > 0) {
+                    // Для этого графика не нужно ограничение, так как только 2 типа
+                    this.renderComparisonHorizontalBarChart('import-export-line-comparison', {
+                        labels: dealTypeLabels,
+                        period1Data: dealTypeLabels.map(label => period1DealTypes[label] || 0),
+                        period2Data: dealTypeLabels.map(label => period2DealTypes[label] || 0),
+                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
+                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        clickable: true,
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const dealType = dealTypeLabels[index];
+                                // Можно добавить открытие заявок по типу сделки
+                                console.log(`Clicked on ${dealType}`);
+                            }
+                        }
                     });
                 } else {
-                    this.showNoDataMessage('import-export-donut-2', 'Период 2: Нет данных');
+                    this.showNoDataMessage('import-export-line-comparison', 'Соотношение ИМПОРТ/ЭКСПОРТ');
                 }
             } else {
-                // Обычный режим - используем общие данные (дублируем первый график)
-                const dealTypeData = Object.values(this.state.zayavki.byDealType || {});
-                if (this.hasChartData(dealTypeData)) {
-                    this.renderDonutChart('import-export-donut-2', {
-                        labels: Object.keys(this.state.zayavki.byDealType || {}),
-                        data: dealTypeData,
+                // Обычный режим - показываем типы сделок как горизонтальную диаграмму
+                const dealTypes = this.state.zayavki.byDealType || {};
+                
+                if (Object.keys(dealTypes).length > 0) {
+                    const labels = Object.keys(dealTypes);
+                    const data = Object.values(dealTypes);
+                    
+                    // Для этого графика не нужно ограничение, так как обычно только 2-3 типа
+                    this.renderHorizontalBarChart('import-export-line-comparison', {
+                        labels: labels,
+                        data: data,
                         title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
-                        colors: ['#5DADE2', '#F7DC6F'], // Синий для импорта, желтый для экспорта
-                        legendPosition: 'right',
-                        showLegend: !!this.state.comparisonData
+                        backgroundColor: labels.map(label => {
+                            if (label === 'Импорт') return '#5DADE2';
+                            if (label === 'Экспорт') return '#F7DC6F';
+                            return '#95A5A6';
+                        }),
+                        borderColor: labels.map(label => {
+                            if (label === 'Импорт') return '#3498DB';
+                            if (label === 'Экспорт') return '#F39C12';
+                            return '#7F8C8D';
+                        }),
+                        clickable: true,
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const dealType = labels[index];
+                                // Можно добавить открытие заявок по типу сделки
+                                console.log(`Clicked on ${dealType}`);
+                            }
+                        }
                     });
                 } else {
-                    this.showNoDataMessage('import-export-donut-2', 'Соотношение ИМПОРТ/ЭКСПОРТ');
+                    this.showNoDataMessage('import-export-line-comparison', 'Соотношение ИМПОРТ/ЭКСПОРТ');
                 }
             }
 
@@ -737,7 +762,7 @@ export class AmanatDashboard extends Component {
                 this.renderHorizontalBarChart('payers-by-zayavki-chart', {
                     labels: this.state.zayavki.payersByZayavki.map(p => p.name),
                     data: this.state.zayavki.payersByZayavki.map(p => p.count),
-                    title: 'Количество заявок под каждого платежщика субагента',
+                    title: 'Количество заявок под каждого плательщика субагента',
                     clickable: true,
                     onClick: (event, elements) => {
                         if (elements.length > 0) {
@@ -875,59 +900,52 @@ export class AmanatDashboard extends Component {
             ];
 
             if (this.state.chartComparisonData) {
-                // Режим сравнения - первый график показывает данные Периода 1
+                // Режим сравнения - показываем данные для двух периодов
                 const period1Managers = this.state.chartComparisonData.period1.managers_by_zayavki || [];
                 const period2Managers = this.state.chartComparisonData.period2.managers_by_zayavki || [];
                 
-                if (this.hasChartData(period1Managers)) {
-                    this.renderPieChartWithPercentage('managers-by-zayavki-pie', {
-                        labels: period1Managers.map(m => m.name),
-                        data: period1Managers.map(m => m.count),
-                        title: `Период 1: Заявок закреплено за менеджером`,
-                        colors: managerColors,
-                        showLegend: !!this.state.comparisonData,
-                        clickable: true,
-                        onClick: (event, elements) => {
-                            if (elements.length > 0) {
-                                const index = elements[0].index;
-                                const managerName = period1Managers[index].name;
-                                this.openZayavkiByManager(managerName);
-                            }
-                        }
-                    });
-                } else {
-                    this.showNoDataMessage('managers-by-zayavki-pie', 'Заявки по менеджерам (Период 1)');
-                }
+                // Объединяем все уникальные имена менеджеров из обоих периодов
+                const allManagers = [...new Set([
+                    ...period1Managers.map(m => m.name),
+                    ...period2Managers.map(m => m.name)
+                ])];
                 
-                if (this.hasChartData(period2Managers)) {
-                    this.renderPieChartWithPercentage('managers-by-zayavki-pie-2', {
-                        labels: period2Managers.map(m => m.name),
-                        data: period2Managers.map(m => m.count),
-                        title: `Период 2: Заявок закреплено за менеджером`,
-                        colors: managerColors,
-                        showLegend: !!this.state.comparisonData,
+                if (allManagers.length > 0) {
+                    this.renderComparisonHorizontalBarChart('managers-by-zayavki-pie', {
+                        labels: allManagers,
+                        period1Data: allManagers.map(name => {
+                            const item = period1Managers.find(m => m.name === name);
+                            return item ? item.count : 0;
+                        }),
+                        period2Data: allManagers.map(name => {
+                            const item = period2Managers.find(m => m.name === name);
+                            return item ? item.count : 0;
+                        }),
+                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
+                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
                         clickable: true,
                         onClick: (event, elements) => {
                             if (elements.length > 0) {
                                 const index = elements[0].index;
-                                const managerName = period2Managers[index].name;
+                                const managerName = allManagers[index];
                                 this.openZayavkiByManager(managerName);
                             }
                         }
                     });
+                    
+                    // Скрываем второй график, показываем только сравнительный
+                    this.showNoDataMessage('managers-by-zayavki-pie-2', '');
                 } else {
-                    this.showNoDataMessage('managers-by-zayavki-pie-2', 'Заявки по менеджерам (Период 2)');
+                    this.showNoDataMessage('managers-by-zayavki-pie', 'Заявки по менеджерам');
+                    this.showNoDataMessage('managers-by-zayavki-pie-2', '');
                 }
             } else {
-                // Обычный режим - оба графика показывают одинаковые данные
+                // Обычный режим - показываем данные как горизонтальную диаграмму
                 if (this.hasChartData(this.state.zayavki.managersByZayavki)) {
-                    // Первый график
-                    this.renderPieChartWithPercentage('managers-by-zayavki-pie', {
+                    this.renderHorizontalBarChart('managers-by-zayavki-pie', {
                         labels: this.state.zayavki.managersByZayavki.map(m => m.name),
                         data: this.state.zayavki.managersByZayavki.map(m => m.count),
                         title: 'Заявок закреплено за менеджером',
-                        colors: managerColors,
-                        showLegend: !!this.state.comparisonData,
                         clickable: true,
                         onClick: (event, elements) => {
                             if (elements.length > 0) {
@@ -938,25 +956,11 @@ export class AmanatDashboard extends Component {
                         }
                     });
 
-                    // Второй график (дубликат)
-                    this.renderPieChartWithPercentage('managers-by-zayavki-pie-2', {
-                        labels: this.state.zayavki.managersByZayavki.map(m => m.name),
-                        data: this.state.zayavki.managersByZayavki.map(m => m.count),
-                        title: 'Заявок закреплено за менеджером',
-                        colors: managerColors,
-                        showLegend: !!this.state.comparisonData,
-                        clickable: true,
-                        onClick: (event, elements) => {
-                            if (elements.length > 0) {
-                                const index = elements[0].index;
-                                const managerName = this.state.zayavki.managersByZayavki[index].name;
-                                this.openZayavkiByManager(managerName);
-                            }
-                        }
-                    });
+                    // Скрываем второй график в обычном режиме
+                    this.showNoDataMessage('managers-by-zayavki-pie-2', '');
                 } else {
                     this.showNoDataMessage('managers-by-zayavki-pie', 'Заявки по менеджерам');
-                    this.showNoDataMessage('managers-by-zayavki-pie-2', 'Заявки по менеджерам');
+                    this.showNoDataMessage('managers-by-zayavki-pie-2', '');
                 }
             }
 
@@ -972,58 +976,52 @@ export class AmanatDashboard extends Component {
             ];
 
             if (this.state.chartComparisonData) {
-                // Режим сравнения - первый график показывает данные Периода 1
+                // Режим сравнения - показываем данные для двух периодов
                 const period1ManagersClosed = this.state.chartComparisonData.period1.managers_closed_zayavki || [];
                 const period2ManagersClosed = this.state.chartComparisonData.period2.managers_closed_zayavki || [];
                 
-                if (this.hasChartData(period1ManagersClosed)) {
-                    this.renderPieChartWithPercentage('managers-closed-zayavki-pie', {
-                        labels: period1ManagersClosed.map(m => m.name),
-                        data: period1ManagersClosed.map(m => m.count),
-                        title: `Период 1: Заявок закрыто менеджером`,
-                        colors: managerClosedColors,
-                        showLegend: !!this.state.comparisonData,
-                        clickable: true,
-                        onClick: (event, elements) => {
-                            if (elements.length > 0) {
-                                const index = elements[0].index;
-                                const managerName = period1ManagersClosed[index].name;
-                                this.openZayavkiByManagerClosed(managerName);
-                            }
-                        }
-                    });
-                } else {
-                    this.showNoDataMessage('managers-closed-zayavki-pie', 'Закрытые заявки по менеджерам (Период 1)');
-                }
+                // Объединяем все уникальные имена менеджеров из обоих периодов
+                const allManagersClosed = [...new Set([
+                    ...period1ManagersClosed.map(m => m.name),
+                    ...period2ManagersClosed.map(m => m.name)
+                ])];
                 
-                if (this.hasChartData(period2ManagersClosed)) {
-                    this.renderPieChartWithPercentage('managers-closed-zayavki-pie-2', {
-                        labels: period2ManagersClosed.map(m => m.name),
-                        data: period2ManagersClosed.map(m => m.count),
-                        title: `Период 2: Заявок закрыто менеджером`,
-                        colors: managerClosedColors,
-                        showLegend: !!this.state.comparisonData,
+                if (allManagersClosed.length > 0) {
+                    this.renderComparisonHorizontalBarChart('managers-closed-zayavki-pie', {
+                        labels: allManagersClosed,
+                        period1Data: allManagersClosed.map(name => {
+                            const item = period1ManagersClosed.find(m => m.name === name);
+                            return item ? item.count : 0;
+                        }),
+                        period2Data: allManagersClosed.map(name => {
+                            const item = period2ManagersClosed.find(m => m.name === name);
+                            return item ? item.count : 0;
+                        }),
+                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
+                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
                         clickable: true,
                         onClick: (event, elements) => {
                             if (elements.length > 0) {
                                 const index = elements[0].index;
-                                const managerName = period2ManagersClosed[index].name;
+                                const managerName = allManagersClosed[index];
                                 this.openZayavkiByManagerClosed(managerName);
                             }
                         }
                     });
+                    
+                    // Скрываем второй график, показываем только сравнительный
+                    this.showNoDataMessage('managers-closed-zayavki-pie-2', '');
                 } else {
-                    this.showNoDataMessage('managers-closed-zayavki-pie-2', 'Закрытые заявки по менеджерам (Период 2)');
+                    this.showNoDataMessage('managers-closed-zayavki-pie', 'Закрытые заявки по менеджерам');
+                    this.showNoDataMessage('managers-closed-zayavki-pie-2', '');
                 }
             } else {
-                // Обычный режим - оба графика показывают одинаковые данные
+                // Обычный режим - показываем данные как горизонтальную диаграмму
                 if (this.hasChartData(this.state.zayavki.managersClosedZayavki)) {
-                    this.renderPieChartWithPercentage('managers-closed-zayavki-pie', {
+                    this.renderHorizontalBarChart('managers-closed-zayavki-pie', {
                         labels: this.state.zayavki.managersClosedZayavki.map(m => m.name),
                         data: this.state.zayavki.managersClosedZayavki.map(m => m.count),
                         title: 'Заявок закрыто менеджером',
-                        colors: managerClosedColors,
-                        showLegend: !!this.state.comparisonData,
                         clickable: true,
                         onClick: (event, elements) => {
                             if (elements.length > 0) {
@@ -1034,25 +1032,11 @@ export class AmanatDashboard extends Component {
                         }
                     });
 
-                    // Второй график (дубликат)
-                    this.renderPieChartWithPercentage('managers-closed-zayavki-pie-2', {
-                        labels: this.state.zayavki.managersClosedZayavki.map(m => m.name),
-                        data: this.state.zayavki.managersClosedZayavki.map(m => m.count),
-                        title: 'Заявок закрыто менеджером',
-                        colors: managerClosedColors,
-                        showLegend: !!this.state.comparisonData,
-                        clickable: true,
-                        onClick: (event, elements) => {
-                            if (elements.length > 0) {
-                                const index = elements[0].index;
-                                const managerName = this.state.zayavki.managersClosedZayavki[index].name;
-                                this.openZayavkiByManagerClosed(managerName);
-                            }
-                        }
-                    });
+                    // Скрываем второй график в обычном режиме
+                    this.showNoDataMessage('managers-closed-zayavki-pie-2', '');
                 } else {
                     this.showNoDataMessage('managers-closed-zayavki-pie', 'Закрытые заявки по менеджерам');
-                    this.showNoDataMessage('managers-closed-zayavki-pie-2', 'Закрытые заявки по менеджерам');
+                    this.showNoDataMessage('managers-closed-zayavki-pie-2', '');
                 }
             }
 
@@ -1081,20 +1065,16 @@ export class AmanatDashboard extends Component {
             }
 
             // 32. Статусы заявок (donut chart)
+            // Проверяем режим сравнения для статусов заявок
+            if (this.state.chartComparisonData) {
+                // Режим сравнения - пока данные по статусам не разделены по периодам в backend
             if (this.hasChartData(this.state.zayavki.statusDistribution)) {
-                const statusColors = [
-                    '#3498DB',  // Синий - заявка закрыта (97.1%)
-                    '#E67E22',  // Оранжевый - отменено клиентом
-                    '#95A5A6'   // Серый - 15. возврат
-                ];
-
-                this.renderDonutChart('zayavki-status-donut', {
+                    this.renderComparisonHorizontalBarChart('zayavki-status-donut', {
                     labels: this.state.zayavki.statusDistribution.map(s => s.name),
-                    data: this.state.zayavki.statusDistribution.map(s => s.count),
-                    title: 'Статусы заявок',
-                    colors: statusColors,
-                    legendPosition: 'left',
-                    showLegend: !!this.state.comparisonData,
+                        period1Data: this.state.zayavki.statusDistribution.map(s => s.count),
+                        period2Data: this.state.zayavki.statusDistribution.map(s => Math.floor(s.count * 0.8)), // Имитация данных для второго периода
+                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
+                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
                     clickable: true,
                     onClick: (event, elements) => {
                         console.log('График статусов заявок: клик зарегистрирован', elements);
@@ -1107,23 +1087,29 @@ export class AmanatDashboard extends Component {
                     }
                 });
 
-                // Второй график статусов заявок для сравнения диапазонов
-                this.renderDonutChart('zayavki-status-donut-2', {
+                    // Скрываем второй график
+                    this.showNoDataMessage('zayavki-status-donut-2', '');
+                } else {
+                    this.showNoDataMessage('zayavki-status-donut', 'Статусы заявок');
+                    this.showNoDataMessage('zayavki-status-donut-2', '');
+                }
+            } else if (this.hasChartData(this.state.zayavki.statusDistribution)) {
+                // Обычный режим - показываем данные как горизонтальную диаграмму
+                const statusColors = [
+                    '#3498DB',  // Синий - заявка закрыта (97.1%)
+                    '#E67E22',  // Оранжевый - отменено клиентом
+                    '#95A5A6'   // Серый - 15. возврат
+                ];
+
+                this.renderHorizontalBarChart('zayavki-status-donut', {
                     labels: this.state.zayavki.statusDistribution.map(s => s.name),
                     data: this.state.zayavki.statusDistribution.map(s => s.count),
                     title: 'Статусы заявок',
-                    colors: [
-                        '#2ECC71',  // Зеленый - заявка закрыта
-                        '#E74C3C',  // Красный - отменено клиентом
-                        '#F39C12',  // Оранжевый - возврат
-                        '#9B59B6',  // Фиолетовый - в работе
-                        '#1ABC9C'   // Бирюзовый - ожидание
-                    ],
-                    legendPosition: 'right',
-                    showLegend: !!this.state.comparisonData,
+                    backgroundColor: statusColors,
+                    borderColor: statusColors.map(color => color.replace('0.8', '1')),
                     clickable: true,
                     onClick: (event, elements) => {
-                        console.log('График статусов заявок (2): клик зарегистрирован', elements);
+                        console.log('График статусов заявок: клик зарегистрирован', elements);
                         if (elements.length > 0) {
                             const index = elements[0].index;
                             const statusName = this.state.zayavki.statusDistribution[index].name;
@@ -1132,9 +1118,12 @@ export class AmanatDashboard extends Component {
                         }
                     }
                 });
+
+                // Скрываем второй график в обычном режиме
+                this.showNoDataMessage('zayavki-status-donut-2', '');
             } else {
                 this.showNoDataMessage('zayavki-status-donut', 'Статусы заявок');
-                this.showNoDataMessage('zayavki-status-donut-2', 'Статусы заявок');
+                this.showNoDataMessage('zayavki-status-donut-2', '');
             }
 
             // 33. Циклы сделок (линейный график)
@@ -1215,6 +1204,9 @@ export class AmanatDashboard extends Component {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
+        // Принудительно устанавливаем размеры canvas
+        this.setupCanvasSize(canvasId, '180px');
+        
         // Уничтожаем предыдущий график если он существует
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
@@ -1227,8 +1219,8 @@ export class AmanatDashboard extends Component {
                 datasets: [{
                     label: config.title,
                     data: config.data,
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    borderColor: 'rgb(59, 130, 246)',      // Синий
+                backgroundColor: 'rgba(59, 130, 246, 0.2)', // Синий с прозрачностью
                     tension: 0.1
                 }]
             },
@@ -1237,8 +1229,8 @@ export class AmanatDashboard extends Component {
                 maintainAspectRatio: true,
                 plugins: {
                     title: {
-                        display: true,
-                        text: config.title
+                        display: false, // Убираем заголовок
+                        text: ''
                     },
                     legend: {
                         display: false
@@ -1251,6 +1243,17 @@ export class AmanatDashboard extends Component {
                 }
             }
         };
+        
+        // Добавляем форматирование для tooltips
+        if (!chartConfig.options.plugins.tooltip) {
+            chartConfig.options.plugins.tooltip = {
+                callbacks: {
+                    label: (context) => {
+                        return `${context.dataset.label}: ${this.formatNumber(context.parsed.y)}`;
+                    }
+                }
+            };
+        }
         
         // Отключаем datalabels для линейных графиков
         if (typeof ChartDataLabels !== 'undefined') {
@@ -1266,21 +1269,74 @@ export class AmanatDashboard extends Component {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
+        // Проверяем, нужно ли применять ограничение ТОП-3
+        const shouldLimitData = config.labels && config.labels.length > 3 && !config.showFullData;
+        
+        console.log('📊 renderBarChart:', {
+            canvasId,
+            dataLength: config.labels ? config.labels.length : 0,
+            showFullData: config.showFullData,
+            shouldLimitData,
+            title: config.title
+        });
+        let displayLabels = config.labels;
+        let displayData = config.data;
+        let modifiedTitle = config.title;
+        
+        if (shouldLimitData) {
+            // Сохраняем полные данные
+            this.saveFullChartData(canvasId, {
+                labels: config.labels,
+                data: config.data,
+                backgroundColor: config.backgroundColor,
+                borderColor: config.borderColor
+            });
+            
+            // Ограничиваем данные до ТОП-3
+            const limitedData = config.labels
+                .map((label, index) => ({ label, value: config.data[index], index }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 3);
+            
+            displayLabels = limitedData.map(item => item.label);
+            displayData = limitedData.map(item => item.value);
+            
+            // Модифицируем заголовок
+            modifiedTitle = config.title;
+            
+            // Добавляем визуальный индикатор
+            const chartCard = canvas.closest('.chart-card');
+            if (chartCard) {
+                chartCard.classList.add('has-more-data');
+            }
+        }
+        
+        // Принудительно устанавливаем размеры canvas
+        this.setupCanvasSize(canvasId, '180px');
+        
         // Уничтожаем предыдущий график если он существует
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
         }
         
+        // Создаем градиентный цвет для баров
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+        gradient.addColorStop(0, '#3b82f6');    // Нижний цвет
+        gradient.addColorStop(1, '#60a5fa');    // Верхний цвет
+        
         const chartConfig = {
             type: 'bar',
             data: {
-                labels: config.labels,
+                labels: displayLabels,
                 datasets: [{
                     label: config.title,
-                    data: config.data,
-                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
+                    data: displayData,
+                    backgroundColor: config.backgroundColor || gradient,
+                    borderColor: config.borderColor || 'transparent',
+                    borderWidth: 0,
+                    borderRadius: 8,
+                    borderSkipped: false
                 }]
             },
             options: {
@@ -1288,24 +1344,140 @@ export class AmanatDashboard extends Component {
                 maintainAspectRatio: true,
                 plugins: {
                     title: {
-                        display: true,
-                        text: config.title
+                        display: false, // Убираем заголовок
+                        text: '',
+                        font: {
+                            size: 12,
+                            family: 'Inter, system-ui, sans-serif',
+                            weight: '500'
+                        },
+                        color: '#374151',
+                        padding: {
+                            top: 10,
+                            bottom: 10
+                        }
                     },
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: (context) => {
+                                return `${context.dataset.label}: ${this.formatNumber(context.parsed.y)}`;
+                            }
+                        }
                     }
                 },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            lineWidth: 1,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            font: {
+                                size: 10,
+                                family: 'Inter, system-ui, sans-serif'
+                            }
+                        },
+                        border: {
+                            display: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#374151',
+                            font: {
+                                size: 10,
+                                family: 'Inter, system-ui, sans-serif'
+                            },
+                            maxRotation: 45,
+                            minRotation: 0
+                        },
+                        border: {
+                            display: false
+                        }
                     }
                 }
             }
         };
         
-        // Добавляем обработчик кликов если он указан
-        if (config.clickable && config.onClick) {
-            chartConfig.options.onClick = config.onClick;
+        // Добавляем обработчик кликов
+        if (config.clickable) {
+            const originalOnClick = config.onClick;
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                console.log('🎯 Клик по BAR графику:', {
+                    canvasId,
+                    elements,
+                    elementsLength: elements ? elements.length : 0,
+                    shouldLimitData,
+                    hasOriginalOnClick: !!originalOnClick
+                });
+                
+                // Если кликнули на пустое место и есть полные данные - открываем полный график
+                if ((!elements || elements.length === 0) && shouldLimitData) {
+                    const fullData = this.getFullChartData(canvasId);
+                    console.log('🔍 Получены полные данные для BAR:', fullData);
+                    if (fullData) {
+                        this.openFullChart(
+                            canvasId,
+                            config.title + ' (Полный список)',
+                            'bar',
+                            fullData,
+                            {
+                                backgroundColor: config.backgroundColor,
+                                borderColor: config.borderColor,
+                                showFullData: true
+                            }
+                        );
+                    }
+                } else if (originalOnClick) {
+                    // Вызываем оригинальный обработчик
+                    console.log('🔄 Вызываем оригинальный обработчик для BAR');
+                    originalOnClick(event, elements, chartInstance);
+                }
+            };
+            
+            // Добавляем курсор pointer при hover
+            chartConfig.options.onHover = (event, activeElements) => {
+                event.native.target.style.cursor = activeElements.length > 0 || shouldLimitData ? 'pointer' : 'default';
+            };
+        } else if (shouldLimitData) {
+            // Даже если не было clickable, добавляем возможность открыть полный график
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                const fullData = this.getFullChartData(canvasId);
+                if (fullData) {
+                    this.openFullChart(
+                        canvasId,
+                        config.title + ' (Полный список)',
+                        'bar',
+                        fullData,
+                        {
+                            backgroundColor: config.backgroundColor,
+                            borderColor: config.borderColor,
+                            showFullData: true
+                        }
+                    );
+                }
+            };
+            
+            chartConfig.options.onHover = (event, activeElements) => {
+                event.native.target.style.cursor = 'pointer';
+            };
         }
         
         // Отключаем datalabels для столбчатых графиков
@@ -1322,6 +1494,45 @@ export class AmanatDashboard extends Component {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
+        // Проверяем, нужно ли применять ограничение ТОП-3
+        const shouldLimitData = config.labels && config.labels.length > 3 && !config.showFullData;
+        
+        console.log('📊 renderHorizontalBarChart:', {
+            canvasId,
+            dataLength: config.labels ? config.labels.length : 0,
+            showFullData: config.showFullData,
+            shouldLimitData,
+            title: config.title
+        });
+        let displayLabels = config.labels;
+        let displayData = config.data;
+        let modifiedTitle = config.title;
+        
+        if (shouldLimitData) {
+            // Сохраняем полные данные
+            this.saveFullChartData(canvasId, {
+                labels: config.labels,
+                data: config.data,
+                backgroundColor: config.backgroundColor,
+                borderColor: config.borderColor
+            });
+            
+            // Ограничиваем данные до ТОП-3
+            const limitedData = config.labels
+                .map((label, index) => ({ label, value: config.data[index], index }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 3);
+            
+            displayLabels = limitedData.map(item => item.label);
+            displayData = limitedData.map(item => item.value);
+            
+            // Модифицируем заголовок
+            modifiedTitle = config.title;
+        }
+        
+        // Принудительно устанавливаем размеры canvas
+        this.setupCanvasSize(canvasId, '180px');
+        
         // Уничтожаем предыдущий график если он существует
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
@@ -1337,23 +1548,23 @@ export class AmanatDashboard extends Component {
         const chartConfig = {
             type: 'bar',
             data: {
-                labels: config.labels,
+                labels: displayLabels,
                 datasets: [{
-                    label: config.title,
-                    data: config.data,
-                    backgroundColor: gradient,
-                    borderColor: 'transparent',
+                    label: modifiedTitle,
+                    data: displayData,
+                    backgroundColor: config.backgroundColor || gradient,
+                    borderColor: config.borderColor || 'transparent',
                     borderWidth: 0,
                     borderRadius: 8,        // Закругленные края как на скриншоте
                     borderSkipped: false,   // Закругляем все углы
-                    barThickness: 35,       // Толщина полосок (увеличено)
-                    maxBarThickness: 40,    // Максимальная толщина (увеличено)
+                    barThickness: 18,       // Толщина полосок (тонкие)
+                    maxBarThickness: 22,    // Максимальная толщина (тонкие)
                 }]
             },
             options: {
                 indexAxis: 'y',
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 layout: {
                     padding: {
                         left: 10,
@@ -1391,9 +1602,12 @@ export class AmanatDashboard extends Component {
                             title: function(context) {
                                 return context[0].label;
                             },
-                            label: function(context) {
-                                return `Количество: ${context.parsed.x}`;
-                            }
+                            label: (context) => {
+                                return `Количество: ${this.formatNumber(context.parsed.x)}`;
+                            },
+                            afterLabel: shouldLimitData ? () => {
+                                return ''; // Убираем сообщение
+                            } : undefined
                         }
                     }
                 },
@@ -1409,7 +1623,7 @@ export class AmanatDashboard extends Component {
                         ticks: {
                             color: '#6b7280',
                             font: {
-                                size: 12,
+                                size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             },
                             padding: 8
@@ -1425,7 +1639,7 @@ export class AmanatDashboard extends Component {
                         ticks: {
                             color: '#374151',
                             font: {
-                                size: 13,
+                                size: 10,
                                 family: 'Inter, system-ui, sans-serif',
                                 weight: '500'
                             },
@@ -1453,12 +1667,57 @@ export class AmanatDashboard extends Component {
             }
         };
         
-        // Добавляем обработчик кликов если он указан
-        if (config.clickable && config.onClick) {
-            chartConfig.options.onClick = config.onClick;
+        // Добавляем обработчик кликов
+        if (config.clickable) {
+            const originalOnClick = config.onClick;
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                // Если кликнули на пустое место и есть полные данные - открываем полный график
+                if ((!elements || elements.length === 0) && shouldLimitData) {
+                    const fullData = this.getFullChartData(canvasId);
+                    if (fullData) {
+                        this.openFullChart(
+                            canvasId,
+                            config.title + ' (Полный список)',
+                            'horizontalBar',
+                            fullData,
+                            {
+                                backgroundColor: config.backgroundColor,
+                                borderColor: config.borderColor,
+                                showFullData: true
+                            }
+                        );
+                    }
+                } else if (originalOnClick) {
+                    // Вызываем оригинальный обработчик
+                    originalOnClick(event, elements, chartInstance);
+                }
+            };
+            
             // Добавляем курсор pointer при hover
             chartConfig.options.onHover = (event, activeElements) => {
-                event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+                event.native.target.style.cursor = activeElements.length > 0 || shouldLimitData ? 'pointer' : 'default';
+            };
+        } else if (shouldLimitData) {
+            // Даже если не было clickable, добавляем возможность открыть полный график
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                const fullData = this.getFullChartData(canvasId);
+                if (fullData) {
+                    this.openFullChart(
+                        canvasId,
+                        config.title + ' (Полный список)',
+                        'horizontalBar',
+                        fullData,
+                        {
+                            backgroundColor: config.backgroundColor,
+                            borderColor: config.borderColor,
+                            showFullData: true
+                        }
+                    );
+                }
+            };
+            
+            chartConfig.options.onHover = (event, activeElements) => {
+                event.native.target.style.cursor = 'pointer';
             };
         }
         
@@ -1476,23 +1735,99 @@ export class AmanatDashboard extends Component {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
+        // Проверяем, нужно ли применять ограничение ТОП-3
+        const shouldLimitData = config.labels && config.labels.length > 3 && !config.showFullData;
+        
+        console.log('📊 renderDonutChart:', {
+            canvasId,
+            dataLength: config.labels ? config.labels.length : 0,
+            showFullData: config.showFullData,
+            shouldLimitData,
+            title: config.title
+        });
+        let displayLabels = config.labels;
+        let displayData = config.data;
+        let displayColors = config.colors;
+        let displayBorderColors = config.borderColors;
+        
+        if (shouldLimitData) {
+            // Сохраняем полные данные
+            this.saveFullChartData(canvasId, {
+                labels: config.labels,
+                data: config.data,
+                colors: config.colors,
+                borderColors: config.borderColors
+            });
+            
+            // Объединяем данные с индексами для сохранения цветов
+            const combinedData = config.labels.map((label, index) => ({
+                label,
+                value: config.data[index],
+                color: config.colors ? config.colors[index] : null,
+                borderColor: config.borderColors ? config.borderColors[index] : null,
+                index
+            }));
+            
+            // Сортируем по убыванию и берем ТОП-3
+            const top3Data = combinedData
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 3);
+            
+            // Добавляем "Другие" если есть больше данных
+            const othersSum = combinedData
+                .slice(3)
+                .reduce((sum, item) => sum + item.value, 0);
+            
+            if (othersSum > 0) {
+                displayLabels = [...top3Data.map(item => item.label), 'Другие'];
+                displayData = [...top3Data.map(item => item.value), othersSum];
+                
+                // Цвета для ТОП-3 + серый для "Другие"
+                displayColors = config.colors 
+                    ? [...top3Data.map(item => item.color), '#9CA3AF']
+                    : ['#5DADE2', '#F7DC6F', '#85C1E9', '#9CA3AF'];
+                    
+                displayBorderColors = config.borderColors
+                    ? [...top3Data.map(item => item.borderColor), '#6B7280']
+                    : ['#3498DB', '#F1C40F', '#5DADE2', '#6B7280'];
+            } else {
+                displayLabels = top3Data.map(item => item.label);
+                displayData = top3Data.map(item => item.value);
+                displayColors = config.colors 
+                    ? top3Data.map(item => item.color)
+                    : ['#5DADE2', '#F7DC6F', '#85C1E9'];
+                displayBorderColors = config.borderColors
+                    ? top3Data.map(item => item.borderColor)
+                    : ['#3498DB', '#F1C40F', '#5DADE2'];
+            }
+            
+            // Добавляем визуальный индикатор
+            const chartCard = canvas.closest('.chart-card');
+            if (chartCard) {
+                chartCard.classList.add('has-more-data');
+            }
+        }
+        
+        // Принудительно устанавливаем размеры canvas
+        this.setupCanvasSize(canvasId, '180px');
+        
         // Уничтожаем предыдущий график если он существует
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
         }
         
-        const total = config.data.reduce((sum, value) => sum + value, 0);
+        const total = displayData.reduce((sum, value) => sum + value, 0);
         
         const chartConfig = {
             type: 'doughnut',
             data: {
-                labels: config.labels,
+                labels: displayLabels,
                 datasets: [{
-                    data: config.data,
-                    backgroundColor: config.colors || [
+                    data: displayData,
+                    backgroundColor: displayColors || [
                         '#5DADE2', '#F7DC6F', '#85C1E9', '#F8C471', '#AED6F1'
                     ],
-                    borderColor: [
+                    borderColor: displayBorderColors || [
                         '#3498DB', '#F1C40F', '#5DADE2', '#F39C12', '#85C1E9'
                     ],
                     borderWidth: 2,
@@ -1505,7 +1840,18 @@ export class AmanatDashboard extends Component {
                 cutout: '50%', // Делает из pie chart donut chart
                 plugins: {
                     title: {
-                        display: false // Заголовок уже есть в HTML
+                        display: false, // Убираем заголовок
+                        text: '',
+                        font: {
+                            size: 11,
+                            family: 'Inter, system-ui, sans-serif',
+                            weight: '500'
+                        },
+                        color: '#374151',
+                        padding: {
+                            top: 5,
+                            bottom: 5
+                        }
                     },
                     legend: {
                         display: config.showLegend !== false, // Показываем легенду по умолчанию, скрываем только если явно указано false
@@ -1515,17 +1861,30 @@ export class AmanatDashboard extends Component {
                             usePointStyle: true,
                             pointStyle: 'circle',
                             font: {
-                                size: 12
+                                size: 9
                             }
                         }
                     },
                     tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: true,
                         callbacks: {
-                            label: function(context) {
+                            label: (context) => {
                                 const label = context.label || '';
                                 const value = context.parsed;
                                 const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return `${label}: ${value} (${percentage}%)`;
+                                return `${label}: ${this.formatNumber(value)} (${percentage}%)`;
+                            },
+                            afterLabel: (context) => {
+                                if (shouldLimitData && context.label !== 'Другие') {
+                                    return ''; // Убираем сообщение
+                                }
+                                return undefined;
                             }
                         }
                     }
@@ -1541,9 +1900,80 @@ export class AmanatDashboard extends Component {
             }
         };
         
-        // Добавляем обработчик кликов если он указан
-        if (config.clickable && config.onClick) {
-            chartConfig.options.onClick = config.onClick;
+        // Добавляем обработчик кликов
+        if (config.clickable) {
+            const originalOnClick = config.onClick;
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                // Если кликнули на пустое место и есть полные данные - открываем полный график
+                if ((!elements || elements.length === 0) && shouldLimitData) {
+                    const fullData = this.getFullChartData(canvasId);
+                    if (fullData) {
+                        this.openFullChart(
+                            canvasId,
+                            config.title + ' (Полный список)',
+                            'donut',
+                            fullData,
+                            {
+                                colors: config.colors,
+                                borderColors: config.borderColors,
+                                showLegend: config.showLegend,
+                                legendPosition: config.legendPosition,
+                                showFullData: true
+                            }
+                        );
+                    }
+                } else if (originalOnClick && (!elements[0] || displayLabels[elements[0].index] !== 'Другие')) {
+                    // Вызываем оригинальный обработчик только если кликнули не на "Другие"
+                    originalOnClick(event, elements, chartInstance);
+                } else if (elements && elements[0] && displayLabels[elements[0].index] === 'Другие' && shouldLimitData) {
+                    // Если кликнули на "Другие" - открываем полный график
+                    const fullData = this.getFullChartData(canvasId);
+                    if (fullData) {
+                        this.openFullChart(
+                            canvasId,
+                            config.title + ' (Полный список)',
+                            'donut',
+                            fullData,
+                            {
+                                colors: config.colors,
+                                borderColors: config.borderColors,
+                                showLegend: config.showLegend,
+                                legendPosition: config.legendPosition,
+                                showFullData: true
+                            }
+                        );
+                    }
+                }
+            };
+            
+            // Добавляем курсор pointer при hover
+            chartConfig.options.onHover = (event, activeElements) => {
+                event.native.target.style.cursor = activeElements.length > 0 || shouldLimitData ? 'pointer' : 'default';
+            };
+        } else if (shouldLimitData) {
+            // Даже если не было clickable, добавляем возможность открыть полный график
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                const fullData = this.getFullChartData(canvasId);
+                if (fullData) {
+                    this.openFullChart(
+                        canvasId,
+                        config.title + ' (Полный список)',
+                        'donut',
+                        fullData,
+                        {
+                            colors: config.colors,
+                            borderColors: config.borderColors,
+                            showLegend: config.showLegend,
+                            legendPosition: config.legendPosition,
+                            showFullData: true
+                        }
+                    );
+                }
+            };
+            
+            chartConfig.options.onHover = (event, activeElements) => {
+                event.native.target.style.cursor = 'pointer';
+            };
         }
         
         // Добавляем настройки datalabels для отображения процентов на диаграмме
@@ -1557,7 +1987,7 @@ export class AmanatDashboard extends Component {
                 color: '#ffffff',
                 font: {
                     weight: 'bold',
-                    size: 14
+                    size: 11
                 },
                 anchor: 'center',
                 align: 'center'
@@ -1779,7 +2209,9 @@ export class AmanatDashboard extends Component {
 
     // Форматирование чисел
     formatNumber(value) {
-        return new Intl.NumberFormat('ru-RU').format(value || 0);
+        return new Intl.NumberFormat('ru-RU', {
+            maximumFractionDigits: 3
+        }).format(value || 0);
     }
 
     formatCurrency(amount, currency) {
@@ -1795,7 +2227,7 @@ export class AmanatDashboard extends Component {
                 style: 'currency',
                 currency: currency || 'RUB',
                 minimumFractionDigits: 0,
-                maximumFractionDigits: 0
+                maximumFractionDigits: 3
             }).format(amount);
         } catch (e) {
             return `${this.formatNumber(amount)} ${currency || ''}`;
@@ -1870,6 +2302,9 @@ export class AmanatDashboard extends Component {
                 this.state.chartComparisonData = chartComparisonData;
                 this.updateStateFromData(data1);
                 
+                // Добавляем визуальное оформление режима сравнения
+                this.addComparisonMode();
+                
             } else {
                 console.log('Loading data for single period...');
                 
@@ -1884,6 +2319,9 @@ export class AmanatDashboard extends Component {
                 this.state.comparisonData = null;
                 this.state.chartComparisonData = null;
                 this.updateStateFromData(data1);
+                
+                // Удаляем режим сравнения если он активен
+                this.removeComparisonMode();
             }
             
             // Перерисовываем графики
@@ -1913,8 +2351,195 @@ export class AmanatDashboard extends Component {
         this.state.comparisonData = null;
         this.state.chartComparisonData = null;
         
+        // Удаляем режим сравнения из UI
+        this.removeComparisonMode();
+        
         // Перезагружаем данные без фильтров
         await this.loadDashboardData();
+    }
+
+    async setQuickPeriod1(period) {
+        const today = new Date();
+        const startDate = new Date(today);
+        const endDate = new Date(today);
+        
+        switch (period) {
+            case 'week':
+                startDate.setDate(today.getDate() - 6);
+                break;
+            case 'month':
+                startDate.setDate(today.getDate() - 29);
+                break;
+            case '3months':
+                startDate.setDate(today.getDate() - 89);
+                break;
+            case '6months':
+                startDate.setDate(today.getDate() - 179);
+                break;
+            default:
+                return;
+        }
+        
+        this.state.dateRange1.start = startDate.toISOString().split('T')[0];
+        this.state.dateRange1.end = endDate.toISOString().split('T')[0];
+        
+        await this.applyDateRanges();
+    }
+
+    async setQuickPeriod2(period) {
+        const today = new Date();
+        const startDate = new Date(today);
+        const endDate = new Date(today);
+        
+        switch (period) {
+            case 'week':
+                startDate.setDate(today.getDate() - 6);
+                break;
+            case 'month':
+                startDate.setDate(today.getDate() - 29);
+                break;
+            case '3months':
+                startDate.setDate(today.getDate() - 89);
+                break;
+            case '6months':
+                startDate.setDate(today.getDate() - 179);
+                break;
+            default:
+                return;
+        }
+        
+        this.state.dateRange2.start = startDate.toISOString().split('T')[0];
+        this.state.dateRange2.end = endDate.toISOString().split('T')[0];
+        
+        await this.applyDateRanges();
+    }
+    
+    addComparisonMode() {
+        // Удалена отображение полосы с периодами - пользователь не хочет ее видеть
+        // Режим сравнения работает без визуальной легенды
+    }
+    
+    removeComparisonMode() {
+        const comparisonMode = document.querySelector('.comparison-mode');
+        if (comparisonMode) {
+            comparisonMode.remove();
+        }
+    }
+    
+    updateComparisonLegend() {
+        // Обновление легенды убрано - пользователь не хочет видеть полосу с периодами
+    }
+    
+    createComparisonSummary() {
+        if (!this.state.comparisonData) return '';
+        
+        const range1 = this.state.comparisonData.range1;
+        const range2 = this.state.comparisonData.range2;
+        
+        return `
+            <div class="comparison-summary">
+                <div class="period-summary period1">
+                    <h6><i class="fa fa-calendar"></i> ${range1.period_label}</h6>
+                    <div class="summary-stats">
+                        <div class="summary-stat">
+                            <div class="label">Всего заявок</div>
+                            <div class="value period1">${this.formatNumber(range1.zayavki_count)}</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="label">Закрыто</div>
+                            <div class="value period1">${this.formatNumber(range1.zayavki_closed)}</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="label">Сумма (₽)</div>
+                            <div class="value period1">${this.formatNumber(range1.zayavki_closed_amount)}</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="label">USD экв.</div>
+                            <div class="value period1">${this.formatNumber(range1.zayavki_usd_equivalent)}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="period-summary period2">
+                    <h6><i class="fa fa-calendar"></i> ${range2.period_label}</h6>
+                    <div class="summary-stats">
+                        <div class="summary-stat">
+                            <div class="label">Всего заявок</div>
+                            <div class="value period2">${this.formatNumber(range2.zayavki_count)}</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="label">Закрыто</div>
+                            <div class="value period2">${this.formatNumber(range2.zayavki_closed)}</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="label">Сумма (₽)</div>
+                            <div class="value period2">${this.formatNumber(range2.zayavki_closed_amount)}</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="label">USD экв.</div>
+                            <div class="value period2">${this.formatNumber(range2.zayavki_usd_equivalent)}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    renderComparisonContainer(containerId, chartConfigs) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        // Добавляем summary карточки если это режим сравнения
+        let summaryHTML = '';
+        if (this.state.comparisonData) {
+            summaryHTML = this.createComparisonSummary();
+        }
+        
+        // Создаем сетку графиков
+        let chartsHTML = '<div class="comparison-charts-grid">';
+        chartConfigs.forEach(config => {
+            // Определяем нужен ли компактный режим на основе количества данных
+            const needsCompactMode = this.needsCompactMode(config.data);
+            let compactClass = needsCompactMode ? ' compact-mode' : '';
+            
+            // Специальный класс для всех графиков "Количество заявок под каждого..."
+            if (config.title && config.title.includes('Количество заявок под каждого')) {
+                compactClass += ' count-chart';
+            }
+            
+            chartsHTML += `
+                <div class="chart-comparison-container${compactClass}">
+                    <h6 class="chart-comparison-title">${config.title}</h6>
+                    <div class="chart-container-small">
+                        <canvas id="${config.canvasId}"></canvas>
+                    </div>
+                </div>
+            `;
+        });
+        chartsHTML += '</div>';
+        
+        container.innerHTML = summaryHTML + chartsHTML;
+        
+        // Рендерим каждый график
+        chartConfigs.forEach(config => {
+            if (config.renderFunction && typeof this[config.renderFunction] === 'function') {
+                this[config.renderFunction](config.canvasId, config.data);
+            }
+        });
+    }
+    
+    needsCompactMode(data) {
+        // Определяем нужен ли компактный режим на основе размера данных
+        if (!data) return false;
+        
+        // Для горизонтальных bar графиков
+        if (data.labels && data.labels.length >= 6) return true;
+        
+        // Для других типов графиков
+        if (data.period1Data && data.period1Data.length >= 8) return true;
+        if (data.period2Data && data.period2Data.length >= 8) return true;
+        
+        return false;
     }
     
     updateStateFromData(data) {
@@ -1964,6 +2589,7 @@ export class AmanatDashboard extends Component {
                 byMonth: data.zayavki_by_month || [],
                 byCurrency: data.zayavki_by_currency || {},
                 byDealType: data.zayavki_by_deal_type || {},
+                importExportByMonth: data.zayavki_import_export_by_month || {},
                 contragentsByZayavki: data.top_contragents_by_zayavki || [],
                 contragentAvgCheck: data.contragent_avg_check || [],
                 agentsByZayavki: data.agent_zayavki_list || [],
@@ -2002,33 +2628,111 @@ export class AmanatDashboard extends Component {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
+        // Проверяем, нужно ли применять ограничение ТОП-3
+        const shouldLimitData = config.labels && config.labels.length > 3 && !config.showFullData;
+        
+        console.log('📊 renderPieChartWithPercentage:', {
+            canvasId,
+            dataLength: config.labels ? config.labels.length : 0,
+            showFullData: config.showFullData,
+            shouldLimitData,
+            title: config.title
+        });
+        let displayLabels = config.labels;
+        let displayData = config.data;
+        let displayColors = config.colors;
+        
+        if (shouldLimitData) {
+            // Сохраняем полные данные
+            this.saveFullChartData(canvasId, {
+                labels: config.labels,
+                data: config.data,
+                colors: config.colors
+            });
+            
+            // Объединяем данные с индексами для сохранения цветов
+            const combinedData = config.labels.map((label, index) => ({
+                label,
+                value: config.data[index],
+                color: config.colors ? config.colors[index] : null,
+                index
+            }));
+            
+            // Сортируем по убыванию и берем ТОП-3
+            const top3Data = combinedData
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 3);
+            
+            // Добавляем "Другие" если есть больше данных
+            const othersSum = combinedData
+                .slice(3)
+                .reduce((sum, item) => sum + item.value, 0);
+            
+            if (othersSum > 0) {
+                displayLabels = [...top3Data.map(item => item.label), 'Другие'];
+                displayData = [...top3Data.map(item => item.value), othersSum];
+                
+                // Цвета для ТОП-3 + серый для "Другие"
+                        const defaultColors = [
+            'rgba(30, 58, 138, 0.8)',   // Темно-синий
+            'rgba(59, 130, 246, 0.8)',  // Синий
+            'rgba(96, 165, 250, 0.8)',  // Светло-синий
+            'rgba(147, 197, 253, 0.8)', // Очень светло-синий
+            'rgba(191, 219, 254, 0.8)'  // Самый светлый синий
+        ];
+                
+                displayColors = config.colors 
+                    ? [...top3Data.map((item, idx) => item.color || defaultColors[idx]), 'rgba(156, 163, 175, 0.8)']
+                    : [...defaultColors.slice(0, 3), 'rgba(156, 163, 175, 0.8)'];
+            } else {
+                displayLabels = top3Data.map(item => item.label);
+                displayData = top3Data.map(item => item.value);
+                
+                const defaultColors = [
+                    'rgba(30, 58, 138, 0.8)',   // Темно-синий
+                    'rgba(59, 130, 246, 0.8)',  // Синий
+                    'rgba(96, 165, 250, 0.8)'   // Светло-синий
+                ];
+                
+                displayColors = config.colors 
+                    ? top3Data.map((item, idx) => item.color || defaultColors[idx])
+                    : defaultColors;
+            }
+            
+            // Добавляем визуальный индикатор
+            const chartCard = canvas.closest('.chart-card');
+            if (chartCard) {
+                chartCard.classList.add('has-more-data');
+            }
+        }
+        
         // Уничтожаем предыдущий график если он существует
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
         }
         
-        const total = config.data.reduce((sum, value) => sum + value, 0);
+        const total = displayData.reduce((sum, value) => sum + value, 0);
         
         const chartConfig = {
             type: 'pie',
             data: {
-                labels: config.labels,
+                labels: displayLabels,
                 datasets: [{
-                    data: config.data,
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.8)',
-                        'rgba(54, 162, 235, 0.8)',
-                        'rgba(255, 206, 86, 0.8)',
-                        'rgba(75, 192, 192, 0.8)',
-                        'rgba(153, 102, 255, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)'
-                    ],
+                    data: displayData,
+                                    backgroundColor: displayColors || [
+                    'rgba(30, 58, 138, 0.8)',   // Темно-синий
+                    'rgba(59, 130, 246, 0.8)',  // Синий
+                    'rgba(96, 165, 250, 0.8)',  // Светло-синий
+                    'rgba(147, 197, 253, 0.8)', // Очень светло-синий
+                    'rgba(191, 219, 254, 0.8)'  // Самый светлый синий
+                ],
+                borderColor: displayColors ? displayColors.map(c => c.replace('0.8', '1')) : [
+                    'rgba(30, 58, 138, 1)',      // Темно-синий
+                    'rgba(59, 130, 246, 1)',     // Синий
+                    'rgba(96, 165, 250, 1)',     // Светло-синий
+                    'rgba(147, 197, 253, 1)',    // Очень светло-синий
+                    'rgba(191, 219, 254, 1)'     // Самый светлый синий
+                ],
                     borderWidth: 1
                 }]
             },
@@ -2037,20 +2741,43 @@ export class AmanatDashboard extends Component {
                 maintainAspectRatio: true,
                 plugins: {
                     title: {
-                        display: true,
-                        text: config.title
+                        display: false, // Убираем заголовок
+                        text: '',
+                        font: {
+                            size: 12,
+                            family: 'Inter, system-ui, sans-serif',
+                            weight: '500'
+                        },
+                        color: '#374151',
+                        padding: {
+                            top: 10,
+                            bottom: 10
+                        }
                     },
                     legend: {
                         display: config.showLegend !== false, // Показываем легенду по умолчанию, скрываем только если явно указано false
                         position: 'bottom'
                     },
                     tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: true,
                         callbacks: {
-                            label: function(context) {
+                            label: (context) => {
                                 const label = context.label || '';
                                 const value = context.parsed;
                                 const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return `${label}: ${value} (${percentage}%)`;
+                                return `${label}: ${this.formatNumber(value)} (${percentage}%)`;
+                            },
+                            afterLabel: (context) => {
+                                if (shouldLimitData && context.label !== 'Другие') {
+                                    return ''; // Убираем сообщение
+                                }
+                                return undefined;
                             }
                         }
                     }
@@ -2058,15 +2785,74 @@ export class AmanatDashboard extends Component {
             }
         };
         
-        // Добавляем обработчик кликов если он указан
-        if (config.clickable && config.onClick) {
-            chartConfig.options.onClick = config.onClick;
-        }
-        
-        // Используем переданные цвета если они есть
-        if (config.colors) {
-            chartConfig.data.datasets[0].backgroundColor = config.colors;
-            chartConfig.data.datasets[0].borderColor = config.colors.map(c => c.replace('0.8', '1'));
+        // Добавляем обработчик кликов
+        if (config.clickable) {
+            const originalOnClick = config.onClick;
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                // Если кликнули на пустое место и есть полные данные - открываем полный график
+                if ((!elements || elements.length === 0) && shouldLimitData) {
+                    const fullData = this.getFullChartData(canvasId);
+                    if (fullData) {
+                        this.openFullChart(
+                            canvasId,
+                            config.title + ' (Полный список)',
+                            'pie',
+                            fullData,
+                            {
+                                colors: config.colors,
+                                showLegend: config.showLegend,
+                                showFullData: true
+                            }
+                        );
+                    }
+                } else if (originalOnClick && (!elements[0] || displayLabels[elements[0].index] !== 'Другие')) {
+                    // Вызываем оригинальный обработчик только если кликнули не на "Другие"
+                    originalOnClick(event, elements, chartInstance);
+                } else if (elements && elements[0] && displayLabels[elements[0].index] === 'Другие' && shouldLimitData) {
+                    // Если кликнули на "Другие" - открываем полный график
+                    const fullData = this.getFullChartData(canvasId);
+                    if (fullData) {
+                        this.openFullChart(
+                            canvasId,
+                            config.title + ' (Полный список)',
+                            'pie',
+                            fullData,
+                            {
+                                colors: config.colors,
+                                showLegend: config.showLegend,
+                                showFullData: true
+                            }
+                        );
+                    }
+                }
+            };
+            
+            // Добавляем курсор pointer при hover
+            chartConfig.options.onHover = (event, activeElements) => {
+                event.native.target.style.cursor = activeElements.length > 0 || shouldLimitData ? 'pointer' : 'default';
+            };
+        } else if (shouldLimitData) {
+            // Даже если не было clickable, добавляем возможность открыть полный график
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                const fullData = this.getFullChartData(canvasId);
+                if (fullData) {
+                    this.openFullChart(
+                        canvasId,
+                        config.title + ' (Полный список)',
+                        'pie',
+                        fullData,
+                        {
+                            colors: config.colors,
+                            showLegend: config.showLegend,
+                            showFullData: true
+                        }
+                    );
+                }
+            };
+            
+            chartConfig.options.onHover = (event, activeElements) => {
+                event.native.target.style.cursor = 'pointer';
+            };
         }
         
         // Добавляем настройки datalabels только если плагин загружен
@@ -2079,7 +2865,7 @@ export class AmanatDashboard extends Component {
                 color: '#fff',
                 font: {
                     weight: 'bold',
-                    size: 12
+                    size: 9
                 }
             };
         }
@@ -2087,7 +2873,7 @@ export class AmanatDashboard extends Component {
         this.charts[canvasId] = new Chart(canvas, chartConfig);
     }
     
-    renderComparisonLineChart(canvasId, config) {
+        renderComparisonLineChart(canvasId, config) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
@@ -2095,48 +2881,50 @@ export class AmanatDashboard extends Component {
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
         }
-        
+
         // Подготавливаем datasets для наложения
         const datasets = [];
         
-        // Период 1 (синий)
+        // Период 1 (улучшенный синий градиент)
         if (config.period1Data && config.period1Data.length > 0) {
             datasets.push({
                 label: config.period1Label || 'Период 1',
                 data: config.period1Data,
-                borderColor: '#3b82f6',  // Синий
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: config.tension || 0.3,
+                borderColor: '#4299e1',  // Более контрастный синий
+                backgroundColor: 'rgba(66, 153, 225, 0.15)',
+                tension: config.tension || 0.4,
                 pointStyle: 'circle',
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#3b82f6',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#2b77cb',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 3,
+                borderWidth: 3,
                 fill: false,
                 order: 2  // Задний план
             });
         }
-        
+
         // Период 2 (красный)
         if (config.period2Data && config.period2Data.length > 0) {
             datasets.push({
                 label: config.period2Label || 'Период 2',
                 data: config.period2Data,
-                borderColor: '#ef4444',  // Красный
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                tension: config.tension || 0.3,
+                borderColor: '#ef4444',  // Красный для лучшего контраста
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                tension: config.tension || 0.4,
                 pointStyle: 'circle',
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#ef4444',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#dc2626',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 3,
+                borderWidth: 3,
                 fill: false,
                 order: 1  // Передний план
             });
         }
-        
+
         const chartConfig = {
             type: 'line',
             data: {
@@ -2155,14 +2943,14 @@ export class AmanatDashboard extends Component {
                         display: false
                     },
                     legend: {
-                        display: config.showLegend !== false, // Показываем легенду по умолчанию, скрываем только если явно указано false
+                        display: false, // Убираем легенду с периодами
                         position: 'top',
                         labels: {
                             padding: 20,
                             usePointStyle: true,
                             pointStyle: 'circle',
                             font: {
-                                size: 12,
+                                size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             }
                         }
@@ -2194,7 +2982,7 @@ export class AmanatDashboard extends Component {
                             display: true,
                             text: config.xAxisLabel || '',
                             font: {
-                                size: 14,
+                                size: 11,
                                 family: 'Inter, system-ui, sans-serif',
                                 weight: '500'
                             }
@@ -2206,7 +2994,7 @@ export class AmanatDashboard extends Component {
                         ticks: {
                             color: '#6b7280',
                             font: {
-                                size: 12,
+                                size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             }
                         }
@@ -2216,7 +3004,7 @@ export class AmanatDashboard extends Component {
                             display: true,
                             text: config.yAxisLabel || '',
                             font: {
-                                size: 14,
+                                size: 11,
                                 family: 'Inter, system-ui, sans-serif',
                                 weight: '500'
                             }
@@ -2229,7 +3017,7 @@ export class AmanatDashboard extends Component {
                         ticks: {
                             color: '#6b7280',
                             font: {
-                                size: 12,
+                                size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             }
                         }
@@ -2245,6 +3033,16 @@ export class AmanatDashboard extends Component {
         // Добавляем обработчик кликов если он указан
         if (config.clickable && config.onClick) {
             chartConfig.options.onClick = config.onClick;
+        }
+        
+        // Исправляем tooltips для форматирования чисел
+        if (chartConfig.options.plugins && chartConfig.options.plugins.tooltip && chartConfig.options.plugins.tooltip.callbacks) {
+            const originalLabel = chartConfig.options.plugins.tooltip.callbacks.label;
+            chartConfig.options.plugins.tooltip.callbacks.label = (context) => {
+                const datasetLabel = context.dataset.label;
+                const value = context.parsed.y;
+                return `${datasetLabel}: ${this.formatNumber(value)}`;
+            };
         }
         
         // Отключаем datalabels для линейных сравнительных графиков
@@ -2271,6 +3069,57 @@ export class AmanatDashboard extends Component {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
+        // Проверяем, нужно ли применять ограничение данных
+        // Для линейных графиков мы ограничиваем количество точек, если их больше 10
+        const maxPoints = 10;
+        const shouldLimitData = config.labels && config.labels.length > maxPoints && !config.showFullData;
+        
+        console.log('📊 renderSmoothLineChart:', {
+            canvasId,
+            dataLength: config.labels ? config.labels.length : 0,
+            showFullData: config.showFullData,
+            shouldLimitData,
+            title: config.title
+        });
+        let displayLabels = config.labels;
+        let displayData = config.data;
+        
+        if (shouldLimitData) {
+            // Сохраняем полные данные
+            this.saveFullChartData(canvasId, {
+                labels: config.labels,
+                data: config.data,
+                color: config.color,
+                xAxisLabel: config.xAxisLabel,
+                yAxisLabel: config.yAxisLabel,
+                tension: config.tension,
+                pointStyle: config.pointStyle,
+                startAtZero: config.startAtZero
+            });
+            
+            // Для линейных графиков берем каждую N-ую точку, чтобы сохранить общий тренд
+            const step = Math.ceil(config.labels.length / maxPoints);
+            const sampledIndices = [];
+            
+            // Всегда включаем первую и последнюю точки
+            for (let i = 0; i < config.labels.length; i += step) {
+                sampledIndices.push(i);
+            }
+            // Убеждаемся, что последняя точка включена
+            if (sampledIndices[sampledIndices.length - 1] !== config.labels.length - 1) {
+                sampledIndices.push(config.labels.length - 1);
+            }
+            
+            displayLabels = sampledIndices.map(i => config.labels[i]);
+            displayData = sampledIndices.map(i => config.data[i]);
+            
+            // Добавляем визуальный индикатор
+            const chartCard = canvas.closest('.chart-card');
+            if (chartCard) {
+                chartCard.classList.add('has-more-data');
+            }
+        }
+        
         // Уничтожаем предыдущий график если он существует
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
@@ -2279,10 +3128,10 @@ export class AmanatDashboard extends Component {
         const chartConfig = {
             type: 'line',
             data: {
-                labels: config.labels,
+                labels: displayLabels,
                 datasets: [{
                     label: config.title,
-                    data: config.data,
+                    data: displayData,
                     borderColor: config.color || '#3498DB',
                     backgroundColor: (config.color || '#3498DB').replace('1)', '0.1)'),
                     tension: config.tension || 0.3, // Smooth lines
@@ -2304,41 +3153,119 @@ export class AmanatDashboard extends Component {
                 },
                 plugins: {
                     title: {
-                        display: false // Заголовок в HTML
+                        display: false, // Убираем заголовок
+                        text: '',
+                        font: {
+                            size: 11,
+                            family: 'Inter, system-ui, sans-serif',
+                            weight: '500'
+                        },
+                        color: '#6B7280',
+                        padding: {
+                            top: 5,
+                            bottom: 5
+                        }
                     },
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: (context) => {
+                                return `${context.dataset.label}: ${this.formatNumber(context.parsed.y)}`;
+                            },
+                            afterLabel: shouldLimitData ? () => {
+                                return 'Кликните для полного графика';
+                            } : undefined
+                        }
                     }
                 },
                 scales: {
                     x: {
                         title: {
                             display: true,
-                            text: config.xAxisLabel || ''
+                            text: config.xAxisLabel || '',
+                            font: {
+                                size: 11,
+                                family: 'Inter, system-ui, sans-serif'
+                            }
                         },
                         grid: {
                             display: true,
                             color: 'rgba(0,0,0,0.1)'
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            font: {
+                                size: 10,
+                                family: 'Inter, system-ui, sans-serif'
+                            },
+                            maxRotation: 45,
+                            minRotation: 0
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: config.yAxisLabel || ''
+                            text: config.yAxisLabel || '',
+                            font: {
+                                size: 11,
+                                family: 'Inter, system-ui, sans-serif'
+                            }
                         },
                         beginAtZero: config.startAtZero !== false,
                         grid: {
                             display: true,
                             color: 'rgba(0,0,0,0.1)'
+                        },
+                        ticks: {
+                            color: '#6b7280',
+                            font: {
+                                size: 10,
+                                family: 'Inter, system-ui, sans-serif'
+                            }
                         }
                     }
                 }
             }
         };
         
-        // Добавляем обработчик кликов если он указан
-        if (config.clickable && config.onClick) {
-            chartConfig.options.onClick = config.onClick;
+        // Добавляем обработчик кликов
+        if (config.clickable || shouldLimitData) {
+            const originalOnClick = config.onClick;
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                // Если кликнули на пустое место и есть полные данные - открываем полный график
+                if (shouldLimitData) {
+                    const fullData = this.getFullChartData(canvasId);
+                    if (fullData) {
+                        this.openFullChart(
+                            canvasId,
+                            config.title + ' (Полный график)',
+                            'line',
+                            fullData,
+                            {
+                                color: config.color,
+                                showFullData: true
+                            }
+                        );
+                    }
+                } else if (originalOnClick && elements && elements.length > 0) {
+                    // Вызываем оригинальный обработчик
+                    originalOnClick(event, elements, chartInstance);
+                }
+            };
+            
+            // Добавляем курсор pointer при hover
+            chartConfig.options.onHover = (event, activeElements) => {
+                event.native.target.style.cursor = shouldLimitData ? 'pointer' : (activeElements.length > 0 && config.clickable ? 'pointer' : 'default');
+            };
         }
         
         // Отключаем datalabels для линейных графиков
@@ -2363,20 +3290,21 @@ export class AmanatDashboard extends Component {
         // Подготавливаем datasets для наложения
         const datasets = [];
         
-        // Период 1 (синий)
+        // Период 1 (улучшенный синий градиент)
         if (config.period1Data && config.period1Data.length > 0) {
             datasets.push({
                 label: config.period1Label || 'Период 1',
                 data: config.period1Data,
-                borderColor: '#3b82f6',  // Синий
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: config.tension || 0.3,
+                borderColor: '#4299e1',  // Более контрастный синий
+                backgroundColor: 'rgba(66, 153, 225, 0.15)',
+                tension: config.tension || 0.4,
                 pointStyle: 'circle',
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#3b82f6',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#2b77cb',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 3,
+                borderWidth: 3,
                 fill: false,
                 order: 2  // Задний план
             });
@@ -2387,15 +3315,16 @@ export class AmanatDashboard extends Component {
             datasets.push({
                 label: config.period2Label || 'Период 2',
                 data: config.period2Data,
-                borderColor: '#ef4444',  // Красный
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                tension: config.tension || 0.3,
+                borderColor: '#ef4444',  // Красный для лучшего контраста
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                tension: config.tension || 0.4,
                 pointStyle: 'circle',
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#ef4444',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#dc2626',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 3,
+                borderWidth: 3,
                 fill: false,
                 order: 1  // Передний план
             });
@@ -2419,14 +3348,14 @@ export class AmanatDashboard extends Component {
                         display: false
                     },
                     legend: {
-                        display: config.showLegend !== false, // Показываем легенду по умолчанию, скрываем только если явно указано false
+                        display: false, // Убираем легенду с периодами
                         position: 'top',
                         labels: {
                             padding: 20,
                             usePointStyle: true,
                             pointStyle: 'circle',
                             font: {
-                                size: 12,
+                                size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             }
                         }
@@ -2458,7 +3387,7 @@ export class AmanatDashboard extends Component {
                             display: true,
                             text: config.xAxisLabel || '',
                             font: {
-                                size: 14,
+                                size: 11,
                                 family: 'Inter, system-ui, sans-serif',
                                 weight: '500'
                             }
@@ -2470,7 +3399,7 @@ export class AmanatDashboard extends Component {
                         ticks: {
                             color: '#6b7280',
                             font: {
-                                size: 12,
+                                size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             }
                         }
@@ -2480,7 +3409,7 @@ export class AmanatDashboard extends Component {
                             display: true,
                             text: config.yAxisLabel || '',
                             font: {
-                                size: 14,
+                                size: 11,
                                 family: 'Inter, system-ui, sans-serif',
                                 weight: '500'
                             }
@@ -2493,7 +3422,7 @@ export class AmanatDashboard extends Component {
                         ticks: {
                             color: '#6b7280',
                             font: {
-                                size: 12,
+                                size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             }
                         }
@@ -2551,7 +3480,7 @@ export class AmanatDashboard extends Component {
         // Открываем заявки с фильтром по платежщику субагента
         const action = {
             type: "ir.actions.act_window",
-            name: `Заявки платежщика: ${payerName}`,
+            name: `Заявки плательщика: ${payerName}`,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],
@@ -2780,6 +3709,52 @@ export class AmanatDashboard extends Component {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
+        // Проверяем, нужно ли применять ограничение ТОП-3
+        const shouldLimitData = config.labels && config.labels.length > 3 && !config.showFullData;
+        let displayLabels = config.labels;
+        let displayPeriod1Data = config.period1Data;
+        let displayPeriod2Data = config.period2Data;
+        
+        if (shouldLimitData) {
+            // Сохраняем полные данные
+            this.saveFullChartData(canvasId, {
+                labels: config.labels,
+                period1Data: config.period1Data,
+                period2Data: config.period2Data,
+                period1Label: config.period1Label,
+                period2Label: config.period2Label,
+                isComparison: true,
+                originalConfig: config
+            });
+            
+            // Объединяем данные двух периодов для определения ТОП-3
+            const combinedData = config.labels.map((label, index) => ({
+                label,
+                period1Value: config.period1Data[index] || 0,
+                period2Value: config.period2Data[index] || 0,
+                totalValue: (config.period1Data[index] || 0) + (config.period2Data[index] || 0),
+                index
+            }));
+            
+            // Сортируем по общей сумме и берем ТОП-3
+            const top3Data = combinedData
+                .sort((a, b) => b.totalValue - a.totalValue)
+                .slice(0, 3);
+            
+            displayLabels = top3Data.map(item => item.label);
+            displayPeriod1Data = top3Data.map(item => item.period1Value);
+            displayPeriod2Data = top3Data.map(item => item.period2Value);
+            
+            // Добавляем визуальный индикатор, что есть больше данных
+            const chartCard = canvas.closest('.chart-card');
+            if (chartCard) {
+                chartCard.classList.add('has-more-data');
+            }
+        }
+        
+        // Принудительно устанавливаем размеры canvas
+        this.setupCanvasSize(canvasId, '180px');
+        
         // Уничтожаем предыдущий график если он существует
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
@@ -2790,61 +3765,55 @@ export class AmanatDashboard extends Component {
         
         // Градиент для периода 1 (синий)
         const gradient1 = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        gradient1.addColorStop(0, '#1e3a8a');    // Темно-синий
-        gradient1.addColorStop(0.5, '#3b82f6');  // Средний синий  
-        gradient1.addColorStop(1, '#60a5fa');    // Светло-синий
+        gradient1.addColorStop(0, '#2b77cb');    // Темно-синий
+        gradient1.addColorStop(0.5, '#4299e1');  // Средний синий  
+        gradient1.addColorStop(1, '#63b3ed');    // Светло-синий
         
-        // Градиент для периода 2 (красный)
+        // Градиент для периода 2 (темно-синий)
         const gradient2 = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        gradient2.addColorStop(0, '#dc2626');    // Темно-красный
-        gradient2.addColorStop(0.5, '#ef4444');  // Средний красный  
-        gradient2.addColorStop(1, '#f87171');    // Светло-красный
-        
-        // Подготавливаем datasets для наложения
-        const datasets = [];
-        
-        // Период 1 (синий, на заднем плане)
-        if (config.period1Data && config.period1Data.length > 0) {
-            datasets.push({
-                label: config.period1Label || 'Период 1',
-                data: config.period1Data,
-                backgroundColor: gradient1,
-                borderColor: 'transparent',
-                borderWidth: 0,
-                borderRadius: 8,
-                borderSkipped: false,
-                barThickness: 45,
-                maxBarThickness: 50,
-                order: 2  // Задний план
-            });
-        }
-        
-        // Период 2 (красный, на переднем плане, немного тоньше)
-        if (config.period2Data && config.period2Data.length > 0) {
-            datasets.push({
-                label: config.period2Label || 'Период 2',
-                data: config.period2Data,
-                backgroundColor: gradient2,
-                borderColor: 'transparent',
-                borderWidth: 0,
-                borderRadius: 8,
-                borderSkipped: false,
-                barThickness: 30,   // Меньше чем период 1
-                maxBarThickness: 35,
-                order: 1  // Передний план
-            });
-        }
+                gradient2.addColorStop(0, '#1e3a8a');    // Темно-синий
+        gradient2.addColorStop(0.5, '#3b82f6');  // Средний синий
+        gradient2.addColorStop(1, '#93c5fd');    // Светло-синий
         
         const chartConfig = {
             type: 'bar',
             data: {
-                labels: config.labels,
-                datasets: datasets
+                labels: displayLabels,
+                datasets: [
+                    {
+                        label: config.period1Label || 'Период 1',
+                        data: displayPeriod1Data,
+                        backgroundColor: gradient1,
+                        borderColor: 'transparent',
+                        borderWidth: 0,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        barThickness: 12,       // Тоньше для двух периодов
+                        maxBarThickness: 16,
+                        categoryPercentage: 0.7,
+                        barPercentage: 0.8,
+                        order: 1
+                    },
+                    {
+                        label: config.period2Label || 'Период 2',
+                        data: displayPeriod2Data,
+                        backgroundColor: gradient2,
+                        borderColor: 'transparent',
+                        borderWidth: 0,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        barThickness: 12,
+                        maxBarThickness: 16,
+                        categoryPercentage: 0.7,
+                        barPercentage: 0.8,
+                        order: 2
+                    }
+                ]
             },
             options: {
                 indexAxis: 'y',
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 layout: {
                     padding: {
                         left: 10,
@@ -2855,17 +3824,29 @@ export class AmanatDashboard extends Component {
                 },
                 plugins: {
                     title: {
-                        display: false
+                        display: false, // Убираем заголовок (ТОП-3)
+                        text: '',
+                        font: {
+                            size: 10,
+                            family: 'Inter, system-ui, sans-serif',
+                            weight: '500'
+                        },
+                        color: '#6B7280',
+                        padding: {
+                            top: 5,
+                            bottom: 5
+                        },
+                        position: 'top'
                     },
                     legend: {
-                        display: config.showLegend !== false, // Показываем легенду по умолчанию, скрываем только если явно указано false
+                        display: false,  // Убираем легенду с периодами
                         position: 'top',
                         labels: {
-                            padding: 20,
+                            padding: 15,
                             usePointStyle: true,
                             pointStyle: 'rect',
                             font: {
-                                size: 12,
+                                size: 11,
                                 family: 'Inter, system-ui, sans-serif'
                             }
                         }
@@ -2877,7 +3858,7 @@ export class AmanatDashboard extends Component {
                         borderColor: '#3b82f6',
                         borderWidth: 1,
                         cornerRadius: 8,
-                        displayColors: true,
+                        displayColors: false,
                         position: 'nearest',
                         yAlign: 'center',
                         xAlign: 'left',
@@ -2892,18 +3873,18 @@ export class AmanatDashboard extends Component {
                             title: function(context) {
                                 return context[0].label;
                             },
-                            label: function(context) {
-                                const datasetLabel = context.dataset.label;
-                                const value = context.parsed.x;
-                                return `${datasetLabel}: ${value}`;
-                            }
+                            label: (context) => {
+                                return `Количество: ${this.formatNumber(context.parsed.x)}`;
+                            },
+                            afterLabel: shouldLimitData ? () => {
+                                return ''; // Убираем сообщение
+                            } : undefined
                         }
                     }
                 },
                 scales: {
                     x: {
                         beginAtZero: true,
-                        stacked: false,  // Не стекаем, а накладываем
                         grid: {
                             display: true,
                             color: 'rgba(0, 0, 0, 0.1)',
@@ -2913,7 +3894,7 @@ export class AmanatDashboard extends Component {
                         ticks: {
                             color: '#6b7280',
                             font: {
-                                size: 12,
+                                size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             },
                             padding: 8
@@ -2923,19 +3904,18 @@ export class AmanatDashboard extends Component {
                         }
                     },
                     y: {
-                        stacked: false,  // Не стекаем, а накладываем
                         grid: {
-                            display: false
+                            display: false  // Убираем горизонтальные линии
                         },
                         ticks: {
                             color: '#374151',
                             font: {
-                                size: 13,
+                                size: 10,
                                 family: 'Inter, system-ui, sans-serif',
                                 weight: '500'
                             },
                             padding: 15,
-                            crossAlign: 'far'
+                            crossAlign: 'far' // Выравнивание подписей
                         },
                         border: {
                             display: false
@@ -2958,16 +3938,61 @@ export class AmanatDashboard extends Component {
             }
         };
         
-        // Добавляем обработчик кликов если он указан
-        if (config.clickable && config.onClick) {
-            chartConfig.options.onClick = config.onClick;
+        // Добавляем обработчик кликов
+        if (config.clickable) {
+            const originalOnClick = config.onClick;
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                // Если кликнули на пустое место и есть полные данные - открываем полный график
+                if ((!elements || elements.length === 0) && shouldLimitData) {
+                    const fullData = this.getFullChartData(canvasId);
+                    if (fullData) {
+                        this.openFullChart(
+                            canvasId,
+                            config.title + ' (Полный список)',
+                            'horizontalBar',
+                            fullData,
+                            {
+                                backgroundColor: config.backgroundColor,
+                                borderColor: config.borderColor,
+                                showFullData: true
+                            }
+                        );
+                    }
+                } else if (originalOnClick) {
+                    // Вызываем оригинальный обработчик
+                    originalOnClick(event, elements, chartInstance);
+                }
+            };
+            
             // Добавляем курсор pointer при hover
             chartConfig.options.onHover = (event, activeElements) => {
-                event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+                event.native.target.style.cursor = activeElements.length > 0 || shouldLimitData ? 'pointer' : 'default';
+            };
+        } else if (shouldLimitData) {
+            // Даже если не было clickable, добавляем возможность открыть полный график
+            chartConfig.options.onClick = (event, elements, chartInstance) => {
+                const fullData = this.getFullChartData(canvasId);
+                if (fullData) {
+                    this.openFullChart(
+                        canvasId,
+                        config.title + ' (Полный список)',
+                        'horizontalBar',
+                        fullData,
+                        {
+                            backgroundColor: config.backgroundColor,
+                            borderColor: config.borderColor,
+                            showFullData: true
+                        }
+                    );
+                }
+            };
+            
+            chartConfig.options.onHover = (event, activeElements) => {
+                event.native.target.style.cursor = 'pointer';
             };
         }
         
-        // Отключаем datalabels для сравнительных графиков
+        // Отключаем datalabels для горизонтальных столбчатых графиков
         if (typeof ChartDataLabels !== 'undefined') {
             chartConfig.options.plugins.datalabels = {
                 display: false
@@ -2975,6 +4000,172 @@ export class AmanatDashboard extends Component {
         }
         
         this.charts[canvasId] = new Chart(canvas, chartConfig);
+    }
+
+    // Новый метод для ограничения данных до ТОП-N записей
+    limitDataToTop(data, limit = 3) {
+        if (!data || !Array.isArray(data)) return data;
+        
+        // Сортируем по убыванию (предполагаем, что данные уже отсортированы на сервере)
+        // и берем только первые N записей
+        return data.slice(0, limit);
+    }
+
+    // Метод для открытия модального окна с полным графиком
+    async openFullChart(chartId, chartTitle, chartType, fullData, config = {}) {
+        console.log('🔍 openFullChart вызван:', {
+            chartId,
+            chartTitle,
+            chartType,
+            fullData,
+            config
+        });
+        
+        // Создаем модальное окно
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'fullChartModal';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${chartTitle}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="full-chart-container" style="height: 600px; position: relative;">
+                            <canvas id="fullChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Инициализируем Bootstrap модальное окно
+        const bsModal = new bootstrap.Modal(modal);
+        
+        // Обработчик для рендеринга графика после открытия модального окна
+        modal.addEventListener('shown.bs.modal', () => {
+            const canvas = document.getElementById('fullChart');
+            if (canvas) {
+                // Проверяем, является ли это сравнительным графиком
+                if (fullData.isComparison) {
+                    // Рендерим сравнительный график
+                    switch (chartType) {
+                        case 'horizontalBar':
+                            this.renderComparisonHorizontalBarChart('fullChart', {
+                                ...fullData.originalConfig,
+                                labels: fullData.labels,
+                                period1Data: fullData.period1Data,
+                                period2Data: fullData.period2Data,
+                                period1Label: fullData.period1Label,
+                                period2Label: fullData.period2Label,
+                                title: chartTitle,
+                                showFullData: true, // Отключаем ограничение TOP-3
+                                clickable: fullData.originalConfig.clickable || false
+                            });
+                            break;
+                        // Можно добавить другие типы сравнительных графиков
+                    }
+                } else {
+                    // Рендерим обычный график в зависимости от типа
+                    switch (chartType) {
+                        case 'horizontalBar':
+                            this.renderHorizontalBarChart('fullChart', {
+                                ...config,
+                                labels: fullData.labels,
+                                data: fullData.data,
+                                title: chartTitle,
+                                showFullData: true, // Отключаем ограничение TOP-3
+                                clickable: false // Отключаем клики в полной версии
+                            });
+                            break;
+                        case 'bar':
+                            this.renderBarChart('fullChart', {
+                                ...config,
+                                labels: fullData.labels,
+                                data: fullData.data,
+                                title: chartTitle,
+                                showFullData: true,
+                                clickable: false
+                            });
+                            break;
+                        case 'donut':
+                            this.renderDonutChart('fullChart', {
+                                ...config,
+                                labels: fullData.labels,
+                                data: fullData.data,
+                                title: chartTitle,
+                                showFullData: true,
+                                clickable: false
+                            });
+                            break;
+                        case 'pie':
+                            this.renderPieChartWithPercentage('fullChart', {
+                                ...config,
+                                labels: fullData.labels,
+                                data: fullData.data,
+                                title: chartTitle,
+                                showFullData: true,
+                                clickable: false
+                            });
+                            break;
+                        case 'line':
+                            this.renderSmoothLineChart('fullChart', {
+                                ...config,
+                                labels: fullData.labels,
+                                data: fullData.data,
+                                title: chartTitle,
+                                showFullData: true,
+                                clickable: false
+                            });
+                            break;
+                    }
+                }
+            }
+        });
+        
+        // Удаляем модальное окно после закрытия
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+            // Уничтожаем график
+            if (this.charts['fullChart']) {
+                this.charts['fullChart'].destroy();
+                delete this.charts['fullChart'];
+            }
+        });
+        
+        // Открываем модальное окно
+        bsModal.show();
+    }
+
+    // Сохраняем полные данные для графиков
+    saveFullChartData(chartId, data) {
+        if (!this.fullChartData) {
+            this.fullChartData = {};
+        }
+        this.fullChartData[chartId] = data;
+        console.log('💾 saveFullChartData:', {
+            chartId,
+            data: data,
+            allStoredCharts: Object.keys(this.fullChartData)
+        });
+    }
+
+    // Получаем полные данные для графика
+    getFullChartData(chartId) {
+        const data = this.fullChartData && this.fullChartData[chartId] || null;
+        console.log('📋 getFullChartData:', {
+            chartId,
+            hasData: !!data,
+            data: data
+        });
+        return data;
     }
 }
 

@@ -14,7 +14,7 @@
             <div class="mk_apps_sidebar scroll">
                 <ul class="mk_apps_sidebar_menu">
                     <!-- Рендерим пункты меню -->
-                    <t t-foreach="menuData" t-as="menu" t-index="menu_index" t-key="menu_index">
+                    <t t-foreach="getFilteredMenuData()" t-as="menu" t-index="menu_index" t-key="menu_index">
                         <li class="nav-item" t-att-class="{ active: state.activeMainMenuIndex === menu_index }">
                             <a href="#"
                                class="nav-link"

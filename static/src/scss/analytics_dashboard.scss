@@ -26,6 +26,7 @@
         }
     }
     
+    .total-summary-card,
     .date-range-card,
     .currency-rates-card,
     .contragents-balance-card,
@@ -43,6 +44,46 @@
     }
     
     .date-range-card {
+        .quick-period-buttons {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            
+            .period-btn {
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-size: 13px;
+                font-weight: 500;
+                color: #333333;
+                transition: all 0.2s ease;
+                cursor: pointer;
+                white-space: nowrap;
+                
+                &:hover {
+                    background: #e9ecef;
+                    border-color: #ccc;
+                    color: #333333;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+                
+                &:active {
+                    background: #dee2e6;
+                    border-color: #aaa;
+                    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+                }
+                
+                &:focus {
+                    outline: none;
+                    border-color: #999999;
+                    box-shadow: 0 0 0 2px rgba(153, 153, 153, 0.25);
+                }
+            }
+        }
+        
         .form-group {
             margin-bottom: 15px;
             
@@ -68,6 +109,75 @@
                     outline: none;
                     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
                 }
+            }
+        }
+    }
+    
+    // Стили для блока общей суммы эквивалентов
+    .total-summary-card {
+        .summary-header {
+            margin-bottom: 20px;
+            text-align: center;
+            
+            h2 {
+                font-size: 1.2rem;
+                font-weight: 600;
+                color: #333333;
+                margin: 0;
+            }
+        }
+        
+        .summary-content {
+            .summary-metric {
+                text-align: center;
+                padding: 15px 10px;
+                
+                .metric-label {
+                    font-size: 0.75rem;
+                    color: #666666;
+                    margin-bottom: 8px;
+                    font-weight: 500;
+                    text-transform: uppercase;
+                    line-height: 1.2;
+                }
+                
+                .metric-value {
+                    font-size: 1.4rem;
+                    font-weight: 600;
+                    color: #333333;
+                    line-height: 1;
+                    font-family: 'Courier New', monospace;
+                }
+            }
+        }
+        
+        .loading-summary {
+            text-align: center;
+            padding: 30px 20px;
+            color: #666666;
+            font-size: 14px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            
+            p {
+                margin-bottom: 0;
+                font-weight: 500;
+            }
+        }
+        
+        .no-summary {
+            text-align: center;
+            padding: 30px 20px;
+            color: #666666;
+            font-size: 14px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            
+            p {
+                margin-bottom: 0;
+                font-weight: 500;
             }
         }
     }
@@ -631,7 +741,45 @@
             }
         }
         
-        .date-range-card,
+        .total-summary-card {
+            padding: 15px;
+            margin-bottom: 20px;
+            
+            .summary-header h2 {
+                font-size: 1.1rem;
+            }
+            
+            .summary-content {
+                .summary-metric {
+                    padding: 10px 5px;
+                    
+                    .metric-label {
+                        font-size: 0.7rem;
+                        margin-bottom: 6px;
+                    }
+                    
+                    .metric-value {
+                        font-size: 1.2rem;
+                    }
+                }
+            }
+        }
+        
+        .date-range-card {
+            padding: 15px;
+            margin-bottom: 20px;
+            
+            .quick-period-buttons {
+                margin-bottom: 15px;
+                gap: 6px;
+                
+                .period-btn {
+                    font-size: 12px;
+                    padding: 6px 12px;
+                }
+            }
+        }
+        
         .currency-rates-card,
         .contragents-balance-card,
         .contragents-comparison-card {
@@ -737,6 +885,44 @@
 @media (max-width: 576px) {
     .analytics-dashboard {
         padding: 10px;
+        
+        .total-summary-card {
+            padding: 12px;
+            
+            .summary-header h2 {
+                font-size: 1.0rem;
+            }
+            
+            .summary-content {
+                .summary-metric {
+                    padding: 8px 3px;
+                    
+                    .metric-label {
+                        font-size: 0.65rem;
+                    }
+                    
+                    .metric-value {
+                        font-size: 1.1rem;
+                    }
+                }
+            }
+        }
+        
+        .date-range-card {
+            padding: 12px;
+            
+            .quick-period-buttons {
+                margin-bottom: 12px;
+                gap: 4px;
+                flex-direction: column;
+                
+                .period-btn {
+                    font-size: 11px;
+                    padding: 5px 10px;
+                    width: 100%;
+                }
+            }
+        }
         
         .currency-rates-card,
         .contragents-balance-card,

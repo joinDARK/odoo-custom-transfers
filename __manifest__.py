@@ -1,11 +1,11 @@
 {
     "name": "Amanat: Переводы",
-    "version": "2.0",
+    "version": "18.0.2.0",
     "summary": "Amanat",
     "description": "Модуль проекта Amanat",
     "author": "IncubeAI (Мирас, Комрад и Эдуард)",
     "category": "Amanat",
-    "depends": ["base", "mail", "mail_bot", "base_automation", "web", "base_setup", "bus", "server_action_mass_edit"],
+    "depends": ["base", "mail", "mail_bot", "base_automation", "web", "base_setup", "bus", "server_action_mass_edit", "chatter_attachments_manager"],
     "data": [
         "templates/webclient.xml",
         "views/res_users.xml",
@@ -147,9 +147,18 @@
             "amanat/static/src/css/style.css",
             "amanat/static/src/css/realtime_highlight.css",
             "amanat/static/src/css/amanat_dashboard.css",
+            "amanat/static/src/css/dashboard_charts_compact.css",
+            "amanat/static/src/css/attachment_preview.css",
             "amanat/static/src/scss/analytics_dashboard.scss",
             "amanat/static/src/scss/zayavka_fiks_dashboard.scss",
+            "amanat/static/src/js/attachment_preview.js",
+            "amanat/static/src/js/attachment_preview_modal.js",
+            "amanat/static/src/js/attachment_widget_extension.js",
+            "amanat/static/src/xml/attachment_preview.xml",
         ],
+    },
+    "external_dependencies": {
+        "python": ["pandas", "python-docx", "openpyxl", "xlrd"]
     },
     "installable": True,
     "application": True,

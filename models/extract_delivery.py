@@ -135,7 +135,8 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         string="Остаток для исходной выписки", 
         compute='_compute_remaining_statement',
         store=True,
-        tracking=True
+        tracking=True,
+        readonly=False,
     )
 
     # Вычисляемое поле "Сделка" - аналог формулы из Airtable

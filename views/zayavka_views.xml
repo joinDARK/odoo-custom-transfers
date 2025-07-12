@@ -29,7 +29,7 @@
                     <field name="agent_id"/>
                     <field name="client_id"/>
                     <field name="inn"/>
-                    <field name="client_inn"/>
+                    <!-- <field name="client_inn"/> -->
                   </group>
                 </div>
                 <field name="exporter_importer_name"/>
@@ -298,7 +298,7 @@
                 </div>
               </group>
               <notebook>
-                <page string="Фин. менеджер Совком Управленка" invisible="not is_sovcombank_contragent">
+                <page string="Фин. менеджер Совком Управленка" invisible="not is_sovcombank_contragent" groups="!amanat.group_amanat_manager">
                   <group string="Правило платежка">
                     <field name="payment_order_rule_id"/>
                     <field name="percent_from_payment_order_rule" widget="percentage"/>
@@ -502,7 +502,7 @@
                     </div>
                   </group>
                 </page>
-                <page string="Фин менеджер Сбер управленка" invisible="not is_sberbank_contragent">
+                <page string="Фин менеджер Сбер управленка" invisible="not is_sberbank_contragent" groups="!amanat.group_amanat_manager">
                   <group string="Правило платежка">
                     <field name="payment_order_rule_id"/>
                     <field name="percent_from_payment_order_rule" widget="percentage"/>
@@ -719,7 +719,7 @@
                     </div>
                   </group>
                 </page>
-                <page string="Фин менеджер Клиент управленка" invisible="is_sovcombank_contragent or is_sberbank_contragent">
+                <page string="Фин менеджер Клиент управленка" invisible="is_sovcombank_contragent or is_sberbank_contragent" groups="!amanat.group_amanat_manager">
                   <group string="Правило платежка">
                     <field name="payment_order_rule_id"/>
                     <field name="percent_from_payment_order_rule" widget="percentage"/>
@@ -936,7 +936,7 @@
                     </div>
                   </group>
                 </page>
-                <page string="Нераспределенные">
+                <page string="Нераспределенные" groups="!amanat.group_amanat_manager">
                   <group>
                     <field name="for_khalida_temp"/>
                     <field name="bank_cross_rate"/>
@@ -948,7 +948,6 @@
                     <field name="extract_delivery_ids"/>
                   </group>
                   <group string="Даты">
-                    <field name="date_agent_on_pc"/>
                     <field name="date_received_tezera"/>
                   </group>
                   <group string="Фин менеджер Сбер управленка">
@@ -967,7 +966,7 @@
                     <field name="hidden_rate"/>
                   </group>
                 </page>
-                <page string="Compute-поля">
+                <page string="Compute-поля" groups="!amanat.group_amanat_manager">
                   <group>
                     <field name="usd_equivalent"/>
                     <field name="conversion_expenses_rub"/>
@@ -1078,6 +1077,7 @@
                     <field name="client_ruble_paid_date"/>
                     <field name="act_report_signed_date"/>
                     <field name="date_received_on_pc_payment"/>
+                    <field name="date_agent_on_pc"/>
                   </group>
                   <group>
                     <field name="accreditive_revealed_date"/>
@@ -1115,7 +1115,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Информация о SWIFT коде">
+              <!-- <group string="Информация о SWIFT коде">
                 <div class="o-form-group-2">
                   <group>
                     <field name="swift_id"/>
@@ -1131,7 +1131,7 @@
                   </group>
                 </div>
                 <field name="swift_status_info" nolabel="1"/>
-              </group>
+              </group> -->
             </page>
             <page string="Проблемы">
               <group>
@@ -1140,7 +1140,7 @@
                     <field name="is_money_stuck"/>
                   </group>
                   <group>
-                    <field name="hide_in_dashboard"/>
+                    <field name="hide_in_dashboard" groups="!amanat.group_amanat_manager"/>
                   </group>
                   <group>
                     <field name="problem_stage"/>
@@ -1161,7 +1161,7 @@
             </page>
           </notebook>
         </sheet>
-        <chatter>
+        <chatter groups="!amanat.group_amanat_manager">
           <field name="message_follower_ids"/>
           <field name="activity_ids"/>
           <field name="message_ids"/>
@@ -1192,7 +1192,7 @@
         <field width="200" name="agent_id"/>
         <field width="200" name="client_id"/>
         <field width="200" name="inn"/>
-        <field width="200" name="client_inn"/>
+        <!-- <field width="200" name="client_inn"/> -->
         <field width="200" name="exporter_importer_name"/>
         <field width="200" name="bank_swift"/>
         <field width="200" name="country_id"/>
@@ -1222,7 +1222,7 @@
         <field width="200" name="xe_rate"/>
         <field width="200" name="conversion_expenses_rub"/>
         <field width="200" name="conversion_expenses_currency"/>
-        <field width="200" name="xe_rate_auto"/>
+        <!-- <field width="200" name="xe_rate_auto"/> -->
         <field width="200" name="real_cross_rate"/>
         <field width="200" name="course_profitable"/>
         <field width="200" name="amount"/>
@@ -1376,13 +1376,13 @@
         <field width="200" name="money_cost_rule_extra_days"/>
         <field width="200" name="expense_rule_id"/>
         <field width="200" name="percent_from_expense_rule" widget="percentage"/>
-        <field width="200" name="range_id"/>
-        <field width="200" name="range_date_start"/>
-        <field width="200" name="range_date_end"/>
-        <field width="200" name="range_date_start_copy"/>
-        <field width="200" name="range_date_end_copy"/>
-        <field width="200" name="status_range_copy"/>
-        <field width="200" name="status_range"/>
+        <!-- <field width="200" name="range_id"/> -->
+        <!-- <field width="200" name="range_date_start"/> -->
+        <!-- <field width="200" name="range_date_end"/> -->
+        <!-- <field width="200" name="range_date_start_copy"/> -->
+        <!-- <field width="200" name="range_date_end_copy"/> -->
+        <!-- <field width="200" name="status_range_copy"/> -->
+        <!-- <field width="200" name="status_range"/> -->
         <field width="200" name="zayavka_file"/>
         <field width="200" name="invoice_file"/>
         <field width="200" name="assignment_file"/>
@@ -1407,7 +1407,7 @@
         <field width="200" name="date_days"/>
         <field width="200" name="assignment_signed_sovcom"/>
         <field width="200" name="payment_order_rf_sovok"/>
-        <field width="200" name="operating_expenses_sovok_partner"/>
+        <!-- <field width="200" name="operating_expenses_sovok_partner"/> -->
         <field width="200" name="operating_expenses_sovok_real"/>
         <field width="200" name="operating_expenses_sovok_real_usd"/>
         <field width="200" name="operating_expenses_sovok_real_rub"/>
@@ -1485,10 +1485,10 @@
         <field name="agent_id"/>
         <field name="client_id"/>
         <field name="deal_type"/>
-        <field name="range_id" string="Диапазон"/>
-        <separator/>
+        <!-- <field name="range_id" string="Диапазон"/> -->
+        <!-- <separator/>
         <filter name="filter_in_range" string="В диапазоне" domain="[('range_id','!=',False)]"/>
-        <separator/>
+        <separator/> -->
         <group expand="0" string="Group By">
             <filter name="group_by_date" string="Дата размещения" context="{'group_by':'date_placement'}"/>
             <filter name="group_by_taken_date" string="Взята в работу" context="{'group_by':'taken_in_work_date'}"/>

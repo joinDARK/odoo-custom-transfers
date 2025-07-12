@@ -79,7 +79,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
     our_percent = fields.Float(string='Наш процент (from Ордер)', related='order_id.our_percent', store=True, tracking=True)
     rko_2 = fields.Float(string='РКО 2 (from Ордер)', related='order_id.rko_2', store=True, tracking=True)
     
-    exchange = fields.Float(string='К выдаче', store=True, compute='_compute_exchange')
+    exchange = fields.Float(string='К выдаче', store=True, compute='_compute_exchange', readonly=False, tracking=True)
     
     @api.depends('sum')
     def _compute_exchange(self):
@@ -141,6 +141,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
         string='Эквивалент $', 
         tracking=True,
         compute='_compute_equivalent',
+        readonly=False,
         store=True,
     )
     @api.depends(

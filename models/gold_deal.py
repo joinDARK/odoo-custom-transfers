@@ -51,6 +51,7 @@ class GoldDeal(models.Model):
         compute="_compute_pure_weight_sum",
         store=True,
         tracking=True,
+        readonly=False,
     )
 
     # 7. Общая сумма покупки (Rollup: сумма поля amount_rub из партнеров)
@@ -59,6 +60,7 @@ class GoldDeal(models.Model):
         compute="_compute_purchase_total_rub",
         store=True,
         tracking=True,
+        readonly=False,
     )
 
     # 8. Сумма закупа в долларах (Rollup: сумма поля purchase_amount_dollar из партнеров)
@@ -67,36 +69,66 @@ class GoldDeal(models.Model):
         compute="_compute_purchase_total_dollar",
         store=True,
         tracking=True,
+        readonly=False,
     )
 
     # 9. Расходы (Rollup: сумма поля total_expenses из партнеров)
     expenses = fields.Float(
-        string="Расходы", compute="_compute_expenses", store=True, tracking=True
+        string="Расходы", 
+        compute="_compute_expenses", 
+        store=True, 
+        tracking=True,
+        readonly=False,
     )
 
     # 10. Услуга (Rollup: сумма поля service из партнеров)
     service = fields.Float(
-        string="Услуга", compute="_compute_service", store=True, tracking=True, digits=(16, 3)
+        string="Услуга", 
+        compute="_compute_service", 
+        store=True, 
+        tracking=True, 
+        digits=(16, 3),
+        readonly=False,
     )
 
     # 11. Банк сумм (Rollup: сумма поля bank_sum из партнеров)
     bank_sum = fields.Float(
-        string="Банк сумм", compute="_compute_bank_sum", store=True, tracking=True, digits=(16, 3)
+        string="Банк сумм", 
+        compute="_compute_bank_sum", 
+        store=True, 
+        tracking=True, 
+        digits=(16, 3),
+        readonly=False,
     )
 
     # 12. Банк КБ (Rollup: сумма поля bank_kb из партнеров)
     bank_kb = fields.Float(
-        string="Банк КБ", compute="_compute_bank_kb", store=True, tracking=True, digits=(16, 3)
+        string="Банк КБ", 
+        compute="_compute_bank_kb", 
+        store=True, 
+        tracking=True, 
+        digits=(16, 3),
+        readonly=False,
     )
 
     # 13. Курьер (Rollup: сумма поля courier из партнеров)
     courier = fields.Float(
-        string="Курьер", compute="_compute_courier", store=True, tracking=True, digits=(16, 3)
+        string="Курьер", 
+        compute="_compute_courier", 
+        store=True, 
+        tracking=True, 
+        digits=(16, 3),
+        readonly=False,
     )
 
     # 14. Общая сумма (Rollup: сумма поля purchase_usdt из партнеров)
     total_amount = fields.Float(
-        string="Общая сумма", compute="_compute_total_amount", store=True, tracking=True, digits=(16, 3)
+        string="Общая сумма", 
+        compute="_compute_total_amount", 
+        store=True, 
+        tracking=True, 
+        digits=(16, 3),
+        readonly=False,
     )
 
     # 15. Сумма продажи AED (Rollup: сумма поля sale_amount_aed из партнеров)
@@ -105,6 +137,7 @@ class GoldDeal(models.Model):
         compute="_compute_sale_amount_aed",
         store=True,
         tracking=True,
+        readonly=False,
     )
 
     # 16. Сумма продажи USDT (Rollup: сумма поля purchase_usdt из партнеров)
@@ -113,6 +146,7 @@ class GoldDeal(models.Model):
         compute="_compute_sale_amount_usdt",
         store=True,
         tracking=True,
+        readonly=False,
     )
 
     # 17. Дополнительные расходы
@@ -120,7 +154,12 @@ class GoldDeal(models.Model):
 
     # 18. Курс итог – вычисляется как Общая сумма покупки / Общая сумм
     final_rate = fields.Float(
-        string="Курс итог", compute="_compute_final_rate", store=True, tracking=True, digits=(16, 3)
+        string="Курс итог", 
+        compute="_compute_final_rate", 
+        store=True, 
+        tracking=True, 
+        digits=(16, 3),
+        readonly=False,
     )
 
     # 19. Провести вход
@@ -148,7 +187,11 @@ class GoldDeal(models.Model):
 
     # 26. Разница = Общая сумма покупки - Сумма по инвойсу
     difference = fields.Float(
-        string="Разница", compute="_compute_difference", store=True, tracking=True
+        string="Разница", 
+        compute="_compute_difference", 
+        store=True, 
+        tracking=True,
+        readonly=False,
     )
 
     # 27. Банк – связь с контрагентом банка, который может проводить сделки с золотом

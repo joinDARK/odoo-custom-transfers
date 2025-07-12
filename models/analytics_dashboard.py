@@ -93,21 +93,21 @@ class AnalyticsDashboard(models.Model):
                 for currency, rate_value in rate_fields.items():
                     if rate_value and rate_value > 0:
                         if currency in ['usd', 'usdt']:
-                            # Доллар и USDT всегда 1.0000
-                            formatted_rate = "1,0000"
+                            # Доллар и USDT всегда 1.00000000
+                            formatted_rate = "1,00000000"
                         elif rate_value > 1:
                             # Старый формат (сколько единиц валюты за 1 доллар) - инвертируем
                             usd_rate = 1.0 / rate_value
-                            formatted_rate = f"{usd_rate:.4f}".replace('.', ',')
-                            _logger.info(f"Inverted {currency.upper()} from amanat.rates: {rate_value} -> {usd_rate:.4f}")
+                            formatted_rate = f"{usd_rate:.8f}".replace('.', ',')
+                            _logger.info(f"Inverted {currency.upper()} from amanat.rates: {rate_value} -> {usd_rate:.8f}")
                         else:
                             # Новый формат (сколько долларов стоит 1 единица валюты) - используем как есть
-                            formatted_rate = f"{rate_value:.4f}".replace('.', ',')
+                            formatted_rate = f"{rate_value:.8f}".replace('.', ',')
                             _logger.info(f"Using {currency.upper()} from amanat.rates as-is: {rate_value}")
                     else:
                         # Если нет данных, используем значение по умолчанию
                         default_value = default_rates[currency]
-                        formatted_rate = f"{default_value:.4f}".replace('.', ',')
+                        formatted_rate = f"{default_value:.8f}".replace('.', ',')
                         _logger.info(f"Using default rate for {currency.upper()}: {default_value}")
                     
                     rates_data[currency] = formatted_rate
@@ -121,13 +121,13 @@ class AnalyticsDashboard(models.Model):
             else:
                 # Возвращаем курсы по умолчанию если нет записей (сколько долларов стоит 1 единица валюты)
                 default_rates = {
-                    'euro': '1,0900',   # 1 EUR = 1.09 USD
-                    'cny': '0,1400',    # 1 CNY = 0.14 USD
-                    'rub': '0,0120',    # 1 RUB = 0.012 USD
-                    'aed': '0,2700',    # 1 AED = 0.27 USD
-                    'thb': '0,0300',    # 1 THB = 0.03 USD
-                    'usd': '1,0000',    # 1 USD = 1.00 USD
-                    'usdt': '1,0000'    # 1 USDT = 1.00 USD
+                    'euro': '1,09000000',   # 1 EUR = 1.09 USD
+                    'cny': '0,14000000',    # 1 CNY = 0.14 USD
+                    'rub': '0,01200000',    # 1 RUB = 0.012 USD
+                    'aed': '0,27000000',    # 1 AED = 0.27 USD
+                    'thb': '0,03000000',    # 1 THB = 0.03 USD
+                    'usd': '1,00000000',    # 1 USD = 1.00 USD
+                    'usdt': '1,00000000'    # 1 USDT = 1.00 USD
                 }
                 
                 _logger.warning("No currency rates found, using default USD-equivalent values")
@@ -231,11 +231,11 @@ class AnalyticsDashboard(models.Model):
                 thb_balance = sum(reconciliations.mapped('sum_thb'))
                 thb_cash_balance = sum(reconciliations.mapped('sum_thb_cashe'))
                 
-                # Детальное логирование для отладки
-                _logger.info(f"Contragent {contragent.name} ({contragent.id}): Found {len(reconciliations)} reconciliations")
-                _logger.info(f"  RUB={rub_balance}, RUB_CASH={rub_cash_balance}, USD={usd_balance}, USD_CASH={usd_cash_balance}")
-                _logger.info(f"  EUR={euro_balance}, EUR_CASH={euro_cash_balance}, CNY={cny_balance}, CNY_CASH={cny_cash_balance}")
-                _logger.info(f"  AED={aed_balance}, AED_CASH={aed_cash_balance}, USDT={usdt_balance}, THB={thb_balance}, THB_CASH={thb_cash_balance}")
+                # Детальное логирование для отладки (только в режиме DEBUG)
+                _logger.debug(f"Contragent {contragent.name} ({contragent.id}): Found {len(reconciliations)} reconciliations")
+                _logger.debug(f"  RUB={rub_balance}, RUB_CASH={rub_cash_balance}, USD={usd_balance}, USD_CASH={usd_cash_balance}")
+                _logger.debug(f"  EUR={euro_balance}, EUR_CASH={euro_cash_balance}, CNY={cny_balance}, CNY_CASH={cny_cash_balance}")
+                _logger.debug(f"  AED={aed_balance}, AED_CASH={aed_cash_balance}, USDT={usdt_balance}, THB={thb_balance}, THB_CASH={thb_cash_balance}")
                 
                 # Рассчитываем общий баланс в долларах
                 total_usd = 0
@@ -272,8 +272,8 @@ class AnalyticsDashboard(models.Model):
                     'balance_usdt': f"{usdt_balance:.3f}"
                 }
                 
-                # Логируем данные для отладки
-                _logger.info(f"Balance record for {contragent.name}: USD={total_usd:.2f}, RUB={rub_balance:.3f}, USDT={usdt_balance:.3f}")
+                # Логируем данные для отладки (только в режиме DEBUG)
+                _logger.debug(f"Balance record for {contragent.name}: USD={total_usd:.2f}, RUB={rub_balance:.3f}, USDT={usdt_balance:.3f}")
                 
                 # Добавляем всех контрагентов, даже с нулевыми балансами
                 balance_data.append(balance_record)
@@ -299,6 +299,61 @@ class AnalyticsDashboard(models.Model):
                 'success': False,
                 'error': str(e),
                 'data': []
+            }
+    
+    @api.model
+    def get_total_balance_summary(self, date_from=None, date_to=None):
+        """Получение общей суммы эквивалентов всех контрагентов"""
+        try:
+            _logger.info(f"Getting total balance summary for period: {date_from} - {date_to}")
+            
+            # Получаем данные балансов всех контрагентов
+            balance_result = self.get_contragents_balance(date_from, date_to)
+            
+            if not balance_result.get('success') or not balance_result.get('data'):
+                _logger.warning("No balance data available for total summary")
+                return {
+                    'success': True,
+                    'total_usd_equivalent': '0.00',
+                    'contragents_count': 0
+                }
+            
+            balance_data = balance_result['data']
+            total_usd = 0.0
+            active_contragents = 0
+            
+            # Суммируем все балансы в долларах
+            for contragent in balance_data:
+                balance_usd_str = contragent.get('balance_usd', '0')
+                try:
+                    balance_usd = float(balance_usd_str)
+                    total_usd += balance_usd
+                    
+                    # Считаем контрагентов с ненулевыми балансами
+                    if abs(balance_usd) > 0.01:  # Больше 1 цента
+                        active_contragents += 1
+                        
+                except (ValueError, TypeError):
+                    _logger.warning(f"Invalid balance_usd for contragent {contragent.get('name', 'Unknown')}: {balance_usd_str}")
+                    continue
+            
+            _logger.info(f"Total balance summary: ${total_usd:.2f} across {len(balance_data)} contragents ({active_contragents} active)")
+            
+            return {
+                'success': True,
+                'total_usd_equivalent': f"{total_usd:.2f}",
+                'contragents_count': len(balance_data),
+                'active_contragents_count': active_contragents
+            }
+            
+        except Exception as e:
+            _logger.error(f"Error getting total balance summary: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e),
+                'total_usd_equivalent': '0.00',
+                'contragents_count': 0,
+                'active_contragents_count': 0
             }
         
     
@@ -402,8 +457,8 @@ class AnalyticsDashboard(models.Model):
                 balance_comparison_1 = calculate_period_balance(reconciliations_1)
                 balance_comparison_2 = calculate_period_balance(reconciliations_2)
                 
-                _logger.info(f"Comparison for {contragent.name}: Period1={len(reconciliations_1)} recs, Balance1=${balance_comparison_1:.2f}")
-                _logger.info(f"  Period2={len(reconciliations_2)} recs, Balance2=${balance_comparison_2:.2f}")
+                _logger.debug(f"Comparison for {contragent.name}: Period1={len(reconciliations_1)} recs, Balance1=${balance_comparison_1:.2f}")
+                _logger.debug(f"  Period2={len(reconciliations_2)} recs, Balance2=${balance_comparison_2:.2f}")
                 
                 # Формируем данные сравнения для каждого контрагента
                 comparison_record = {
@@ -488,29 +543,29 @@ class AnalyticsDashboard(models.Model):
                             rate_float = float(rate_value)
                             
                             if currency_key in ['usd', 'usdt']:
-                                # Доллар и USDT всегда 1.0000
-                                formatted_rate = "1,0000"
+                                # Доллар и USDT всегда 1.00000000
+                                formatted_rate = "1,00000000"
                             elif rate_float > 1:
                                 # Старый формат (сколько единиц валюты за 1 доллар) - инвертируем
                                 usd_rate = 1.0 / rate_float
-                                formatted_rate = f"{usd_rate:.4f}".replace('.', ',')
-                                _logger.info(f"Inverted {currency_key.upper()}: {rate_float} -> {usd_rate:.4f}")
+                                formatted_rate = f"{usd_rate:.8f}".replace('.', ',')
+                                _logger.info(f"Inverted {currency_key.upper()}: {rate_float} -> {usd_rate:.8f}")
                             else:
                                 # Новый формат (сколько долларов стоит 1 единица валюты) - используем как есть
-                                formatted_rate = f"{rate_float:.4f}".replace('.', ',')
+                                formatted_rate = f"{rate_float:.8f}".replace('.', ',')
                                 _logger.info(f"Using {currency_key.upper()} as-is: {rate_float}")
                             
                             rates_data[currency_key] = formatted_rate
                         
                         # Убеждаемся что есть все нужные валюты (относительно доллара)
                         default_rates = {
-                            'euro': '1,0900',   # 1 EUR = 1.09 USD
-                            'cny': '0,1400',    # 1 CNY = 0.14 USD  
-                            'rub': '0,0120',    # 1 RUB = 0.012 USD
-                            'aed': '0,2700',    # 1 AED = 0.27 USD
-                            'thb': '0,0300',    # 1 THB = 0.03 USD
-                            'usd': '1,0000',    # 1 USD = 1.00 USD (базовая валюта)
-                            'usdt': '1,0000'    # 1 USDT = 1.00 USD
+                            'euro': '1,09000000',   # 1 EUR = 1.09 USD
+                            'cny': '0,14000000',    # 1 CNY = 0.14 USD  
+                            'rub': '0,01200000',    # 1 RUB = 0.012 USD
+                            'aed': '0,27000000',    # 1 AED = 0.27 USD
+                            'thb': '0,03000000',    # 1 THB = 0.03 USD
+                            'usd': '1,00000000',    # 1 USD = 1.00 USD (базовая валюта)
+                            'usdt': '1,00000000'    # 1 USDT = 1.00 USD
                         }
                         
                         # Дополняем недостающие валюты значениями по умолчанию
@@ -717,7 +772,7 @@ class AnalyticsDashboard(models.Model):
                         }
                     
                     # Сохраняем в формате с запятой
-                    normalized_rates[currency] = f"{rate_float:.4f}".replace('.', ',')
+                    normalized_rates[currency] = f"{rate_float:.8f}".replace('.', ',')
                     
                 except (ValueError, TypeError):
                     return {
@@ -764,13 +819,13 @@ class AnalyticsDashboard(models.Model):
             else:
                 # Если API недоступен, возвращаем курсы по умолчанию
                 default_rates = {
-                    'euro': '1,0900',   # 1 EUR = 1.09 USD
-                    'cny': '0,1400',    # 1 CNY = 0.14 USD
-                    'rub': '0,0120',    # 1 RUB = 0.012 USD
-                    'aed': '0,2700',    # 1 AED = 0.27 USD
-                    'thb': '0,0300',    # 1 THB = 0.03 USD
-                    'usd': '1,0000',    # 1 USD = 1.00 USD
-                    'usdt': '1,0000'    # 1 USDT = 1.00 USD
+                    'euro': '1,09000000',   # 1 EUR = 1.09 USD
+                    'cny': '0,14000000',    # 1 CNY = 0.14 USD
+                    'rub': '0,01200000',    # 1 RUB = 0.012 USD
+                    'aed': '0,27000000',    # 1 AED = 0.27 USD
+                    'thb': '0,03000000',    # 1 THB = 0.03 USD
+                    'usd': '1,00000000',    # 1 USD = 1.00 USD
+                    'usdt': '1,00000000'    # 1 USDT = 1.00 USD
                 }
                 
                 # Сохраняем курсы по умолчанию в кэш

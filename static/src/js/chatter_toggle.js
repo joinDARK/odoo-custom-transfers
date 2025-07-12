@@ -1,28 +1,39 @@
-// Простая реализация кнопки переключения chatter для всех форм с логами
-(function() {
-    'use strict';
-    
-    let chatterVisible = true; // По умолчанию chatter видим
-    let toggleButton = null;
-    
-    function createToggleButton() {
-        if (toggleButton) return; // Кнопка уже создана
+/** @odoo-module **/
+
+import { registry } from "@web/core/registry";
+import { Component, useState, onMounted, onWillUnmount } from "@odoo/owl";
+
+class ChatterToggleService {
+    constructor() {
+        this.chatterVisible = true;
+        this.toggleButton = null;
+        this.checkTimeout = null;
+        this.lastUrl = location.href;
+        this.mutationObserver = null;
+        this.intervalId = null;
+    }
+
+    start() {
+        this.initChatterToggle();
+        this.setupObservers();
+    }
+
+    createToggleButton() {
+        if (this.toggleButton) return;
         
-        // Находим место в верхнем меню для вставки кнопки
         const navbar = document.querySelector('.o_main_navbar .o_menu_systray');
         if (!navbar) {
             console.log('Chatter Toggle: navbar не найден');
             return;
         }
         
-        toggleButton = document.createElement('button');
-        toggleButton.className = 'chatter-toggle-btn';
-        toggleButton.innerHTML = '<i class="fa fa-eye-slash"></i>';
-        toggleButton.type = 'button';
-        toggleButton.title = 'Скрыть логи';
+        this.toggleButton = document.createElement('button');
+        this.toggleButton.className = 'chatter-toggle-btn';
+        this.toggleButton.innerHTML = '<i class="fa fa-eye-slash"></i>';
+        this.toggleButton.type = 'button';
+        this.toggleButton.title = 'Скрыть логи';
         
-        // Минималистичные стили для интеграции в navbar без li контейнера
-        toggleButton.style.cssText = `
+        this.toggleButton.style.cssText = `
             background: none !important;
             border: none !important;
             color: #6c757d !important;
@@ -43,153 +54,128 @@
             align-self: center !important;
         `;
         
-        toggleButton.addEventListener('click', toggleChatter);
-        toggleButton.addEventListener('mouseenter', function() {
+        this.toggleButton.addEventListener('click', () => this.toggleChatter());
+        this.toggleButton.addEventListener('mouseenter', function() {
             this.style.color = '#495057';
             this.style.backgroundColor = 'rgba(0,0,0,0.05)';
         });
-        toggleButton.addEventListener('mouseleave', function() {
-            this.style.color = chatterVisible ? '#dc3545' : '#6c757d';
-            this.style.backgroundColor = 'transparent';
+        this.toggleButton.addEventListener('mouseleave', () => {
+            this.toggleButton.style.color = this.chatterVisible ? '#dc3545' : '#6c757d';
+            this.toggleButton.style.backgroundColor = 'transparent';
         });
         
-        // Вставляем кнопку прямо в navbar без li контейнера
-        navbar.insertBefore(toggleButton, navbar.firstChild);
+        navbar.insertBefore(this.toggleButton, navbar.firstChild);
         console.log('Chatter Toggle: кнопка создана и добавлена в navbar');
     }
-    
-    function removeToggleButton() {
-        if (toggleButton) {
-            toggleButton.remove();
-            toggleButton = null;
+
+    removeToggleButton() {
+        if (this.toggleButton) {
+            this.toggleButton.remove();
+            this.toggleButton = null;
             console.log('Chatter Toggle: кнопка удалена');
         }
     }
-    
-    function toggleChatter() {
+
+    toggleChatter() {
         const chatters = document.querySelectorAll('.o-mail-Chatter, .o-mail-ChatterContainer, .o-mail-Form-chatter');
         console.log('Chatter Toggle: найдено чэттеров:', chatters.length);
         
-        if (chatterVisible) {
-            // Скрываем chatter
+        if (this.chatterVisible) {
             chatters.forEach(chatter => {
                 chatter.style.display = 'none';
             });
-            toggleButton.innerHTML = '<i class="fa fa-eye"></i>';
-            toggleButton.title = 'Показать логи';
-            toggleButton.style.color = '#6c757d';
-            chatterVisible = false;
+            this.toggleButton.innerHTML = '<i class="fa fa-eye"></i>';
+            this.toggleButton.title = 'Показать логи';
+            this.toggleButton.style.color = '#6c757d';
+            this.chatterVisible = false;
             console.log('Chatter Toggle: чэттеры скрыты');
         } else {
-            // Показываем chatter
             chatters.forEach(chatter => {
                 chatter.style.display = '';
             });
-            toggleButton.innerHTML = '<i class="fa fa-eye-slash"></i>';
-            toggleButton.title = 'Скрыть логи';
-            toggleButton.style.color = '#dc3545';
-            chatterVisible = true;
+            this.toggleButton.innerHTML = '<i class="fa fa-eye-slash"></i>';
+            this.toggleButton.title = 'Скрыть логи';
+            this.toggleButton.style.color = '#dc3545';
+            this.chatterVisible = true;
             console.log('Chatter Toggle: чэттеры показаны');
         }
     }
-    
-    function checkIfFormWithChatter() {
-        // Проверяем наличие любой формы с chatter
+
+    checkIfFormWithChatter() {
         const hasForm = document.querySelector('.o_form_view');
         if (!hasForm) return false;
         
-        // Проверяем наличие различных chatter элементов
         const hasChatter = (
             document.querySelector('.o-mail-Chatter') || 
             document.querySelector('.o-mail-ChatterContainer') || 
             document.querySelector('.o-mail-Form-chatter') ||
-            // Проверяем в DOM наличие полей chatter
             document.querySelector('[name="message_ids"]') ||
             document.querySelector('[name="message_follower_ids"]') ||
             document.querySelector('[name="activity_ids"]') ||
-            // Проверяем div с классами для chatter
             document.querySelector('.oe_chatter') ||
             document.querySelector('.o_mail_thread') ||
-            // Проверяем наличие form view с mail.thread наследованием
             document.querySelector('.o_form_view .o-mail-Chatter')
         );
         
         return hasForm && hasChatter;
     }
-    
-    function initChatterToggle() {
-        if (checkIfFormWithChatter()) {
+
+    initChatterToggle() {
+        if (this.checkIfFormWithChatter()) {
             console.log('Chatter Toggle: форма с чэттером найдена');
-            createToggleButton();
+            this.createToggleButton();
         } else {
             console.log('Chatter Toggle: форма с чэттером не найдена');
-            removeToggleButton();
+            this.removeToggleButton();
         }
     }
-    
-    // Инициализация при загрузке DOM
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initChatterToggle);
-    } else {
-        initChatterToggle();
-    }
-    
-    // Отслеживание изменений в DOM для SPA (Single Page Application)
-    let lastUrl = location.href;
-    new MutationObserver(() => {
-        const url = location.href;
-        if (url !== lastUrl) {
-            lastUrl = url;
-            setTimeout(initChatterToggle, 500);
-        }
-    }).observe(document, { subtree: true, childList: true });
-    
-    // Оптимизированная проверка с debounce
-    let checkTimeout = null;
-    function debouncedCheck() {
-        if (checkTimeout) clearTimeout(checkTimeout);
-        checkTimeout = setTimeout(() => {
-            if (checkIfFormWithChatter() && !toggleButton) {
-                createToggleButton();
-            } else if (!checkIfFormWithChatter() && toggleButton) {
-                removeToggleButton();
+
+    debouncedCheck() {
+        if (this.checkTimeout) clearTimeout(this.checkTimeout);
+        this.checkTimeout = setTimeout(() => {
+            if (this.checkIfFormWithChatter() && !this.toggleButton) {
+                this.createToggleButton();
+            } else if (!this.checkIfFormWithChatter() && this.toggleButton) {
+                this.removeToggleButton();
             }
         }, 500);
     }
-    
-    // Проверка каждые 3 секунды
-    setInterval(debouncedCheck, 3000);
-    
-})();
 
-// Запасной вариант через jQuery, если он доступен
-if (typeof $ !== 'undefined') {
-    $(document).ready(function() {
-        setTimeout(function() {
-            // Дополнительная проверка через jQuery
-            function addChatterToggleJQuery() {
-                const isFormWithChatter = (
-                    $('.o_form_view').length > 0 &&
-                    ($('.o-mail-Chatter').length > 0 ||
-                     $('.o-mail-ChatterContainer').length > 0 ||
-                     $('.o-mail-Form-chatter').length > 0 ||
-                     $('[name="message_ids"]').length > 0 ||
-                     $('[name="message_follower_ids"]').length > 0 ||
-                     $('[name="activity_ids"]').length > 0)
-                );
-                
-                if (isFormWithChatter && !$('.chatter-toggle-btn').length) {
-                    console.log('Добавляем кнопку переключения chatter для формы с логами через jQuery');
-                    // Логика для создания кнопки здесь будет выполнена основным скriptом
-                }
+    setupObservers() {
+        // Отслеживание изменений в DOM для SPA
+        this.mutationObserver = new MutationObserver(() => {
+            const url = location.href;
+            if (url !== this.lastUrl) {
+                this.lastUrl = url;
+                setTimeout(() => this.initChatterToggle(), 500);
             }
-            
-            addChatterToggleJQuery();
-            
-            // Отслеживание навигации
-            $(document).on('click', 'a, .o_pager_next, .o_pager_previous', function() {
-                setTimeout(addChatterToggleJQuery, 1000);
-            });
-        }, 1000);
-    });
-} 
+        });
+        this.mutationObserver.observe(document, { subtree: true, childList: true });
+        
+        // Проверка каждые 3 секунды
+        this.intervalId = setInterval(() => this.debouncedCheck(), 3000);
+    }
+
+    destroy() {
+        this.removeToggleButton();
+        if (this.checkTimeout) {
+            clearTimeout(this.checkTimeout);
+        }
+        if (this.mutationObserver) {
+            this.mutationObserver.disconnect();
+        }
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+        }
+    }
+}
+
+const chatterToggleService = {
+    start() {
+        const service = new ChatterToggleService();
+        service.start();
+        return service;
+    },
+};
+
+registry.category("services").add("chatter_toggle", chatterToggleService); 

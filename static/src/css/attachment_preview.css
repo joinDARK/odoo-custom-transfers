@@ -1,0 +1,115 @@
+/* Стили для preview offline модального окна */
+#xlsx_preview {
+    display: none; /* Скрыто по умолчанию */
+    position: fixed; /* Фиксированная позиция */
+    z-index: 10000; /* Сверху */
+    padding-top: 100px; /* Отступ сверху */
+    left: 0;
+    top: 0;
+    width: 100%; /* Полная ширина */
+    height: 100%; /* Полная высота */
+    overflow: auto; /* Прокрутка если нужно */
+    background-color: rgb(0,0,0); /* Цвет фона */
+    background-color: rgba(0,0,0,0.4); /* Черный с прозрачностью */
+}
+
+#MyPreview_content {
+    background-color: #fefefe;
+    overflow: hidden;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* Кнопка закрытия */
+#stop-preview-button {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#stop-preview-button:hover,
+#stop-preview-button:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Стили для таблицы Excel */
+#MyTable {
+    font-family: Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 20px;
+}
+
+#MyTable th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #04AA6D;
+    color: white;
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+#MyTable td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.XlsxTable {
+    overflow: auto;
+    max-height: 500px;
+}
+
+/* Стили для документов Word */
+.MyDocs {
+    overflow: auto;
+    text-align: justify;
+    padding: 30px;
+    line-height: 1.6;
+}
+
+.MyDocs p {
+    margin-bottom: 10px;
+}
+
+/* Заголовок файла */
+#FileHead {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* Дополнительные стили для таблиц DataFrame */
+.dataframe {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 20px 0;
+}
+
+.dataframe th, .dataframe td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.dataframe th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.dataframe tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.dataframe tr:hover {
+    background-color: #f5f5f5;
+} 

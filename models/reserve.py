@@ -39,10 +39,10 @@ class Reserve(models.Model, AmanatBaseModel):
     commision_percent_2 = fields.Float(string="Процент комиссии отправителя", tracking=True)
 
     commision_difference = fields.Float(
-        string="Разница комиссии", compute="_compute_commission_difference", store=True, tracking=True
+        string="Разница комиссии", compute="_compute_commission_difference", store=True, tracking=True, readonly=False
     )
     finally_result = fields.Float(
-        string="Фин рез", compute="_compute_finally_result", store=True, tracking=True
+        string="Фин рез", compute="_compute_finally_result", store=True, tracking=True, readonly=False
     )
 
     has_royalti = fields.Boolean(string='Есть роялти', default=False, tracking=True)
@@ -50,12 +50,12 @@ class Reserve(models.Model, AmanatBaseModel):
     royalty_recipient_1 = fields.Many2one('amanat.contragent', string="Получатель роялти", tracking=True)
     royalty_percent_1 = fields.Float(string="% первого", tracking=True)
     royalty_amount_1 = fields.Float(
-        string="Сумма роялти 1", compute="_compute_royalty_amount_1", store=True, tracking=True
+        string="Сумма роялти 1", compute="_compute_royalty_amount_1", store=True, tracking=True, readonly=False
     )
     royalty_recipient_2 = fields.Many2one('amanat.contragent', string="Получатель роялти 2", tracking=True)
     royalty_percent_2 = fields.Float(string="% второго", tracking=True)
     royalty_amount_2 = fields.Float(
-        string="Сумма роялти 2", compute="_compute_royalty_amount_2", store=True, tracking=True
+        string="Сумма роялти 2", compute="_compute_royalty_amount_2", store=True, tracking=True, readonly=False
     )
 
     order_ids = fields.Many2many(

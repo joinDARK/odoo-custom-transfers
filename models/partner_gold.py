@@ -64,6 +64,7 @@ class PartnerGold(models.Model):
     purchase_price_rub_per_gram = fields.Float(
         string="Цена закупки, руб/гр",
         compute="_compute_purchase_price_rub_per_gram",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -84,7 +85,11 @@ class PartnerGold(models.Model):
 
     # 9. Сумма, руб. = Чистый вес * Цена закупки, руб/гр
     amount_rub = fields.Float(
-        string="Сумма, руб.", compute="_compute_amount_rub", store=True, tracking=True
+        string="Сумма, руб.", 
+        compute="_compute_amount_rub", 
+        store=True, 
+        tracking=True,
+        readonly=False,
     )
 
     @api.depends("pure_weight", "purchase_price_rub_per_gram")
@@ -96,6 +101,7 @@ class PartnerGold(models.Model):
     pure_weight_oz = fields.Float(
         string="чистый вес OZ",
         compute="_compute_pure_weight_oz",
+        readonly=False,
         digits=(16, 5),
         store=True,
         tracking=True,
@@ -110,6 +116,7 @@ class PartnerGold(models.Model):
     dollar_rate_formula = fields.Float(
         string="Курс $ на дату покупки формула",
         compute="_compute_dollar_rate_formula",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -126,6 +133,7 @@ class PartnerGold(models.Model):
     purchase_amount_dollar = fields.Float(
         string="Сумма закупа, $",
         compute="_compute_purchase_amount_dollar",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -155,6 +163,7 @@ class PartnerGold(models.Model):
     sale_price_per_oz = fields.Float(
         string="цена продажи $/OZ",
         compute="_compute_sale_price_per_oz",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -176,6 +185,8 @@ class PartnerGold(models.Model):
     sale_amount_aed = fields.Float(
         string="Сумма продажи AED",
         compute="_compute_sale_amount_aed",
+        tracking=True,
+        readonly=False,
         store=True,
     )
 
@@ -197,6 +208,7 @@ class PartnerGold(models.Model):
     purchase_usdt = fields.Float( # ! используется в автоматизации
         string="покупка USDT",
         compute="_compute_purchase_usdt",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -213,7 +225,12 @@ class PartnerGold(models.Model):
 
     # 24. Банк сумма = Сумма закупа, $ * %Банк
     bank_amount = fields.Float(
-        string="Банк сумма", compute="_compute_bank_amount", store=True, tracking=True, digits=(16, 3),
+        string="Банк сумма", 
+        compute="_compute_bank_amount", 
+        store=True, 
+        tracking=True, 
+        digits=(16, 3),
+        readonly=False,
     )
 
     @api.depends("purchase_amount_dollar", "bank_percent")
@@ -228,6 +245,7 @@ class PartnerGold(models.Model):
     service_amount = fields.Float(
         string="Услуга сумма",
         compute="_compute_service_amount",
+        readonly=False,
         digits=(16, 3),
         store=True,
         tracking=True,
@@ -245,6 +263,7 @@ class PartnerGold(models.Model):
     bank_kb_amount = fields.Float(
         string="Банк КБ сумма",
         compute="_compute_bank_kb_amount",
+        readonly=False,
         digits=(16, 3),
         store=True,
         tracking=True,
@@ -262,6 +281,7 @@ class PartnerGold(models.Model):
     courier_amount = fields.Float(
         string="Курьер сумма",
         compute="_compute_courier_amount",
+        readonly=False,
         store=True,
         digits=(16, 3),
         tracking=True,
@@ -276,6 +296,7 @@ class PartnerGold(models.Model):
     total_extra_expenses = fields.Float(
         string="Доп расходы", 
         compute="_compute_total_extra_expenses",
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -292,6 +313,7 @@ class PartnerGold(models.Model):
     overall_pure_weight = fields.Float(
         string="Чистый вес общий", 
         compute="_compute_overall_pure_weight", 
+        readonly=False,
         store=True, 
         tracking=True
     )
@@ -307,6 +329,7 @@ class PartnerGold(models.Model):
     extra_expenses_computed = fields.Float(
         string="Дополнительные расходы (расчет)",
         compute="_compute_extra_expenses",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -334,6 +357,7 @@ class PartnerGold(models.Model):
     total_expenses = fields.Float(
         string="Всего расходы",
         compute="_compute_total_expenses",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -360,6 +384,7 @@ class PartnerGold(models.Model):
     overall_amount = fields.Float(
         string="Общая сумма",
         compute="_compute_overall_amount",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -371,7 +396,11 @@ class PartnerGold(models.Model):
 
     # 35. Прибыль = Общая сумма - Сумма закупа, $
     profit = fields.Float(
-        string="Прибыль", compute="_compute_profit", store=True, tracking=True
+        string="Прибыль", 
+        compute="_compute_profit", 
+        store=True, 
+        tracking=True,
+        readonly=False,
     )
 
     @api.depends("overall_amount", "purchase_amount_dollar")
@@ -385,6 +414,7 @@ class PartnerGold(models.Model):
         compute="_compute_deal_percentage",
         store=True,
         tracking=True,
+        readonly=False,
     )
 
     @api.depends("profit", "purchase_amount_dollar")
@@ -398,7 +428,11 @@ class PartnerGold(models.Model):
 
     # 37. Курс итог = Сумма, руб. / Общая сумма
     final_rate = fields.Float(
-        string="Курс итог", compute="_compute_final_rate", store=True, tracking=True
+        string="Курс итог", 
+        compute="_compute_final_rate", 
+        store=True, 
+        tracking=True,
+        readonly=False,
     )
 
     @api.depends("amount_rub", "overall_amount")
@@ -435,6 +469,7 @@ class PartnerGold(models.Model):
         compute="_compute_royalty_amount_1",
         store=True,
         tracking=True,
+        readonly=False,
     )
 
     @api.depends("amount_rub", "first_percent")
@@ -463,6 +498,7 @@ class PartnerGold(models.Model):
         compute="_compute_lookup_pure_weight",
         store=True,
         tracking=True,
+        readonly=False,
     )
 
     @api.depends("gold_deal_ids.pure_weight_sum")
@@ -474,6 +510,7 @@ class PartnerGold(models.Model):
     lookup_invoice_amount = fields.Float(
         string="Сумма по инвойсу (Lookup)",
         compute="_compute_lookup_invoice_amount",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -487,6 +524,7 @@ class PartnerGold(models.Model):
     partner_percentage = fields.Float(
         string="Процент партнера от всего закупа",
         compute="_compute_partner_percentage",
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -504,6 +542,7 @@ class PartnerGold(models.Model):
     partner_invoice_amount = fields.Float(
         string="Сумма партнера от инвойса",
         compute="_compute_partner_invoice_amount",
+        readonly=False,
         store=True,
         tracking=True,
     )

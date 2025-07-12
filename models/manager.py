@@ -7,6 +7,7 @@ class Manager(models.Model, AmanatBaseModel):
     _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
 
     name = fields.Char(string="Имя")
+    user_id = fields.Many2one('res.users', string="Пользователь", required=True, tracking=True)
     phone = fields.Char(string="Телефон")
     date = fields.Date(string="Дата рождения")
     # Предполагается, что модель заявок существует (например, manager.application)
@@ -32,19 +33,60 @@ class Manager(models.Model, AmanatBaseModel):
     total_applications = fields.Integer(
         string="Количество заявок за менеджером",
         compute="_compute_applications_stats",
+        readonly=False,
         store=True
     )
     wrong_applications = fields.Integer(
         string="Количество ошибочных заявок за менеджером",
         compute="_compute_applications_stats",
+        readonly=False,
         store=True
     )
     efficiency = fields.Float(
         string="Эффективность менеджера",
         compute="_compute_efficiency",
         store=True,
+        readonly=False,
         digits=(16, 2)
     )
+
+    # Ограничения
+    _sql_constraints = [
+        ('unique_user_id', 'unique(user_id)', 'Пользователь может быть связан только с одним менеджером!')
+    ]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Автоматическое заполнение поля name при создании менеджера"""
+        for vals in vals_list:
+            # Если не указано имя, используем имя пользователя
+            if not vals.get('name') and vals.get('user_id'):
+                user = self.env['res.users'].browse(vals['user_id'])
+                if user.exists():
+                    vals['name'] = user.name
+        return super().create(vals_list)
+
+    @api.onchange('user_id')
+    def _onchange_user_id(self):
+        """Автоматическое заполнение имени при выборе пользователя"""
+        if self.user_id and not self.name:
+            self.name = self.user_id.name
+
+    @api.model
+    def find_or_create_manager(self, user_id):
+        """Находит или создает менеджера для указанного пользователя"""
+        manager = self.search([('user_id', '=', user_id)], limit=1)
+        if not manager:
+            user = self.env['res.users'].browse(user_id)
+            if user.exists():
+                manager = self.create([{
+                    'name': user.name,
+                    'user_id': user_id,
+                }])
+                import logging
+                _logger = logging.getLogger(__name__)
+                _logger.info(f"Создан менеджер {manager.name} (ID: {manager.id}) для пользователя {user.name}")
+        return manager
 
     @api.depends('applications', 'applications.status', 'applications.hide_in_dashboard')
     def _compute_applications_stats(self):

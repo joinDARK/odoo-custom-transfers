@@ -8,6 +8,7 @@
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="name"/>
                 <field name="contragent_id"/>
+                <field name="percent" widget="percentage"/>
             </list>
         </field>
     </record>
@@ -21,6 +22,7 @@
                     <group>
                         <field name="name"/>
                         <field name="contragent_id"/>
+                        <field name="percent" widget="percentage"/>
                     </group>
                 </sheet>
                 <chatter>

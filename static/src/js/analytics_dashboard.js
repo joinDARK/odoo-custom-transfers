@@ -32,7 +32,10 @@ export class AnalyticsDashboard extends Component {
             comparisonSortField: null,
             comparisonSortDirection: 'desc',
             // Загрузка курсов валют
-            loadingRates: false
+            loadingRates: false,
+            // Общая сумма эквивалентов всех контрагентов
+            totalBalanceSummary: null,
+            loadingTotalSummary: false
         });
         
         onWillStart(this.willStart);
@@ -43,6 +46,7 @@ export class AnalyticsDashboard extends Component {
         await Promise.all([
             this.loadDashboardData(),
             this.loadCurrencyRates(), // При загрузке страницы - только кэш или fallback данные
+            this.loadTotalBalanceSummary(),
             this.loadContragentsBalance(),
             this.loadContragentsComparison()
         ]);
@@ -215,42 +219,80 @@ export class AnalyticsDashboard extends Component {
         }
     }
     
-         /**
-      * Загрузка данных сравнения
-      */
-     async loadContragentsComparison() {
-         try {
-             // Подготавливаем параметры - не передаем пустые даты
-             const params = {};
-             if (this.state.dateFrom && this.state.dateFrom.trim()) {
-                 params.date_from1 = this.state.dateFrom;
-                 params.date_from2 = this.state.dateFrom;
-             }
-             if (this.state.dateTo && this.state.dateTo.trim()) {
-                 params.date_to1 = this.state.dateTo;
-                 params.date_to2 = this.state.dateTo;
-             }
-             
-             const result = await this.orm.call(
-                 'amanat.analytics_dashboard',
-                 'get_contragents_balance_comparison',
-                 [],
-                 params
-             );
+             /**
+     * Загрузка общей суммы эквивалентов всех контрагентов
+     */
+    async loadTotalBalanceSummary() {
+        this.state.loadingTotalSummary = true;
+        try {
+            // Подготавливаем параметры - не передаем пустые даты
+            const params = {};
+            if (this.state.dateFrom && this.state.dateFrom.trim()) {
+                params.date_from = this.state.dateFrom;
+            }
+            if (this.state.dateTo && this.state.dateTo.trim()) {
+                params.date_to = this.state.dateTo;
+            }
             
-            if (result.success && result.data) {
-                this.state.contragentsComparison = result.data;
-                console.log('Contragents comparison loaded:', this.state.contragentsComparison.length, 'records');
+            const result = await this.orm.call(
+                'amanat.analytics_dashboard',
+                'get_total_balance_summary',
+                [],
+                params
+            );
+            
+            if (result.success) {
+                this.state.totalBalanceSummary = result;
+                console.log('Total balance summary loaded:', result);
             } else {
-                console.warn('No contragents comparison data received');
+                console.warn('No total balance summary data received');
             }
         } catch (error) {
-            console.error('Error loading contragents comparison:', error);
-            this.notificationService.add("Ошибка загрузки данных сравнения", {
+            console.error('Error loading total balance summary:', error);
+            this.notificationService.add("Ошибка загрузки общей суммы", {
                 type: "warning",
             });
+        } finally {
+            this.state.loadingTotalSummary = false;
         }
     }
+
+    /**
+     * Загрузка данных сравнения
+     */
+    async loadContragentsComparison() {
+        try {
+            // Подготавливаем параметры - не передаем пустые даты
+            const params = {};
+            if (this.state.dateFrom && this.state.dateFrom.trim()) {
+                params.date_from1 = this.state.dateFrom;
+                params.date_from2 = this.state.dateFrom;
+            }
+            if (this.state.dateTo && this.state.dateTo.trim()) {
+                params.date_to1 = this.state.dateTo;
+                params.date_to2 = this.state.dateTo;
+            }
+            
+            const result = await this.orm.call(
+                'amanat.analytics_dashboard',
+                'get_contragents_balance_comparison',
+                [],
+                params
+            );
+           
+           if (result.success && result.data) {
+               this.state.contragentsComparison = result.data;
+               console.log('Contragents comparison loaded:', this.state.contragentsComparison.length, 'records');
+           } else {
+               console.warn('No contragents comparison data received');
+           }
+       } catch (error) {
+           console.error('Error loading contragents comparison:', error);
+           this.notificationService.add("Ошибка загрузки данных сравнения", {
+               type: "warning",
+           });
+       }
+   }
     
     /**
      * Обработка изменения даты начала
@@ -259,6 +301,7 @@ export class AnalyticsDashboard extends Component {
         console.log('Date from changed:', this.state.dateFrom);
         await Promise.all([
             this.loadDashboardData(),
+            this.loadTotalBalanceSummary(),
             this.loadContragentsBalance(),
             this.loadContragentsComparison()
         ]);
@@ -271,6 +314,72 @@ export class AnalyticsDashboard extends Component {
         console.log('Date to changed:', this.state.dateTo);
         await Promise.all([
             this.loadDashboardData(),
+            this.loadTotalBalanceSummary(),
+            this.loadContragentsBalance(),
+            this.loadContragentsComparison()
+        ]);
+    }
+    
+    /**
+     * Установка быстрого периода
+     */
+    async setQuickPeriod(period) {
+        console.log('Quick period selected:', period);
+        
+        const today = new Date();
+        let dateFrom = '';
+        let dateTo = '';
+        
+        switch (period) {
+            case 'week':
+                // За неделю - с понедельника этой недели до сегодня
+                const startOfWeek = new Date(today);
+                const dayOfWeek = today.getDay();
+                const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // воскресенье = 0
+                startOfWeek.setDate(today.getDate() - daysToMonday);
+                
+                dateFrom = startOfWeek.toISOString().split('T')[0];
+                dateTo = today.toISOString().split('T')[0];
+                break;
+                
+            case 'month':
+                // За месяц - с начала текущего месяца до сегодня
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                
+                dateFrom = startOfMonth.toISOString().split('T')[0];
+                dateTo = today.toISOString().split('T')[0];
+                break;
+                
+            case '3months':
+                // За 3 месяца - 3 месяца назад от сегодня
+                const threeMonthsAgo = new Date(today);
+                threeMonthsAgo.setMonth(today.getMonth() - 3);
+                
+                dateFrom = threeMonthsAgo.toISOString().split('T')[0];
+                dateTo = today.toISOString().split('T')[0];
+                break;
+                
+            case 'all':
+                // За всё время - очищаем даты
+                dateFrom = '';
+                dateTo = '';
+                break;
+                
+            default:
+                console.warn('Unknown period:', period);
+                return;
+        }
+        
+        // Устанавливаем даты в состояние
+        this.state.dateFrom = dateFrom;
+        this.state.dateTo = dateTo;
+        
+        console.log(`Period set: ${period}, from: ${dateFrom}, to: ${dateTo}`);
+        
+        // Перезагружаем данные с новым диапазоном
+        await Promise.all([
+            this.loadDashboardData(),
+            this.loadTotalBalanceSummary(),
             this.loadContragentsBalance(),
             this.loadContragentsComparison()
         ]);
@@ -377,6 +486,7 @@ export class AnalyticsDashboard extends Component {
         
         // Перезагружаем балансы с обновленными курсами
         await Promise.all([
+            this.loadTotalBalanceSummary(),
             this.loadContragentsBalance(),
             this.loadContragentsComparison()
         ]);
@@ -518,6 +628,7 @@ export class AnalyticsDashboard extends Component {
             if (result.success) {
                 // Перезагружаем балансы с новыми курсами
                 await Promise.all([
+                    this.loadTotalBalanceSummary(),
                     this.loadContragentsBalance(),
                     this.loadContragentsComparison()
                 ]);

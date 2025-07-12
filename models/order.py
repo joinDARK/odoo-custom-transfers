@@ -75,30 +75,35 @@ class Order(models.Model, AmanatBaseModel):
         string='РКО',
         compute='_compute_financials',
         store=True,
+        readonly=False,
         tracking=True
     )
     amount_1 = fields.Float(
         string='Сумма 1',
         compute='_compute_financials',
         store=True,
+        readonly=False,
         tracking=True
     )
     rko_2 = fields.Float(
         string='РКО 2',
         compute='_compute_financials',
         store=True,
+        readonly=False,
         tracking=True
     )
     amount_2 = fields.Float(
         string='Сумма 2',
         compute='_compute_financials',
         store=True,
+        readonly=False,
         tracking=True
     )
     total = fields.Float(
         string='ИТОГО',
         compute='_compute_financials',
         store=True,
+        readonly=False,
         tracking=True
     )
 
@@ -159,7 +164,7 @@ class Order(models.Model, AmanatBaseModel):
     )
     cross_rate = fields.Float(
         string='Крос-Курс (from Конвертация)',
-        compute='_compute_conversion_fields', store=True
+        compute='_compute_conversion_fields', store=True, readonly=False
     )
     currency_from_conv = fields.Selection(
         [
@@ -204,11 +209,11 @@ class Order(models.Model, AmanatBaseModel):
     # formula-поля
     cross_calc = fields.Float(
         string='Подсчет крос',
-        compute='_compute_conversion_fields', store=True
+        compute='_compute_conversion_fields', store=True, readonly=False
     )
     amount_after_conv = fields.Float(
         string='Сумма после конвертации',
-        compute='_compute_conversion_fields', store=True
+        compute='_compute_conversion_fields', store=True, readonly=False
     )
 
     # Финал
@@ -229,6 +234,7 @@ class Order(models.Model, AmanatBaseModel):
     rollup_write_off = fields.Float(
         string='Роллап списания',
         compute='_compute_rollup_write_off',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -237,6 +243,7 @@ class Order(models.Model, AmanatBaseModel):
         string='Остаток долга',
         compute='_compute_remaining_debt',
         store=True,
+        readonly=False,
         tracking=True
     )
 
@@ -268,6 +275,7 @@ class Order(models.Model, AmanatBaseModel):
     converted_sum_from_zayavka = fields.Float(
         string='Сумма после конвертации Заявки',
         compute='_compute_currency_from_zayavka',
+        readonly=False,
         store=True,
         tracking=True
     )

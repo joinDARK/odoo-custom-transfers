@@ -1,6 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="amanat.AmanatDashboard" owl="1">
+        <style>
+            /* Принудительное уменьшение размеров графиков */
+            .chart-container-large, .chart-container-medium, .chart-container-small, 
+            div[class*="chart-container"] { height: 180px !important; max-height: 180px !important; }
+            canvas, canvas[id*="chart"], canvas[id*="line"], canvas[id*="pie"], canvas[id*="donut"] 
+            { height: 180px !important; max-height: 180px !important; }
+            .chart-card { padding: 8px !important; margin-bottom: 0 !important; }
+            .chart-title { font-size: 11px !important; margin-bottom: 6px !important; font-weight: 600 !important; }
+            .o_amanat_dashboard_content { padding: 8px !important; }
+            .row.g-3.mb-2 { margin-bottom: 0.5rem !important; }
+            
+            /* Компактные графики в строках */
+            .row .col-lg-3 .chart-card, .row .col-lg-4 .chart-card, .row .col-lg-6 .chart-card { min-height: 220px !important; }
+            .row .col-lg-3 .chart-title, .row .col-lg-4 .chart-title, .row .col-lg-6 .chart-title { 
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+            }
+            
+            /* Улучшенные отступы для компактности */
+            @media (min-width: 992px) {
+                .col-lg-3 { padding-left: 4px !important; padding-right: 4px !important; }
+                .col-lg-4 { padding-left: 6px !important; padding-right: 6px !important; }
+                .col-lg-6 { padding-left: 6px !important; padding-right: 6px !important; }
+            }
+            
+            /* Мобильная адаптивность */
+            @media (max-width: 768px) {
+                .chart-title { font-size: 10px !important; }
+                .chart-card { padding: 6px !important; }
+            }
+        </style>
         <div class="o_amanat_dashboard o_action">
             <div class="o_amanat_dashboard_content">
                 <t t-if="state.isLoading">
@@ -12,13 +42,32 @@
 
                 <t t-else="">
                     <!-- Секция выбора диапазонов дат -->
-                    <div class="date-range-selector mb-4">
+                    <div class="date-range-selector mb-2">
                         <div class="row g-3 align-items-end">
                             <div class="col-lg-5">
                                 <div class="date-range-group">
                                     <h6 class="mb-2">
                                         <i class="fa fa-calendar text-primary"/> Период 1 (Синий)
                                     </h6>
+                                    <!-- Кнопки быстрого выбора периода 1 -->
+                                    <div class="quick-period-buttons mb-2">
+                                        <button class="btn btn-outline-primary btn-sm period-btn me-1" 
+                                                t-on-click="() => this.setQuickPeriod1('week')">
+                                            Неделя
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm period-btn me-1" 
+                                                t-on-click="() => this.setQuickPeriod1('month')">
+                                            Месяц
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm period-btn me-1" 
+                                                t-on-click="() => this.setQuickPeriod1('3months')">
+                                            3 месяца
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm period-btn" 
+                                                t-on-click="() => this.setQuickPeriod1('6months')">
+                                            6 месяцев
+                                        </button>
+                                    </div>
                                     <div class="row g-2">
                                         <div class="col-6">
                                             <label class="form-label small">От:</label>
@@ -40,6 +89,25 @@
                                     <h6 class="mb-2">
                                         <i class="fa fa-calendar text-danger"/> Период 2 Для сравнения (Красный)
                                     </h6>
+                                    <!-- Кнопки быстрого выбора периода 2 -->
+                                    <div class="quick-period-buttons mb-2">
+                                        <button class="btn btn-outline-danger btn-sm period-btn me-1" 
+                                                t-on-click="() => this.setQuickPeriod2('week')">
+                                            Неделя
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm period-btn me-1" 
+                                                t-on-click="() => this.setQuickPeriod2('month')">
+                                            Месяц
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm period-btn me-1" 
+                                                t-on-click="() => this.setQuickPeriod2('3months')">
+                                            3 месяца
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm period-btn" 
+                                                t-on-click="() => this.setQuickPeriod2('6months')">
+                                            6 месяцев
+                                        </button>
+                                    </div>
                                     <div class="row g-2">
                                         <div class="col-6">
                                             <label class="form-label small">От:</label>
@@ -69,7 +137,7 @@
 
 
                     <!-- Заявки в рамках диапазона (на всю ширину) -->
-                    <div class="row g-3 mb-4">
+                    <div class="row g-3 mb-2">
                         <!-- Заявки в рамках диапазона (на всю ширину) -->
                         <div class="col-12">
                             <div class="stat-card zayavki-comparison-card clickable" t-on-click="openZayavki">
@@ -184,43 +252,40 @@
                         </div>
                     </div>
 
-                    <!-- Соотношение ИМПОРТ/ЭКСПОРТ -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-lg-6">
+                    <!-- Эффективность менеджеров и Статусы заявок (по половине ширины) -->
+                    <div class="row g-3 mb-2">
+                        <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">
-                                    <t t-if="state.comparisonData and state.comparisonData.range2">
-                                        Период 1: Соотношение ИМПОРТ/ЭКСПОРТ
-                                    </t>
-                                    <t t-else="">
-                                        Соотношение ИМПОРТ/ЭКСПОРТ
-                                    </t>
-                                </h6>
-                                <div class="chart-container-medium">
-                                    <canvas id="import-export-donut"></canvas>
+                                <h6 class="chart-title">📊 Эффективность менеджеров</h6>
+                                <div class="chart-container-large">
+                                    <canvas id="managers-efficiency-chart"></canvas>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6">
+                        <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
                                 <h6 class="chart-title">
                                     <t t-if="state.comparisonData and state.comparisonData.range2">
-                                        Период 2: Соотношение ИМПОРТ/ЭКСПОРТ
+                                        Сравнение: Статусы заявок
                                     </t>
                                     <t t-else="">
-                                        Соотношение ИМПОРТ/ЭКСПОРТ
+                                        Статусы заявок
                                     </t>
                                 </h6>
-                                <div class="chart-container-medium">
-                                    <canvas id="import-export-donut-2"></canvas>
+                                <div class="chart-container-large">
+                                    <canvas id="zayavki-status-donut"></canvas>
                                 </div>
                             </div>
+                        </div>
+                        <!-- Скрытый второй график для статусов -->
+                        <div style="display: none;">
+                            <canvas id="zayavki-status-donut-2"></canvas>
                         </div>
                     </div>
 
-                    <!-- Количество заявок под каждого контрагента -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
+                    <!-- Группа контрагентов + ИМПОРТ/ЭКСПОРТ (4 графика в одну строку) -->
+                    <div class="row g-3 mb-2">
+                        <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
                                 <h6 class="chart-title">Количество заявок под каждого контрагента</h6>
                                 <div class="chart-container-large">
@@ -228,11 +293,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Средний чек у Контрагента -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
+                        <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
                                 <h6 class="chart-title">Средний чек у Контрагента</h6>
                                 <div class="chart-container-large">
@@ -240,11 +301,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Вознаграждение средний процент -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
+                        <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
                                 <h6 class="chart-title">Вознаграждение средний процент</h6>
                                 <div class="chart-container-large">
@@ -252,23 +309,34 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Количество заявок под каждого агента -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
+                        <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Количество заявок под каждого агента</h6>
+                                <h6 class="chart-title">
+                                    <t t-if="state.comparisonData and state.comparisonData.range2">
+                                        Сравнение ИМПОРТ/ЭКСПОРТ по периодам
+                                    </t>
+                                    <t t-else="">
+                                        Соотношение ИМПОРТ/ЭКСПОРТ
+                                    </t>
+                                </h6>
                                 <div class="chart-container-large">
-                                    <canvas id="agents-by-zayavki-chart"></canvas>
+                                    <canvas id="import-export-line-comparison"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Средняя сумма заявок под каждого агента -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
+                    <!-- Группа агентов + клиенты (2 графика в одну строку) -->
+                    <div class="row g-3 mb-2">
+                        <div class="col-lg-6 col-md-6 col-12">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Средняя сумма заявок по клиентам</h6>
+                                <div class="chart-container-large">
+                                    <canvas id="client-avg-amount-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
                                 <h6 class="chart-title">Средняя сумма заявок под каждого агента</h6>
                                 <div class="chart-container-large">
@@ -278,9 +346,9 @@
                         </div>
                     </div>
 
-                    <!-- Количество заявок под каждого клиента -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
+                    <!-- Группа клиентов, субагентов и агентов (4 графика в одну строку) -->
+                    <div class="row g-3 mb-2">
+                        <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
                                 <h6 class="chart-title">Количество заявок под каждого клиента</h6>
                                 <div class="chart-container-large">
@@ -288,23 +356,15 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Количество заявок под каждого платежщика субагента -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
+                        <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Количество заявок под каждого платежщика субагента</h6>
+                                <h6 class="chart-title">Количество заявок под каждого плательщика субагента</h6>
                                 <div class="chart-container-large">
                                     <canvas id="payers-by-zayavki-chart"></canvas>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Количество заявок под каждого субагента -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
+                        <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
                                 <h6 class="chart-title">Количество заявок под каждого субагента</h6>
                                 <div class="chart-container-large">
@@ -312,133 +372,56 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-lg-3 col-md-6 col-12">
+                            <div class="chart-card">
+                                <h6 class="chart-title">Количество заявок под каждого агента</h6>
+                                <div class="chart-container-large">
+                                    <canvas id="agents-by-zayavki-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Заявок закреплено за менеджером -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-lg-6">
+                    <!-- Группа менеджеров (2 графика в одну строку) -->
+                    <div class="row g-3 mb-2">
+                        <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
                                 <h6 class="chart-title">
                                     <t t-if="state.comparisonData and state.comparisonData.range2">
-                                        Период 1: Заявок закреплено за менеджером
+                                        Сравнение: Заявок закреплено за менеджером
                                     </t>
                                     <t t-else="">
                                         Заявок закреплено за менеджером
                                     </t>
                                 </h6>
-                                <div class="chart-container-medium">
+                                <div class="chart-container-large">
                                     <canvas id="managers-by-zayavki-pie"></canvas>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6">
+                        <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
                                 <h6 class="chart-title">
                                     <t t-if="state.comparisonData and state.comparisonData.range2">
-                                        Период 2: Заявок закреплено за менеджером
-                                    </t>
-                                    <t t-else="">
-                                        Заявок закреплено за менеджером
-                                    </t>
-                                </h6>
-                                <div class="chart-container-medium">
-                                    <canvas id="managers-by-zayavki-pie-2"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Заявок закрыто менеджером -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-lg-6">
-                            <div class="chart-card">
-                                <h6 class="chart-title">
-                                    <t t-if="state.comparisonData and state.comparisonData.range2">
-                                        Период 1: Заявок закрыто менеджером
+                                        Сравнение: Заявок закрыто менеджером
                                     </t>
                                     <t t-else="">
                                         Заявок закрыто менеджером
                                     </t>
                                 </h6>
-                                <div class="chart-container-medium">
+                                <div class="chart-container-large">
                                     <canvas id="managers-closed-zayavki-pie"></canvas>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6">
-                            <div class="chart-card">
-                                <h6 class="chart-title">
-                                    <t t-if="state.comparisonData and state.comparisonData.range2">
-                                        Период 2: Заявок закрыто менеджером
-                                    </t>
-                                    <t t-else="">
-                                        Заявок закрыто менеджером
-                                    </t>
-                                </h6>
-                                <div class="chart-container-medium">
-                                    <canvas id="managers-closed-zayavki-pie-2"></canvas>
-                                </div>
-                            </div>
+                        <!-- Скрытые вторые графики для сравнения -->
+                        <div style="display: none;">
+                            <canvas id="managers-by-zayavki-pie-2"></canvas>
+                            <canvas id="managers-closed-zayavki-pie-2"></canvas>
                         </div>
                     </div>
 
-                    <!-- Эффективность менеджеров -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
-                            <div class="chart-card">
-                                <h6 class="chart-title">📊 Эффективность менеджеров</h6>
-                                <div class="chart-container-large">
-                                    <canvas id="managers-efficiency-chart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Статусы заявок -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-lg-6">
-                            <div class="chart-card">
-                                <h6 class="chart-title">
-                                    <t t-if="state.comparisonData and state.comparisonData.range2">
-                                        Период 1: Статусы заявок
-                                    </t>
-                                    <t t-else="">
-                                        Статусы заявок
-                                    </t>
-                                </h6>
-                                <div class="chart-container-medium">
-                                    <canvas id="zayavki-status-donut"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="chart-card">
-                                <h6 class="chart-title">
-                                    <t t-if="state.comparisonData and state.comparisonData.range2">
-                                        Период 2: Статусы заявок
-                                    </t>
-                                    <t t-else="">
-                                        Статусы заявок
-                                    </t>
-                                </h6>
-                                <div class="chart-container-medium">
-                                    <canvas id="zayavki-status-donut-2"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Средняя сумма заявок по клиентам -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
-                            <div class="chart-card">
-                                <h6 class="chart-title">Средняя сумма заявок по клиентам</h6>
-                                <div class="chart-container-large">
-                                    <canvas id="client-avg-amount-chart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
 
 
@@ -453,7 +436,7 @@
 
 
                     <!-- Седьмой ряд - Циклы сделок -->
-                    <div class="row g-3 mb-4">
+                    <div class="row g-3 mb-2">
                         <!-- Циклы сделок (линейный график) -->
                         <div class="col-lg-12">
                             <div class="chart-card">

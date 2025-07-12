@@ -319,6 +319,66 @@ export class ZayavkaFiksDashboard extends Component {
         console.log('📅 Дата конца изменена:', this.state.dateTo);
         await this.loadDashboardData();
     }
+
+    /**
+     * Установка быстрого периода
+     */
+    async setQuickPeriod(period) {
+        console.log('🚀 Быстрый период выбран:', period);
+        
+        const today = new Date();
+        let dateFrom = '';
+        let dateTo = '';
+        
+        switch (period) {
+            case 'week':
+                // За неделю - с понедельника этой недели до сегодня
+                const startOfWeek = new Date(today);
+                const dayOfWeek = today.getDay();
+                const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // воскресенье = 0
+                startOfWeek.setDate(today.getDate() - daysToMonday);
+                
+                dateFrom = startOfWeek.toISOString().split('T')[0];
+                dateTo = today.toISOString().split('T')[0];
+                break;
+                
+            case 'month':
+                // За месяц - с начала текущего месяца до сегодня
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                
+                dateFrom = startOfMonth.toISOString().split('T')[0];
+                dateTo = today.toISOString().split('T')[0];
+                break;
+                
+            case '3months':
+                // За 3 месяца - 3 месяца назад от сегодня
+                const threeMonthsAgo = new Date(today);
+                threeMonthsAgo.setMonth(today.getMonth() - 3);
+                
+                dateFrom = threeMonthsAgo.toISOString().split('T')[0];
+                dateTo = today.toISOString().split('T')[0];
+                break;
+                
+            case 'all':
+                // За всё время - очищаем даты
+                dateFrom = '';
+                dateTo = '';
+                break;
+                
+            default:
+                console.warn('❌ Неизвестный период:', period);
+                return;
+        }
+        
+        // Устанавливаем даты в состояние
+        this.state.dateFrom = dateFrom;
+        this.state.dateTo = dateTo;
+        
+        console.log(`✅ Период установлен: ${period}, от: ${dateFrom}, до: ${dateTo}`);
+        
+        // Перезагружаем данные с новым диапазоном
+        await this.loadDashboardData();
+    }
 }
 
 // Регистрация компонента

@@ -5,12 +5,69 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
-            <div class="dashboard-header">
+                        <!-- Блок общей суммы эквивалентов -->
+                        <div class="total-summary-card">
+                            <div class="summary-header">
+                                <h2>Общая сумма эквивалентов всех контрагентов</h2>
+                            </div>
+                            
+                            <div class="summary-content" t-if="state.totalBalanceSummary">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="summary-metric">
+                                            <div class="metric-label">Всего контрагентов</div>
+                                            <div class="metric-value" t-esc="state.totalBalanceSummary.contragents_count"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="summary-metric">
+                                            <div class="metric-label">Общий баланс контрагентов в эквиваленте в $</div>
+                                            <div class="metric-value" t-esc="state.totalBalanceSummary.total_usd_equivalent"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="summary-metric">
+                                            <div class="metric-label">С активными балансами</div>
+                                            <div class="metric-value" t-esc="state.totalBalanceSummary.active_contragents_count"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+
+                            
+                            <!-- Показываем если нет данных -->
+                            <div t-if="!state.totalBalanceSummary and !state.loadingTotalSummary" class="no-summary">
+                                <p>Данные общей суммы не найдены</p>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-header">
                             <h2>Диапазон</h2>
                             <p class="dashboard-subtitle">Настройка диапазона</p>
-            </div>
+                        </div>
 
                         <div class="date-range-card">
+                            <!-- Кнопки быстрого выбора периода -->
+                            <div class="quick-period-buttons">
+                                <button class="btn btn-outline-primary btn-sm period-btn" 
+                                        t-on-click="() => this.setQuickPeriod('week')">
+                                    За неделю
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm period-btn" 
+                                        t-on-click="() => this.setQuickPeriod('month')">
+                                    За месяц
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm period-btn" 
+                                        t-on-click="() => this.setQuickPeriod('3months')">
+                                    За 3 месяца
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm period-btn" 
+                                        t-on-click="() => this.setQuickPeriod('all')">
+                                    За всё время
+                                </button>
+                            </div>
+                            
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">

@@ -8,24 +8,25 @@
     />
 
     <!-- Меню для дашборда -->
-    <menuitem 
+    <!-- <menuitem 
         id="amanat_menu_dashboard" 
         name="Дашборд"
         parent="amanat_menu_root"
         action="action_amanat_dashboard_js"
         sequence="0"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager"
-    />
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager"
+    /> -->
 
     <!-- Меню для аналитического дашборда -->
-    <menuitem 
+    <!-- <menuitem 
         id="amanat_menu_analytics_dashboard" 
         name="Аналитика"
         parent="amanat_menu_root"
         action="action_amanat_analytics_dashboard_js"
         sequence="1"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager"
-    />
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager"
+    /> -->
+
 
     
 
@@ -38,6 +39,7 @@
         name="Основные" 
         parent="amanat_menu_root" 
         sequence="1"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Группировака "Перевод"-->
@@ -46,6 +48,7 @@
         name="Перевод" 
         parent="amanat_menu_root" 
         sequence="2"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Группировака "Справочники"-->
@@ -54,6 +57,7 @@
         name="Справочники" 
         parent="amanat_menu_root" 
         sequence="3"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Группировака "Заявки"-->
@@ -62,6 +66,7 @@
         name="Заявки" 
         parent="amanat_menu_root" 
         sequence="4"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Группировака "Золото"-->
@@ -70,6 +75,7 @@
         name="Золото" 
         parent="amanat_menu_root" 
         sequence="5"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для контрагентов -->
@@ -96,6 +102,7 @@
         name="Кошелек" 
         parent="amanat_menu_manuals_group" 
         action="wallet_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для переводов -->
@@ -104,7 +111,7 @@
         name="Переводы" 
         parent="amanat_menu_transfer_group" 
         action="transfer_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для ордеров -->
@@ -113,6 +120,7 @@
         name="Ордеры" 
         parent="amanat_menu_transfer_group" 
         action="order_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для денежных контейнеров -->
@@ -121,6 +129,7 @@
         name="Денежные контейнеры" 
         parent="amanat_menu_transfer_group" 
         action="money_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для сверок -->
@@ -129,6 +138,7 @@
         name="Сверки"
         parent="amanat_menu_transfer_group" 
         action="reconciliation_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для диапазон -->
@@ -137,6 +147,7 @@
         name="Диапазоны"
         parent="amanat_menu_main_group" 
         action="ranges_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для курсов -->
@@ -145,6 +156,7 @@
         name="Курсы к доллару" 
         parent="amanat_menu_main_group" 
         action="rates_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <menuitem 
@@ -152,6 +164,7 @@
         name="Платежи" 
         parent="amanat_menu_main_group" 
         action="payment_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для списаний -->
@@ -160,6 +173,7 @@
         name="Списания"
         parent="amanat_menu_transfer_group"
         action="writeoff_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для конвертации -->
@@ -168,6 +182,7 @@
             name="Конвертации"
             parent="amanat_menu_main_group"
             action="conversion_action"
+            groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для выписки разнос -->
@@ -176,6 +191,7 @@
             name="Выписка разнос"
             parent="amanat_menu_main_group"
             action="extract_delivery_action"
+            groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для страны -->
@@ -184,6 +200,7 @@
         name="Страны"
         parent="amanat_menu_manuals_group"
         action="country_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для заявки -->
@@ -192,6 +209,7 @@
         name="Заявки"
         parent="amanat_menu_orders_group"
         action="zayavka_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для резерва -->
@@ -200,6 +218,7 @@
         name="Валютный резерв"
         parent="amanat_menu_root"
         action="reserve_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Кассы Иван -->
@@ -208,6 +227,7 @@
         name="Касса Иван"
         parent="amanat_menu_orders_group"
         action="kassa_ivan_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Кассы 2 -->
@@ -216,6 +236,7 @@
         name="Касса 2"
         parent="amanat_menu_orders_group"
         action="kassa_2_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Кассы 3 -->
@@ -224,6 +245,7 @@
         name="Касса 3"
         parent="amanat_menu_orders_group"
         action="kassa_3_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Прайс лист партнеры-->
@@ -232,6 +254,7 @@
         name="Прайс лист партнеры"
         parent="amanat_menu_orders_group"
         action="price_list_partners_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Прайс лист Плательщика Прибыль-->
@@ -240,6 +263,7 @@
         name="Прайс лист Плательщика Прибыль"
         parent="amanat_menu_orders_group"
         action="price_list_payer_profit_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Прайс лист Плательщика за проведение -->
@@ -256,6 +280,7 @@
         name="Задачник"
         parent="amanat_menu_root"
         action="task_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Золото сделка -->
@@ -264,6 +289,7 @@
         name="Золото сделка"
         parent="amanat_menu_golds_group"
         action="gold_deal_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Партнеры золото -->
@@ -272,6 +298,7 @@
         name="Партнеры золото"
         parent="amanat_menu_golds_group"
         action="partner_gold_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Выписки -->
@@ -280,6 +307,7 @@
         name="Выписки"
         parent="amanat_menu_main_group"
         action="action_amanat_extracts"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Период -->
@@ -288,6 +316,7 @@
         name="Период"
         parent="amanat_menu_main_group"
         action="action_amanat_period"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Сверка файлы -->
@@ -296,6 +325,7 @@
         name="Сверка файлы"
         parent="amanat_menu_main_group"
         action="action_amanat_sverka_files"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Investment -->
@@ -304,6 +334,7 @@
         name="Инвестиции"
         parent="amanat_menu_main_group"
         action="investment_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Менеджеров -->
@@ -312,6 +343,7 @@
         name="Менджеры"
         parent="amanat_menu_manuals_group"
         action="manager_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <menuitem 
@@ -319,6 +351,7 @@
         name="Прайс лист Плательщика За проведение"
         parent="amanat_menu_main_group"
         action="price_list_payer_carrying_out_action"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <menuitem
@@ -326,6 +359,7 @@
         name="Правило Платежка РФ"
         parent="amanat_menu_main_group"
         action="action_payment_order_rule"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <menuitem
@@ -333,6 +367,7 @@
         name="Правило Себестоимость денег"
         parent="amanat_menu_main_group"
         action="action_money_cost_rule"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
     <menuitem
@@ -340,5 +375,6 @@
         name="Правило Расход на операционную деятельность"
         parent="amanat_menu_main_group"
         action="action_expense_rule"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 </odoo>
