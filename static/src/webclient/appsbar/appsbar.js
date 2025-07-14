@@ -40,6 +40,7 @@ export class AppsBar extends Component {
                     { name: "Плательщики", action: "amanat.payer_action" },
                     { name: "Страны", action: "amanat.country_action" },
                     { name: "Менеджеры", action: "amanat.manager_action" },
+                    { name: "Библиотека подписей", action: "amanat.signature_library_action" },
                 ],
             },
             {

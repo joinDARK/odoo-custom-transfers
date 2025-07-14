@@ -18,3 +18,38 @@ class AmanatSverkaFiles(models.Model, AmanatBaseModel):
                 ('res_model', '=', self._name),
                 ('res_id', '=', record.id)
             ])
+    
+    def preview_files(self):
+        """Метод для превью файлов с вызовом модального окна"""
+        # Простая проверка наличия файлов
+        has_file_attachments = bool(self.file_attachments)
+        
+        # Проверяем стандартные вложения
+        std_attachments_count = self.env['ir.attachment'].search_count([
+            ('res_model', '=', self._name),
+            ('res_id', '=', self.id)
+        ])
+        
+        total_files = len(self.file_attachments or []) + std_attachments_count
+        
+        if total_files == 0:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Превью файлов',
+                    'message': 'Нет прикрепленных файлов для превью',
+                    'type': 'warning',
+                    'sticky': False,
+                }
+            }
+        
+        # Возвращаем действие для вызова JavaScript функции
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'call_js_function',
+            'params': {
+                'function_name': 'showSverkaFilesPreview',
+                'args': [self.id],
+            }
+        }

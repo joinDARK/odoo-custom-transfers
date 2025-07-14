@@ -103,6 +103,8 @@ class Zayavka(models.Model, AmanatBaseModel):
     cross_rate = fields.Float(
         string='Курс КРОСС',
         compute='_compute_cross_rate',
+        readonly=False,
+        tracking=True,
         store=True
     )
 
@@ -130,6 +132,8 @@ class Zayavka(models.Model, AmanatBaseModel):
     best_rate = fields.Float(
         string='Лучший курс',
         compute='_compute_best_rate',
+        readonly=False,
+        tracking=True,
         store=True,
     )
 
@@ -141,6 +145,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_reward = fields.Float(
         string='Вознаграждение по договору Клиент',
         compute='_compute_client_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -148,6 +153,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     our_client_reward = fields.Float(
         string='Вознаграждение наше Клиент',
         compute='_compute_our_client_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -155,6 +161,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     non_our_client_reward = fields.Float(
         string='Вознаграждение не наше Клиент',
         compute='_compute_non_our_client_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -162,6 +169,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     total_client = fields.Float(
         string='Итого Клиент',
         compute='_compute_total_client',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -169,6 +177,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     total_client_management = fields.Float(
         string='Итого Клиент упр',
         compute='_compute_total_client_management',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -176,13 +185,16 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_payment_cost = fields.Float(
         string='Расход платежа Клиент',
         compute='_compute_client_payment_cost',
+        readonly=False,
         store=True,
         digits=(16, 2),
+        tracking=True,
     )
 
     payment_order_rf_client = fields.Float(
         string='Платежка РФ Клиент',
         compute='_compute_payment_order_rf_client',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -190,6 +202,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_operating_expenses = fields.Float(
         string='Расход на операционную деятельность Клиент',
         compute='_compute_client_operating_expenses',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -197,6 +210,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_real_operating_expenses = fields.Float(
         string='Расход на операционную деятельность Клиент Реал',
         compute='_compute_client_real_operating_expenses',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -204,6 +218,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_real_operating_expenses_usd = fields.Float(
         string='Расход на операционную деятельность Клиент Реал $',
         compute='_compute_client_real_operating_expenses_usd',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -211,6 +226,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_real_operating_expenses_rub = fields.Float(
         string='Расход на операционную деятельность Клиент Реал ₽',
         compute='_compute_client_real_operating_expenses_rub',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -218,6 +234,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_currency_bought = fields.Float(
         string='Купили валюту Клиент',
         compute='_compute_client_currency_bought',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -225,6 +242,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_currency_bought_real = fields.Float(
         string='Купили валюту Клиент реал',
         compute='_compute_client_currency_bought_real',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -232,6 +250,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_currency_bought_real_usd = fields.Float(
         string='Купили валюту Клиент реал $',
         compute='_compute_client_currency_bought_real_usd',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -239,6 +258,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_currency_bought_real_rub = fields.Float(
         string='Купили валюту Клиент реал ₽',
         compute='_compute_client_currency_bought_real_rub',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -246,6 +266,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_payment_cost_usd = fields.Float(
         string='Расход платежа в $ Клиент',
         compute='_compute_client_payment_cost_usd',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -253,6 +274,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_payment_cost_rub = fields.Float(
         string='Расход платежа в ₽ Клиент',
         compute='_compute_client_payment_cost_rub',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -260,6 +282,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     cost_of_money_client = fields.Float(
         string='Себестоимость денег Клиент',
         compute='_compute_cost_of_money_client',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -268,6 +291,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     cost_of_money_client_real = fields.Float(
         string='Себестоимость денег Клиент реал',
         compute='_compute_cost_of_money_client_real',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -276,6 +300,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     cost_of_money_client_real_usd = fields.Float(
         string='Себестоимость денег Клиент реал $',
         compute='_compute_cost_of_money_client_real_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -284,6 +309,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     cost_of_money_client_real_rub = fields.Float(
         string='Себестоимость денег Клиент реал ₽',
         compute='_compute_cost_of_money_client_real_rub',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -292,6 +318,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_client = fields.Float(
         string='Фин рез Клиент',
         compute='_compute_fin_res_client',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -300,6 +327,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_client_real = fields.Float(
         string='Фин рез Клиент реал',
         compute='_compute_fin_res_client_real',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -308,6 +336,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_client_real_usd = fields.Float(
         string='Фин рез Клиент реал $',
         compute='_compute_fin_res_client_real_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -316,6 +345,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_client_real_rub = fields.Float(
         string='Фин рез Клиент реал ₽',
         compute='_compute_fin_res_client_real_rub',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -325,6 +355,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_reward = fields.Float(
         string='Вознаграждение по договору Сбер',
         compute='_compute_sber_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -332,6 +363,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     our_sber_reward = fields.Float(
         string='Вознаграждение наше Сбер',
         compute='_compute_our_sber_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -339,6 +371,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     non_our_sber_reward = fields.Float(
         string='Вознаграждение не наше Сбер',
         compute='_compute_non_our_sber_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -346,6 +379,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     total_sber = fields.Float(
         string='Итого Сбер',
         compute='_compute_total_sber',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -353,6 +387,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     total_sber_management = fields.Float(
         string='Итого Сбер упр',
         compute='_compute_total_sber_management',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -360,6 +395,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     overall_sber_percent = fields.Float(
         string='Общий процент Сбер',
         compute='_compute_overall_sber_percent',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -367,6 +403,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     rate_real_sber = fields.Float(
         string='Заявка по курсу реальный Сбер',
         compute='_compute_rate_real_sber',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -374,6 +411,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_payment_cost = fields.Float(
         string='Расход платежа Сбер',
         compute='_compute_sber_payment_cost',
+        readonly=False,
         store=True,
         digits=(16, 2),
     )
@@ -381,6 +419,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payment_order_rf_sber = fields.Float(
         string='Платежка РФ Сбер',
         compute='_compute_payment_order_rf_sber',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -388,6 +427,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_operating_expenses = fields.Float(
         string='Расход на операционную деятельность Сбер',
         compute='_compute_sber_operating_expenses',
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -395,6 +435,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_operating_expenses_real = fields.Float(
         string='Расход на операционную деятельность Сбер реал',
         compute='_compute_sber_operating_expenses_real',
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -402,6 +443,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_operating_expenses_real_usd = fields.Float(
         string='Расход на операционную деятельность Сбер реал $',
         compute='_compute_sber_operating_expenses_real_usd',
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -409,6 +451,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_operating_expenses_real_rub = fields.Float(
         string='Расход на операционную деятельность Сбер реал ₽',
         compute='_compute_sber_operating_expenses_real_rub',
+        readonly=False,
         store=True,
         tracking=True,
     )
@@ -416,6 +459,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     kupili_valyutu_sber = fields.Float(
         string='Купили валюту Сбер',
         compute='_compute_kupili_valyutu_sber',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -423,6 +467,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     kupili_valyutu_sber_real = fields.Float(
         string='Купили валюту Сбер реал',
         compute='_compute_kupili_valyutu_sber_real',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -430,6 +475,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     kupili_valyutu_sber_real_usd = fields.Float(
         string='Купили валюту Сбер реал $',
         compute='_compute_kupili_valyutu_sber_real_usd',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -437,6 +483,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     kupili_valyutu_sber_real_rub = fields.Float(
         string='Купили валюту Сбер реал ₽',
         compute='_compute_kupili_valyutu_sber_real_rub',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -444,6 +491,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_payment_cost_usd = fields.Float(
         string='Расход платежа Сбер $',
         compute='_compute_sber_payment_cost_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -452,6 +500,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_payment_cost_rub = fields.Float(
         string='Расход платежа Сбер ₽',
         compute='_compute_sber_payment_cost_rub',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -460,6 +509,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_payment_cost_on_usd = fields.Float(
         string='Расход платежа в $ Сбер',
         compute='_compute_sber_payment_cost_on_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -468,6 +518,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sber_payment_cost_on_usd_real = fields.Float(
         string='Расход платежа в $ Сбер реал',
         compute='_compute_sber_payment_cost_on_usd_real',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -476,6 +527,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sber = fields.Float(
         string='Себестоимость денег Сбер',
         compute='_compute_sebestoimost_denej_sber',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -484,6 +536,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sber_real = fields.Float(
         string='Себестоимость денег Сбер реал',
         compute='_compute_sebestoimost_denej_sber_real',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -492,6 +545,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sber_real_usd = fields.Float(
         string='Себестоимость денег Сбер реал $',
         compute='_compute_sebestoimost_denej_sber_real_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -500,6 +554,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sber_real_rub = fields.Float(
         string='Себестоимость денег Сбер реал ₽',
         compute='_compute_sebestoimost_denej_sber_real_rub',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -508,6 +563,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_sber = fields.Float(
         string='Фин рез Сбер',
         compute='_compute_fin_res_sber',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -516,6 +572,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_sber_real = fields.Float(
         string='Фин рез Сбер реал',
         compute='_compute_fin_res_sber_real',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -524,6 +581,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_sber_real_usd = fields.Float(
         string='Фин рез Сбер реал $',
         compute='_compute_fin_res_sber_real_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -532,6 +590,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_sber_real_rub = fields.Float(
         string='Фин рез Сбер реал ₽',
         compute='_compute_fin_res_sber_real_rub',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -541,6 +600,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     our_sovok_reward = fields.Float(
         string='Вознаграждение наше Совок',
         compute='_compute_our_sovok_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -548,6 +608,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sovok_reward = fields.Float(
         string='Вознаграждение по договору Совок',
         compute='_compute_sovok_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -555,6 +616,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     total_sovok = fields.Float(
         string='Итого Совок',
         compute='_compute_total_sovok',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -562,6 +624,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     total_sovok_management = fields.Float(
         string='Итого Совок упр',
         compute='_compute_total_sovok_management',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -569,6 +632,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     overall_sovok_percent = fields.Float(
         string='Общий процент Совок',
         compute='_compute_overall_sovok_percent',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -576,12 +640,14 @@ class Zayavka(models.Model, AmanatBaseModel):
     payment_cost_sovok = fields.Float(
         string='Расход платежа Совок',
         compute='_compute_payment_cost_sovok',
+        readonly=False,
         store=True,
     )
 
     payment_order_rf_sovok = fields.Float(
         string='Платежка РФ Совок',
         compute='_compute_payment_order_rf_sovok',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -589,6 +655,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     operating_expenses_sovok_partner = fields.Float(
         string='Расход на операционную деятельность Совок партнер',
         compute='_compute_operating_expenses_sovok_partner',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -596,6 +663,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     operating_expenses_sovok_real = fields.Float(
         string='Расход на операционную деятельность Совок реал',
         compute='_compute_operating_expenses_sovok_real',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -603,6 +671,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     operating_expenses_sovok_real_usd = fields.Float(
         string='Расход на операционную деятельность Совок реал $',
         compute='_compute_operating_expenses_sovok_real_usd',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -610,6 +679,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     operating_expenses_sovok_real_rub = fields.Float(
         string='Расход на операционную деятельность Совок реал ₽',
         compute='_compute_operating_expenses_sovok_real_rub',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -617,6 +687,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     kupili_valyutu_sovok_partner = fields.Float(
         string='Купили валюту Совок Партнер',
         compute='_compute_kupili_valyutu_sovok_partner',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True
@@ -625,6 +696,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     kupili_valyutu_sovok_real = fields.Float(
         string='Купили валюту Совок Реал',
         compute='_compute_kupili_valyutu_sovok_real',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True
@@ -633,6 +705,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     kupili_valyutu_sovok_real_usd = fields.Float(
         string='Купили валюту Совок Реал $',
         compute='_compute_kupili_valyutu_sovok_real_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True
@@ -641,6 +714,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     kupili_valyutu_sovok_real_rub = fields.Float(
         string='Купили валюту Совок Реал ₽',
         compute='_compute_kupili_valyutu_sovok_real_rub',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True
@@ -649,6 +723,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payment_cost_sovok_partner_usd = fields.Float(
         string='Расход платежа в $ Совок партнер',
         compute='_compute_payment_cost_sovok_partner_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True
@@ -657,6 +732,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payment_cost_sovok_real_usd = fields.Float(
         string='Расход платежа в $ Совок реал',
         compute='_compute_payment_cost_sovok_real_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -665,6 +741,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payment_cost_sovok_real_rub = fields.Float(
         string='Расход платежа в ₽ Совок реал',
         compute='_compute_payment_cost_sovok_real_rub',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -673,6 +750,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sovok_real = fields.Float(
         string='Себестоимость денег Совок реал',
         compute='_compute_sebestoimost_denej_sovok_real',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -681,6 +759,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sovok_real_usd = fields.Float(
         string='Себестоимость денег Совок реал $',
         compute='_compute_sebestoimost_denej_sovok_real_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -689,6 +768,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sovok_real_rub = fields.Float(
         string='Себестоимость денег Совок реал ₽',
         compute='_compute_sebestoimost_denej_sovok_real_rub',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -697,6 +777,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_sovok_partner = fields.Float(
         string='Фин рез Совок Партнер',
         compute='_compute_fin_res_sovok_partner',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -705,6 +786,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_sovok_real = fields.Float(
         string='Фин рез Совок реал',
         compute='_compute_fin_res_sovok_real',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -713,6 +795,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_sovok_real_usd = fields.Float(
         string='Фин рез Совок реал $',
         compute='_compute_fin_res_sovok_real_usd',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -721,6 +804,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     fin_res_sovok_real_rub = fields.Float(
         string='Фин рез Совок реал ₽',
         compute='_compute_fin_res_sovok_real_rub',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -751,6 +835,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     usd_equivalent = fields.Float(
         string='USD эквивалент',
         compute='_compute_usd_equivalent',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -796,6 +881,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     conversion_expenses_rub = fields.Float(
         string='Расходы на конвертацию в рублях',
         compute='_compute_conversion_expenses',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -803,6 +889,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     conversion_expenses_currency = fields.Float(
         string='Расходы на конвертацию в валюте',
         compute='_compute_conversion_expenses_currency',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -817,6 +904,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     real_cross_rate = fields.Float(
         string='Курс реальный (кросс)',
         compute='_compute_real_cross_rate',
+        readonly=False,
         store=True,
         digits=(16, 4),
         tracking=True
@@ -851,6 +939,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     conversion_ratio = fields.Float(
         string="% Конвертации соотношение",
         compute='_compute_conversion_ratio',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -883,6 +972,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     conversion_auto = fields.Float(
         string="% Конвертации авто",
         compute='_compute_conversion_auto',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -896,6 +986,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     plus_currency = fields.Float(
         string='Надбавка в валюте заявки',
         compute='_compute_plus_currency',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -903,6 +994,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     invoice_plus_percent = fields.Float(
         string='% надбавки от суммы инвойса',
         compute='_compute_invoice_plus_percent',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -910,6 +1002,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     reward_percent = fields.Float(
         string='% Вознаграждения',
         compute='_compute_reward_percent',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -923,6 +1016,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     equivalent_amount_usd = fields.Float(
         string='Сумма эквивалент $',
         compute='_compute_equivalent_amount_usd',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -930,6 +1024,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     total_fact = fields.Float(
         string='Итого факт',
         compute='_compute_total_fact',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -947,6 +1042,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     calculated_percent = fields.Float(
         string='Рассчетный %',
         compute='_compute_calculated_percent',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -954,6 +1050,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     contract_reward = fields.Float(
         string='Вознаграждение по договору',
         compute='_compute_contract_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -961,6 +1058,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sum_from_extracts = fields.Float(
         string='Сумма (from Выписка разнос)', 
         compute='_compute_sum_from_extracts', 
+        readonly=False,
         store=True, 
         tracking=True
     )
@@ -968,6 +1066,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     rate_real = fields.Float(
         string='Заявка по курсу реальный',
         compute='_compute_rate_real',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -975,6 +1074,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     agent_reward = fields.Float(
         string='Агентское вознаграждение',
         compute='_compute_agent_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -982,6 +1082,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     actual_reward = fields.Float(
         string='Фактическое вознаграждение',
         compute='_compute_actual_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -989,6 +1090,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     non_agent_reward = fields.Float(
         string='Агентское не наше',
         compute='_compute_non_agent_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -996,6 +1098,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     agent_our_reward = fields.Float(
         string='Агентское наше',
         compute='_compute_agent_our_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1003,6 +1106,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     total_reward = fields.Float(
         string='Общее вознаграждение',
         compute='_compute_total_reward',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1010,6 +1114,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     total_amount = fields.Float(
         string='ИТОГО',
         compute='_compute_total_amount',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1041,6 +1146,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     deal_cycle_days = fields.Integer(
         string='Цикл сделки, дн', 
         compute='_compute_deal_cycle_days',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1145,6 +1251,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payer_profit_currency = fields.Float(
         string='Прибыль Плательщика по валюте заявки',
         compute='_compute_payer_profit_currency',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1156,6 +1263,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         readonly=True,
         tracking=True
     )
+
     zayavka_file = fields.Binary(string='Заявка', attachment=True)
 
     zayavka_link = fields.Char(string='Заявка ссылка', tracking=True)
@@ -1231,6 +1339,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     waiting_for_replenishment = fields.Float(
         string='Ожидаем пополнения',
         compute='_compute_waiting_for_replenishment',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1276,6 +1385,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     error_sovok = fields.Float(
         string='Ошибка Совок',
         compute='_compute_error_sovok',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1284,6 +1394,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Ошибка Сбер',
         compute='_compute_error_sber',
         store=True,
+        readonly=False,
         tracking=True
     )
 
@@ -1378,6 +1489,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     partner_post_conversion_rate = fields.Float(
         string='Курс после конвертации партнер',
         compute='_compute_partner_post_conversion_rate',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1391,6 +1503,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payer_cross_rate_usd_auto = fields.Float(
         string='Кросс-курс Плательщика $ авто',
         compute='_compute_payer_cross_rate_usd_auto',
+        readonly=False,
         store=True,
         digits=(16, 4),
         tracking=True
@@ -1399,6 +1512,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     real_post_conversion_rate = fields.Float(
         string='Курс после конвертации реал',
         compute='_compute_real_post_conversion_rate',
+        readonly=False,
         store=True,
         digits=(16, 6),
         tracking=True
@@ -1407,6 +1521,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     real_post_conversion_rate_usd = fields.Float(
         string='Курс после конвертации реал $',
         compute='_compute_real_post_conversion_rate_usd',
+        readonly=False,
         store=True,
         digits=(16, 6),
         tracking=True
@@ -1415,6 +1530,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payer_cross_rate_rub = fields.Float(
         string='Кросс-курс Плательщика ₽',
         compute='_compute_payer_cross_rate_rub',
+        readonly=False,
         store=True,
         digits=(16, 6),
         tracking=True
@@ -1423,6 +1539,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     real_post_conversion_rate_rub = fields.Float(
         string='Курс после конвертации реал ₽',
         compute='_compute_real_post_conversion_rate_rub',
+        readonly=False,
         store=True,
         digits=(16, 6),
         tracking=True
@@ -1431,6 +1548,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payer_profit_usd = fields.Float(
         string='Прибыль плательщика $',
         compute='_compute_payer_profit_usd',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1438,6 +1556,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payer_profit_rub = fields.Float(
         string='Прибыль плательщика ₽',
         compute='_compute_payer_profit_rub',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1462,12 +1581,15 @@ class Zayavka(models.Model, AmanatBaseModel):
     date_days = fields.Integer(
         string='Дата', 
         compute='_compute_date_days',
+        readonly=False,
+        tracking=True,
         store=True
     )
 
     sebestoimost_denej_sovok_partner = fields.Float(
         string='Себестоимость денег Совок партнер',
         compute='_compute_sebestoimost_denej_sovok_partner',
+        readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
@@ -1622,6 +1744,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     hidden_partner_commission = fields.Float(
         string='Скрытая комиссия Партнера',
         compute='_compute_hidden_partner_commission',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1629,6 +1752,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     hidden_partner_commission_real = fields.Float(
         string='Скрытая комиссия Партнера Реал',
         compute='_compute_hidden_partner_commission_real',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1636,6 +1760,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     hidden_partner_commission_real_usd = fields.Float(
         string='Скрытая комиссия Партнера Реал $',
         compute='_compute_hidden_partner_commission_real_usd',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1643,6 +1768,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     hidden_partner_commission_real_rub = fields.Float(
         string='Скрытая комиссия Партнера Реал ₽',
         compute='_compute_hidden_partner_commission_real_rub',
+        readonly=False,
         store=True,
         tracking=True
     )
@@ -1730,6 +1856,8 @@ class Zayavka(models.Model, AmanatBaseModel):
     application_amount_rub_contract = fields.Float(
         string="Заявка по курсу в рублях по договору",
         compute='_compute_application_amount_rub_contract',
+        readonly=False,
+        tracking=True,
         store=True  # Если нужно хранить в БД
     )
 

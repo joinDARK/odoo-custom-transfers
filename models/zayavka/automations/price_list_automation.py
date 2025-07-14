@@ -47,6 +47,9 @@ class ZayavkaPriceListAutomation(models.Model):
             subagent_payers, rate_fixation_date, equivalent_sum
         )
 
+        _logger.info(f"[PriceList] Найден прайс-лист проведение: {matched_carrying_out.name if matched_carrying_out else 'нет'}")
+        _logger.info(f"[PriceList] Найден прайс-лист Плательщика Прибыль: {matched_profit.name if matched_profit else 'нет'}")
+
         # 6. Обновляем заявку ссылками на найденные записи
         update_vals = {}
         if matched_carrying_out:
@@ -99,8 +102,10 @@ class ZayavkaPriceListAutomation(models.Model):
         # Строим домен для поиска
         domain = [
             ('payer_subagent_ids', 'in', subagent_payers.ids),
-            ('date_start', '<=', rate_fixation_date),
-            ('date_end', '>=', rate_fixation_date),
+            ('date_start', '!=', False),  # date_start не пустая
+            ('date_end', '!=', False),    # date_end не пустая
+            ('date_start', '<=', rate_fixation_date),  # start <= rateDate
+            ('date_end', '>=', rate_fixation_date),    # end >= rateDate
         ]
 
         # Добавляем условия по сумме заявки
@@ -113,8 +118,10 @@ class ZayavkaPriceListAutomation(models.Model):
         matched_record = PriceListProfit.search(domain, limit=1)
         
         if matched_record:
-            _logger.info(f"[PriceList] Найден прайс-лист прибыль: {matched_record.id}")
+            _logger.info(f"[PriceList] Найден прайс-лист прибыль: {matched_record.id} "
+                        f"(дата начало: {matched_record.date_start}, дата конец: {matched_record.date_end}) дата фиксации курса: {rate_fixation_date}")
         else:
-            _logger.info(f"[PriceList] Не найден подходящий прайс-лист прибыль для заявки {self.id}")
+            _logger.info(f"[PriceList] Не найден подходящий прайс-лист прибыль для заявки {self.id} "
+                        f"(дата фиксации курса: {rate_fixation_date})")
 
         return matched_record 
