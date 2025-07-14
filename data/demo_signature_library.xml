@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="demo_signature_stellar_stamp" model="signature.library">
+            <field name="name">СТЕЛЛАР Печать</field>
+            <field name="signature_type">stamp</field>
+            <field name="active">True</field>
+            <field name="default_width">100</field>
+            <field name="default_height">100</field>
+            <field name="image" type="base64" file="amanat/static/demo/stellar_stamp.png"/>
+        </record>
+
+        <record id="demo_signature_stellar_sign" model="signature.library">
+            <field name="name">СТЕЛЛАР Подпись</field>
+            <field name="signature_type">signature</field>
+            <field name="active">True</field>
+            <field name="default_width">100</field>
+            <field name="default_height">25</field>
+            <field name="image" type="base64" file="amanat/static/demo/stellar_sign.png"/>
+        </record>
+
+        <record id="demo_signature_tdk_stamp" model="signature.library">
+            <field name="name">TDK Печать</field>
+            <field name="signature_type">stamp</field>
+            <field name="active">True</field>
+            <field name="default_width">100</field>
+            <field name="default_height">100</field>
+            <field name="image" type="base64" file="amanat/static/demo/tdk_stamp.png"/>
+        </record>
+
+        <record id="demo_signature_tdk_sign" model="signature.library">
+            <field name="name">TDK Подпись</field>
+            <field name="signature_type">signature</field>
+            <field name="active">True</field>
+            <field name="default_width">150</field>
+            <field name="default_height">50</field>
+            <field name="image" type="base64" file="amanat/static/demo/tdk_sign.png"/>
+        </record>
+    </data>
+</odoo> 

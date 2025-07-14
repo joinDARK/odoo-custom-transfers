@@ -1181,6 +1181,11 @@
                     type="action" 
                     class="btn-primary"
                     icon="fa-calendar"/>
+            <button name="%(action_zayavka_kassa_wizard)d" 
+                    string="Касса" 
+                    type="action" 
+                    class="btn-success"
+                    icon="fa-money"/>
         </header>
         <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
         <field name="zayavka_id"/>

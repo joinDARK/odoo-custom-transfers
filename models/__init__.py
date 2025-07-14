@@ -40,6 +40,7 @@ from . import payment_order_rule
 from . import money_cost_rule
 from . import expense_rule
 from . import zayavka_date_range_wizard
+from . import zayavka_kassa_wizard
 from . import reconciliation_date_range_wizard
 from . import contragent_gold
 
@@ -56,3 +57,5 @@ from . import res_users
 from . import res_company
 from . import res_config_settings
 from . import ir_attachment
+
+from . import signature_library

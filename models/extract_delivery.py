@@ -671,22 +671,22 @@ class Extract_delivery(models.Model, AmanatBaseModel):
             _logger.info(f"Найдено {len(extract_to_zayavki)} выписок с подходящими заявками. Применение обновлений...")
             
             for extract, zayavki in extract_to_zayavki.items():
-                # Собираем все ID заявок для связывания
-                zayavka_ids = [z.id for z in zayavki]
-                
                 # Обновляем выписку - связываем со всеми найденными заявками
                 extract.write({
-                    'applications': [(6, 0, zayavka_ids)],  # 6,0,ids - заменяет все связи новым списком
                     'direction_choice': 'applications'
                 })
+
+                _logger.info("extract.write")
                 
                 # Обновляем каждую заявку - добавляем обратную связь
                 for zayavka in zayavki:
                     existing_extract_ids = [e.id for e in zayavka.extract_delivery_ids]
                     if extract.id not in existing_extract_ids:
+                        _logger.info(f"Добавляем связь выписки ID={extract.id} с заявкой ID={zayavka.id}")
                         zayavka.write({
                             'extract_delivery_ids': [(4, extract.id)]  # 4 - добавить связь
                         })
+                        _logger.info("Произошло событие zayavka.write")
                 
                 total_links += len(zayavki)
                 _logger.info(f"Выписка ID={extract.id} связана с {len(zayavki)} заявками: {[z.zayavka_id for z in zayavki]}")

@@ -588,9 +588,15 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         
         _logger.info(f"Сумма финреза ({fin_rez_field}): {fin_rez_sum}")
 
-        # Если найден в "Касса Иван", используем 1/3 суммы
-        used_fin_rez_sum = fin_rez_sum / 3 if cash_source == "Касса Иван" else fin_rez_sum
-        _logger.info(f"Используемая сумма финреза для контейнеров: {used_fin_rez_sum}")
+        # Получаем процент из найденной записи кассы
+        percent = cash_record.percent
+        if percent == 0:
+            _logger.warning(f"Процент для кассы '{cash_source}' равен 0, операция не выполняется.")
+            return
+
+        # Умножаем на процент
+        used_fin_rez_sum = fin_rez_sum * percent
+        _logger.info(f"Используемая сумма финреза для контейнеров: {used_fin_rez_sum} (процент кассы: {percent})")
 
         # Определяем валюту и дату
         currency = self.currency or 'rub'

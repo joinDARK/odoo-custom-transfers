@@ -8,6 +8,7 @@
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Превью файлов" type="object" name="preview_files" icon="fa-eye" class="btn-info"/>
                 <field name="name"/>
                 <field name="contragent_id"/>
                 <field name="file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
@@ -29,9 +30,15 @@
                         <!-- Поле для прямой загрузки документов -->
                         <field name="file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}" 
                                help="Основные файлы сверок - Excel, PDF и другие документы"/>
+                        <!-- Кнопка превью файлов -->
+                        <div class="preview-files-container">
+                            <button type="object" name="preview_files" class="btn btn-info btn-sm">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </div>
                         <!-- Поле для отображения всех вложений -->
-                        <field name="attachment_ids" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"
-                               help="Все вложения записи с расширенными возможностями просмотра и редактирования"/>
+                        <!-- <field name="attachment_ids" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"
+                               help="Все вложения записи с расширенными возможностями просмотра и редактирования"/> -->
                     </group>
                 </sheet>
                 <!-- Виджет чата -->

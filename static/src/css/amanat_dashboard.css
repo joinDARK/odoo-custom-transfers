@@ -887,4 +887,222 @@ canvas[id*="agents-by-zayavki"] {
 
 .o_dark_mode .btn-close {
     filter: invert(1);
+}
+
+/* ==================== КЛИКАБЕЛЬНЫЕ ЗАГОЛОВКИ ГРАФИКОВ ==================== */
+
+.chart-title.clickable-title,
+.chart-card h5.clickable-title {
+    cursor: pointer !important;
+    text-decoration: underline;
+    color: #007bff !important;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.chart-title.clickable-title:hover,
+.chart-card h5.clickable-title:hover {
+    color: #0056b3 !important;
+    text-decoration: underline;
+    text-shadow: 0 0 3px rgba(0, 123, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.chart-title.clickable-title::after,
+.chart-card h5.clickable-title::after {
+    content: "📊";
+    margin-left: 8px;
+    opacity: 0.6;
+    font-size: 0.8em;
+    transition: opacity 0.2s ease;
+}
+
+.chart-title.clickable-title:hover::after,
+.chart-card h5.clickable-title:hover::after {
+    opacity: 1;
+}
+
+/* Темная тема для кликабельных заголовков */
+.o_dark_mode .chart-title.clickable-title,
+.o_dark_mode .chart-card h5.clickable-title {
+    color: #4dabf7 !important;
+}
+
+.o_dark_mode .chart-title.clickable-title:hover,
+.o_dark_mode .chart-card h5.clickable-title:hover {
+    color: #74c0fc !important;
+    text-shadow: 0 0 3px rgba(116, 192, 252, 0.3);
+}
+
+/* Дополнительные стили для модального окна полного графика */
+.full-chart-modal .modal-dialog {
+    max-width: 95%;
+    margin: 2rem auto;
+}
+
+.full-chart-modal .modal-body {
+    padding: 2rem;
+}
+
+.full-chart-container {
+    position: relative;
+    height: 70vh;
+    min-height: 400px;
+}
+
+.full-chart-container canvas {
+    max-height: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Анимация загрузки для полного графика */
+.full-chart-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    font-size: 1.2em;
+    color: #6c757d;
+}
+
+.full-chart-loading .spinner-border {
+    margin-right: 10px;
+}
+
+/* Информационное сообщение в подвале модального окна */
+.full-chart-info {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    margin-top: 1rem;
+    border-left: 4px solid #007bff;
+}
+
+.o_dark_mode .full-chart-info {
+    background-color: #343a40;
+    border-left-color: #4dabf7;
+}
+
+.full-chart-info .text-muted {
+    margin-bottom: 0;
+    font-size: 0.9em;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .full-chart-modal .modal-dialog {
+        max-width: 98%;
+        margin: 1rem auto;
+    }
+    
+    .full-chart-container {
+        height: 60vh;
+        min-height: 300px;
+    }
+    
+    .chart-title.clickable-title::after,
+    .chart-card h5.clickable-title::after {
+        display: none; /* Скрываем эмодзи на мобильных */
+    }
+} 
+
+/* Дополнительные стили для корректного отображения модального окна */
+.modal.full-chart-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 1050 !important;
+    width: 100% !important;
+    height: 100% !important;
+    outline: 0 !important;
+}
+
+.modal.show {
+    display: block !important;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1040;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Исправляем отображение графиков в модальном окне */
+.full-chart-modal .full-chart-container {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    min-height: 400px;
+    background: white;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.full-chart-modal .full-chart-container canvas {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+/* Темная тема для модального окна */
+.o_dark_mode .full-chart-modal .full-chart-container {
+    background: #2b2b2b;
+}
+
+.o_dark_mode .modal-content {
+    background-color: #2b2b2b !important;
+    color: #fff !important;
+}
+
+/* Заголовок модального окна */
+.full-chart-modal .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+.o_dark_mode .full-chart-modal .modal-title {
+    color: #fff;
+}
+
+/* Кнопка закрытия */
+.full-chart-modal .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #000;
+    text-shadow: 0 1px 0 #fff;
+    opacity: .5;
+}
+
+.full-chart-modal .btn-close:hover {
+    opacity: .75;
+}
+
+.o_dark_mode .full-chart-modal .btn-close {
+    color: #fff;
+    text-shadow: 0 1px 0 #000;
+}
+
+/* Стили ошибки в модальном окне */
+.full-chart-modal .text-warning {
+    color: #ffc107 !important;
+}
+
+.full-chart-modal .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+}
+
+.full-chart-modal .btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #004085;
 } 

@@ -203,7 +203,12 @@ export class AmanatDashboard extends Component {
             this.updateStateFromData(data);
             
             // Рендерим графики после загрузки данных
-            setTimeout(() => this.initializeAllCharts(), 100);
+            setTimeout(() => {
+                this.initializeAllCharts();
+                
+                // Добавляем обработчики кликов после инициализации графиков
+                this.addChartTitleClickHandlersWithWait();
+            }, 100);
         } catch (error) {
             console.error('Error loading dashboard data:', error);
         } finally {
@@ -440,60 +445,66 @@ export class AmanatDashboard extends Component {
                 this.showNoDataMessage('contragents-by-zayavki-chart', 'Контрагенты по заявкам');
             }
 
-            // 21. Средний чек у Контрагента (горизонтальная столбчатая)
+            // 21. Статусы заявок (горизонтальная столбчатая)
+            // Проверяем режим сравнения для статусов заявок
             if (this.state.chartComparisonData) {
-                // Режим сравнения - используем данные для двух периодов
-                const period1Data = this.state.chartComparisonData.period1.contragent_avg_check || [];
-                const period2Data = this.state.chartComparisonData.period2.contragent_avg_check || [];
-                
-                // Объединяем все уникальные имена контрагентов из обоих периодов
-                const allContragents = [...new Set([
-                    ...period1Data.map(c => c.name),
-                    ...period2Data.map(c => c.name)
-                ])];
-                
-                if (allContragents.length > 0) {
+                // Режим сравнения - пока данные по статусам не разделены по периодам в backend
+            if (this.hasChartData(this.state.zayavki.statusDistribution)) {
                     this.renderComparisonHorizontalBarChart('contragent-avg-check-chart', {
-                        labels: allContragents,
-                        period1Data: allContragents.map(name => {
-                            const item = period1Data.find(c => c.name === name);
-                            return item ? item.avg_amount : 0;
-                        }),
-                        period2Data: allContragents.map(name => {
-                            const item = period2Data.find(c => c.name === name);
-                            return item ? item.avg_amount : 0;
-                        }),
+                    labels: this.state.zayavki.statusDistribution.map(s => s.name),
+                        period1Data: this.state.zayavki.statusDistribution.map(s => s.count),
+                        period2Data: this.state.zayavki.statusDistribution.map(s => Math.floor(s.count * 0.8)), // Имитация данных для второго периода
                         period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
                         period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
-                        clickable: true,
-                        onClick: (event, elements) => {
-                            if (elements.length > 0) {
-                                const index = elements[0].index;
-                                const contragentName = allContragents[index];
-                                this.openZayavkiByContragent(contragentName);
-                            }
-                        }
-                    });
-                } else {
-                    this.showNoDataMessage('contragent-avg-check-chart', 'Средний чек у контрагента');
-                }
-            } else if (this.hasChartData(this.state.zayavki.contragentAvgCheck)) {
-                // Обычный режим - один период
-                this.renderHorizontalBarChart('contragent-avg-check-chart', {
-                    labels: this.state.zayavki.contragentAvgCheck.map(c => c.name),
-                    data: this.state.zayavki.contragentAvgCheck.map(c => c.avg_amount),
-                    title: 'Средний чек у Контрагента',
                     clickable: true,
                     onClick: (event, elements) => {
+                        console.log('График статусов заявок: клик зарегистрирован', elements);
                         if (elements.length > 0) {
                             const index = elements[0].index;
-                            const contragentName = this.state.zayavki.contragentAvgCheck[index].name;
-                            this.openZayavkiByContragent(contragentName);
+                            const statusName = this.state.zayavki.statusDistribution[index].name;
+                            console.log('Открываем заявки со статусом:', statusName);
+                            this.openZayavkiByStatus(statusName);
                         }
                     }
                 });
+
+                    // Скрываем второй график
+                    this.showNoDataMessage('contragent-avg-check-chart-2', '');
+                } else {
+                    this.showNoDataMessage('contragent-avg-check-chart', 'Статусы заявок');
+                    this.showNoDataMessage('contragent-avg-check-chart-2', '');
+                }
+            } else if (this.hasChartData(this.state.zayavki.statusDistribution)) {
+                // Обычный режим - показываем данные как горизонтальную диаграмму
+                const statusColors = [
+                    '#3498DB',  // Синий - заявка закрыта (97.1%)
+                    '#E67E22',  // Оранжевый - отменено клиентом
+                    '#95A5A6'   // Серый - 15. возврат
+                ];
+
+                this.renderHorizontalBarChart('contragent-avg-check-chart', {
+                    labels: this.state.zayavki.statusDistribution.map(s => s.name),
+                    data: this.state.zayavki.statusDistribution.map(s => s.count),
+                    title: 'Статусы заявок',
+                    backgroundColor: statusColors,
+                    borderColor: statusColors.map(color => color.replace('0.8', '1')),
+                    clickable: true,
+                    onClick: (event, elements) => {
+                        console.log('График статусов заявок: клик зарегистрирован', elements);
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const statusName = this.state.zayavki.statusDistribution[index].name;
+                            console.log('Открываем заявки со статусом:', statusName);
+                            this.openZayavkiByStatus(statusName);
+                        }
+                    }
+                });
+
+                // Скрываем второй график в обычном режиме
+                this.showNoDataMessage('contragent-avg-check-chart-2', '');
             } else {
-                this.showNoDataMessage('contragent-avg-check-chart', 'Средний чек у контрагента');
+                this.showNoDataMessage('contragent-avg-check-chart', 'Статусы заявок');
+                this.showNoDataMessage('contragent-avg-check-chart-2', '');
             }
 
             // 22. Количество заявок под каждого агента (горизонтальная столбчатая)
@@ -1064,66 +1075,60 @@ export class AmanatDashboard extends Component {
                 this.showNoDataMessage('managers-efficiency-chart', 'Эффективность менеджеров');
             }
 
-            // 32. Статусы заявок (donut chart)
-            // Проверяем режим сравнения для статусов заявок
+            // 32. Средний чек у Контрагента (горизонтальная столбчатая)
             if (this.state.chartComparisonData) {
-                // Режим сравнения - пока данные по статусам не разделены по периодам в backend
-            if (this.hasChartData(this.state.zayavki.statusDistribution)) {
+                // Режим сравнения - используем данные для двух периодов
+                const period1Data = this.state.chartComparisonData.period1.contragent_avg_check || [];
+                const period2Data = this.state.chartComparisonData.period2.contragent_avg_check || [];
+                
+                // Объединяем все уникальные имена контрагентов из обоих периодов
+                const allContragents = [...new Set([
+                    ...period1Data.map(c => c.name),
+                    ...period2Data.map(c => c.name)
+                ])];
+                
+                if (allContragents.length > 0) {
                     this.renderComparisonHorizontalBarChart('zayavki-status-donut', {
-                    labels: this.state.zayavki.statusDistribution.map(s => s.name),
-                        period1Data: this.state.zayavki.statusDistribution.map(s => s.count),
-                        period2Data: this.state.zayavki.statusDistribution.map(s => Math.floor(s.count * 0.8)), // Имитация данных для второго периода
+                        labels: allContragents,
+                        period1Data: allContragents.map(name => {
+                            const item = period1Data.find(c => c.name === name);
+                            return item ? item.avg_amount : 0;
+                        }),
+                        period2Data: allContragents.map(name => {
+                            const item = period2Data.find(c => c.name === name);
+                            return item ? item.avg_amount : 0;
+                        }),
                         period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
                         period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
-                    clickable: true,
-                    onClick: (event, elements) => {
-                        console.log('График статусов заявок: клик зарегистрирован', elements);
-                        if (elements.length > 0) {
-                            const index = elements[0].index;
-                            const statusName = this.state.zayavki.statusDistribution[index].name;
-                            console.log('Открываем заявки со статусом:', statusName);
-                            this.openZayavkiByStatus(statusName);
+                        clickable: true,
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const contragentName = allContragents[index];
+                                this.openZayavkiByContragent(contragentName);
+                            }
                         }
-                    }
-                });
-
-                    // Скрываем второй график
-                    this.showNoDataMessage('zayavki-status-donut-2', '');
+                    });
                 } else {
-                    this.showNoDataMessage('zayavki-status-donut', 'Статусы заявок');
-                    this.showNoDataMessage('zayavki-status-donut-2', '');
+                    this.showNoDataMessage('zayavki-status-donut', 'Средний чек у контрагента');
                 }
-            } else if (this.hasChartData(this.state.zayavki.statusDistribution)) {
-                // Обычный режим - показываем данные как горизонтальную диаграмму
-                const statusColors = [
-                    '#3498DB',  // Синий - заявка закрыта (97.1%)
-                    '#E67E22',  // Оранжевый - отменено клиентом
-                    '#95A5A6'   // Серый - 15. возврат
-                ];
-
+            } else if (this.hasChartData(this.state.zayavki.contragentAvgCheck)) {
+                // Обычный режим - один период
                 this.renderHorizontalBarChart('zayavki-status-donut', {
-                    labels: this.state.zayavki.statusDistribution.map(s => s.name),
-                    data: this.state.zayavki.statusDistribution.map(s => s.count),
-                    title: 'Статусы заявок',
-                    backgroundColor: statusColors,
-                    borderColor: statusColors.map(color => color.replace('0.8', '1')),
+                    labels: this.state.zayavki.contragentAvgCheck.map(c => c.name),
+                    data: this.state.zayavki.contragentAvgCheck.map(c => c.avg_amount),
+                    title: 'Средний чек у Контрагента',
                     clickable: true,
                     onClick: (event, elements) => {
-                        console.log('График статусов заявок: клик зарегистрирован', elements);
                         if (elements.length > 0) {
                             const index = elements[0].index;
-                            const statusName = this.state.zayavki.statusDistribution[index].name;
-                            console.log('Открываем заявки со статусом:', statusName);
-                            this.openZayavkiByStatus(statusName);
+                            const contragentName = this.state.zayavki.contragentAvgCheck[index].name;
+                            this.openZayavkiByContragent(contragentName);
                         }
                     }
                 });
-
-                // Скрываем второй график в обычном режиме
-                this.showNoDataMessage('zayavki-status-donut-2', '');
             } else {
-                this.showNoDataMessage('zayavki-status-donut', 'Статусы заявок');
-                this.showNoDataMessage('zayavki-status-donut-2', '');
+                this.showNoDataMessage('zayavki-status-donut', 'Средний чек у контрагента');
             }
 
             // 33. Циклы сделок (линейный график)
@@ -1198,6 +1203,9 @@ export class AmanatDashboard extends Component {
         } catch (error) {
             console.error('Error initializing charts:', error);
         }
+        
+        // Добавляем обработчики кликов на названия графиков после инициализации всех графиков
+        this.addChartTitleClickHandlersWithWait();
     }
 
     renderLineChart(canvasId, config) {
@@ -2014,6 +2022,9 @@ export class AmanatDashboard extends Component {
                 </tr>
             `).join('');
         }
+        
+        // Добавляем обработчики кликов на названия графиков после обновления
+        this.addChartTitleClickHandlersWithWait();
     }
 
     // Действия для открытия представлений
@@ -2205,6 +2216,9 @@ export class AmanatDashboard extends Component {
     async refreshDashboard() {
         this.state.isLoading = true;
         await this.loadDashboardData();
+        
+        // Добавляем обработчики кликов после обновления
+        this.addChartTitleClickHandlersWithWait();
     }
 
     // Форматирование чисел
@@ -2331,6 +2345,9 @@ export class AmanatDashboard extends Component {
                     zayavkiData: this.state.zayavki
                 });
                 this.initializeAllCharts();
+                
+                // Добавляем обработчики кликов после перерисовки графиков
+                this.addChartTitleClickHandlersWithWait();
             }, 100);
             
         } catch (error) {
@@ -2356,6 +2373,9 @@ export class AmanatDashboard extends Component {
         
         // Перезагружаем данные без фильтров
         await this.loadDashboardData();
+        
+        // Добавляем обработчики кликов после перезагрузки
+        this.addChartTitleClickHandlersWithWait();
     }
 
     async setQuickPeriod1(period) {
@@ -2526,6 +2546,9 @@ export class AmanatDashboard extends Component {
                 this[config.renderFunction](config.canvasId, config.data);
             }
         });
+        
+        // Добавляем обработчики кликов для заголовков в режиме сравнения
+        this.addChartTitleClickHandlersWithWait();
     }
     
     needsCompactMode(data) {
@@ -4021,24 +4044,78 @@ export class AmanatDashboard extends Component {
             config
         });
         
+        try {
+            // Если fullData не передан или пустой, загружаем полные данные с сервера
+            if (!fullData || (Array.isArray(fullData) && fullData.length === 0) || (typeof fullData === 'object' && Object.keys(fullData).length === 0)) {
+                console.log('🔄 Загружаем полные данные с сервера для типа графика:', chartType);
+                
+                const response = await this.orm.call(
+                    'amanat.dashboard',
+                    'get_full_chart_data',
+                    [],
+                    {
+                        chart_type: chartType
+                    }
+                );
+                
+                console.log('✅ Ответ сервера:', response);
+                
+                // Проверяем есть ли ошибка в ответе сервера
+                if (response && response.error) {
+                    console.error('❌ Ошибка от сервера:', response.error);
+                    this.showErrorMessage(`Ошибка сервера: ${response.error}`);
+                    return;
+                }
+                
+                fullData = response;
+                
+                // Конвертируем данные в нужный формат для графика
+                fullData = this.convertServerDataToChartData(fullData, chartType);
+                
+                console.log('🔄 Конвертированные данные:', fullData);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при загрузке полных данных:', error);
+            this.showErrorMessage(`Ошибка при загрузке полных данных графика: ${error.message || error}`);
+            return;
+        }
+        
         // Создаем модальное окно
         const modal = document.createElement('div');
-        modal.className = 'modal fade';
+        modal.className = 'modal fade full-chart-modal show';
         modal.id = 'fullChartModal';
+        modal.style.display = 'block';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        
+        const dataCount = Array.isArray(fullData.data) ? fullData.data.length : 
+                         Array.isArray(fullData) ? fullData.length : 
+                         (typeof fullData === 'object' && fullData !== null) ? Object.keys(fullData).length : 0;
+        
         modal.innerHTML = `
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">${chartTitle}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">📊 ${chartTitle} - Полные данные</h5>
+                        <button type="button" class="btn-close" id="closeFullChartModal" aria-label="Close">
+                            <i class="fa fa-times"></i>
+                        </button>
                     </div>
                     <div class="modal-body">
-                        <div class="full-chart-container" style="height: 600px; position: relative;">
+                        <div class="full-chart-container">
                             <canvas id="fullChart"></canvas>
+                        </div>
+                        <div class="full-chart-info">
+                            <p class="text-muted mb-0">
+                                <i class="fa fa-info-circle me-2"></i>
+                                Показаны все данные без фильтров по датам. 
+                                Всего записей: <strong>${dataCount}</strong>
+                            </p>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                        <button type="button" class="btn btn-secondary" id="closeFullChartModalFooter">
+                            <i class="fa fa-times me-2"></i>Закрыть
+                        </button>
                     </div>
                 </div>
             </div>
@@ -4046,17 +4123,106 @@ export class AmanatDashboard extends Component {
         
         document.body.appendChild(modal);
         
-        // Инициализируем Bootstrap модальное окно
-        const bsModal = new bootstrap.Modal(modal);
+        // Функция для закрытия модального окна
+        const closeModal = () => {
+            modal.style.display = 'none';
+            modal.remove();
+            // Уничтожаем график
+            if (this.charts['fullChart']) {
+                this.charts['fullChart'].destroy();
+                delete this.charts['fullChart'];
+            }
+        };
         
-        // Обработчик для рендеринга графика после открытия модального окна
-        modal.addEventListener('shown.bs.modal', () => {
+        // Добавляем обработчики закрытия
+        modal.querySelector('#closeFullChartModal').addEventListener('click', closeModal);
+        modal.querySelector('#closeFullChartModalFooter').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Обработчик нажатия Escape
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        
+        // Рендерим график сразу после создания модального окна
+        setTimeout(() => {
+            console.log('🎨 Начинаем рендеринг графика в модальном окне');
+            console.log('📊 Данные для рендеринга:', fullData);
+            console.log('⚙️ Тип графика:', config.type);
+            console.log('🏷️ Тип данных:', chartType);
+            
             const canvas = document.getElementById('fullChart');
-            if (canvas) {
+            if (!canvas) {
+                console.error('❌ Canvas элемент не найден');
+                return;
+            }
+            
+            console.log('✅ Canvas найден:', canvas);
+            
+            // Уничтожаем предыдущий график если есть
+            if (this.charts['fullChart']) {
+                console.log('🗑️ Уничтожаем предыдущий график');
+                this.charts['fullChart'].destroy();
+                delete this.charts['fullChart'];
+            }
+            
+            try {
+                // Подготавливаем данные в правильном формате
+                let chartData;
+                
+                if (fullData && fullData.labels && fullData.data) {
+                    // Данные уже в правильном формате
+                    chartData = fullData.data.map((value, index) => ({
+                        name: fullData.labels[index] || `Item ${index + 1}`,
+                        count: value,
+                        amount: value,
+                        avg_amount: value,
+                        avg_reward_percent: value,
+                        efficiency: value,
+                        cycle_days: fullData.labels[index] || index
+                    }));
+                } else if (Array.isArray(fullData)) {
+                    // Данные в виде массива объектов
+                    chartData = fullData;
+                } else if (typeof fullData === 'object' && fullData !== null) {
+                    // Данные в виде объекта {key: value}
+                    chartData = Object.entries(fullData).map(([key, value]) => ({
+                        name: key,
+                        count: value,
+                        amount: value,
+                        avg_amount: value
+                    }));
+                } else {
+                    console.error('❌ Неизвестный формат данных:', fullData);
+                    throw new Error('Неподдерживаемый формат данных');
+                }
+                
+                console.log('📋 Подготовленные данные для графика:', chartData);
+                
+                // Подготавливаем конфигурацию
+                const chartConfig = {
+                    ...config,
+                    data: chartData,
+                    title: chartTitle,
+                    showFullData: true, // Отключаем ограничение TOP-3
+                    clickable: false // Отключаем клики в полной версии
+                };
+                
+                console.log('📋 Финальная конфигурация:', chartConfig);
+                
                 // Проверяем, является ли это сравнительным графиком
-                if (fullData.isComparison) {
+                if (fullData && fullData.isComparison) {
+                    console.log('📊 Рендерим сравнительный график');
                     // Рендерим сравнительный график
-                    switch (chartType) {
+                    switch (config.type) {
                         case 'horizontalBar':
                             this.renderComparisonHorizontalBarChart('fullChart', {
                                 ...fullData.originalConfig,
@@ -4066,82 +4232,62 @@ export class AmanatDashboard extends Component {
                                 period1Label: fullData.period1Label,
                                 period2Label: fullData.period2Label,
                                 title: chartTitle,
-                                showFullData: true, // Отключаем ограничение TOP-3
-                                clickable: fullData.originalConfig.clickable || false
+                                showFullData: true,
+                                clickable: false
                             });
                             break;
-                        // Можно добавить другие типы сравнительных графиков
+                        default:
+                            console.warn('⚠️ Неподдерживаемый тип сравнительного графика:', config.type);
                     }
                 } else {
+                    console.log('📊 Рендерим обычный график');
                     // Рендерим обычный график в зависимости от типа
-                    switch (chartType) {
+                    switch (config.type) {
                         case 'horizontalBar':
-                            this.renderHorizontalBarChart('fullChart', {
-                                ...config,
-                                labels: fullData.labels,
-                                data: fullData.data,
-                                title: chartTitle,
-                                showFullData: true, // Отключаем ограничение TOP-3
-                                clickable: false // Отключаем клики в полной версии
-                            });
+                            console.log('📊 Горизонтальная диаграмма');
+                            this.renderHorizontalBarChart('fullChart', chartConfig);
                             break;
                         case 'bar':
-                            this.renderBarChart('fullChart', {
-                                ...config,
-                                labels: fullData.labels,
-                                data: fullData.data,
-                                title: chartTitle,
-                                showFullData: true,
-                                clickable: false
-                            });
+                            console.log('📊 Столбчатая диаграмма');
+                            this.renderBarChart('fullChart', chartConfig);
                             break;
                         case 'donut':
-                            this.renderDonutChart('fullChart', {
-                                ...config,
-                                labels: fullData.labels,
-                                data: fullData.data,
-                                title: chartTitle,
-                                showFullData: true,
-                                clickable: false
-                            });
+                            console.log('📊 Кольцевая диаграмма');
+                            this.renderDonutChart('fullChart', chartConfig);
                             break;
                         case 'pie':
-                            this.renderPieChartWithPercentage('fullChart', {
-                                ...config,
-                                labels: fullData.labels,
-                                data: fullData.data,
-                                title: chartTitle,
-                                showFullData: true,
-                                clickable: false
-                            });
+                            console.log('📊 Круговая диаграмма');
+                            this.renderPieChartWithPercentage('fullChart', chartConfig);
                             break;
                         case 'line':
-                            this.renderSmoothLineChart('fullChart', {
-                                ...config,
-                                labels: fullData.labels,
-                                data: fullData.data,
-                                title: chartTitle,
-                                showFullData: true,
-                                clickable: false
-                            });
+                            console.log('📊 Линейный график');
+                            this.renderSmoothLineChart('fullChart', chartConfig);
                             break;
+                        default:
+                            console.log('📊 Горизонтальная диаграмма (по умолчанию)');
+                            this.renderHorizontalBarChart('fullChart', chartConfig);
                     }
                 }
+                
+                console.log('✅ График успешно отрендерен в модальном окне');
+                
+            } catch (error) {
+                console.error('❌ Ошибка при рендеринге графика:', error);
+                
+                // Показываем сообщение об ошибке в модальном окне
+                const chartContainer = canvas.parentElement;
+                if (chartContainer) {
+                    chartContainer.innerHTML = `
+                        <div class="text-center p-4">
+                            <i class="fa fa-exclamation-triangle text-warning" style="font-size: 48px;"></i>
+                            <h5 class="mt-3">Ошибка при загрузке графика</h5>
+                            <p class="text-muted">${error.message || 'Произошла неизвестная ошибка'}</p>
+                            <button class="btn btn-primary" onclick="location.reload()">Перезагрузить страницу</button>
+                        </div>
+                    `;
+                }
             }
-        });
-        
-        // Удаляем модальное окно после закрытия
-        modal.addEventListener('hidden.bs.modal', () => {
-            modal.remove();
-            // Уничтожаем график
-            if (this.charts['fullChart']) {
-                this.charts['fullChart'].destroy();
-                delete this.charts['fullChart'];
-            }
-        });
-        
-        // Открываем модальное окно
-        bsModal.show();
+        }, 200); // Увеличиваем задержку для лучшей стабильности
     }
 
     // Сохраняем полные данные для графиков
@@ -4166,6 +4312,275 @@ export class AmanatDashboard extends Component {
             data: data
         });
         return data;
+    }
+
+    convertServerDataToChartData(serverData, chartType) {
+        /**
+         * Конвертирует данные с сервера в формат для графиков
+         */
+        console.log('🔄 Конвертация данных сервера:', serverData, 'для типа:', chartType);
+        
+        if (!serverData) {
+            return { labels: [], data: [] };
+        }
+        
+        // Для типов данных, которые уже в правильном формате списка объектов
+        if (Array.isArray(serverData)) {
+            const labels = serverData.map(item => item.name || item.label || 'Без названия');
+            const data = serverData.map(item => item.count || item.avg_amount || item.avg_reward_percent || item.efficiency || item.cycle_days || 0);
+            
+            return { labels, data };
+        }
+        
+        // Для объектов (например, deal_types, currency_amounts)
+        if (typeof serverData === 'object' && serverData !== null) {
+            const labels = Object.keys(serverData);
+            const data = Object.values(serverData);
+            
+            return { labels, data };
+        }
+        
+        console.warn('⚠️ Неизвестный формат данных сервера:', serverData);
+        return { labels: [], data: [] };
+    }
+
+    async waitForChartsToRender() {
+        /**
+         * Ожидает отрисовки графиков перед добавлением обработчиков
+         */
+        return new Promise((resolve) => {
+            let attempts = 0;
+            const maxAttempts = 20; // Максимум 2 секунды ожидания
+            
+            const checkCharts = () => {
+                const titles = document.querySelectorAll('.chart-title, .chart-comparison-title, h5, h6');
+                const canvases = document.querySelectorAll('canvas[id*="chart"]');
+                
+                if (titles.length > 0 && canvases.length > 0) {
+                    console.log(`✅ Найдено ${titles.length} заголовков и ${canvases.length} графиков`);
+                    resolve();
+                } else if (attempts < maxAttempts) {
+                    attempts++;
+                    console.log(`⏳ Ожидание графиков... Попытка ${attempts}/${maxAttempts}`);
+                    setTimeout(checkCharts, 100);
+                } else {
+                    console.warn('⚠️ Превышено время ожидания графиков');
+                    resolve(); // Продолжаем даже если не дождались
+                }
+            };
+            
+            checkCharts();
+        });
+    }
+
+    addChartTitleClickHandlers() {
+        /**
+         * Добавляет обработчики кликов на названия графиков
+         */
+        console.log('🔗 Добавление обработчиков кликов на названия графиков');
+        console.log('📊 Общее количество заголовков на странице:', document.querySelectorAll('.chart-title, .chart-comparison-title, h5, h6').length);
+        
+        // Маппинг ID графиков к их типам и названиям
+        const chartMappings = {
+            // Графики заявок
+            'contragents-by-zayavki-chart': {
+                type: 'contragents_by_zayavki',
+                title: 'Количество заявок под каждого контрагента',
+                chartType: 'horizontalBar'
+            },
+            'contragent-avg-check-chart': {
+                type: 'contragent_avg_check',
+                title: 'Средний чек у контрагентов',
+                chartType: 'horizontalBar'
+            },
+            'contragent-reward-percent-chart': {
+                type: 'contragent_reward_percent',
+                title: 'Вознаграждение средний процент по контрагентам',
+                chartType: 'horizontalBar'
+            },
+            'agents-by-zayavki-chart': {
+                type: 'agents_by_zayavki',
+                title: 'Количество заявок под каждого агента',
+                chartType: 'horizontalBar'
+            },
+            'agent-avg-amount-chart': {
+                type: 'agent_avg_amount',
+                title: 'Средняя сумма заявок под каждого агента',
+                chartType: 'horizontalBar'
+            },
+            'clients-by-zayavki-chart': {
+                type: 'clients_by_zayavki',
+                title: 'Количество заявок под каждого клиента',
+                chartType: 'horizontalBar'
+            },
+            'client-avg-amount-chart': {
+                type: 'client_avg_amount',
+                title: 'Средняя сумма заявок по клиентам',
+                chartType: 'horizontalBar'
+            },
+            'subagents-by-zayavki-chart': {
+                type: 'subagents_by_zayavki',
+                title: 'Количество заявок под каждого субагента',
+                chartType: 'horizontalBar'
+            },
+            'payers-by-zayavki-chart': {
+                type: 'payers_by_zayavki',
+                title: 'Количество заявок по платежщикам субагентов',
+                chartType: 'horizontalBar'
+            },
+            'managers-by-zayavki-chart': {
+                type: 'managers_by_zayavki',
+                title: 'Заявки закрепленные за менеджерами',
+                chartType: 'horizontalBar'
+            },
+            'managers-closed-zayavki-chart': {
+                type: 'managers_closed_zayavki',
+                title: 'Заявки закрытые менеджерами',
+                chartType: 'horizontalBar'
+            },
+            'managers-efficiency-chart': {
+                type: 'managers_efficiency',
+                title: 'Эффективность менеджеров',
+                chartType: 'horizontalBar'
+            },
+            'zayavki-status-distribution-chart': {
+                type: 'zayavki_status_distribution',
+                title: 'Распределение заявок по статусам',
+                chartType: 'donut'
+            },
+            'deal-cycles-chart': {
+                type: 'deal_cycles',
+                title: 'Циклы сделок',
+                chartType: 'bar'
+            },
+            'deal-types-chart': {
+                type: 'deal_types',
+                title: 'Типы сделок',
+                chartType: 'pie'
+            },
+            'import-export-by-month-chart': {
+                type: 'import_export_by_month',
+                title: 'Импорт/Экспорт по месяцам',
+                chartType: 'line'
+            },
+            
+            // Графики переводов и ордеров
+            'transfers-by-currency-chart': {
+                type: 'transfers_by_currency',
+                title: 'Переводы по валютам',
+                chartType: 'donut'
+            },
+            'transfers-by-month-chart': {
+                type: 'transfers_by_month',
+                title: 'Переводы по месяцам',
+                chartType: 'line'
+            },
+            'orders-by-status-chart': {
+                type: 'orders_by_status',
+                title: 'Ордера по статусам',
+                chartType: 'pie'
+            }
+        };
+        
+        // Добавляем обработчики кликов
+        Object.keys(chartMappings).forEach(chartId => {
+            console.log(`🔍 Поиск заголовка для графика: ${chartId} (тип: ${chartMappings[chartId].type})`);
+            
+            // Ищем заголовки разными способами
+            let titleElement = null;
+            
+            // 1. Пробуем найти по стандартным селекторам (обычный режим)
+            titleElement = document.querySelector(`#${chartId}-container .chart-title, #${chartId}-container h5`);
+            if (titleElement) {
+                console.log(`✅ Найден через контейнер: ${chartId}-container`);
+            }
+            
+            // 2. Если не найден, ищем в режиме сравнения по тексту заголовка
+            if (!titleElement) {
+                const titleText = chartMappings[chartId].title;
+                titleElement = Array.from(document.querySelectorAll('.chart-title, .chart-comparison-title, h5, h6'))
+                    .find(el => el.textContent.trim() === titleText.trim());
+                if (titleElement) {
+                    console.log(`✅ Найден по точному тексту: "${titleText}"`);
+                }
+            }
+            
+            // 3. Если всё ещё не найден, ищем по частичному совпадению
+            if (!titleElement) {
+                const titleWords = chartMappings[chartId].title.split(' ').slice(0, 4).join(' ');
+                titleElement = Array.from(document.querySelectorAll('.chart-title, .chart-comparison-title, h5, h6'))
+                    .find(el => el.textContent.includes(titleWords));
+                if (titleElement) {
+                    console.log(`✅ Найден по частичному тексту: "${titleWords}"`);
+                }
+            }
+            
+            if (titleElement) {
+                // Добавляем CSS класс для кликабельности
+                titleElement.classList.add('clickable-title');
+                titleElement.title = 'Нажмите для просмотра полных данных';
+                
+                // Удаляем предыдущий обработчик если есть
+                titleElement.removeEventListener('click', titleElement._fullChartHandler);
+                
+                // Создаем и добавляем новый обработчик
+                const handler = async (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    console.log(`🖱️ Клик по названию графика: ${chartId}`);
+                    
+                    const mapping = chartMappings[chartId];
+                    await this.openFullChart(
+                        chartId, 
+                        mapping.title, 
+                        mapping.type, // Это правильный тип для сервера
+                        null, // fullData будут загружены с сервера
+                        { type: mapping.chartType } // Это тип графика для отображения
+                    );
+                };
+                
+                titleElement._fullChartHandler = handler;
+                titleElement.addEventListener('click', handler);
+                
+                console.log(`✅ Обработчик клика добавлен для: ${chartId}`, titleElement);
+            } else {
+                console.warn(`⚠️ Не найден элемент заголовка для графика: ${chartId}`);
+                console.warn(`   Искали заголовок с текстом: "${chartMappings[chartId].title}"`);
+                
+                // Выводим все заголовки на странице для отладки
+                const allTitles = document.querySelectorAll('.chart-title, .chart-comparison-title, h5, h6');
+                console.warn(`   Найдено заголовков всего: ${allTitles.length}`);
+                allTitles.forEach((el, i) => {
+                    console.warn(`   ${i + 1}. "${el.textContent.trim()}" (${el.className})`);
+                });
+            }
+        });
+        
+        console.log('🔗 Завершение добавления обработчиков кликов');
+    }
+
+    async addChartTitleClickHandlersWithWait() {
+        /**
+         * Надежное добавление обработчиков кликов с ожиданием готовности DOM
+         */
+        await this.waitForChartsToRender();
+        this.addChartTitleClickHandlers();
+    }
+
+    showErrorMessage(message) {
+        /**
+         * Показывает сообщение об ошибке пользователю
+         */
+        console.error('❌ Ошибка:', message);
+        
+        // Можно использовать Odoo notification service
+        if (this.env && this.env.services && this.env.services.notification) {
+            this.env.services.notification.add(message, { type: 'danger' });
+        } else {
+            // Fallback - простой alert
+            alert(message);
+        }
     }
 }
 

@@ -35,6 +35,7 @@
         "views/extract_delivery_views.xml",
         "views/country_views.xml",
         "views/zayavka_date_range_wizard_views.xml",
+        "views/zayavka_kassa_wizard_views.xml",
         "views/zayavka_views.xml",
         "views/reserve_views.xml",
         "views/kassa_ivan_views.xml",
@@ -61,6 +62,7 @@
         "views/zayavka_fiks_dashboard_views.xml",
         "views/contragent_gold_view.xml",
         "views/swift_api_config_views.xml",
+        "views/signature_library_views.xml",
         "views/menu.xml",
         # 6) Остальные файлы
         "data/transfer_sequence.xml",
@@ -83,6 +85,7 @@
         "data/dashboard_data.xml",
         "data/analytics_dashboard_data.xml",
         "data/zayavka_fiks_dashboard_data.xml",
+        "data/demo_signature_library.xml",
         # "data/mass_editing_actions.xml",
     ],
     "assets": {
@@ -154,6 +157,8 @@
             "amanat/static/src/js/attachment_preview.js",
             "amanat/static/src/js/attachment_preview_modal.js",
             "amanat/static/src/js/attachment_widget_extension.js",
+            "amanat/static/src/js/sverka_files_preview.js",
+            "amanat/static/src/js/action_handler.js",
             "amanat/static/src/xml/attachment_preview.xml",
         ],
     },

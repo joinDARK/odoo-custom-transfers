@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="zayavka_kassa_wizard_form_view" model="ir.ui.view">
+        <field name="name">amanat.zayavka.kassa.wizard.form</field>
+        <field name="model">amanat.zayavka.kassa.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Выбор кассы и диапазона дат">
+                <group string="Выбор кассы">
+                    <field name="kassa_type" widget="radio" options="{'horizontal': false}"/>
+                </group>
+                <group string="Поле для фильтрации по дате">
+                    <field name="field_name" widget="selection"/>
+                </group>
+                <group string="Быстрый выбор периода">
+                    <field name="quick_filter" widget="radio" options="{'horizontal': false}" nolabel="1"/>
+                </group>
+                <group string="Выбранные даты">
+                    <group>
+                        <field name="date_from"/>
+                    </group>
+                    <group>
+                        <field name="date_to"/>
+                    </group>
+                </group>
+                <footer>
+                    <button string="Применить фильтр" type="object" name="action_apply_filter" class="btn-primary"/>
+                    <button string="Отмена" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action для открытия wizard -->
+    <record id="action_zayavka_kassa_wizard" model="ir.actions.act_window">
+        <field name="name">Фильтр по кассе</field>
+        <field name="res_model">amanat.zayavka.kassa.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo> 
