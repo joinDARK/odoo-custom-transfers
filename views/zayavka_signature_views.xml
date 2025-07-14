@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Представления для позиций подписей -->
+    <record id="view_amanat_zayavka_signature_position_list" model="ir.ui.view">
+        <field name="name">amanat.zayavka.signature.position.list</field>
+        <field name="model">amanat.zayavka.signature.position</field>
+        <field name="arch" type="xml">
+            <list string="Позиции подписей">
+                <field name="name"/>
+                <field name="document_type"/>
+                <field name="signature_type"/>
+                <field name="page_number"/>
+                <field name="x_position"/>
+                <field name="y_position"/>
+                <field name="width"/>
+                <field name="height"/>
+                <field name="required"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_amanat_zayavka_signature_position_form" model="ir.ui.view">
+        <field name="name">amanat.zayavka.signature.position.form</field>
+        <field name="model">amanat.zayavka.signature.position</field>
+        <field name="arch" type="xml">
+            <form string="Позиция подписи">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="document_type"/>
+                            <field name="signature_type"/>
+                            <field name="required"/>
+                        </group>
+                        <group>
+                            <field name="page_number"/>
+                            <field name="x_position"/>
+                            <field name="y_position"/>
+                            <field name="width"/>
+                            <field name="height"/>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Представления для назначений подписей -->
+    <record id="view_amanat_zayavka_signature_assignment_list" model="ir.ui.view">
+        <field name="name">amanat.zayavka.signature.assignment.list</field>
+        <field name="model">amanat.zayavka.signature.assignment</field>
+        <field name="arch" type="xml">
+            <list string="Назначения подписей" editable="bottom">
+                <field name="name"/>
+                <field name="document_type"/>
+                <field name="signature_type"/>
+                <field name="page_number"/>
+                <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
+                <field name="required"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_amanat_zayavka_signature_assignment_form" model="ir.ui.view">
+        <field name="name">amanat.zayavka.signature.assignment.form</field>
+        <field name="model">amanat.zayavka.signature.assignment</field>
+        <field name="arch" type="xml">
+            <form string="Назначение подписи">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="document_type"/>
+                            <field name="signature_type"/>
+                            <field name="required"/>
+                        </group>
+                        <group>
+                            <field name="page_number"/>
+                            <field name="x_position"/>
+                            <field name="y_position"/>
+                            <field name="width"/>
+                            <field name="height"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo> 

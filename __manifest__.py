@@ -5,7 +5,7 @@
     "description": "Модуль проекта Amanat",
     "author": "IncubeAI (Мирас, Комрад и Эдуард)",
     "category": "Amanat",
-    "depends": ["base", "mail", "mail_bot", "base_automation", "web", "base_setup", "bus", "server_action_mass_edit", "chatter_attachments_manager"],
+    "depends": ["base", "mail", "mail_bot", "base_automation", "web", "base_setup", "bus", "chatter_attachments_manager"],
     "data": [
         "templates/webclient.xml",
         "views/res_users.xml",
@@ -63,6 +63,7 @@
         "views/contragent_gold_view.xml",
         "views/swift_api_config_views.xml",
         "views/signature_library_views.xml",
+        "views/zayavka_signature_views.xml",
         "views/menu.xml",
         # 6) Остальные файлы
         "data/transfer_sequence.xml",
