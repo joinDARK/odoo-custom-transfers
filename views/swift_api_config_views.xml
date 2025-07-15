@@ -135,20 +135,4 @@
             </p>
         </field>
     </record>
-
-    <!-- SWIFT Menu Group -->
-    <menuitem 
-        id="menu_swift_main"
-        name="SWIFT"
-        parent="amanat_menu_manuals_group"
-        sequence="50"/>
-        
-    <!-- Menu items -->
-    <menuitem 
-        id="swift_api_config_menu"
-        name="Настройки API"
-        parent="menu_swift_main"
-        action="swift_api_config_action"
-        sequence="10"/>
-
 </odoo> 
