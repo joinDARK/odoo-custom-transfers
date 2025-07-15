@@ -15,26 +15,68 @@ class AmanatZayavkaDocuments(models.Model):
     _inherit = 'amanat.zayavka'
 
     # Поля для подписанных документов
-    signed_zayavka_file = fields.Binary(string='Подписанная заявка', readonly=True)
-    signed_zayavka_filename = fields.Char(string='Имя подписанной заявки', readonly=True)
+    signed_zayavka_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_zayavka_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанная заявка',
+        readonly=True
+    )
     
-    signed_invoice_file = fields.Binary(string='Подписанный инвойс', readonly=True)
-    signed_invoice_filename = fields.Char(string='Имя подписанного инвойса', readonly=True)
+    signed_invoice_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_invoice_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанный инвойс',
+        readonly=True
+    )
     
-    signed_assignment_file = fields.Binary(string='Подписанное поручение', readonly=True)
-    signed_assignment_filename = fields.Char(string='Имя подписанного поручения', readonly=True)
+    signed_assignment_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_assignment_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанное поручение',
+        readonly=True
+    )
     
-    signed_swift_file = fields.Binary(string='Подписанный SWIFT', readonly=True)
-    signed_swift_filename = fields.Char(string='Имя подписанного SWIFT', readonly=True)
+    signed_swift_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_swift_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанный SWIFT',
+        readonly=True
+    )
     
-    signed_swift103_file = fields.Binary(string='Подписанный SWIFT 103', readonly=True)
-    signed_swift103_filename = fields.Char(string='Имя подписанного SWIFT 103', readonly=True)
+    signed_swift103_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_swift103_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанный SWIFT 103',
+        readonly=True
+    )
     
-    signed_swift199_file = fields.Binary(string='Подписанный SWIFT 199', readonly=True)
-    signed_swift199_filename = fields.Char(string='Имя подписанного SWIFT 199', readonly=True)
+    signed_swift199_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_swift199_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанный SWIFT 199',
+        readonly=True
+    )
     
-    signed_report_file = fields.Binary(string='Подписанный акт-отчет', readonly=True)
-    signed_report_filename = fields.Char(string='Имя подписанного акт-отчета', readonly=True)
+    signed_report_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_report_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанный акт-отчет',
+        readonly=True
+    )
 
     # Поля для статуса подписания каждого документа
     zayavka_signature_state = fields.Selection([
@@ -181,95 +223,101 @@ class AmanatZayavkaDocuments(models.Model):
     # Методы для определения подписей в каждом типе документа
     def action_detect_signatures_zayavka(self):
         """Определить позиции подписей в заявке"""
-        return self._detect_signatures_for_document('zayavka', self.zayavka_file, 'zayavka_signature_state')
+        return self._detect_signatures_for_document('zayavka', self.zayavka_attachments, 'zayavka_signature_state')
 
     def action_detect_signatures_invoice(self):
         """Определить позиции подписей в инвойсе"""
-        return self._detect_signatures_for_document('invoice', self.invoice_file, 'invoice_signature_state')
+        return self._detect_signatures_for_document('invoice', self.invoice_attachments, 'invoice_signature_state')
 
     def action_detect_signatures_assignment(self):
         """Определить позиции подписей в поручении"""
-        return self._detect_signatures_for_document('assignment', self.assignment_file, 'assignment_signature_state')
+        return self._detect_signatures_for_document('assignment', self.assignment_attachments, 'assignment_signature_state')
 
     def action_detect_signatures_swift(self):
         """Определить позиции подписей в SWIFT"""
-        return self._detect_signatures_for_document('swift', self.swift_file, 'swift_signature_state')
+        return self._detect_signatures_for_document('swift', self.swift_attachments, 'swift_signature_state')
 
     def action_detect_signatures_swift103(self):
         """Определить позиции подписей в SWIFT 103"""
-        return self._detect_signatures_for_document('swift103', self.swift103_file, 'swift103_signature_state')
+        return self._detect_signatures_for_document('swift103', self.swift103_attachments, 'swift103_signature_state')
 
     def action_detect_signatures_swift199(self):
         """Определить позиции подписей в SWIFT 199"""
-        return self._detect_signatures_for_document('swift199', self.swift199_file, 'swift199_signature_state')
+        return self._detect_signatures_for_document('swift199', self.swift199_attachments, 'swift199_signature_state')
 
     def action_detect_signatures_report(self):
         """Определить позиции подписей в акт-отчете"""
-        return self._detect_signatures_for_document('report', self.report_file, 'report_signature_state')
+        return self._detect_signatures_for_document('report', self.report_attachments, 'report_signature_state')
 
     # Методы для подписания каждого типа документа
     def action_sign_zayavka(self):
         """Подписать заявку"""
-        return self._sign_document('zayavka', self.zayavka_file, 'signed_zayavka_file', 'signed_zayavka_filename', 'zayavka_signature_state')
+        return self._sign_document('zayavka', self.zayavka_attachments, 'signed_zayavka_attachments', 'zayavka_signature_state')
 
     def action_sign_invoice(self):
         """Подписать инвойс"""
-        return self._sign_document('invoice', self.invoice_file, 'signed_invoice_file', 'signed_invoice_filename', 'invoice_signature_state')
+        return self._sign_document('invoice', self.invoice_attachments, 'signed_invoice_attachments', 'invoice_signature_state')
 
     def action_sign_assignment(self):
         """Подписать поручение"""
-        return self._sign_document('assignment', self.assignment_file, 'signed_assignment_file', 'signed_assignment_filename', 'assignment_signature_state')
+        return self._sign_document('assignment', self.assignment_attachments, 'signed_assignment_attachments', 'assignment_signature_state')
 
     def action_sign_swift(self):
         """Подписать SWIFT"""
-        return self._sign_document('swift', self.swift_file, 'signed_swift_file', 'signed_swift_filename', 'swift_signature_state')
+        return self._sign_document('swift', self.swift_attachments, 'signed_swift_attachments', 'swift_signature_state')
 
     def action_sign_swift103(self):
         """Подписать SWIFT 103"""
-        return self._sign_document('swift103', self.swift103_file, 'signed_swift103_file', 'signed_swift103_filename', 'swift103_signature_state')
+        return self._sign_document('swift103', self.swift103_attachments, 'signed_swift103_attachments', 'swift103_signature_state')
 
     def action_sign_swift199(self):
         """Подписать SWIFT 199"""
-        return self._sign_document('swift199', self.swift199_file, 'signed_swift199_file', 'signed_swift199_filename', 'swift199_signature_state')
+        return self._sign_document('swift199', self.swift199_attachments, 'signed_swift199_attachments', 'swift199_signature_state')
 
     def action_sign_report(self):
         """Подписать акт-отчет"""
-        return self._sign_document('report', self.report_file, 'signed_report_file', 'signed_report_filename', 'report_signature_state')
+        return self._sign_document('report', self.report_attachments, 'signed_report_attachments', 'report_signature_state')
 
     # Методы сброса документов
     def action_reset_zayavka_document(self):
         """Сбросить все данные заявки"""
-        return self._reset_document('zayavka', 'zayavka_file', 'signed_zayavka_file', 'signed_zayavka_filename', 'zayavka_signature_state')
+        return self._reset_document('zayavka', 'zayavka_attachments', 'signed_zayavka_attachments', 'zayavka_signature_state')
 
     def action_reset_invoice_document(self):
         """Сбросить все данные инвойса"""
-        return self._reset_document('invoice', 'invoice_file', 'signed_invoice_file', 'signed_invoice_filename', 'invoice_signature_state')
+        return self._reset_document('invoice', 'invoice_attachments', 'signed_invoice_attachments', 'invoice_signature_state')
 
     def action_reset_assignment_document(self):
         """Сбросить все данные поручения"""
-        return self._reset_document('assignment', 'assignment_file', 'signed_assignment_file', 'signed_assignment_filename', 'assignment_signature_state')
+        return self._reset_document('assignment', 'assignment_attachments', 'signed_assignment_attachments', 'assignment_signature_state')
 
     def action_reset_swift_document(self):
         """Сбросить все данные SWIFT"""
-        return self._reset_document('swift', 'swift_file', 'signed_swift_file', 'signed_swift_filename', 'swift_signature_state')
+        return self._reset_document('swift', 'swift_attachments', 'signed_swift_attachments', 'swift_signature_state')
 
     def action_reset_swift103_document(self):
         """Сбросить все данные SWIFT 103"""
-        return self._reset_document('swift103', 'swift103_file', 'signed_swift103_file', 'signed_swift103_filename', 'swift103_signature_state')
+        return self._reset_document('swift103', 'swift103_attachments', 'signed_swift103_attachments', 'swift103_signature_state')
 
     def action_reset_swift199_document(self):
         """Сбросить все данные SWIFT 199"""
-        return self._reset_document('swift199', 'swift199_file', 'signed_swift199_file', 'signed_swift199_filename', 'swift199_signature_state')
+        return self._reset_document('swift199', 'swift199_attachments', 'signed_swift199_attachments', 'swift199_signature_state')
 
     def action_reset_report_document(self):
         """Сбросить все данные акт-отчета"""
-        return self._reset_document('report', 'report_file', 'signed_report_file', 'signed_report_filename', 'report_signature_state')
+        return self._reset_document('report', 'report_attachments', 'signed_report_attachments', 'report_signature_state')
 
-    def _detect_signatures_for_document(self, document_type, pdf_file, state_field):
+    def _detect_signatures_for_document(self, document_type, attachments, state_field):
         """Универсальный метод для определения подписей в документе"""
-        if not pdf_file:
+        if not attachments:
             from odoo.exceptions import UserError
             raise UserError(f'Сначала загрузите PDF файл для {document_type}')
+        
+        # Берем первое вложение для анализа
+        attachment = attachments[0] if attachments else None
+        if not attachment:
+            from odoo.exceptions import UserError
+            raise UserError(f'Нет вложений для анализа в {document_type}')
         
         # Удаляем существующие позиции и назначения для данного типа документа
         position_model = self.env['amanat.zayavka.signature.position']
@@ -288,7 +336,7 @@ class AmanatZayavkaDocuments(models.Model):
         existing_assignments.unlink()
         
         # Автоматически находим позиции
-        found_positions = self._auto_find_signatures(document_type, pdf_file)
+        found_positions = self._auto_find_signatures(document_type, attachment.datas)
         
         # Создаем назначения подписей
         if found_positions:
@@ -408,7 +456,7 @@ class AmanatZayavkaDocuments(models.Model):
                 'name': position.name,
             })
 
-    def _sign_document(self, document_type, source_file, signed_file_field, signed_filename_field, state_field):
+    def _sign_document(self, document_type, source_attachments, signed_attachments_field, state_field):
         """Универсальный метод для подписания документа"""
         # Получаем назначения подписей для данного типа документа
         assignments = self.env['amanat.zayavka.signature.assignment'].search([
@@ -428,12 +476,28 @@ class AmanatZayavkaDocuments(models.Model):
                 f'{", ".join(missing_signatures.mapped("name"))}'
             )
         
-        # Генерируем подписанный документ
-        signed_file_data, signed_filename = self._generate_signed_document(document_type, source_file)
+        # Берем первое вложение для подписания
+        source_attachment = source_attachments[0] if source_attachments else None
+        if not source_attachment:
+            from odoo.exceptions import UserError
+            raise UserError(f'Нет исходного документа для подписания в {document_type}')
         
-        # Сохраняем подписанный файл
-        setattr(self, signed_file_field, signed_file_data)
-        setattr(self, signed_filename_field, signed_filename)
+        # Генерируем подписанный документ
+        signed_file_data, signed_filename = self._generate_signed_document(document_type, source_attachment.datas)
+        
+        # Создаем новое вложение для подписанного документа
+        signed_attachment = self.env['ir.attachment'].create({
+            'name': signed_filename,
+            'datas': signed_file_data,
+            'res_model': self._name,
+            'res_id': self.id,
+            'mimetype': 'application/pdf',
+        })
+        
+        # Очищаем старые подписанные вложения и добавляем новое
+        signed_attachments = getattr(self, signed_attachments_field)
+        signed_attachments.unlink()
+        setattr(self, signed_attachments_field, [(4, signed_attachment.id)])
         
         # Обновляем статус
         setattr(self, state_field, 'signed')
@@ -522,15 +586,15 @@ class AmanatZayavkaDocuments(models.Model):
             from odoo.exceptions import UserError
             raise UserError(f'Ошибка при генерации подписанного документа {document_type}: {str(e)}')
 
-    def _reset_document(self, document_type, source_file_field, signed_file_field, signed_filename_field, state_field):
+    def _reset_document(self, document_type, source_attachments_field, signed_attachments_field, state_field):
         """Универсальный метод для сброса документа и всех связанных данных"""
         from odoo.exceptions import UserError
         
         # Проверяем есть ли что сбрасывать
-        source_file = getattr(self, source_file_field, None)
-        signed_file = getattr(self, signed_file_field, None)
+        source_attachments = getattr(self, source_attachments_field, None)
+        signed_attachments = getattr(self, signed_attachments_field, None)
         
-        if not source_file and not signed_file:
+        if not source_attachments and not signed_attachments:
             raise UserError(f'Нет данных для сброса в {document_type}')
         
         # Сначала удаляем все назначения подписей для данного типа документа
@@ -549,15 +613,14 @@ class AmanatZayavkaDocuments(models.Model):
         ])
         existing_positions.unlink()
         
-        # Очищаем файлы и сбрасываем статус
-        update_vals = {
-            source_file_field: False,
-            signed_file_field: False,
-            signed_filename_field: False,
-            state_field: 'draft'
-        }
+        # Удаляем вложения
+        if source_attachments:
+            source_attachments.unlink()
+        if signed_attachments:
+            signed_attachments.unlink()
         
-        self.write(update_vals)
+        # Сбрасываем статус
+        setattr(self, state_field, 'draft')
         
         return {
             'type': 'ir.actions.client',

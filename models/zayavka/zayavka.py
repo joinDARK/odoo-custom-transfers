@@ -1264,31 +1264,73 @@ class Zayavka(models.Model, AmanatBaseModel):
         tracking=True
     )
 
-    zayavka_file = fields.Binary(string='Заявка', attachment=True)
+    zayavka_attachments = fields.Many2many(
+        'ir.attachment', 
+        'zayavka_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Заявка'
+    )
 
     zayavka_link = fields.Char(string='Заявка ссылка', tracking=True)
 
-    invoice_file = fields.Binary(string='Инвойс', attachment=True)
+    invoice_attachments = fields.Many2many(
+        'ir.attachment', 
+        'invoice_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Инвойс'
+    )
 
     invoice_link = fields.Char(string='Инвойс ссылка', tracking=True)
 
-    assignment_file = fields.Binary(string='Поручение', attachment=True)
+    assignment_attachments = fields.Many2many(
+        'ir.attachment', 
+        'assignment_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Поручение'
+    )
 
     assignment_link = fields.Char(string='Поручение ссылка', tracking=True)
 
-    swift_file = fields.Binary(string='SWIFT', attachment=True)
+    swift_attachments = fields.Many2many(
+        'ir.attachment', 
+        'swift_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='SWIFT'
+    )
 
     swift_link = fields.Char(string='SWIFT ссылка', tracking=True)
 
-    swift103_file = fields.Binary(string='SWIFT 103', attachment=True)
+    swift103_attachments = fields.Many2many(
+        'ir.attachment', 
+        'swift103_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='SWIFT 103'
+    )
 
     swift103_link = fields.Char(string='SWIFT 103 ссылка', tracking=True)
 
-    swift199_file = fields.Binary(string='SWIFT 199', attachment=True)
+    swift199_attachments = fields.Many2many(
+        'ir.attachment', 
+        'swift199_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='SWIFT 199'
+    )
 
     swift199_link = fields.Char(string='SWIFT 199 ссылка', tracking=True)
 
-    report_file = fields.Binary(string='Акт-отчет', attachment=True)
+    report_attachments = fields.Many2many(
+        'ir.attachment', 
+        'report_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Акт-отчет'
+    )
 
     report_link = fields.Char(string='Акт-отчет ссылка', tracking=True)
 
