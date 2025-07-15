@@ -920,7 +920,6 @@ class Dashboard(models.Model):
             # ==================== НОВЫЕ ГРАФИКИ МЕНЕДЖЕРОВ ====================
             'managers_by_zayavki': self.get_managers_by_zayavki_data(date_from, date_to),
             'managers_closed_zayavki': self.get_managers_closed_zayavki_data(date_from, date_to),
-            'zayavki_status_distribution': self.get_zayavki_status_distribution_data(date_from, date_to),
             'zayavki_deal_cycles': self.get_zayavki_deal_cycles_data(date_from, date_to),
             'contragent_avg_reward_percent': self.get_contragent_avg_reward_percent_data(date_from, date_to),
             'managers_efficiency_data': self.get_managers_efficiency_data(date_from, date_to),
@@ -1030,85 +1029,7 @@ class Dashboard(models.Model):
         
         return managers_list
     
-    @api.model
-    def get_zayavki_status_distribution_data(self, date_from=None, date_to=None):
-        """Получить данные по распределению статусов заявок"""
-        
-        import logging
-        _logger = logging.getLogger(__name__)
-        
-        try:
-            # Базовый фильтр - заявки, которые показываются в дашборде
-            domain = [('hide_in_dashboard', '!=', True)]
-            
-            # Добавляем фильтрацию по датам
-            if date_from and date_to:
-                domain.extend([('date_placement', '>=', date_from), ('date_placement', '<=', date_to)])
-            elif date_from:
-                domain.append(('date_placement', '>=', date_from))
-            elif date_to:
-                domain.append(('date_placement', '<=', date_to))
-            
-            # Получаем заявки с учетом фильтров
-            zayavki = self.env['amanat.zayavka'].search(domain)
-            _logger.info(f"Найдено заявок для статусов: {len(zayavki)}")
-            
-            # Считаем количество заявок по каждому статусу
-            status_counts = {}
-            for zayavka in zayavki:
-                status = getattr(zayavka, 'status', None) or 'Без статуса'
-                
-                # Красивые названия статусов
-                status_map = {
-                    'close': 'Заявка закрыта',
-                    'cancel': 'Отменено клиентом', 
-                    'return': 'Возврат',
-                    'draft': 'Черновик',
-                    'process': 'В обработке',
-                    'review': 'На рассмотрении',
-                    'approved': 'Одобрено',
-                    'rejected': 'Отклонено'
-                }
-                
-                status_display_name = status_map.get(status, status)
-                status_counts[status_display_name] = status_counts.get(status_display_name, 0) + 1
-            
-            # Преобразуем в список для графика
-            status_list = []
-            for status_name, count in status_counts.items():
-                status_list.append({
-                    'name': status_name,
-                    'count': count
-                })
-            
-            # Сортируем по убыванию количества
-            status_list.sort(key=lambda x: x['count'], reverse=True)
-            
-            _logger.info(f"Статусы заявок: {status_list}")
-            
-            # Если нет реальных данных, возвращаем тестовые данные
-            if not status_list:
-                _logger.info("Нет реальных данных, возвращаем тестовые")
-                return [
-                    {'name': 'Заявка закрыта', 'count': 125}, 
-                    {'name': 'В обработке', 'count': 85}, 
-                    {'name': 'Отменено клиентом', 'count': 15},
-                    {'name': 'На рассмотрении', 'count': 42},
-                    {'name': 'Черновик', 'count': 28}
-                ]
-            
-            return status_list
-            
-        except Exception as e:
-            _logger.error(f"Ошибка при получении статусов заявок: {e}")
-            # Возвращаем тестовые данные в случае ошибки
-            return [
-                {'name': 'Заявка закрыта', 'count': 125}, 
-                {'name': 'В обработке', 'count': 85}, 
-                {'name': 'Отменено клиентом', 'count': 15},
-                {'name': 'На рассмотрении', 'count': 42},
-                {'name': 'Черновик', 'count': 28}
-            ]
+
     
     @api.model
     def get_zayavki_deal_cycles_data(self, date_from=None, date_to=None):
@@ -1698,7 +1619,6 @@ class Dashboard(models.Model):
                 'managers_efficiency': self._get_safe_managers_efficiency(date_from, date_to),
                 
                 # Статусы и циклы
-                'zayavki_status_distribution': self._get_safe_zayavki_status_distribution(date_from, date_to),
                 'deal_cycles': self._get_safe_deal_cycles(date_from, date_to),
                 
                 # Данные по типам сделок
@@ -1716,20 +1636,6 @@ class Dashboard(models.Model):
             if chart_type in chart_data_mapping:
                 result = chart_data_mapping[chart_type]
                 _logger.info(f"✅ Возвращены данные для {chart_type} за период {date_from}-{date_to}, тип результата: {type(result)}, длина: {len(result) if isinstance(result, (list, dict)) else 'N/A'}")
-                
-                # Специальная обработка для статусов заявок
-                if chart_type == 'zayavki_status_distribution':
-                    _logger.info(f"🔍 Подробности данных статусов заявок: {result}")
-                    # Метод уже содержит логику возврата тестовых данных, поэтому просто возвращаем результат
-                    if not result or len(result) == 0:
-                        _logger.warning("❌ Пустые данные для статусов заявок, возвращаем тестовые данные")
-                        return [
-                            {'name': 'Заявка закрыта', 'count': 125}, 
-                            {'name': 'В обработке', 'count': 85}, 
-                            {'name': 'Отменено клиентом', 'count': 15},
-                            {'name': 'На рассмотрении', 'count': 42},
-                            {'name': 'Черновик', 'count': 28}
-                        ]
                 
                 return result
             else:
@@ -2423,29 +2329,7 @@ class Dashboard(models.Model):
             return [{'name': 'Менеджер 1', 'efficiency': 88.9}, 
                     {'name': 'Менеджер 2', 'efficiency': 84.2}]
     
-    def _get_safe_zayavki_status_distribution(self, date_from=None, date_to=None):
-        """Безопасное получение распределения статусов заявок с фильтрацией по датам"""
-        import logging
-        _logger = logging.getLogger(__name__)
-        
-        try:
-            # Используем обновленный метод для получения статусов заявок
-            result = self.get_zayavki_status_distribution_data(date_from, date_to)
-            _logger.info(f'Получены данные статусов заявок за период {date_from}-{date_to}: {result}')
-            
-            # Метод уже содержит логику возврата тестовых данных, просто возвращаем результат
-            return result
-            
-        except Exception as e:
-            _logger.error(f'Ошибка при получении данных статусов заявок: {e}')
-            # Возвращаем тестовые данные в случае ошибки
-            return [
-                {'name': 'Заявка закрыта', 'count': 125}, 
-                {'name': 'В обработке', 'count': 85}, 
-                {'name': 'Отменено клиентом', 'count': 15},
-                {'name': 'На рассмотрении', 'count': 42},
-                {'name': 'Черновик', 'count': 28}
-            ]
+
     
     def _get_safe_deal_cycles(self, date_from=None, date_to=None):
         """Безопасное получение циклов сделок с фильтрацией по датам"""
