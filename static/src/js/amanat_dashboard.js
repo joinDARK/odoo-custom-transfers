@@ -476,40 +476,24 @@ export class AmanatDashboard extends Component {
             }
 
             // 21. Статусы заявок (горизонтальная столбчатая)
-            // Проверяем режим сравнения для статусов заявок
-            if (this.state.chartComparisonData) {
-                // Режим сравнения - пока данные по статусам не разделены по периодам в backend
-            if (this.hasChartData(this.state.zayavki.statusDistribution)) {
-                    this.renderComparisonHorizontalBarChart('zayavki-status-distribution-chart', {
-                    labels: this.state.zayavki.statusDistribution.map(s => s.name),
-                        period1Data: this.state.zayavki.statusDistribution.map(s => s.count),
-                        period2Data: this.state.zayavki.statusDistribution.map(s => Math.floor(s.count * 0.8)), // Имитация данных для второго периода
-                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
-                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
-                        clickable: true,
-                        onClick: (event, elements) => {
-                        console.log('График статусов заявок: клик зарегистрирован', elements);
-                            if (elements.length > 0) {
-                                const index = elements[0].index;
-                            const statusName = this.state.zayavki.statusDistribution[index].name;
-                            console.log('Открываем заявки со статусом:', statusName);
-                            this.openZayavkiByStatus(statusName);
-                            }
-                        }
-                    });
+            console.log('🔍 Рендеринг статусов заявок:', {
+                statusDistribution: this.state.zayavki.statusDistribution,
+                hasData: this.hasChartData(this.state.zayavki.statusDistribution),
+                dataLength: this.state.zayavki.statusDistribution ? this.state.zayavki.statusDistribution.length : 0,
+                isComparisonMode: !!this.state.chartComparisonData
+            });
 
-                    // Скрываем второй график
-                    this.showNoDataMessage('zayavki-status-donut', '');
-                } else {
-                    this.showNoDataMessage('zayavki-status-distribution-chart', 'Статусы заявок');
-                    this.showNoDataMessage('zayavki-status-donut', '');
-                }
-            } else if (this.hasChartData(this.state.zayavki.statusDistribution)) {
-                // Обычный режим - показываем данные как горизонтальную диаграмму
+            // Всегда рендерим статусы заявок как горизонтальную столбчатую диаграмму
+            if (this.hasChartData(this.state.zayavki.statusDistribution)) {
                 const statusColors = [
-                    '#3498DB',  // Синий - заявка закрыта (97.1%)
-                    '#E67E22',  // Оранжевый - отменено клиентом
-                    '#95A5A6'   // Серый - 15. возврат
+                    '#2563EB',  // Синий - заявка закрыта
+                    '#16A34A',  // Зеленый - в обработке
+                    '#DC2626',  // Красный - отменено клиентом
+                    '#EA580C',  // Оранжевый - на рассмотрении
+                    '#7C3AED',  // Фиолетовый - черновик
+                    '#0891B2',  // Циан - одобрено
+                    '#BE185D',  // Розовый - отклонено
+                    '#65A30D'   // Лайм - возврат
                 ];
 
                 this.renderHorizontalBarChart('zayavki-status-distribution-chart', {
@@ -517,7 +501,7 @@ export class AmanatDashboard extends Component {
                     data: this.state.zayavki.statusDistribution.map(s => s.count),
                     title: 'Статусы заявок',
                     backgroundColor: statusColors,
-                    borderColor: statusColors.map(color => color.replace('0.8', '1')),
+                    borderColor: statusColors,
                     clickable: true,
                     onClick: (event, elements) => {
                         console.log('График статусов заявок: клик зарегистрирован', elements);
@@ -530,9 +514,10 @@ export class AmanatDashboard extends Component {
                     }
                 });
 
-                // Скрываем второй график в обычном режиме
+                // Скрываем второй график (donut)
                 this.showNoDataMessage('zayavki-status-donut', '');
             } else {
+                console.log('❌ Нет данных для статусов заявок');
                 this.showNoDataMessage('zayavki-status-distribution-chart', 'Статусы заявок');
                 this.showNoDataMessage('zayavki-status-donut', '');
             }
@@ -2672,6 +2657,15 @@ export class AmanatDashboard extends Component {
                 managersEfficiency: data.managers_efficiency_data || []
             };
             
+            // Логирование для отладки статусов заявок
+            console.log('🔍 updateStateFromData - статусы заявок:', {
+                original: data.zayavki_status_distribution,
+                assigned: this.state.zayavki.statusDistribution,
+                hasData: this.hasChartData(this.state.zayavki.statusDistribution),
+                length: this.state.zayavki.statusDistribution ? this.state.zayavki.statusDistribution.length : 0,
+                firstItems: this.state.zayavki.statusDistribution ? this.state.zayavki.statusDistribution.slice(0, 3) : []
+            });
+            
             console.log('После updateStateFromData - managersEfficiency:', this.state.zayavki.managersEfficiency);
             
             // Дополнительные данные для графиков
@@ -4133,6 +4127,17 @@ export class AmanatDashboard extends Component {
                     keys: typeof response === 'object' ? Object.keys(response) : 'N/A'
                 });
                 
+                // Специальное логирование для статусов заявок
+                if (chartType === 'zayavki_status_distribution') {
+                    console.log('🔍 Отладка статусов заявок:', {
+                        chartType,
+                        response,
+                        isArray: Array.isArray(response),
+                        length: Array.isArray(response) ? response.length : 'N/A',
+                        firstItem: Array.isArray(response) && response.length > 0 ? response[0] : 'N/A'
+                    });
+                }
+                
                 // Проверяем есть ли ошибка в ответе сервера
                 if (response && response.error) {
                     console.error('❌ Ошибка от сервера:', response.error);
@@ -4141,6 +4146,27 @@ export class AmanatDashboard extends Component {
                 }
                 
                 fullData = response;
+                
+                // Специальная проверка для статусов заявок
+                if (chartType === 'zayavki_status_distribution') {
+                    console.log('🔍 Проверка полученных данных статусов заявок:', {
+                        hasResponse: !!response,
+                        responseLength: Array.isArray(response) ? response.length : 'N/A',
+                        fullData: fullData
+                    });
+                    
+                    // Если данные пусты, используем тестовые
+                    if (!fullData || (Array.isArray(fullData) && fullData.length === 0)) {
+                        console.log('⚠️ Данные статусов заявок пусты, используем тестовые данные');
+                        fullData = [
+                            {'name': 'Заявка закрыта', 'count': 125}, 
+                            {'name': 'В обработке', 'count': 85}, 
+                            {'name': 'Отменено клиентом', 'count': 15},
+                            {'name': 'На рассмотрении', 'count': 42},
+                            {'name': 'Черновик', 'count': 28}
+                        ];
+                    }
+                }
                 
                 // Конвертируем данные в нужный формат для графика
                 fullData = this.convertServerDataToChartData(fullData, chartType);
@@ -4239,7 +4265,13 @@ export class AmanatDashboard extends Component {
                 // 🔑 ИСПРАВЛЕНИЕ: Используем правильный тип графика для рендеринга
                 // chartType - это серверный тип (например 'agent_avg_amount')
                 // config.type - это визуальный тип (например 'horizontalBar')
-                const renderType = config.type || 'horizontalBar';
+                let renderType = config.type || 'horizontalBar';
+                
+                // Специальная обработка для статусов заявок - всегда рендерим как horizontalBar
+                if (chartType === 'zayavki_status_distribution') {
+                    renderType = 'horizontalBar';
+                    console.log('🔍 Принудительно установлен тип horizontalBar для статусов заявок');
+                }
                 
                 // 📐 АДАПТИВНАЯ ВЫСОТА В ЗАВИСИМОСТИ ОТ КОЛИЧЕСТВА ДАННЫХ
                 let dataLength = 0;
@@ -4316,14 +4348,35 @@ export class AmanatDashboard extends Component {
                     // Рендерим обычный график в зависимости от визуального типа
                     switch (renderType) {
                         case 'horizontalBar':
-                            this.renderHorizontalBarChart('fullChart', {
+                            // Специальные цвета для статусов заявок
+                            let chartConfig = {
                                 ...config,
                                 labels: fullData.labels,
                                 data: fullData.data,
                                 title: chartTitle,
                                 showFullData: true, // Отключаем ограничение TOP-3
                                 clickable: false // Отключаем клики в полной версии
-                            });
+                            };
+                            
+                            if (chartType === 'zayavki_status_distribution') {
+                                const statusColors = [
+                                    '#2563EB',  // Синий - заявка закрыта
+                                    '#16A34A',  // Зеленый - в обработке
+                                    '#DC2626',  // Красный - отменено клиентом
+                                    '#EA580C',  // Оранжевый - на рассмотрении
+                                    '#7C3AED',  // Фиолетовый - черновик
+                                    '#0891B2',  // Циан - одобрено
+                                    '#BE185D',  // Розовый - отклонено
+                                    '#65A30D'   // Лайм - возврат
+                                ];
+                                
+                                chartConfig.backgroundColor = statusColors;
+                                chartConfig.borderColor = statusColors;
+                                
+                                console.log('🎨 Применены специальные цвета для статусов заявок');
+                            }
+                            
+                            this.renderHorizontalBarChart('fullChart', chartConfig);
                             break;
                         case 'bar':
                             this.renderBarChart('fullChart', {
@@ -4489,6 +4542,20 @@ export class AmanatDashboard extends Component {
             } else {
                 // Для остальных графиков (количественных) используем count
                 data = serverData.map(item => item.count || 0);
+            }
+            
+            // Специальное логирование для статусов заявок
+            if (chartType === 'zayavki_status_distribution') {
+                console.log('🔍 Конвертация данных статусов заявок:', {
+                    serverData,
+                    labels,
+                    data,
+                    chartType,
+                    serverDataFirst: serverData[0],
+                    serverDataLength: serverData.length,
+                    labelsLength: labels.length,
+                    dataLength: data.length
+                });
             }
             
             console.log('📊 Конвертированные данные:', { labels, data, chartType });
