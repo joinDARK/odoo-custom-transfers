@@ -259,6 +259,15 @@ class Reconciliation(models.Model, AmanatBaseModel):
                 'Комментарий (from Ордер)': rec.order_comment or '',
                 'Сумма_Ордер': rec.order_id and rec.order_id[0].amount or 0.0,
                 'Курс': rec.rate,
+                'Кошелек': rec.wallet_id.name if rec.wallet_id else '',
+                'Контрагенты (from Получатель)': [{'name': name} for name in rec.receiver_contragent.mapped('name')],
+                'За операцию': rec.award,
+                'РКО': rec.rko,
+                'Наш процент': rec.our_percent,
+                'РКО 2': rec.rko_2,
+                'К выдаче': rec.exchange,
+                'Эквивалент $': rec.equivalent,
+                'Сверка по диапазону': rec.range_reconciliation_bool,
             })
         return data
 
