@@ -456,7 +456,6 @@
 }
 
 /* Canvas containers responsive height */
-# ... existing code ... 
 
 /* График контейнеры */
 .chart-container {
@@ -1035,19 +1034,22 @@ canvas[id*="agents-by-zayavki"] {
 .full-chart-modal .full-chart-container {
     position: relative;
     width: 100%;
-    height: 600px;
+    height: auto; /* Адаптивная высота */
     min-height: 400px;
+    max-height: 1000px; /* Максимальная высота для очень больших графиков */
     background: white;
     border-radius: 8px;
     padding: 10px;
+    overflow-y: auto; /* Скролл если график все же превышает максимальную высоту */
 }
 
 .full-chart-modal .full-chart-container canvas {
     position: relative !important;
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important; /* Адаптивная высота для canvas */
     max-width: none !important;
-    max-height: none !important;
+    max-height: 1000px !important; /* Ограничиваем максимальную высоту */
+    display: block; /* Убираем возможные проблемы с inline отображением */
 }
 
 /* Темная тема для модального окна */
@@ -1105,4 +1107,147 @@ canvas[id*="agents-by-zayavki"] {
 .full-chart-modal .btn-primary:hover {
     background-color: #0056b3;
     border-color: #004085;
-} 
+}
+
+/* ==================== АДАПТИВНЫЕ РАЗМЕРЫ ГРАФИКОВ ==================== */
+
+/* Контейнеры графиков с адаптивной высотой */
+.chart-container-small.adaptive,
+.chart-container-medium.adaptive,
+.chart-container-large.adaptive {
+    height: auto !important;
+    min-height: 120px;
+    max-height: 600px;
+}
+
+/* Горизонтальные столбчатые диаграммы с большим количеством данных */
+.chart-container-large.horizontal-bar-adaptive {
+    height: auto !important;
+    min-height: 180px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.chart-container-large.horizontal-bar-adaptive canvas {
+    height: auto !important;
+    min-height: 180px;
+}
+
+/* Адаптивные круговые диаграммы */
+.chart-container-small.pie-adaptive,
+.chart-container-medium.pie-adaptive {
+    height: auto !important;
+    min-height: 200px;
+    max-height: 350px;
+    aspect-ratio: 1;
+}
+
+.chart-container-small.pie-adaptive canvas,
+.chart-container-medium.pie-adaptive canvas {
+    height: auto !important;
+    width: 100% !important;
+}
+
+/* Адаптивные линейные графики с большим количеством данных */
+.chart-container-large.line-adaptive {
+    height: auto !important;
+    min-height: 180px;
+    max-height: 400px;
+}
+
+.chart-container-large.line-adaptive canvas {
+    height: auto !important;
+    min-height: 180px;
+}
+
+/* Большие графики с множественными данными */
+.chart-card.has-more-data.adaptive .chart-container-large,
+.chart-card.has-more-data.adaptive .chart-container-medium {
+    height: auto !important;
+    min-height: 300px;
+    max-height: 800px;
+}
+
+.chart-card.has-more-data.adaptive canvas {
+    height: auto !important;
+    min-height: 300px;
+}
+
+/* Полноэкранное модальное окно с адаптивными графиками */
+.full-chart-modal .full-chart-container.adaptive {
+    height: auto !important;
+    min-height: 400px;
+    max-height: 1000px;
+    overflow-y: auto;
+}
+
+.full-chart-modal .full-chart-container.adaptive canvas {
+    height: auto !important;
+    min-height: 400px;
+    width: 100% !important;
+}
+
+/* Мобильные устройства - ограничение максимальной высоты */
+@media (max-width: 768px) {
+    .chart-container-large.horizontal-bar-adaptive,
+    .chart-container-large.line-adaptive {
+        max-height: 400px;
+    }
+    
+    .chart-card.has-more-data.adaptive .chart-container-large,
+    .chart-card.has-more-data.adaptive .chart-container-medium {
+        max-height: 500px;
+    }
+    
+    .full-chart-modal .full-chart-container.adaptive {
+        max-height: 70vh;
+    }
+}
+
+/* Планшеты - промежуточные значения */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .chart-container-large.horizontal-bar-adaptive {
+        max-height: 500px;
+    }
+    
+    .full-chart-modal .full-chart-container.adaptive {
+        max-height: 80vh;
+    }
+}
+
+/* Стили для контейнеров графиков с прокруткой */
+.chart-container.scrollable {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.chart-container.scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chart-container.scrollable::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.chart-container.scrollable::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.chart-container.scrollable::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Темная тема для адаптивных графиков */
+.o_dark_mode .chart-container.scrollable::-webkit-scrollbar-track {
+    background: #2d3748;
+}
+
+.o_dark_mode .chart-container.scrollable::-webkit-scrollbar-thumb {
+    background: #4a5568;
+}
+
+.o_dark_mode .chart-container.scrollable::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+}
