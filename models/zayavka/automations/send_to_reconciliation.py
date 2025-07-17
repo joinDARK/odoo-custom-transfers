@@ -141,6 +141,17 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 **self._get_currency_fields(currency, -sum_value)
             })
 
+            self._create_reconciliation({
+                'date': deal_closed_date,
+                'currency': currency,
+                'order_id': [(4, order.id)],
+                'partner_id': contragent2.id,
+                'sender_id': [(4, agent_payer.id)],
+                'receiver_id': [(4, payer2.id)],
+                'wallet_id': wallet_agentka.id,
+                **self._get_reconciliation_currency_fields(currency, -sum_value)
+            })
+
         _logger.info("Скрипт завершён: для каждого расхода создан расходной ордер и долговой контейнер")
         return True
 
@@ -269,6 +280,17 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 'wallet_id': wallet_agentka.id,
                 'order_id': order.id,
                 **self._get_currency_fields(currency, -sum_value)
+            })
+
+            self._create_reconciliation({
+                'date': deal_closed_date,
+                'currency': currency,
+                'order_id': [(4, order.id)],
+                'partner_id': contragent2.id,
+                'sender_id': [(4, agent_payer.id)],
+                'receiver_id': [(4, payer2.id)],
+                'wallet_id': wallet_agentka.id,
+                **self._get_reconciliation_currency_fields(currency, -sum_value)
             })
 
         _logger.info("Скрипт завершён: для каждого расхода создан расходной ордер и долговой контейнер")
@@ -407,6 +429,17 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 **self._get_currency_fields(currency, -sum_value)
             })
 
+            self._create_reconciliation({
+                'date': deal_closed_date,
+                'currency': currency,
+                'order_id': [(4, order.id)],
+                'partner_id': contragent2.id,
+                'sender_id': [(4, agent_payer.id)],
+                'receiver_id': [(4, payer2.id)],
+                'wallet_id': wallet_agentka.id,
+                **self._get_reconciliation_currency_fields(currency, -sum_value)
+            })
+
         _logger.info("Скрипт завершён: для каждого расхода (где сумма не равна 0) создан расходной ордер и долговой контейнер")
         return True
 
@@ -428,8 +461,8 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
 
         # Получаем контрагента для определения логики "Скрытая комиссия Партнера"
         contragent = self.contragent_id
-        if not contragent:
-            _logger.warning("Поле 'Контрагент' не заполнено.")
+        if not contragent or contragent.name != "Совкомбанк":
+            _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Совкомбанк', найден: {contragent.name if contragent else 'Не указан'}")
             return
 
         # Получаем/создаём нужные записи
@@ -468,6 +501,11 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 "contragent2Name": "Скрытая комиссия Партнера",
                 "sumField": hidden_commission_field,
                 "useRub": hidden_commission_use_rub,
+            },
+            {
+                "contragent2Name": "Фин рез",
+                "sumField": "fin_res_sovok_real",
+                "useRub": False,
             },
         ]
 
@@ -520,6 +558,275 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 **self._get_currency_fields(currency, -sum_value)
             })
 
+            self._create_reconciliation({
+                'date': deal_closed_date,
+                'currency': currency,
+                'order_id': [(4, order.id)],
+                'partner_id': contragent2.id,
+                'sender_id': [(4, agent_payer.id)],
+                'receiver_id': [(4, payer2.id)],
+                'wallet_id': wallet_agentka.id,
+                **self._get_reconciliation_currency_fields(currency, -sum_value)
+            })
+
+        _logger.info("Скрипт завершён: для каждого расхода (где сумма не равна 0) создан расходной ордер и долговой контейнер")
+        return True
+
+    @api.model
+    def _run_send_to_reconciliation_sber_export(self):
+        record_id = self.id
+        _logger.info(f"Получен ID заявки: {record_id}")
+
+        contragent = self.contragent_id
+        if not contragent or contragent.name != "Сбербанк":
+            _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Сбербанк', найден: {contragent.name if contragent else 'Не указан'}")
+            return
+
+        deal_type = self.deal_type
+        if deal_type != "export":
+            _logger.warning(f"Запись не проходит фильтр: Вид сделки должен быть 'Экспорт', найден: {deal_type if deal_type else 'не указан'}")
+            return
+
+        num_zayavka = self.zayavka_num
+        if not num_zayavka:
+            _logger.warning("Поле '№ заявки' не заполнено.")
+            return
+
+        # Получаем/создаём нужные записи
+        wallet_agentka = self.env['amanat.wallet'].search([('name', '=', 'Агентка')], limit=1)
+        if not wallet_agentka:
+            _logger.warning("Кошелёк 'Агентка' не найден.")
+            return
+
+        agent = self.agent_id
+        if not agent:
+            _logger.warning("Поле 'Агент' не заполнено.")
+            return
+
+        agent_payer = self._get_first_payer(agent)
+        if not agent_payer:
+            _logger.warning("Не найден плательщик агента")
+            return
+        
+        deal_closed_date = self.deal_closed_date
+        if not deal_closed_date:
+            _logger.warning("Поле 'Сделка закрыта' не заполнено.")
+            return
+
+        # Определяем поле для "Скрытая комиссия Партнера" в зависимости от контрагента
+        hidden_commission_field = "hidden_partner_commission_real" if contragent.name == "Олег" else "hidden_partner_commission_real_rub"
+        hidden_commission_use_rub = False if contragent.name == "Олег" else True
+
+        # Формируем список расходов для Сбербанка
+        expenses = [
+            {
+                "contragent2Name": "Прибыль Плательщика по валюте заявки",
+                "sumField": "payer_profit_currency",
+                "useRub": False,
+            },
+            {
+                "contragent2Name": "Скрытая комиссия Партнера",
+                "sumField": hidden_commission_field,
+                "useRub": hidden_commission_use_rub,
+            },
+            {
+                "contragent2Name": "Фин рез",
+                "sumField": "fin_res_sber_real",
+                "useRub": False,
+            },
+        ]
+
+        contragent_model = self.env['amanat.contragent']
+
+        for expense in expenses:
+            expenseField = expense["sumField"]
+            contragent2Name = expense["contragent2Name"]
+            useRub = expense["useRub"]
+
+            contragent2 = contragent_model.search([('name', '=', contragent2Name)], limit=1)
+            if not contragent2:
+                _logger.warning(f"Контрагент '{contragent2Name}' не найден")
+                continue
+
+            sum_value = getattr(self, expenseField, 0)
+            if not sum_value or sum_value == 0:
+                _logger.warning(f"Сумма в поле '{expenseField}' равна 0, пропускаем расход '{contragent2Name}'")
+                continue
+
+            currency = 'rub' if useRub else self.currency
+
+            payer2 = self._get_first_payer(contragent2) if contragent2 else False
+
+            # Создать ордер
+            order = self._create_order({
+                "date": deal_closed_date,
+                "type": "transfer",
+                "partner_1_id": agent.id,
+                "payer_1_id": agent_payer.id if agent_payer else False,
+                "partner_2_id": contragent2.id,
+                "payer_2_id": payer2.id if payer2 else False,
+                "wallet_1_id": wallet_agentka.id,
+                "wallet_2_id": wallet_agentka.id,
+                "currency": currency,
+                "amount": sum_value,
+                "comment": f"расход по заявке № {num_zayavka}",
+                "zayavka_ids": [(6, 0, [record_id])],
+            })
+
+            # Создать долг (отрицательная сумма)
+            self._create_money({
+                'date': deal_closed_date,
+                'partner_id': contragent2.id,
+                'currency': currency,
+                'state': 'debt',
+                'wallet_id': wallet_agentka.id,
+                'order_id': order.id,
+                **self._get_currency_fields(currency, -sum_value)
+            })
+
+            self._create_reconciliation({
+                'date': deal_closed_date,
+                'currency': currency,
+                'order_id': [(4, order.id)],
+                'partner_id': contragent2.id,
+                'sender_id': [(4, agent_payer.id)],
+                'receiver_id': [(4, payer2.id)],
+                'wallet_id': wallet_agentka.id,
+                **self._get_reconciliation_currency_fields(currency, -sum_value)
+            })
+
+        _logger.info("Скрипт завершён: для каждого расхода создан расходной ордер и долговой контейнер")
+        return True
+
+    @api.model
+    def _run_send_to_reconciliation_client_export(self):
+        record_id = self.id
+        _logger.info(f"Получен ID заявки: {record_id}")
+
+        contragent = self.contragent_id
+        if not contragent:
+            _logger.warning("Поле 'Контрагент' не заполнено.")
+            return
+        
+        # Фильтр: контрагент НЕ должен быть Совкомбанком или Сбербанком
+        if contragent.name == "Совкомбанк" or contragent.name == "Сбербанк":
+            _logger.warning(f"Запись не проходит фильтр: Контрагент не должен быть 'Совкомбанк' или 'Сбербанк', найден: {contragent.name}")
+            return
+
+        deal_type = self.deal_type
+        if deal_type != "import":
+            _logger.warning(f"Запись не проходит фильтр: Вид сделки должен быть 'Импорт', найден: {deal_type if deal_type else 'не указан'}")
+            return
+
+        num_zayavka = self.zayavka_num
+        if not num_zayavka:
+            _logger.warning("Поле '№ заявки' не заполнено.")
+            return
+
+        # Получаем/создаём нужные записи
+        wallet_agentka = self.env['amanat.wallet'].search([('name', '=', 'Агентка')], limit=1)
+        if not wallet_agentka:
+            _logger.warning("Кошелёк 'Агентка' не найден.")
+            return
+
+        agent = self.agent_id
+        if not agent:
+            _logger.warning("Поле 'Агент' не заполнено.")
+            return
+
+        agent_payer = self._get_first_payer(agent)
+        if not agent_payer:
+            _logger.warning("Не найден плательщик агента")
+            return
+        
+        deal_closed_date = self.deal_closed_date
+        if not deal_closed_date:
+            _logger.warning("Поле 'Сделка закрыта' не заполнено.")
+            return
+
+        # Определяем поле для "Скрытая комиссия Партнера" в зависимости от контрагента
+        hidden_commission_field = "hidden_partner_commission_real" if contragent.name == "Олег" else "hidden_partner_commission_real_rub"
+        hidden_commission_use_rub = False if contragent.name == "Олег" else True
+
+        # Формируем список расходов для клиентских заявок
+        expenses = [
+            {
+                "contragent2Name": "Прибыль Плательщика по валюте заявки",
+                "sumField": "payer_profit_currency",
+                "useRub": False,
+            },
+            {
+                "contragent2Name": "Скрытая комиссия Партнера",
+                "sumField": hidden_commission_field,
+                "useRub": hidden_commission_use_rub,
+            },
+            {
+                "contragent2Name": "Фин рез",
+                "sumField": "fin_res_client_real",
+                "useRub": False,
+            },
+        ]
+
+        contragent_model = self.env['amanat.contragent']
+
+        for expense in expenses:
+            expenseField = expense["sumField"]
+            contragent2Name = expense["contragent2Name"]
+            useRub = expense["useRub"]
+
+            contragent2 = contragent_model.search([('name', '=', contragent2Name)], limit=1)
+            if not contragent2:
+                _logger.warning(f"Контрагент '{contragent2Name}' не найден")
+                continue
+
+            sum_value = getattr(self, expenseField, 0)
+            # Проверка на None или 0 (как в Airtable: expenseSum == null || expenseSum === 0)
+            if not sum_value or sum_value == 0:
+                _logger.warning(f"Поле '{expenseField}' равно 0 или пустое, пропускаем расход '{contragent2Name}'")
+                continue
+
+            currency = 'rub' if useRub else self.currency
+
+            payer2 = self._get_first_payer(contragent2) if contragent2 else False
+
+            # Создать ордер
+            order = self._create_order({
+                "date": deal_closed_date,
+                "type": "transfer",
+                "partner_1_id": agent.id,
+                "payer_1_id": agent_payer.id if agent_payer else False,
+                "partner_2_id": contragent2.id,
+                "payer_2_id": payer2.id if payer2 else False,
+                "wallet_1_id": wallet_agentka.id,
+                "wallet_2_id": wallet_agentka.id,
+                "currency": currency,
+                "amount": sum_value,
+                "comment": f"расход по заявке № {num_zayavka}",
+                "zayavka_ids": [(6, 0, [record_id])],
+            })
+
+            # Создать долг (отрицательная сумма)
+            self._create_money({
+                'date': deal_closed_date,
+                'partner_id': contragent2.id,
+                'currency': currency,
+                'state': 'debt',
+                'wallet_id': wallet_agentka.id,
+                'order_id': order.id,
+                **self._get_currency_fields(currency, -sum_value)
+            })
+
+            self._create_reconciliation({
+                'date': deal_closed_date,
+                'currency': currency,
+                'order_id': [(4, order.id)],
+                'partner_id': contragent2.id,
+                'sender_id': [(4, agent_payer.id)],
+                'receiver_id': [(4, payer2.id)],
+                'wallet_id': wallet_agentka.id,
+                **self._get_reconciliation_currency_fields(currency, -sum_value)
+            })
+
         _logger.info("Скрипт завершён: для каждого расхода (где сумма не равна 0) создан расходной ордер и долговой контейнер")
         return True
 
@@ -529,6 +836,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         Распределение финреза по кассам.
         Создаёт положительный контейнер для "Фин рез" и долговой для соответствующей кассы.
         """
+        _logger.info("Скрипт запущен: Распределение финреза по кассам (_run_cash_fin_rez_distribution)")
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 

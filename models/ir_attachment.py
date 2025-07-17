@@ -90,6 +90,8 @@ class IrAttachment(models.Model):
                         if OPENPYXL_AVAILABLE:
                             try:
                                 import openpyxl
+                                from openpyxl.utils import get_column_letter
+                                
                                 # Загружаем файл с полной информацией о ячейках
                                 workbook = openpyxl.load_workbook(
                                     BytesIO(xlsx_data), 
@@ -101,6 +103,17 @@ class IrAttachment(models.Model):
                                 if not sheet:
                                     sheet = workbook[workbook.sheetnames[0]]
                                 
+                                # Определяем скрытые колонки
+                                hidden_columns = []
+                                if sheet:
+                                    # Находим максимальную колонку с данными
+                                    max_column = sheet.max_column
+                                    for col_num in range(1, max_column + 1):
+                                        column_letter = get_column_letter(col_num)
+                                        if column_letter in sheet.column_dimensions:
+                                            if sheet.column_dimensions[column_letter].hidden:
+                                                hidden_columns.append(col_num - 1)  # Индекс с 0
+                                
                                 data = []
                                 max_rows = 10000  # Увеличиваем ограничение для чтения больших файлов
                                 
@@ -111,7 +124,11 @@ class IrAttachment(models.Model):
                                             break
                                         # Включаем все строки, включая пустые (как в Excel)
                                         clean_row = []
-                                        for cell in row_cells:
+                                        for cell_idx, cell in enumerate(row_cells):
+                                            # Пропускаем скрытые колонки
+                                            if cell_idx in hidden_columns:
+                                                continue
+                                                
                                             try:
                                                 # Проверяем тип ячейки и обрабатываем формулы
                                                 if cell.value is None:
@@ -191,8 +208,21 @@ class IrAttachment(models.Model):
                         if content.empty and OPENPYXL_AVAILABLE:
                             try:
                                 from openpyxl import load_workbook
+                                from openpyxl.utils import get_column_letter
+                                
                                 wb = load_workbook(BytesIO(xlsx_data), data_only=True, read_only=True)
                                 ws = wb.active
+                                
+                                # Определяем скрытые колонки
+                                hidden_columns = []
+                                if ws:
+                                    # Находим максимальную колонку с данными
+                                    max_column = ws.max_column
+                                    for col_num in range(1, max_column + 1):
+                                        column_letter = get_column_letter(col_num)
+                                        if column_letter in ws.column_dimensions:
+                                            if ws.column_dimensions[column_letter].hidden:
+                                                hidden_columns.append(col_num - 1)  # Индекс с 0
                                 
                                 # Читаем как простые значения с правильной обработкой формул
                                 simple_data = []
@@ -200,7 +230,11 @@ class IrAttachment(models.Model):
                                     for row in ws.iter_rows(values_only=True, max_row=5000):
                                         # Включаем все строки, включая пустые (как в Excel)
                                         processed_row = []
-                                        for cell in row:
+                                        for cell_idx, cell in enumerate(row):
+                                            # Пропускаем скрытые колонки
+                                            if cell_idx in hidden_columns:
+                                                continue
+                                                
                                             if cell is None:
                                                 processed_row.append("")
                                             else:

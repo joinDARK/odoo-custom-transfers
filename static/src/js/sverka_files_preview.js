@@ -6,6 +6,29 @@ import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 import { rpc } from "@web/core/network/rpc";
 
+// Обработчик для тега javascript_call
+function javascriptCallHandler(env, action) {
+    const params = action.params;
+    const functionName = params.function;
+    const args = params.args || [];
+    
+    console.log(`Вызываем JavaScript функцию: ${functionName} с аргументами:`, args);
+    
+    // Проверяем, что функция существует в глобальном объекте window
+    if (typeof window[functionName] === 'function') {
+        try {
+            window[functionName](...args);
+        } catch (error) {
+            console.error(`Ошибка при вызове функции ${functionName}:`, error);
+        }
+    } else {
+        console.error(`Функция ${functionName} не найдена в глобальном объекте window`);
+    }
+}
+
+// Регистрируем обработчик
+registry.category("actions").add("javascript_call", javascriptCallHandler);
+
 export class SverkaFilesPreviewButton extends Component {
     setup() {
         this.orm = useService("orm");
@@ -332,6 +355,97 @@ export class SverkaFilesPreviewButton extends Component {
 
 // Глобальная переменная для отслеживания активного превью
 let isGlobalPreviewActive = false;
+
+// Функции для отдельного превью файлов сверки и сверки ТДК
+window.showSverka1FilesPreview = async function(recordId) {
+    console.log(`Начинаем превью файлов сверки для записи: ${recordId}`);
+    await showSverkaFilesPreviewByType(recordId, 'sverka1');
+};
+
+window.showSverka2FilesPreview = async function(recordId) {
+    console.log(`Начинаем превью файлов сверки ТДК для записи: ${recordId}`);
+    await showSverkaFilesPreviewByType(recordId, 'sverka2');
+};
+
+// Общая функция для превью файлов по типу
+async function showSverkaFilesPreviewByType(recordId, fileType) {
+    // Предотвращаем повторные вызовы
+    if (isGlobalPreviewActive) {
+        console.log(`Превью уже активно, игнорируем повторный вызов для ${fileType}`);
+        return;
+    }
+    
+    isGlobalPreviewActive = true;
+    
+    try {
+        console.log(`Начинаем превью ${fileType} для записи: ${recordId}`);
+        
+        // Получаем запись sverka_files с нужным полем
+        const fieldName = fileType === 'sverka1' ? 'sverka1_file_attachments' : 'sverka2_file_attachments';
+        const sverkaRecords = await rpc("/web/dataset/call_kw", {
+            model: "amanat.sverka_files",
+            method: "read",
+            args: [[recordId], [fieldName]],
+            kwargs: {}
+        });
+
+        let allAttachments = [];
+
+        // Получаем файлы из соответствующего поля
+        if (sverkaRecords.length > 0) {
+            const sverkaRecord = sverkaRecords[0];
+            const attachmentIds = sverkaRecord[fieldName];
+            
+            console.log(`Поле ${fieldName}:`, attachmentIds);
+            
+            if (attachmentIds && attachmentIds.length > 0) {
+                const fileAttachments = await rpc("/web/dataset/call_kw", {
+                    model: "ir.attachment",
+                    method: "read",
+                    args: [attachmentIds, ["id", "name", "mimetype", "file_size", "datas", "url", "type"]],
+                    kwargs: {}
+                });
+                
+                console.log(`Файлы из ${fieldName}:`, fileAttachments);
+                allAttachments = fileAttachments;
+            }
+        }
+
+        console.log(`Найдено файлов ${fileType}: ${allAttachments.length}`);
+
+        if (allAttachments.length === 0) {
+            console.log(`Нет файлов ${fileType} для превью`);
+            return;
+        }
+
+        // Фильтруем файлы по поддерживаемым типам
+        const supportedTypes = ["xls", "xlsx", "docx", "pdf"];
+        const previewableFiles = allAttachments.filter(attachment => {
+            const extension = attachment.name.split('.').pop().toLowerCase();
+            return supportedTypes.includes(extension);
+        });
+
+        console.log(`Найдено файлов ${fileType} поддерживаемых типов: ${previewableFiles.length}`);
+
+        if (previewableFiles.length === 0) {
+            console.log(`Нет файлов ${fileType} поддерживаемых типов для превью`);
+            return;
+        }
+
+        // Показываем первый файл
+        const firstFile = previewableFiles[0];
+        const extension = firstFile.name.split('.').pop().toLowerCase();
+        
+        console.log(`Показываем файл ${fileType}: ${firstFile.name}, расширение: ${extension}`);
+        
+        await openPreviewModal(firstFile, extension);
+        
+    } catch (error) {
+        console.error(`Ошибка при получении файлов ${fileType}:`, error);
+    } finally {
+        isGlobalPreviewActive = false;
+    }
+}
 
 // Глобальная функция для вызова из Python (упрощенная версия)
 window.showSverkaFilesPreview = async function(recordId) {
