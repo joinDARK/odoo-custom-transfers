@@ -27,6 +27,94 @@ class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
     @api.model
+    def get_hidden_columns_and_data_range(self, xlsx_data):
+        """Определяет скрытые колонки и реальный диапазон данных для оптимизации чтения"""
+        if not OPENPYXL_AVAILABLE:
+            return set(), None, None
+        
+        try:
+            import openpyxl
+            from openpyxl.utils import get_column_letter
+            
+            # Загружаем файл только для анализа структуры
+            workbook = openpyxl.load_workbook(
+                BytesIO(xlsx_data), 
+                data_only=True,
+                read_only=True
+            )
+            
+            sheet = workbook.active
+            if not sheet:
+                sheet = workbook[workbook.sheetnames[0]]
+            
+            hidden_columns = set()
+            
+            # Определяем реальные границы файла
+            # Используем max_column из опenpyxl как максимальную границу
+            real_max_column = sheet.max_column or 1
+            real_max_row = sheet.max_row or 1
+            
+            # Ограничиваем анализ разумными пределами
+            max_cols_to_analyze = min(real_max_column, 50)  # Максимум 50 колонок
+            max_rows_to_analyze = min(real_max_row, 100)    # Максимум 100 строк для анализа
+            
+            # Определяем фактический диапазон данных
+            actual_data_column = 0
+            for row in sheet.iter_rows(min_row=1, max_row=max_rows_to_analyze, max_col=max_cols_to_analyze, values_only=True):
+                for col_idx, cell_value in enumerate(row):
+                    if cell_value is not None and str(cell_value).strip():
+                        actual_data_column = max(actual_data_column, col_idx + 1)
+            
+            # Если данных не найдено, используем минимальный диапазон
+            if actual_data_column == 0:
+                actual_data_column = min(real_max_column, 10)  # Минимум 10 колонок
+            
+            # Убеждаемся, что actual_data_column не превышает реальный максимум
+            actual_data_column = min(actual_data_column, real_max_column)
+            
+            # Определяем скрытые колонки только в пределах фактического диапазона
+            for col_num in range(1, actual_data_column + 1):
+                column_letter = get_column_letter(col_num)
+                
+                # Проверяем различные способы скрытия колонок
+                is_hidden = False
+                
+                # Способ 1: через column_dimensions.hidden
+                if column_letter in sheet.column_dimensions:
+                    if getattr(sheet.column_dimensions[column_letter], 'hidden', False):
+                        is_hidden = True
+                
+                # Способ 2: через width = 0 (иногда так скрывают колонки)
+                if column_letter in sheet.column_dimensions:
+                    width = getattr(sheet.column_dimensions[column_letter], 'width', None)
+                    if width is not None and width == 0:
+                        is_hidden = True
+                
+                # Способ 3: проверяем, что колонка действительно пустая
+                if not is_hidden:
+                    col_values = []
+                    for row_num in range(1, min(21, max_rows_to_analyze + 1)):
+                        if row_num <= real_max_row:  # Проверяем границы
+                            cell_value = sheet.cell(row=row_num, column=col_num).value
+                            if cell_value is not None and str(cell_value).strip():
+                                col_values.append(str(cell_value).strip())
+                    
+                    # Если колонка полностью пустая, считаем её скрытой
+                    if len(col_values) == 0:
+                        is_hidden = True
+                
+                if is_hidden:
+                    hidden_columns.add(col_num - 1)  # Индекс с 0
+            
+            workbook.close()
+            
+            return hidden_columns, actual_data_column, min(real_max_row, 5000)
+            
+        except Exception as e:
+            # Если не удалось проанализировать структуру, возвращаем безопасные значения
+            return set(), 30, 5000  # Ограничиваем 30 колонками и 5000 строками
+
+    @api.model
     def decode_content(self, attach_id, doc_type):
         """Decode XLSX, XLS, or DOCX File Data.
         This method takes a binary file data from an attachment and decodes
@@ -82,7 +170,14 @@ class IrAttachment(models.Model):
             # Обрабатываем файлы
             if doc_type in ['xlsx', 'xls', 'docx']:
                 try:
+                    content = pd.DataFrame()  # Инициализируем переменную content
                     if doc_type == 'xlsx':
+                        # Сначала анализируем структуру файла для оптимизации
+                        hidden_columns, max_data_column, max_data_row = self.get_hidden_columns_and_data_range(xlsx_data)
+                        
+                        # Ограничиваем количество читаемых колонок и строк
+                        max_cols_to_read = min(max_data_column or 30, 50)  # Максимум 50 колонок
+                        max_rows_to_read = min(max_data_row or 5000, 5000)  # Максимум 5000 строк
                         content = pd.DataFrame()  # Инициализируем как пустой DataFrame
                         error_msgs = []
                         
@@ -103,24 +198,12 @@ class IrAttachment(models.Model):
                                 if not sheet:
                                     sheet = workbook[workbook.sheetnames[0]]
                                 
-                                # Определяем скрытые колонки
-                                hidden_columns = []
-                                if sheet:
-                                    # Находим максимальную колонку с данными
-                                    max_column = sheet.max_column
-                                    for col_num in range(1, max_column + 1):
-                                        column_letter = get_column_letter(col_num)
-                                        if column_letter in sheet.column_dimensions:
-                                            if sheet.column_dimensions[column_letter].hidden:
-                                                hidden_columns.append(col_num - 1)  # Индекс с 0
-                                
                                 data = []
-                                max_rows = 10000  # Увеличиваем ограничение для чтения больших файлов
                                 
                                 # Читаем данные построчно с правильной обработкой формул
                                 if sheet:
-                                    for row_num, row_cells in enumerate(sheet.iter_rows(max_row=max_rows)):
-                                        if row_num > 5000:  # Увеличиваем ограничение для превью
+                                    for row_num, row_cells in enumerate(sheet.iter_rows(max_row=max_rows_to_read, max_col=max_cols_to_read)):
+                                        if row_num > max_rows_to_read:
                                             break
                                         # Включаем все строки, включая пустые (как в Excel)
                                         clean_row = []
@@ -146,7 +229,10 @@ class IrAttachment(models.Model):
                                                         clean_row.append(cell_value)
                                             except:
                                                 clean_row.append("")
-                                        data.append(clean_row)
+                                        
+                                        # Добавляем строки только если они не пустые или это первая строка (заголовки)
+                                        if clean_row and (row_num == 0 or any(cell.strip() for cell in clean_row if cell)):
+                                            data.append(clean_row)
                                 
                                 workbook.close()
                                 
@@ -168,6 +254,50 @@ class IrAttachment(models.Model):
                             except Exception as e1:
                                 error_msgs.append(f"openpyxl улучшенный: {str(e1)}")
                         
+                        # Определяем РЕАЛЬНОЕ количество колонок в файле несколькими способами
+                        actual_columns_count = None
+                        
+                        # Способ 1: Пробуем через pandas без параметров
+                        try:
+                            test_df = pd.read_excel(BytesIO(xlsx_data), engine='openpyxl', nrows=1, header=None)
+                            actual_columns_count = len(test_df.columns)
+                        except:
+                            pass
+                        
+                        # Способ 2: Если первый способ не сработал, пробуем через openpyxl напрямую
+                        if actual_columns_count is None and OPENPYXL_AVAILABLE:
+                            try:
+                                import openpyxl
+                                workbook = openpyxl.load_workbook(BytesIO(xlsx_data), data_only=True, read_only=True)
+                                sheet = workbook.active
+                                if not sheet:
+                                    sheet = workbook[workbook.sheetnames[0]]
+                                
+                                # Проверяем реальное количество колонок с данными
+                                max_col_with_data = 0
+                                for row in sheet.iter_rows(min_row=1, max_row=5, values_only=True):
+                                    for col_idx, cell_value in enumerate(row):
+                                        if cell_value is not None:
+                                            max_col_with_data = max(max_col_with_data, col_idx + 1)
+                                
+                                actual_columns_count = max_col_with_data
+                                workbook.close()
+                            except:
+                                pass
+                        
+                        # Способ 3: Если всё не сработало, используем консервативный подход
+                        if actual_columns_count is None or actual_columns_count == 0:
+                            actual_columns_count = min(max_cols_to_read, 20)  # Максимум 20 колонок
+                        
+                        # Теперь создаём safe_visible_columns на основе реального количества колонок
+                        safe_visible_columns = []
+                        for col_idx in range(min(actual_columns_count, max_cols_to_read)):
+                            if col_idx not in hidden_columns:
+                                safe_visible_columns.append(col_idx)
+                        
+                        # Дополнительная проверка: убираем любые индексы >= actual_columns_count
+                        safe_visible_columns = [col for col in safe_visible_columns if col < actual_columns_count]
+                        
                         # Способ 2: pandas с openpyxl engine (лучше для вычисленных значений формул)
                         if content.empty:
                             try:
@@ -175,8 +305,9 @@ class IrAttachment(models.Model):
                                 content = pd.read_excel(
                                     BytesIO(xlsx_data),
                                     engine='openpyxl',
-                                    nrows=5000,  # Увеличиваем ограничение для чтения больших файлов
+                                    nrows=max_rows_to_read,
                                     header=0,    # Первая строка как заголовки
+                                    usecols=safe_visible_columns,  # Читаем только безопасные видимые колонки
                                     na_values=['', ' ', 'nan', 'NaN', 'NaT', 'None', '#N/A', '#VALUE!', '#REF!', '#DIV/0!', '#NAME?', '#NULL!', '#NUM!']
                                 )
                             except Exception as e2:
@@ -185,10 +316,12 @@ class IrAttachment(models.Model):
                         # Способ 3: calamine engine (быстрый и надежный)
                         if content.empty:
                             try:
+                                # Для calamine используем только безопасные колонки
                                 content = pd.read_excel(
                                     BytesIO(xlsx_data),
                                     engine='calamine',
-                                    nrows=5000
+                                    nrows=max_rows_to_read,
+                                    usecols=safe_visible_columns  # Читаем только безопасные видимые колонки
                                 )
                             except Exception as e3:
                                 error_msgs.append(f"calamine: {str(e3)}")
@@ -199,7 +332,8 @@ class IrAttachment(models.Model):
                                 content = pd.read_excel(
                                     BytesIO(xlsx_data),
                                     engine='xlrd',
-                                    nrows=5000
+                                    nrows=max_rows_to_read,
+                                    usecols=safe_visible_columns  # Читаем только безопасные видимые колонки
                                 )
                             except Exception as e4:
                                 error_msgs.append(f"xlrd: {str(e4)}")
@@ -208,26 +342,14 @@ class IrAttachment(models.Model):
                         if content.empty and OPENPYXL_AVAILABLE:
                             try:
                                 from openpyxl import load_workbook
-                                from openpyxl.utils import get_column_letter
                                 
                                 wb = load_workbook(BytesIO(xlsx_data), data_only=True, read_only=True)
                                 ws = wb.active
                                 
-                                # Определяем скрытые колонки
-                                hidden_columns = []
-                                if ws:
-                                    # Находим максимальную колонку с данными
-                                    max_column = ws.max_column
-                                    for col_num in range(1, max_column + 1):
-                                        column_letter = get_column_letter(col_num)
-                                        if column_letter in ws.column_dimensions:
-                                            if ws.column_dimensions[column_letter].hidden:
-                                                hidden_columns.append(col_num - 1)  # Индекс с 0
-                                
                                 # Читаем как простые значения с правильной обработкой формул
                                 simple_data = []
                                 if ws:  # Проверяем что worksheet не None
-                                    for row in ws.iter_rows(values_only=True, max_row=5000):
+                                    for row in ws.iter_rows(values_only=True, max_row=max_rows_to_read, max_col=max_cols_to_read):
                                         # Включаем все строки, включая пустые (как в Excel)
                                         processed_row = []
                                         for cell_idx, cell in enumerate(row):
@@ -245,7 +367,10 @@ class IrAttachment(models.Model):
                                                     processed_row.append("")
                                                 else:
                                                     processed_row.append(cell_value)
-                                        simple_data.append(processed_row)
+                                        
+                                        # Добавляем строки только если они не пустые или это первая строка (заголовки)
+                                        if processed_row and (len(simple_data) == 0 or any(cell.strip() for cell in processed_row if cell)):
+                                            simple_data.append(processed_row)
                                 
                                 wb.close()
                                 
@@ -276,11 +401,31 @@ class IrAttachment(models.Model):
                         
                     elif doc_type == 'xls':
                         # Для старых .xls файлов используем xlrd
-                        content = pd.read_excel(
-                            BytesIO(xlsx_data), 
-                            engine='xlrd',
-                            nrows=5000
-                        )
+                        # Анализируем структуру файла для оптимизации (может не работать для .xls)
+                        try:
+                            hidden_columns, max_data_column, max_data_row = self.get_hidden_columns_and_data_range(xlsx_data)
+                            max_cols_to_read = min(max_data_column or 30, 50)  # Максимум 50 колонок
+                            max_rows_to_read = min(max_data_row or 5000, 5000)  # Максимум 5000 строк
+                            
+                            # Определяем колонки для чтения (исключаем скрытые)
+                            visible_columns = []
+                            for col_idx in range(max_cols_to_read):
+                                if col_idx not in hidden_columns:
+                                    visible_columns.append(col_idx)
+                            
+                            content = pd.read_excel(
+                                BytesIO(xlsx_data), 
+                                engine='xlrd',
+                                nrows=max_rows_to_read,
+                                usecols=visible_columns
+                            )
+                        except:
+                            # Если анализ не удался, читаем как обычно
+                            content = pd.read_excel(
+                                BytesIO(xlsx_data), 
+                                engine='xlrd',
+                                nrows=5000
+                            )
                     elif doc_type == 'docx':
                         doc = DocxDocument(io.BytesIO(xlsx_data))
                         paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]

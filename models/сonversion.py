@@ -148,6 +148,10 @@ class Conversion(models.Model, AmanatBaseModel):
         readonly=False,
     )
 
+    comment = fields.Text(
+        string='Комментарий', tracking=True
+    )
+
     @api.onchange('sender_id')
     def _onchange_sender_id(self):
         if self.sender_id:
@@ -337,6 +341,10 @@ class Conversion(models.Model, AmanatBaseModel):
             self.currency, self.conversion_currency, self.rate)
         if self.cross_envelope:
             comment_text += _(' курс-кросс (%s)') % (self.cross_rate)
+        
+        # Добавляем комментарий из поля comment модели, если он есть
+        if self.comment:
+            comment_text += '; %s' % self.comment
         
         # Затем создаем новый ордер
         order = self.env['amanat.order'].create({

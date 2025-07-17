@@ -64,6 +64,7 @@
                 <field name="royalty_amount_8" width="120"/>
                 <field name="royalty_amount_9" width="120"/>
                 <field name="rollup_amount_total" width="150"/>
+                <field name="comment" width="180"/>
             </list>
         </field>
     </record>
@@ -249,6 +250,14 @@
                                         <field name="royalty_amount_9"/>
                                     </group>
                                 </div>
+                            </group>
+                        </page>
+                        <page string="Комментарий">
+                            <header>
+                                <h2>Комментарий</h2>
+                            </header>
+                            <group>
+                                <field name="comment"/>
                             </group>
                         </page>
                         <!-- <page string="Действия и управление">
