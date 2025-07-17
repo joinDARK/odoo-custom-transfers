@@ -264,7 +264,7 @@
                         </div>
                         <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">
+                                <h6 class="chart-title clickable-title">
                                     <t t-if="state.comparisonData and state.comparisonData.range2">
                                         Сравнение: Статусы заявок
                                     </t>
@@ -273,13 +273,9 @@
                                     </t>
                                 </h6>
                                 <div class="chart-container-large">
-                                    <canvas id="zayavki-status-donut"></canvas>
+                                    <canvas id="zayavka-status-chart"></canvas>
                                 </div>
                             </div>
-                        </div>
-                        <!-- Скрытый второй график для статусов -->
-                        <div style="display: none;">
-                            <canvas id="zayavki-status-donut-2"></canvas>
                         </div>
                     </div>
 

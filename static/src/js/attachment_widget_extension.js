@@ -19,7 +19,7 @@ const originalAttachmentPatch = {
                     <div class="modal-content" id="MyPreview_content" style="background-color: #fefefe; overflow: hidden; margin: auto; padding: 20px; border: 1px solid #888; width: 80%; max-height: 80vh; overflow-y: auto;">
                         <span class="close" id="stop-preview-button" style="color: #aaaaaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">×</span>
                         <h1 id="FileHead" style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #333;"></h1>
-                        <div class="XlsxTable" style="overflow: auto; max-height: 500px;"></div>
+                        <div class="XlsxTable" style="overflow: auto; max-height: 70vh;"></div>
                         <div class="MyDocs" style="overflow: auto; text-align: justify; padding: 30px; line-height: 1.6;"></div>
                     </div>
                 </div>
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="modal-content" id="MyPreview_content" style="background-color: #fefefe; overflow: hidden; margin: auto; padding: 20px; border: 1px solid #888; width: 80%; max-height: 80vh; overflow-y: auto;">
                         <span class="close" id="stop-preview-button" style="color: #aaaaaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">×</span>
                         <h1 id="FileHead" style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #333;"></h1>
-                        <div class="XlsxTable" style="overflow: auto; max-height: 500px;"></div>
+                        <div class="XlsxTable" style="overflow: auto; max-height: 70vh;"></div>
                         <div class="MyDocs" style="overflow: auto; text-align: justify; padding: 30px; line-height: 1.6;"></div>
                     </div>
                 </div>

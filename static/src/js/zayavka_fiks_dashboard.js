@@ -84,6 +84,7 @@ export class ZayavkaFiksDashboard extends Component {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                backgroundColor: 'transparent',
                 plugins: {
                     title: {
                         display: true,
@@ -141,6 +142,9 @@ export class ZayavkaFiksDashboard extends Component {
                         borderSkipped: false
                     }
                 },
+                layout: {
+                    padding: 0
+                },
                 animation: {
                     duration: 800,
                     easing: 'easeInOutQuart'
@@ -185,6 +189,7 @@ export class ZayavkaFiksDashboard extends Component {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                backgroundColor: 'transparent',
                 plugins: {
                     title: {
                         display: true,
@@ -241,6 +246,9 @@ export class ZayavkaFiksDashboard extends Component {
                         borderRadius: 4,
                         borderSkipped: false
                     }
+                },
+                layout: {
+                    padding: 0
                 },
                 animation: {
                     duration: 800,

@@ -83,45 +83,52 @@ class IrAttachment(models.Model):
             if doc_type in ['xlsx', 'xls', 'docx']:
                 try:
                     if doc_type == 'xlsx':
-                        content = None
+                        content = pd.DataFrame()  # Инициализируем как пустой DataFrame
                         error_msgs = []
                         
-                        # Способ 1: openpyxl с максимально безопасными настройками
+                        # Способ 1: openpyxl с правильной обработкой формул
                         if OPENPYXL_AVAILABLE:
                             try:
-                                # Попробуем с самыми безопасными настройками
+                                import openpyxl
+                                # Загружаем файл с полной информацией о ячейках
                                 workbook = openpyxl.load_workbook(
                                     BytesIO(xlsx_data), 
-                                    data_only=True,      # Игнорируем формулы
-                                    read_only=True,      # Только для чтения
-                                    keep_vba=False,      # Не загружаем VBA
-                                    keep_links=False     # Не загружаем ссылки
+                                    data_only=False,     # Получаем формулы и значения
+                                    read_only=False      # Нужно для работы с формулами
                                 )
                                 
                                 sheet = workbook.active
                                 if not sheet:
-                                    # Попробуем первый лист по имени
                                     sheet = workbook[workbook.sheetnames[0]]
                                 
                                 data = []
-                                max_rows = 1000  # Ограничиваем количество строк
+                                max_rows = 10000  # Увеличиваем ограничение для чтения больших файлов
                                 
-                                # Читаем данные построчно
-                                for row_num, row in enumerate(sheet.iter_rows(values_only=True, max_row=max_rows)):
-                                    if row_num > 500:  # Ограничение для превью
-                                        break
-                                    # Пропускаем полностью пустые строки
-                                    if any(cell is not None and str(cell).strip() for cell in row):
-                                        # Очищаем данные от сложных объектов
+                                # Читаем данные построчно с правильной обработкой формул
+                                if sheet:
+                                    for row_num, row_cells in enumerate(sheet.iter_rows(max_row=max_rows)):
+                                        if row_num > 5000:  # Увеличиваем ограничение для превью
+                                            break
+                                        # Включаем все строки, включая пустые (как в Excel)
                                         clean_row = []
-                                        for cell in row:
-                                            if cell is None:
-                                                clean_row.append("")
-                                            else:
-                                                try:
-                                                    clean_row.append(str(cell))
-                                                except:
+                                        for cell in row_cells:
+                                            try:
+                                                # Проверяем тип ячейки и обрабатываем формулы
+                                                if cell.value is None:
                                                     clean_row.append("")
+                                                elif isinstance(cell.value, str) and cell.value.startswith('='):
+                                                    # Это формула - показываем её как есть
+                                                    clean_row.append(str(cell.value))
+                                                else:
+                                                    # Обычное значение
+                                                    cell_value = str(cell.value)
+                                                    # Убираем артефакты pandas
+                                                    if cell_value in ['nan', 'NaN', 'NaT', 'None']:
+                                                        clean_row.append("")
+                                                    else:
+                                                        clean_row.append(cell_value)
+                                            except:
+                                                clean_row.append("")
                                         data.append(clean_row)
                                 
                                 workbook.close()
@@ -144,63 +151,84 @@ class IrAttachment(models.Model):
                             except Exception as e1:
                                 error_msgs.append(f"openpyxl улучшенный: {str(e1)}")
                         
-                        # Способ 2: pandas с openpyxl engine
-                        if content is None:
+                        # Способ 2: pandas с openpyxl engine (лучше для вычисленных значений формул)
+                        if content.empty:
                             try:
+                                # Pandas может лучше обрабатывать вычисленные значения формул
                                 content = pd.read_excel(
                                     BytesIO(xlsx_data),
                                     engine='openpyxl',
-                                    nrows=500  # Ограничиваем количество строк
+                                    nrows=5000,  # Увеличиваем ограничение для чтения больших файлов
+                                    header=0,    # Первая строка как заголовки
+                                    na_values=['', ' ', 'nan', 'NaN', 'NaT', 'None', '#N/A', '#VALUE!', '#REF!', '#DIV/0!', '#NAME?', '#NULL!', '#NUM!']
                                 )
                             except Exception as e2:
                                 error_msgs.append(f"pandas+openpyxl: {str(e2)}")
                         
                         # Способ 3: calamine engine (быстрый и надежный)
-                        if content is None:
+                        if content.empty:
                             try:
                                 content = pd.read_excel(
                                     BytesIO(xlsx_data),
                                     engine='calamine',
-                                    nrows=500
+                                    nrows=5000
                                 )
                             except Exception as e3:
                                 error_msgs.append(f"calamine: {str(e3)}")
                         
                         # Способ 4: xlrd engine (для старых файлов)
-                        if content is None and XLRD_AVAILABLE:
+                        if content.empty and XLRD_AVAILABLE:
                             try:
                                 content = pd.read_excel(
                                     BytesIO(xlsx_data),
                                     engine='xlrd',
-                                    nrows=500
+                                    nrows=5000
                                 )
                             except Exception as e4:
                                 error_msgs.append(f"xlrd: {str(e4)}")
                         
                         # Способ 5: Простое чтение без pandas (последняя попытка)
-                        if content is None and OPENPYXL_AVAILABLE:
+                        if content.empty and OPENPYXL_AVAILABLE:
                             try:
                                 from openpyxl import load_workbook
                                 wb = load_workbook(BytesIO(xlsx_data), data_only=True, read_only=True)
                                 ws = wb.active
                                 
-                                # Читаем как простые значения
+                                # Читаем как простые значения с правильной обработкой формул
                                 simple_data = []
                                 if ws:  # Проверяем что worksheet не None
-                                    for row in ws.iter_rows(values_only=True, max_row=100):
-                                        if any(cell for cell in row):
-                                            simple_data.append([str(cell) if cell is not None else "" for cell in row])
+                                    for row in ws.iter_rows(values_only=True, max_row=5000):
+                                        # Включаем все строки, включая пустые (как в Excel)
+                                        processed_row = []
+                                        for cell in row:
+                                            if cell is None:
+                                                processed_row.append("")
+                                            else:
+                                                # Конвертируем в строку и обрабатываем формулы
+                                                cell_value = str(cell)
+                                                # Убираем артефакты pandas
+                                                if cell_value in ['nan', 'NaN', 'NaT', 'None']:
+                                                    processed_row.append("")
+                                                else:
+                                                    processed_row.append(cell_value)
+                                        simple_data.append(processed_row)
                                 
                                 wb.close()
                                 
                                 if simple_data:
-                                    content = pd.DataFrame(simple_data[1:], columns=simple_data[0] if simple_data else [])
+                                    # Создаем DataFrame с правильными заголовками
+                                    if len(simple_data) > 0:
+                                        headers = simple_data[0] if simple_data else []
+                                        data_rows = simple_data[1:] if len(simple_data) > 1 else []
+                                        content = pd.DataFrame(data_rows, columns=headers)
+                                    else:
+                                        content = pd.DataFrame()
                                     
                             except Exception as e5:
                                 error_msgs.append(f"openpyxl простой: {str(e5)}")
                         
                         # Если все способы не сработали
-                        if content is None:
+                        if content.empty:
                             return (f"<p style='padding-top:8px;color:red;'>"
                                     f"<strong>{attachment.name}</strong><br/>"
                                     f"Не удалось прочитать xlsx файл.<br/>"
@@ -217,7 +245,7 @@ class IrAttachment(models.Model):
                         content = pd.read_excel(
                             BytesIO(xlsx_data), 
                             engine='xlrd',
-                            nrows=500
+                            nrows=5000
                         )
                     elif doc_type == 'docx':
                         doc = DocxDocument(io.BytesIO(xlsx_data))
@@ -233,15 +261,31 @@ class IrAttachment(models.Model):
                             return ("<p style='padding-top:8px;color:orange;'>"
                                     "Файл не содержит данных</p>")
                         
-                        # Ограничиваем для превью
+                        # Показываем все данные в превью (без ограничений)
                         preview_note = ""
-                        if len(content) > 100:
-                            content = content.head(100)
-                            preview_note = "<p style='color:blue;'>Показаны первые 100 строк</p>"
+                        # Убираем ограничения на количество строк и колонок
+                        # if len(content) > 100:
+                        #     content = content.head(100)
+                        # 
+                        # if len(content.columns) > 20:
+                        #     content = content.iloc[:, :20]
                         
-                        if len(content.columns) > 20:
-                            content = content.iloc[:, :20]
-                            preview_note += "<p style='color:blue;'>Показаны первые 20 колонок</p>"
+                        # Очищаем DataFrame от нежелательных элементов только если content найден
+                        if content is not None:
+                            # 1. Заменяем названия колонок "Unnamed: 0", "Unnamed: 1" на пустые строки
+                            new_columns = []
+                            for col in content.columns:
+                                if str(col).startswith('Unnamed:'):
+                                    new_columns.append('')
+                                else:
+                                    new_columns.append(col)
+                            content.columns = new_columns
+                            
+                            # 2. Заменяем NaT, NaN, null на пустые значения
+                            content = content.fillna('')
+                            content = content.replace('NaT', '')
+                            content = content.replace('NaN', '')
+                            content = content.replace('nan', '')
                         
                         html_table = content.to_html(index=False, escape=False)
                         return preview_note + html_table

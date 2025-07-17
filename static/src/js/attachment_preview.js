@@ -50,9 +50,16 @@ async function handlePreviewOffline(ev) {
         return;
     }
     
-    // ПОЛНАЯ ОЧИСТКА ВСЕХ КОНТЕЙНЕРОВ
-    console.log('Начинаем полную очистку контейнеров...');
-    cleanupAllContainers();
+    // Полностью очищаем контейнеры перед добавлением нового содержимого
+    const myDocs = document.querySelector('.MyDocs');
+    const xlsxTable = document.querySelector('.XlsxTable');
+    
+    if (myDocs) {
+        myDocs.innerHTML = '';
+    }
+    if (xlsxTable) {
+        xlsxTable.innerHTML = '';
+    }
     
     fileHead.textContent = fileName || 'Предпросмотр файла';
     
@@ -71,18 +78,7 @@ async function handlePreviewOffline(ev) {
             console.log('Данные получены, обрабатываем...');
             
             if (fileType === 'xls' || fileType === 'xlsx') {
-                console.log('Обрабатываем Excel файл...');
-                const xlsxTable = document.querySelector('.XlsxTable');
-                const myDocs = document.querySelector('.MyDocs');
-                
-                // Убеждаемся, что Word контейнер скрыт
-                if (myDocs) {
-                    myDocs.style.display = 'none';
-                    myDocs.innerHTML = '';
-                }
-                
                 if (xlsxTable) {
-                    xlsxTable.style.display = 'block';
                     xlsxTable.innerHTML = data;
                     const frame = xlsxTable.querySelector(".dataframe");
                     if (frame) {
@@ -95,20 +91,7 @@ async function handlePreviewOffline(ev) {
                     }
                 }
             } else if (fileType === 'docx') {
-                console.log('Обрабатываем Word файл...');
-                const myDocs = document.querySelector('.MyDocs');
-                const xlsxTable = document.querySelector('.XlsxTable');
-                
-                // Убеждаемся, что Excel контейнер скрыт
-                if (xlsxTable) {
-                    xlsxTable.style.display = 'none';
-                    xlsxTable.innerHTML = '';
-                }
-                
                 if (myDocs) {
-                    myDocs.style.display = 'block';
-                    myDocs.innerHTML = '';
-                    
                     if (Array.isArray(data)) {
                         data.forEach(para => {
                             const p = document.createElement('p');
@@ -121,17 +104,7 @@ async function handlePreviewOffline(ev) {
             }
         } catch (error) {
             console.error('Error loading file preview:', error);
-            const myDocs = document.querySelector('.MyDocs');
-            const xlsxTable = document.querySelector('.XlsxTable');
-            
-            // Скрываем Excel контейнер при ошибке
-            if (xlsxTable) {
-                xlsxTable.style.display = 'none';
-                xlsxTable.innerHTML = '';
-            }
-            
             if (myDocs) {
-                myDocs.style.display = 'block';
                 myDocs.innerHTML = '<p style="color: red; padding: 20px; text-align: center; font-size: 16px;">Ошибка при загрузке предпросмотра файла</p>';
             }
         } finally {
@@ -143,36 +116,6 @@ async function handlePreviewOffline(ev) {
     
     // Добавляем обработчик закрытия модального окна
     addCloseHandler(modal);
-}
-
-// Функция для полной очистки всех контейнеров
-function cleanupAllContainers() {
-    const myDocs = document.querySelector('.MyDocs');
-    const xlsxTable = document.querySelector('.XlsxTable');
-    
-    console.log('Очищаем контейнеры...');
-    
-    if (myDocs) {
-        myDocs.innerHTML = '';
-        myDocs.style.display = 'none';
-        console.log('MyDocs контейнер очищен и скрыт');
-    }
-    
-    if (xlsxTable) {
-        xlsxTable.innerHTML = '';
-        xlsxTable.style.display = 'none';
-        console.log('XlsxTable контейнер очищен и скрыт');
-    }
-    
-    // Также очищаем все возможные остатки Excel таблиц
-    const existingTables = document.querySelectorAll('.excel-table, .dataframe, #MyTable');
-    existingTables.forEach(table => {
-        if (table.parentNode) {
-            table.parentNode.removeChild(table);
-        }
-    });
-    
-    console.log('Очистка завершена');
 }
 
 // Функция для преобразования таблицы в Excel-подобный вид
@@ -209,9 +152,9 @@ function transformToExcelTable(table) {
             headerRow.insertBefore(cornerCell, headers[0]);
         }
         
-        // Заменяем заголовки на буквы A, B, C... Z, AA, AB...)
+        // Сохраняем оригинальные заголовки колонок (как в Excel)
         headers.forEach((header, index) => {
-            header.textContent = getColumnLetter(index);
+            // Не заменяем текст заголовка, оставляем оригинальный
             header.className = 'column-header';
         });
     }
@@ -234,9 +177,9 @@ function transformToExcelTable(table) {
             
             // Обрабатываем каждую ячейку
             cells.forEach((cell, cellIndex) => {
-                // Обрабатываем NaN, null, undefined значения
+                // Обрабатываем NaN, NaT, null, undefined значения
                 const text = cell.textContent.trim();
-                if (text === 'NaN' || text === 'nan' || text === 'null' || text === 'undefined' || text === '') {
+                if (text === 'NaN' || text === 'nan' || text === 'NaT' || text === 'null' || text === 'undefined' || text === '') {
                     cell.textContent = '';
                     cell.classList.add('empty-cell');
                 } else {
@@ -288,9 +231,7 @@ function addCloseHandler(modal) {
         
         // Добавляем новый обработчик
         newCloseBtn.onclick = () => {
-            console.log('Закрываем модальное окно...');
             modal.style.display = "none";
-            cleanupAllContainers(); // Очищаем контейнеры при закрытии
             isPreviewActive = false;
         };
     }
@@ -298,9 +239,7 @@ function addCloseHandler(modal) {
     // Закрытие по клику вне модального окна
     const modalClickHandler = (event) => {
         if (event.target === modal) {
-            console.log('Закрываем модальное окно (клик вне области)...');
             modal.style.display = "none";
-            cleanupAllContainers(); // Очищаем контейнеры при закрытии
             isPreviewActive = false;
             window.removeEventListener('click', modalClickHandler);
         }

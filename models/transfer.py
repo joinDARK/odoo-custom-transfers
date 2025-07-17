@@ -84,6 +84,30 @@ class Transfer(models.Model, AmanatBaseModel):
 
     # Create
     create_order = fields.Boolean(string='Создать', default=False, tracking=True)
+
+    create_accrual = fields.Boolean(string='Создать начисление', default=False, tracking=True)
+    delete_accrual = fields.Boolean(string='Удалить начисления', default=False, tracking=True)
+    date_accrual = fields.Date(string='Дата начисления', tracking=True)
+    currency_accrual = fields.Selection(
+        [
+            ('rub', 'RUB'), ('rub_cashe', 'RUB КЭШ'), ('usd', 'USD'), ('usd_cashe', 'USD КЭШ'),
+            ('usdt', 'USDT'), ('euro', 'EURO'), ('euro_cashe', 'EURO КЭШ'),
+            ('cny', 'CNY'), ('cny_cashe', 'CNY КЭШ'), ('aed', 'AED'), ('aed_cashe', 'AED КЭШ'),
+            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ'),
+        ],
+        string='Валюта начисления',
+        default='rub',
+        tracking=True
+    )
+    amount_accrual = fields.Float(string='Сумма начисления', tracking=True, digits=(16, 3))
+    
+    sender_id_accrual = fields.Many2one('amanat.contragent', string='Отправитель начисления', tracking=True)
+    sender_payer_id_accrual = fields.Many2one('amanat.payer', string='Плательщик отправителя начисления', tracking=True)
+    sender_wallet_id_accrual = fields.Many2one('amanat.wallet', string='Кошелек отправителя начисления', tracking=True)
+    receiver_id_accrual = fields.Many2one('amanat.contragent', string='Получатель начисления', tracking=True)
+    receiver_payer_id_accrual = fields.Many2one('amanat.payer', string='Плательщик получателя начисления', tracking=True)
+    receiver_wallet_id_accrual = fields.Many2one('amanat.wallet', string='Кошелек получателя начисления', tracking=True)
+
     is_complex = fields.Boolean(string='Сложный перевод', default=False, tracking=True)
     intermediary_1_id = fields.Many2one('amanat.contragent', string='Посредник 1', tracking=True)
     intermediary_1_payer_id = fields.Many2one(
@@ -553,6 +577,32 @@ class Transfer(models.Model, AmanatBaseModel):
                 _logger.error(f"ОШИБКА при обработке роялти: {str(e)}")
                 raise e
 
+        # Начисления
+        to_process_accrual = self.filtered(lambda rec: rec.create_accrual)
+        if to_process_accrual:
+            _logger.info(f"Обрабатываем начисления для записей: {[rec.name for rec in to_process_accrual]}")
+            try:
+                for rec in to_process_accrual:
+                    rec._create_accrual_reconciliation()
+                to_process_accrual.with_context(skip_automation=True).write({'create_accrual': False})
+                _logger.info("Завершили обработку начислений")
+            except Exception as e:
+                _logger.error(f"ОШИБКА при обработке начислений: {str(e)}")
+                raise e
+
+        # Удаление начислений
+        to_delete_accrual = self.filtered(lambda rec: rec.delete_accrual)
+        if to_delete_accrual:
+            _logger.info(f"Удаляем начисления для записей: {[rec.name for rec in to_delete_accrual]}")
+            try:
+                for rec in to_delete_accrual:
+                    rec._delete_accrual_records()
+                to_delete_accrual.with_context(skip_automation=True).write({'delete_accrual': False})
+                _logger.info("Завершили удаление начислений")
+            except Exception as e:
+                _logger.error(f"ОШИБКА при удалении начислений: {str(e)}")
+                raise e
+
         # Создание
         to_create = self.filtered(lambda rec: rec.create_order and rec.state == 'open')
         if to_create:
@@ -582,6 +632,8 @@ class Transfer(models.Model, AmanatBaseModel):
     def _delete_related_records(self):
         for transfer in self:
             _logger.info(f"Удаляем связанные записи для перевода {transfer.name}")
+            
+            # Удаляем обычные ордера переводов
             for order in transfer.order_ids:
                 _logger.info(f"Обрабатываем ордер {order.id}")
                 # Найдём связанные деньги
@@ -601,6 +653,9 @@ class Transfer(models.Model, AmanatBaseModel):
                 # Удаляем сам ордер
                 _logger.info(f"Удаляем ордер {order.id}")
                 order.unlink()
+            
+            # Удаляем ордера начислений через специальный метод
+            transfer._delete_accrual_records()
         
     def _process_royalty_distribution(self):
         royalty_contragent = self.env['amanat.contragent'].search([('name', '=', 'Роялти')], limit=1)
@@ -678,6 +733,201 @@ class Transfer(models.Model, AmanatBaseModel):
                     **currency_fields
                 })
 
+    def _create_accrual_reconciliation(self):
+        """Создает или обновляет ордер, денежный контейнер и сверку начисления"""
+        # Проверка обязательных полей
+        if not self.amount_accrual:
+            raise ValueError("Сумма начисления должна быть указана")
+        
+        if not self.currency_accrual:
+            raise ValueError("Не указана валюта начисления")
+        
+        if not self.receiver_id_accrual:
+            raise ValueError("Не указан получатель начисления")
+        
+        # Найти или создать контрагента "Начисление"
+        accrual_contragent = self.env['amanat.contragent'].search([('name', '=', 'Начисление')], limit=1)
+        if not accrual_contragent:
+            accrual_contragent = self.env['amanat.contragent'].create({'name': 'Начисление'})
+            _logger.info(f"Создан контрагент 'Начисление' с ID: {accrual_contragent.id}")
+
+        # Найти или создать плательщика для контрагента "Начисление"
+        accrual_payer = self.env['amanat.payer'].search([
+            ('contragents_ids', 'in', accrual_contragent.id)
+        ], limit=1)
+
+        if not accrual_payer:
+            accrual_payer = self.env['amanat.payer'].create({
+                'name': 'Начисление',
+                'contragents_ids': [(6, 0, [accrual_contragent.id])]
+            })
+            _logger.info(f"Создан плательщик 'Начисление' с ID: {accrual_payer.id}")
+
+        # Обновить поля отправителя начисления в переводе
+        self.with_context(skip_automation=True).write({
+            'sender_id_accrual': accrual_contragent.id,
+            'sender_payer_id_accrual': accrual_payer.id,
+        })
+
+        # Автоматическое создание кошелька "Неразмеченные" если не указан
+        if not self.receiver_wallet_id_accrual:
+            unmarked_wallet = self.env['amanat.wallet'].search([('name', '=', 'Неразмеченные')], limit=1)
+            if not unmarked_wallet:
+                unmarked_wallet = self.env['amanat.wallet'].create({'name': 'Неразмеченные'})
+            
+            self.with_context(skip_automation=True).write({
+                'receiver_wallet_id_accrual': unmarked_wallet.id,
+                'sender_wallet_id_accrual': unmarked_wallet.id
+            })
+        
+        # Получить кошелек отправителя (если не указан, использовать кошелек получателя)
+        sender_wallet = self.sender_wallet_id_accrual or self.receiver_wallet_id_accrual
+        
+        # Поиск существующего ордера начисления для этого получателя
+        existing_order = self.env['amanat.order'].search([
+            ('transfer_id', 'in', [self.id]),
+            ('comment', 'like', f'Начисление по переводу {self.name}'),
+            ('partner_2_id', '=', self.receiver_id_accrual.id if self.receiver_id_accrual else False),
+            ('type', '=', 'transfer')
+        ], limit=1)
+
+        if existing_order:
+            # Обновляем существующий ордер
+            _logger.info(f"Найден существующий ордер начисления с ID: {existing_order.id}")
+            
+            # Обновляем сумму в ордере
+            new_amount = existing_order.amount + self.amount_accrual
+            existing_order.write({'amount': new_amount})
+            _logger.info(f"Обновлена сумма ордера с {existing_order.amount} на {new_amount}")
+            
+            # Обновляем денежный контейнер
+            money_record = self.env['amanat.money'].search([('order_id', '=', existing_order.id)], limit=1)
+            if money_record:
+                currency_fields = self._get_currency_fields(self.currency_accrual, self.amount_accrual)
+                new_money_amount = money_record.amount + self.amount_accrual
+                
+                # Обновляем валютные поля
+                money_update_vals = {'amount': new_money_amount}
+                for field, value in currency_fields.items():
+                    current_value = getattr(money_record, field, 0)
+                    money_update_vals[field] = current_value + value
+                
+                money_record.write(money_update_vals)
+                _logger.info(f"Обновлен денежный контейнер с {money_record.amount} на {new_money_amount}")
+            
+            # Обновляем сверку
+            reconciliation_record = self.env['amanat.reconciliation'].search([('order_id', 'in', [existing_order.id])], limit=1)
+            if reconciliation_record:
+                currency_fields = self._get_currency_fields(self.currency_accrual, self.amount_accrual)
+                new_recon_sum = reconciliation_record.sum + self.amount_accrual
+                
+                # Обновляем валютные поля
+                recon_update_vals = {'sum': new_recon_sum}
+                for field, value in currency_fields.items():
+                    current_value = getattr(reconciliation_record, field, 0)
+                    recon_update_vals[field] = current_value + value
+                
+                reconciliation_record.write(recon_update_vals)
+                _logger.info(f"Обновлена сверка с {reconciliation_record.sum} на {new_recon_sum}")
+            
+            return {
+                'order': existing_order,
+                'money': money_record,
+                'reconciliation': reconciliation_record
+            }
+        
+        else:
+            # Создаем новый ордер начисления
+            _logger.info("Создаем новый ордер начисления")
+            
+            accrual_order = self.env['amanat.order'].create({
+                'date': self.date_accrual or self.date,
+                'type': 'transfer',
+                'partner_1_id': accrual_contragent.id,
+                'partner_2_id': self.receiver_id_accrual.id if self.receiver_id_accrual else False,
+                'wallet_1_id': sender_wallet.id if sender_wallet else False,
+                'wallet_2_id': self.receiver_wallet_id_accrual.id if self.receiver_wallet_id_accrual else False,
+                'payer_1_id': accrual_payer.id,
+                'payer_2_id': self.receiver_payer_id_accrual.id if self.receiver_payer_id_accrual else False,
+                'currency': self.currency_accrual,
+                'amount': self.amount_accrual,
+                'comment': f"Начисление по переводу {self.name}",
+                'transfer_id': [(6, 0, [self.id])],
+            })
+            _logger.info(f"Создан новый ордер начисления с ID: {accrual_order.id}")
+
+            # Создаем денежный контейнер
+            currency_fields = self._get_currency_fields(self.currency_accrual, self.amount_accrual)
+            
+            money_vals = {
+                'date': self.date_accrual or self.date,
+                'wallet_id': self.receiver_wallet_id_accrual.id if self.receiver_wallet_id_accrual else False,
+                'partner_id': self.receiver_id_accrual.id if self.receiver_id_accrual else False,
+                'currency': self.currency_accrual,
+                'amount': self.amount_accrual,
+                'order_id': accrual_order.id,
+                'state': 'positive' if self.amount_accrual > 0 else 'debt',
+                **currency_fields
+            }
+            
+            money_record = self.env['amanat.money'].create(money_vals)
+            _logger.info(f"Создан денежный контейнер начисления с ID: {money_record.id}")
+
+            # Создаем сверку начисления
+            reconciliation_vals = {
+                'date': self.date_accrual or self.date,
+                'partner_id': self.receiver_id_accrual.id if self.receiver_id_accrual else False,
+                'currency': self.currency_accrual,
+                'sum': self.amount_accrual,
+                'wallet_id': self.receiver_wallet_id_accrual.id if self.receiver_wallet_id_accrual else False,
+                'sender_id': [(6, 0, [accrual_payer.id])],
+                'receiver_id': [(6, 0, [self.receiver_payer_id_accrual.id])] if self.receiver_payer_id_accrual else [(6, 0, [])],
+                'order_id': [(6, 0, [accrual_order.id])],
+                **currency_fields
+            }
+
+            reconciliation_record = self.env['amanat.reconciliation'].create(reconciliation_vals)
+            _logger.info(f"Создана сверка начисления с ID: {reconciliation_record.id}")
+
+            return {
+                'order': accrual_order,
+                'money': money_record,
+                'reconciliation': reconciliation_record
+            }
+
+    def _delete_accrual_records(self):
+        """Удаляет все ордера начислений и связанные с ними записи"""
+        # Найти все ордера начислений для этого перевода
+        accrual_orders = self.env['amanat.order'].search([
+            ('transfer_id', 'in', [self.id]),
+            ('comment', 'like', f'Начисление по переводу {self.name}'),
+            ('type', '=', 'transfer')
+        ])
+        
+        _logger.info(f"Найдено ордеров начислений для удаления: {len(accrual_orders)}")
+        
+        for accrual_order in accrual_orders:
+            _logger.info(f"Удаляем ордер начисления {accrual_order.id}")
+            
+            # Найти и удалить связанные денежные контейнеры
+            money_records = self.env['amanat.money'].search([('order_id', '=', accrual_order.id)])
+            _logger.info(f"Найдено денежных контейнеров для удаления: {len(money_records)}")
+            for money in money_records:
+                # Удалить связанные списания если есть
+                if hasattr(money, 'writeoff_ids'):
+                    money.writeoff_ids.unlink()
+                money.unlink()
+            
+            # Найти и удалить связанные сверки
+            reconciliation_records = self.env['amanat.reconciliation'].search([('order_id', 'in', [accrual_order.id])])
+            _logger.info(f"Найдено сверок для удаления: {len(reconciliation_records)}")
+            reconciliation_records.unlink()
+            
+            # Удалить сам ордер
+            accrual_order.unlink()
+        
+        _logger.info("Удаление начислений завершено")
+
     @api.model
     def create(self, vals):
         _logger.info(f"Transfer create() вызван с vals: {vals}")
@@ -708,6 +958,13 @@ class Transfer(models.Model, AmanatBaseModel):
             record.with_context(skip_automation=True).write({'create_order': False})
             _logger.info("Завершили автоматическое создание ордеров")
 
+        # Автоматически создать начисление, если установлен флаг
+        if record.create_accrual:
+            _logger.info(f"Автоматически создаем начисление для перевода {record.name}")
+            record._create_accrual_reconciliation()
+            record.with_context(skip_automation=True).write({'create_accrual': False})
+            _logger.info("Завершили автоматическое создание начисления")
+
         _logger.info(f"Transfer create() завершен успешно для записи {record.name}")
         return record
 
@@ -717,5 +974,8 @@ class Transfer(models.Model, AmanatBaseModel):
             'id', 'display_name', 'name', 'state', 'date', 'currency', 'amount',
             'sender_id', 'receiver_id', 'sender_payer_id', 'receiver_payer_id',
             'create_date', 'write_date', 'manager_id', 'comment', 'hash',
-            'is_complex', 'intermediary_1_id', 'intermediary_2_id'
+            'is_complex', 'intermediary_1_id', 'intermediary_2_id',
+            'create_accrual', 'delete_accrual', 'date_accrual', 'currency_accrual', 'amount_accrual',
+            'sender_id_accrual', 'sender_payer_id_accrual', 'sender_wallet_id_accrual',
+            'receiver_id_accrual', 'receiver_payer_id_accrual', 'receiver_wallet_id_accrual'
         ]
