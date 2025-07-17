@@ -9,6 +9,10 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+# Конфигурация API сервера
+API_SERVER_BASE_URL = "http://localhost:8085"
+API_OPERATIONS_ENDPOINT = f"{API_SERVER_BASE_URL}/api/operations"
+
 class Reconciliation(models.Model, AmanatBaseModel):
     _name = 'amanat.reconciliation'
     _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
@@ -273,7 +277,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
 
     def _run_reconciliation_export(self):
         """
-        Основная логика выгрузки.
+        Основная логика выгрузки с поддержкой новой API, возвращающей 2 файла.
         """
         for rec in self:
             contragent = rec.partner_id
@@ -284,47 +288,115 @@ class Reconciliation(models.Model, AmanatBaseModel):
             file_name = '{} {}'.format(contragent.name, datetime.today().strftime('%d.%m.%Y'))
 
             data = self._prepare_reconciliation_export_data(contragent, use_range)
+            
+            # Проверяем, что данные не пустые
+            if not data:
+                _logger.warning(f"Нет данных для контрагента {contragent.name}. Использовать диапазон: {use_range}")
+                raise UserError(_("Нет данных для экспорта по контрагенту %s") % contragent.name)
+            
             payload = {'fileName': file_name, 'data': data}
 
-            endpoint = "http://92.255.207.48:8080/receive-data"
-            file_url = False
+            # Новый endpoint согласно документации
+            endpoint = API_OPERATIONS_ENDPOINT
+            
             try:
+                _logger.info(f"Отправка запроса на {endpoint}")
+                _logger.info(f"Количество записей для экспорта: {len(data)}")
+                _logger.debug(f"Данные запроса: {payload}")
+                
                 resp = requests.post(endpoint, json=payload, timeout=60)
+                _logger.info(f"Ответ сервера: {resp.status_code}")
+                _logger.debug(f"Тело ответа: {resp.text}")
+                
                 resp.raise_for_status()
                 resp_data = resp.json()
-                if resp_data.get('success') and resp_data.get('fileUrl'):
-                    file_url = resp_data['fileUrl']
-            except Exception as e:
-                raise UserError(_("Ошибка при отправке данных на сервер: %s" % e))
-
-            if file_url:
+                
+                _logger.info(f"Полный ответ сервера: {resp_data}")
+                
+                # Проверяем успешность операции и наличие файлов
+                if not resp_data.get('success'):
+                    raise UserError(_("Сервер вернул ошибку: %s" % resp_data.get('message', 'Неизвестная ошибка')))
+                
+                # Извлекаем downloadUrl из новой структуры ответа
+                summary = resp_data.get('summary', {})
+                reports = summary.get('reports', {})
+                
+                sverka1_file_url = reports.get('main', {}).get('downloadUrl')
+                sverka2_file_url = reports.get('test', {}).get('downloadUrl')
+                
+                _logger.info(f"Sverka1 file URL: {sverka1_file_url}")
+                _logger.info(f"Sverka2 file URL: {sverka2_file_url}")
+                
+                if not sverka1_file_url or not sverka2_file_url:
+                    _logger.warning(f"Отсутствуют downloadUrls, проверяем наличие локальных файлов. Ответ сервера: {resp_data}")
+                    
+                    # Альтернативный способ: используем API endpoint для скачивания
+                    base_filename = f"{file_name}"
+                    sverka1_file_url = f"{API_SERVER_BASE_URL}/api/download/{base_filename}_main.xlsx"
+                    sverka2_file_url = f"{API_SERVER_BASE_URL}/api/download/{base_filename}_test.xlsx"
+                    
+                    _logger.info(f"Используем локальные файлы: sverka1={sverka1_file_url}, sverka2={sverka2_file_url}")
+                    
+                    # Проверяем доступность файлов
+                    try:
+                        sverka1_check = requests.head(sverka1_file_url, timeout=10)
+                        sverka2_check = requests.head(sverka2_file_url, timeout=10)
+                        if sverka1_check.status_code != 200 or sverka2_check.status_code != 200:
+                            raise UserError(_("Сервер создал файлы, но они недоступны для скачивания"))
+                    except requests.RequestException:
+                        raise UserError(_("Сервер не вернул URL для скачивания файлов и локальные файлы недоступны"))
+                
+                # Создаем вложения для обоих файлов
                 IrAttachment = self.env['ir.attachment']
-                attachment = IrAttachment.create({
-                    'name': file_name + ".xlsx",
+                
+                # Извлекаем оригинальные имена файлов из ответа сервера
+                files_info = resp_data.get('files', {})
+                
+                # Файл сверки 1
+                sverka1_name = files_info.get('main', {}).get('name', f"{file_name}_main.xlsx")
+                sverka1_attachment = IrAttachment.create({
+                    'name': sverka1_name,
                     'type': 'url',
-                    'url': file_url,
+                    'url': sverka1_file_url,
                     'res_model': self._name,
                     'res_id': rec.id,
                 })
-                # --- Новая логика: только одна запись на контрагента ---
+                
+                # Файл сверки 2
+                sverka2_name = files_info.get('test', {}).get('name', f"{file_name}_test.xlsx")
+                sverka2_attachment = IrAttachment.create({
+                    'name': sverka2_name,
+                    'type': 'url',
+                    'url': sverka2_file_url,
+                    'res_model': self._name,
+                    'res_id': rec.id,
+                })
+                
+                # Обновляем запись в sverka_files
                 sverka_file = self.env['amanat.sverka_files'].search([
                     ('contragent_id', '=', rec.partner_id.id)
                 ], limit=1)
+                
                 vals = {
-                    'name': file_name + ".xlsx",
+                    'name': file_name,
                     'contragent_id': rec.partner_id.id,
-                    'file_attachments': [(6, 0, [attachment.id])],
+                    'sverka1_file_attachments': [(6, 0, [sverka1_attachment.id])],
+                    'sverka2_file_attachments': [(6, 0, [sverka2_attachment.id])],
+                    'file_attachments': [(6, 0, [sverka1_attachment.id, sverka2_attachment.id])],
                 }
+                
                 if sverka_file:
                     sverka_file.write(vals)
                 else:
                     self.env['amanat.sverka_files'].create(vals)
-                # --- конец новой логики ---
+                
+                # Логирование успешного создания файлов
+                _logger.info(f"Успешно созданы файлы сверки для контрагента {contragent.name}: sverka1={sverka1_file_url}, sverka2={sverka2_file_url}")
+                
+            except Exception as e:
+                _logger.error(f"Ошибка при отправке данных на сервер: {e}")
+                raise UserError(_("Ошибка при отправке данных на сервер: %s" % e))
 
-                records_for_notification = self.env['amanat.sverka_files'].search([('contragent_id', '=', rec.partner_id.id)])
-                # сделай отпарвку уведомлений для пользователя
-
-        
         return True
     
     def action_send_selected_to_server(self):

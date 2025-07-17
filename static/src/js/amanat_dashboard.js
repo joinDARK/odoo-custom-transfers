@@ -338,8 +338,7 @@ export class AmanatDashboard extends Component {
             'managers-closed-zayavki-pie',
             'managers-closed-zayavki-pie-2',
             'managers-efficiency-chart',
-            'zayavki-status-donut',
-            'zayavki-status-donut-2',
+            'zayavka-status-chart',
             'client-avg-amount-chart',
             'deal-cycles-line'
         ];
@@ -476,15 +475,23 @@ export class AmanatDashboard extends Component {
             }
 
             // 21. Статусы заявок (горизонтальная столбчатая)
-            console.log('🔍 Рендеринг статусов заявок:', {
+            console.log('🔍 ДЕТАЛЬНАЯ ПРОВЕРКА statusDistribution:', {
                 statusDistribution: this.state.zayavki.statusDistribution,
                 hasData: this.hasChartData(this.state.zayavki.statusDistribution),
-                dataLength: this.state.zayavki.statusDistribution ? this.state.zayavki.statusDistribution.length : 0,
+                type: typeof this.state.zayavki.statusDistribution,
+                isArray: Array.isArray(this.state.zayavki.statusDistribution),
+                length: this.state.zayavki.statusDistribution ? this.state.zayavki.statusDistribution.length : 0,
+                firstItem: this.state.zayavki.statusDistribution ? this.state.zayavki.statusDistribution[0] : null,
                 isComparisonMode: !!this.state.chartComparisonData
             });
-
+                
             // Всегда рендерим статусы заявок как горизонтальную столбчатую диаграмму
-            if (this.hasChartData(this.state.zayavki.statusDistribution)) {
+            // Проверяем данные с более детальной отладкой
+            let statusDistributionData = this.state.zayavki.statusDistribution;
+            
+            console.log('🔍 Используемые данные для рендеринга:', statusDistributionData);
+            
+            if (this.hasChartData(statusDistributionData)) {
                 const statusColors = [
                     '#2563EB',  // Синий - заявка закрыта
                     '#16A34A',  // Зеленый - в обработке
@@ -496,9 +503,20 @@ export class AmanatDashboard extends Component {
                     '#65A30D'   // Лайм - возврат
                 ];
 
-                this.renderHorizontalBarChart('zayavki-status-distribution-chart', {
-                    labels: this.state.zayavki.statusDistribution.map(s => s.name),
-                    data: this.state.zayavki.statusDistribution.map(s => s.count),
+                // Создаем labels и data с проверкой
+                const labels = statusDistributionData.map(s => s.name);
+                const data = statusDistributionData.map(s => s.count);
+                
+                console.log('🔍 Подготовленные данные для рендеринга:', {
+                    labels: labels,
+                    data: data,
+                    labelsLength: labels.length,
+                    dataLength: data.length
+                });
+
+                this.renderHorizontalBarChart('zayavka-status-chart', {
+                    labels: labels,
+                    data: data,
                     title: 'Статусы заявок',
                     backgroundColor: statusColors,
                     borderColor: statusColors,
@@ -507,19 +525,45 @@ export class AmanatDashboard extends Component {
                         console.log('График статусов заявок: клик зарегистрирован', elements);
                         if (elements.length > 0) {
                             const index = elements[0].index;
-                            const statusName = this.state.zayavki.statusDistribution[index].name;
+                            const statusName = statusDistributionData[index].name;
                             console.log('Открываем заявки со статусом:', statusName);
                             this.openZayavkiByStatus(statusName);
                         }
                     }
                 });
 
-                // Скрываем второй график (donut)
-                this.showNoDataMessage('zayavki-status-donut', '');
+                // Сохраняем полные данные для модального окна
+                console.log('💾 Сохраняем данные для модального окна zayavka-status-chart:', statusDistributionData);
+                this.saveFullChartData('zayavka-status-chart', statusDistributionData, {
+                    type: 'horizontalBar',
+                    title: 'Статусы заявок (полные данные)',
+                    backgroundColor: statusColors,
+                    borderColor: statusColors
+                });
+                
+                // Проверяем, что данные сохранились правильно
+                const savedData = this.getFullChartData('zayavka-status-chart');
+                console.log('✅ Проверка сохраненных данных для zayavka-status-chart:', savedData);
+
+                // Рендерим второй график с теми же данными
+                this.renderHorizontalBarChart('zayavka-status-chart', {
+                    labels: statusDistributionData.map(item => item.name),
+                    data: statusDistributionData.map(item => item.count),
+                    title: 'Статусы заявок',
+                    backgroundColor: statusColors,
+                    borderColor: statusColors,
+                    clickable: true,
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const statusName = statusDistributionData[index].name;
+                            this.openZayavkiByStatus(statusName);
+                        }
+                    }
+                });
             } else {
                 console.log('❌ Нет данных для статусов заявок');
-                this.showNoDataMessage('zayavki-status-distribution-chart', 'Статусы заявок');
-                this.showNoDataMessage('zayavki-status-donut', '');
+                this.showNoDataMessage('zayavka-status-chart', 'Статусы заявок');
             }
 
             // 22. Количество заявок под каждого агента (горизонтальная столбчатая)
@@ -1085,6 +1129,12 @@ export class AmanatDashboard extends Component {
                         }
                     }
                 });
+                
+                // Сохраняем данные для модального окна как горизонтальный столбчатый график
+                this.saveFullChartData('managers-efficiency-chart', {
+                    labels: this.state.zayavki.managersEfficiency.map(m => m.name),
+                    data: this.state.zayavki.managersEfficiency.map(m => m.efficiency)
+                }, { type: 'horizontalBar', title: 'Эффективность менеджеров' });
             } else {
                 console.log('Нет данных для графика эффективности менеджеров');
                 this.showNoDataMessage('managers-efficiency-chart', 'Эффективность менеджеров');
@@ -1103,7 +1153,7 @@ export class AmanatDashboard extends Component {
                 ])];
                 
                 if (allContragents.length > 0) {
-                    this.renderComparisonHorizontalBarChart('zayavki-status-donut', {
+                    this.renderComparisonHorizontalBarChart('zayavka-status-chart', {
                         labels: allContragents,
                         period1Data: allContragents.map(name => {
                             const item = period1Data.find(c => c.name === name);
@@ -1300,13 +1350,29 @@ export class AmanatDashboard extends Component {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
+        // Проверяем наличие данных
+        if (!config.labels || !Array.isArray(config.labels) || config.labels.length === 0) {
+            console.warn('⚠️ renderBarChart: config.labels отсутствует или пустой', config);
+            this.showNoDataMessage(canvasId, config.title || 'График');
+            return;
+        }
+        
+        if (!config.data || !Array.isArray(config.data) || config.data.length === 0) {
+            console.warn('⚠️ renderBarChart: config.data отсутствует или пустой', config);
+            this.showNoDataMessage(canvasId, config.title || 'График');
+            return;
+        }
+        
         // 🔑 ИСПРАВЛЕНИЕ: Всегда сохраняем полные данные для модальных окон
-        this.saveFullChartData(canvasId, {
-            labels: config.labels,
-            data: config.data,
-            backgroundColor: config.backgroundColor,
-            borderColor: config.borderColor
-        }, { type: 'bar', title: config.title });
+        // Но не перезаписываем данные для графика эффективности менеджеров
+        if (canvasId !== 'managers-efficiency-chart') {
+            this.saveFullChartData(canvasId, {
+                labels: config.labels,
+                data: config.data,
+                backgroundColor: config.backgroundColor,
+                borderColor: config.borderColor
+            }, { type: 'bar', title: config.title });
+        }
         
         // Проверяем, нужно ли применять ограничение ТОП-3
         const shouldLimitData = config.labels && config.labels.length > 3 && !config.showFullData;
@@ -1524,8 +1590,24 @@ export class AmanatDashboard extends Component {
     }
 
     renderHorizontalBarChart(canvasId, config) {
+        console.log('🚀 renderHorizontalBarChart вызван:', {
+            canvasId,
+            config,
+            configKeys: Object.keys(config || {}),
+            labelsLength: config.labels ? config.labels.length : 0,
+            dataLength: config.data ? config.data.length : 0
+        });
+        
         const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
+        console.log('🎯 Canvas найден:', {
+            canvasId,
+            canvas,
+            canvasExists: !!canvas
+        });
+        if (!canvas) {
+            console.error('❌ Canvas не найден для ID:', canvasId);
+            return;
+        }
         
         // 🔑 ИСПРАВЛЕНИЕ: Всегда сохраняем полные данные для модальных окон
         this.saveFullChartData(canvasId, {
@@ -1546,6 +1628,19 @@ export class AmanatDashboard extends Component {
             title: config.title,
             savedFullData: true
         });
+        // Проверяем наличие данных
+        if (!config.labels || !Array.isArray(config.labels) || config.labels.length === 0) {
+            console.warn('⚠️ renderHorizontalBarChart: config.labels отсутствует или пустой', config);
+            this.showNoDataMessage(canvasId, config.title || 'График');
+            return;
+        }
+        
+        if (!config.data || !Array.isArray(config.data) || config.data.length === 0) {
+            console.warn('⚠️ renderHorizontalBarChart: config.data отсутствует или пустой', config);
+            this.showNoDataMessage(canvasId, config.title || 'График');
+            return;
+        }
+        
         let displayLabels = config.labels;
         let displayData = config.data;
         let modifiedTitle = config.title;
@@ -1768,6 +1863,19 @@ export class AmanatDashboard extends Component {
     renderDonutChart(canvasId, config) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
+        
+        // Проверяем наличие данных
+        if (!config.labels || !Array.isArray(config.labels) || config.labels.length === 0) {
+            console.warn('⚠️ renderDonutChart: config.labels отсутствует или пустой', config);
+            this.showNoDataMessage(canvasId, config.title || 'График');
+            return;
+        }
+        
+        if (!config.data || !Array.isArray(config.data) || config.data.length === 0) {
+            console.warn('⚠️ renderDonutChart: config.data отсутствует или пустой', config);
+            this.showNoDataMessage(canvasId, config.title || 'График');
+            return;
+        }
         
         // 🔑 ИСПРАВЛЕНИЕ: Всегда сохраняем полные данные для модальных окон
         this.saveFullChartData(canvasId, {
@@ -2651,7 +2759,20 @@ export class AmanatDashboard extends Component {
                 payersByZayavki: data.payer_zayavki_list || [],
                 managersByZayavki: data.managers_by_zayavki || [],
                 managersClosedZayavki: data.managers_closed_zayavki || [],
-                statusDistribution: [],
+            statusDistribution: (() => {
+                console.log('🔍 ОТЛАДКА statusDistribution в updateStateFromData:', {
+                    rawData: data.zayavka_status_data,
+                    isArray: Array.isArray(data.zayavka_status_data),
+                    length: data.zayavka_status_data ? data.zayavka_status_data.length : 'N/A',
+                    hasData: data.zayavka_status_data && Array.isArray(data.zayavka_status_data) && data.zayavka_status_data.length > 0
+                });
+                
+                // Используем только реальные данные, без fallback на тестовые
+                const result = data.zayavka_status_data && Array.isArray(data.zayavka_status_data) ? data.zayavka_status_data : [];
+                
+                console.log('📊 Итоговый statusDistribution (только реальные данные):', result);
+                return result;
+            })(),
                 dealCycles: data.zayavki_deal_cycles || [],
                 contragentRewardPercent: data.contragent_avg_reward_percent || [],
                 managersEfficiency: data.managers_efficiency_data || []
@@ -2659,7 +2780,7 @@ export class AmanatDashboard extends Component {
             
             // Логирование для отладки статусов заявок
             console.log('🔍 updateStateFromData - статусы заявок:', {
-                original: [],
+                original: data.zayavka_status_data,
                 assigned: this.state.zayavki.statusDistribution,
                 hasData: this.hasChartData(this.state.zayavki.statusDistribution),
                 length: this.state.zayavki.statusDistribution ? this.state.zayavki.statusDistribution.length : 0,
@@ -2790,7 +2911,7 @@ export class AmanatDashboard extends Component {
                     'rgba(96, 165, 250, 0.8)',  // Светло-синий
                     'rgba(147, 197, 253, 0.8)', // Очень светло-синий
                     'rgba(191, 219, 254, 0.8)'  // Самый светлый синий
-                ],
+                    ],
                 borderColor: displayColors ? displayColors.map(c => c.replace('0.8', '1')) : [
                     'rgba(30, 58, 138, 1)',      // Темно-синий
                     'rgba(59, 130, 246, 1)',     // Синий
@@ -3817,7 +3938,7 @@ export class AmanatDashboard extends Component {
                 totalValue: (config.period1Data[index] || 0) + (config.period2Data[index] || 0),
                 index
             }));
-            
+        
             // Сортируем по общей сумме и берем ТОП-3
             const top3Data = combinedData
                 .sort((a, b) => b.totalValue - a.totalValue)
@@ -4103,29 +4224,134 @@ export class AmanatDashboard extends Component {
             config
         });
         
+        // Получаем полную конфигурацию из chartMappings если config пустой
+        if (!config.type && !config.chartType) {
+            const chartMappings = this.getChartMappings();
+            if (chartMappings[chartId]) {
+                config = { ...chartMappings[chartId], ...config };
+                console.log('📊 Получена конфигурация из chartMappings:', config);
+            }
+        }
+        
         try {
             // Если fullData не передан или пустой, загружаем полные данные с сервера
             if (!fullData || (Array.isArray(fullData) && fullData.length === 0) || (typeof fullData === 'object' && Object.keys(fullData).length === 0)) {
-                console.log('🔄 Загружаем полные данные с сервера для типа графика:', chartType, 'с фильтрацией по датам:', this.state.dateFrom1, '-', this.state.dateTo1);
+                console.log('🔄 Загружаем ВСЕ данные с сервера для типа графика:', chartType, 'БЕЗ фильтрации по датам для модального окна');
                 
-                const response = await this.orm.call(
-                    'amanat.dashboard',
-                    'get_full_chart_data',
-                    [],
-                    {
+                console.log('📞 Вызываем сервер для получения данных графика:', {
+                    method: 'get_full_chart_data',
+                    chartType: chartType,
+                    parametersForServer: {
                         chart_type: chartType,
-                        date_from: this.state.dateFrom1,
-                        date_to: this.state.dateTo1
+                        date_from: null,
+                        date_to: null
                     }
-                );
+                });
+                
+                console.log('🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА: Проверяем модель amanat.dashboard');
+                console.log('🔍 self.orm:', this.orm);
+                console.log('🔍 Вызов: amanat.dashboard.get_full_chart_data');
+                
+                let response;
+                try {
+                    response = await this.orm.call(
+                        'amanat.dashboard',
+                        'get_full_chart_data',
+                        [],
+                        {
+                            chart_type: chartType,
+                            date_from: null,  // Для модального окна загружаем все данные без фильтров
+                            date_to: null
+                        }
+                    );
+                } catch (ormError) {
+                    console.error('❌ Ошибка при вызове ORM:', ormError);
+                    console.error('🔍 Детали ошибки:', {
+                        message: ormError.message,
+                        stack: ormError.stack,
+                        name: ormError.name,
+                        cause: ormError.cause
+                    });
+                    
+                    // Попробуем альтернативный подход
+                    console.log('🔄 Попытка вызова через get_dashboard_data...');
+                    try {
+                        const dashboardData = await this.orm.call(
+                            'amanat.dashboard',
+                            'get_dashboard_data',
+                            [],
+                            {
+                                date_from: null,
+                                date_to: null
+                            }
+                        );
+                        
+                        console.log('✅ get_dashboard_data вернул:', dashboardData);
+                        
+                        if (chartType === 'zayavka_status_data' && dashboardData.zayavka_status_data) {
+                            response = dashboardData.zayavka_status_data;
+                            console.log('✅ Извлекли zayavka_status_data из dashboard data:', response);
+                        } else {
+                            console.log('❌ Не удалось найти данные для типа:', chartType);
+                            response = [];
+                        }
+                    } catch (altError) {
+                        console.error('❌ Альтернативный вызов тоже не сработал:', altError);
+                        response = [];
+                    }
+                }
+                
+                console.log('📞 Получен ответ от сервера:', {
+                    rawResponse: response,
+                    typeOfResponse: typeof response,
+                    isResponseArray: Array.isArray(response),
+                    responseLength: Array.isArray(response) ? response.length : (typeof response === 'object' ? Object.keys(response).length : 'N/A'),
+                    responseFirstItem: Array.isArray(response) && response.length > 0 ? response[0] : null,
+                    chartType: chartType
+                });
                 
                 console.log('✅ Ответ сервера с учетом дат:', response);
                 console.log('📊 Детали ответа сервера:', {
                     type: typeof response,
                     isArray: Array.isArray(response),
                     length: Array.isArray(response) ? response.length : 'N/A',
-                    keys: typeof response === 'object' ? Object.keys(response) : 'N/A'
+                    keys: typeof response === 'object' ? Object.keys(response) : 'N/A',
+                    firstItem: Array.isArray(response) && response.length > 0 ? response[0] : 'N/A'
                 });
+                
+                // Дополнительная отладка для типа zayavka_status_data
+                if (chartType === 'zayavka_status_data') {
+                    console.log('🔍 Специальная отладка для zayavka_status_data:', {
+                        responseType: typeof response,
+                        responseContent: response,
+                        isArray: Array.isArray(response),
+                        hasData: response && (Array.isArray(response) ? response.length > 0 : Object.keys(response).length > 0)
+                    });
+                }
+                
+                // Проверяем, есть ли ошибка в ответе
+                if (response && response.error) {
+                    console.error('❌ Сервер вернул ошибку:', response.error);
+                    throw new Error(response.error);
+                }
+                
+                // 🔑 ИСПРАВЛЕНИЕ: Убираем fallback для zayavka_status_data
+                // Теперь используем только реальные данные. Если данных нет, покажем "НЕТ ДАННЫХ"
+                if (chartType === 'zayavka_status_data') {
+                    console.log('🔄 Обрабатываем zayavka_status_data без fallback:', {
+                        responseType: typeof response,
+                        responseContent: response,
+                        isArray: Array.isArray(response),
+                        hasData: response && (Array.isArray(response) ? response.length > 0 : Object.keys(response).length > 0)
+                    });
+                }
+                
+                // Проверяем, пустые ли данные
+                if (!response || (Array.isArray(response) && response.length === 0) || 
+                    (typeof response === 'object' && Object.keys(response).length === 0)) {
+                    console.warn('⚠️ Сервер вернул пустые данные для типа:', chartType);
+                    console.warn('⚠️ Полный ответ сервера:', JSON.stringify(response, null, 2));
+                }
                 
                 // Логирование для отладки
                 if (chartType === 'test_chart') {
@@ -4158,7 +4384,96 @@ export class AmanatDashboard extends Component {
                     labelsLength: fullData.labels ? fullData.labels.length : 0,
                     hasData: !!fullData.data,
                     dataLength: fullData.data ? fullData.data.length : 0,
-                    firstFewLabels: fullData.labels ? fullData.labels.slice(0, 5) : 'N/A'
+                    firstFewLabels: fullData.labels ? fullData.labels.slice(0, 5) : 'N/A',
+                    fullDataContent: fullData
+                });
+                
+                // Дополнительная проверка для zayavka_status_data
+                if (chartType === 'zayavka_status_data') {
+                    console.log('🎯 После конвертации zayavka_status_data:', {
+                        labels: fullData.labels,
+                        data: fullData.data,
+                        labelsType: typeof fullData.labels,
+                        dataType: typeof fullData.data,
+                        isLabelsArray: Array.isArray(fullData.labels),
+                        isDataArray: Array.isArray(fullData.data)
+                    });
+                }
+                
+                // Проверяем что данные не пустые после конвертации
+                if (!fullData.labels || !Array.isArray(fullData.labels) || fullData.labels.length === 0) {
+                    console.warn('❌ Нет данных после конвертации для графика:', chartType);
+                    
+                    // Создаем модальное окно с сообщением о том, что нет данных
+                    const modal = document.createElement('div');
+                    modal.className = 'modal fade full-chart-modal show';
+                    modal.id = 'fullChartModal';
+                    modal.style.display = 'block';
+                    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                    
+                    modal.innerHTML = `
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">📊 ${chartTitle}</h5>
+                                    <button type="button" class="btn-close" id="closeFullChartModal" aria-label="Close">
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="d-flex justify-content-center align-items-center" style="height: 400px;">
+                                        <div class="text-center">
+                                            <i class="fa fa-chart-bar fa-5x text-muted mb-4"></i>
+                                            <h3 class="text-muted">Нет данных для отображения</h3>
+                                            <p class="text-muted">Попробуйте выбрать другой период или проверьте наличие данных в системе.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" id="closeFullChartModalFooter">
+                                        <i class="fa fa-times me-2"></i>Закрыть
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                    
+                    // Функция для закрытия модального окна
+                    const closeModal = () => {
+                        modal.style.display = 'none';
+                        modal.remove();
+                    };
+                    
+                    // Добавляем обработчики закрытия
+                    modal.querySelector('#closeFullChartModal').addEventListener('click', closeModal);
+                    modal.querySelector('#closeFullChartModalFooter').addEventListener('click', closeModal);
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            closeModal();
+                        }
+                    });
+                    
+                    // Обработчик нажатия Escape
+                    const escapeHandler = (e) => {
+                        if (e.key === 'Escape') {
+                            closeModal();
+                            document.removeEventListener('keydown', escapeHandler);
+                        }
+                    };
+                    document.addEventListener('keydown', escapeHandler);
+                    
+                    return;
+                }
+                
+                // 🔑 ПРОВЕРКА: Логируем состояние данных для отладки
+                console.log('🔍 Финальная проверка данных перед модальным окном:', {
+                    chartType: chartType,
+                    labels: fullData.labels,
+                    data: fullData.data,
+                    labelsLength: fullData.labels ? fullData.labels.length : 0,
+                    dataLength: fullData.data ? fullData.data.length : 0
                 });
             }
         } catch (error) {
@@ -4239,20 +4554,31 @@ export class AmanatDashboard extends Component {
         };
         document.addEventListener('keydown', escapeHandler);
         
-        // Рендерим график сразу после создания модального окна
+        // Рендерим график после создания модального окна (увеличенная задержка)
         setTimeout(() => {
             const canvas = document.getElementById('fullChart');
+            console.log('🎯 Поиск canvas элемента fullChart:', canvas);
             if (canvas) {
+                console.log('📊 Начинаем рендеринг графика в модальном окне:', {
+                    chartId,
+                    chartType,
+                    config,
+                    fullData
+                });
+                
                 // 🔑 ИСПРАВЛЕНИЕ: Используем правильный тип графика для рендеринга
                 // chartType - это серверный тип (например 'agent_avg_amount')
                 // config.type - это визуальный тип (например 'horizontalBar')
-                let renderType = config.type || 'horizontalBar';
+                let renderType = config.type || config.chartType || 'horizontalBar';
                 
-                // Специальная обработка для статусов заявок - всегда рендерим как horizontalBar
-                if (chartType === 'zayavki_status_distribution') {
-                    renderType = 'horizontalBar';
-                    console.log('🔍 Принудительно установлен тип horizontalBar для статусов заявок');
-                }
+                console.log('🎯 Определение типа графика для рендеринга:', {
+                    chartType_server: chartType,
+                    renderType_visual: renderType,
+                    config_type: config.type,
+                    config_chartType: config.chartType
+                });
+                
+
                 
                 // 📐 АДАПТИВНАЯ ВЫСОТА В ЗАВИСИМОСТИ ОТ КОЛИЧЕСТВА ДАННЫХ
                 let dataLength = 0;
@@ -4339,9 +4665,37 @@ export class AmanatDashboard extends Component {
                                 clickable: false // Отключаем клики в полной версии
                             };
                             
-
+                            console.log('🎨 Рендерим горизонтальный столбчатый график в модальном окне:', {
+                                chartType,
+                                chartConfig,
+                                fullData,
+                                canvasElement: canvas,
+                                canvasId: 'fullChart'
+                            });
                             
-                            this.renderHorizontalBarChart('fullChart', chartConfig);
+                            // Проверяем canvas перед рендерингом
+                            console.log('🖼️ Состояние canvas перед рендерингом:', {
+                                canvas: canvas,
+                                canvasWidth: canvas.width,
+                                canvasHeight: canvas.height,
+                                canvasStyle: canvas.style.cssText,
+                                canvasContext: canvas.getContext('2d')
+                            });
+                            
+                            // Проверяем доступность Chart.js
+                            console.log('📈 Проверка Chart.js:', {
+                                Chart: typeof Chart,
+                                ChartAvailable: typeof Chart !== 'undefined',
+                                window_Chart: typeof window.Chart,
+                                chartJsLoaded: !!window.Chart
+                            });
+                            
+                            try {
+                                this.renderHorizontalBarChart('fullChart', chartConfig);
+                                console.log('✅ Рендеринг горизонтального графика завершен');
+                            } catch (error) {
+                                console.error('❌ Ошибка при рендеринге горизонтального графика:', error);
+                            }
                             break;
                         case 'bar':
                             this.renderBarChart('fullChart', {
@@ -4504,6 +4858,9 @@ export class AmanatDashboard extends Component {
             } else if (chartType === 'deal_cycles') {
                 // Для циклов сделок используем cycle_days
                 data = serverData.map(item => item.cycle_days || 0);
+            } else if (chartType === 'zayavka_status_data') {
+                // Для статусов заявок используем count
+                data = serverData.map(item => item.count || 0);
             } else {
                 // Для остальных графиков (количественных) используем count
                 data = serverData.map(item => item.count || 0);
@@ -4571,15 +4928,11 @@ export class AmanatDashboard extends Component {
         });
     }
 
-    addChartTitleClickHandlers() {
+    getChartMappings() {
         /**
-         * Добавляет обработчики кликов на названия графиков
+         * Возвращает маппинг ID графиков к их типам и названиям
          */
-        console.log('🔗 Добавление обработчиков кликов на названия графиков');
-        console.log('📊 Общее количество заголовков на странице:', document.querySelectorAll('.chart-title, .chart-comparison-title, h5, h6').length);
-        
-        // Маппинг ID графиков к их типам и названиям
-        const chartMappings = {
+        return {
             // Графики заявок
             'contragents-by-zayavki-chart': {
                 type: 'contragents_by_zayavki',
@@ -4653,15 +5006,11 @@ export class AmanatDashboard extends Component {
                 title: 'Эффективность менеджеров',
                 chartType: 'horizontalBar'
             },
-            'zayavki-status-distribution-chart': {
-                type: 'zayavki_status_distribution',
+
+            'zayavka-status-chart': {
+                type: 'zayavka_status_data',
                 title: 'Статусы заявок',
                 chartType: 'horizontalBar'
-            },
-            'zayavki-status-donut': {
-                type: 'zayavki_status_distribution',
-                title: 'Статусы заявок',
-                chartType: 'donut'
             },
             'contragent-avg-check-chart-2': {
                 type: 'contragent_avg_check',
@@ -4678,27 +5027,35 @@ export class AmanatDashboard extends Component {
                 title: 'Циклы сделок',
                 chartType: 'line'
             },
-            'deal-types-chart': {
+            'import-export-chart': {
+                type: 'import_export_by_month',
+                title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
+                chartType: 'smoothLine'
+            },
+            'zayavki-import-export-chart': {
+                type: 'import_export_by_month',
+                title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
+                chartType: 'smoothLine'
+            },
+            'zayavki-import-export-chart-2': {
+                type: 'import_export_by_month',
+                title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
+                chartType: 'smoothLine'
+            },
+            'comparison-import-export-chart': {
+                type: 'import_export_by_month',
+                title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
+                chartType: 'smoothLine'
+            },
+            'zayavki-deal-types-chart': {
                 type: 'deal_types',
                 title: 'Типы сделок',
                 chartType: 'pie'
             },
-            'import-export-by-month-chart': {
-                type: 'import_export_by_month',
-                title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
-                chartType: 'line'
-            },
-            'import-export-line-comparison': {
-                type: 'deal_types',
-                title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
-                chartType: 'horizontalBar'
-            },
-            
-            // Графики переводов и ордеров
             'transfers-by-currency-chart': {
                 type: 'transfers_by_currency',
                 title: 'Переводы по валютам',
-                chartType: 'donut'
+                chartType: 'pie'
             },
             'transfers-by-month-chart': {
                 type: 'transfers_by_month',
@@ -4708,9 +5065,20 @@ export class AmanatDashboard extends Component {
             'orders-by-status-chart': {
                 type: 'orders_by_status',
                 title: 'Ордера по статусам',
-                chartType: 'pie'
+                chartType: 'bar'
             }
         };
+    }
+
+    addChartTitleClickHandlers() {
+        /**
+         * Добавляет обработчики кликов на названия графиков
+         */
+        console.log('🔗 Добавление обработчиков кликов на названия графиков');
+        console.log('📊 Общее количество заголовков на странице:', document.querySelectorAll('.chart-title, .chart-comparison-title, h5, h6').length);
+        
+        // Получаем маппинг ID графиков к их типам и названиям
+        const chartMappings = this.getChartMappings();
         
         // Добавляем обработчики кликов
         Object.keys(chartMappings).forEach(chartId => {
@@ -4770,6 +5138,7 @@ export class AmanatDashboard extends Component {
                     console.log(`🖱️ Клик по названию графика: ${chartId}`);
                     
                     const mapping = chartMappings[chartId];
+                    console.log(`🗺️ Маппинг для ${chartId}:`, mapping);
                     
                     // 🔑 ИСПРАВЛЕНИЕ: Получаем сохраненные данные графика
                     const savedData = this.getFullChartData(chartId);
@@ -4777,6 +5146,18 @@ export class AmanatDashboard extends Component {
                     
                     console.log(`💾 Сохраненные данные для ${chartId}:`, savedData);
                     console.log(`⚙️ Сохраненная конфигурация для ${chartId}:`, savedConfig);
+                    
+                    // Специальная отладка для zayavka-status-chart
+                    if (chartId === 'zayavka-status-chart') {
+                        console.log('🔍 Специальная отладка для zayavka-status-chart:', {
+                            chartId,
+                            mappingType: mapping ? mapping.type : 'NO_MAPPING',
+                            mappingTitle: mapping ? mapping.title : 'NO_MAPPING',
+                            hasSavedData: savedData && savedData.length > 0,
+                            savedDataLength: savedData ? savedData.length : 0,
+                            savedDataContent: savedData
+                        });
+                    }
                     
                     await this.openFullChart(
                         chartId, 
@@ -4836,6 +5217,8 @@ export class AmanatDashboard extends Component {
             alert(message);
         }
     }
+
+
 }
 
 registry.category("actions").add("amanat_dashboard", AmanatDashboard); 

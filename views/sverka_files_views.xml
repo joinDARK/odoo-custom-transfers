@@ -9,9 +9,12 @@
             <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <button width="30" title="Превью файлов" type="object" name="preview_files" icon="fa-eye" class="btn-info"/>
+                <button width="30" title="Скачать сверка" type="object" name="action_download_sverka1_files" icon="fa-download" class="btn-success"/>
+                <button width="30" title="Скачать сверка ТДК" type="object" name="action_download_sverka2_files" icon="fa-download" class="btn-warning"/>
                 <field name="name"/>
                 <field name="contragent_id"/>
-                <field name="file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                <field name="sverka1_file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                <field name="sverka2_file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
             </list>
         </field>
     </record>
@@ -23,23 +26,47 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <form string="Сверка файлы">
+                <header>
+                    <button type="object" name="action_download_sverka1_files" string="Скачать сверка" class="btn-success"/>
+                    <button type="object" name="action_download_sverka2_files" string="Скачать сверка ТДК" class="btn-warning"/>
+                    <button type="object" name="preview_files" string="Превью файлов" class="btn-info"/>
+                </header>
                 <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Наименование файла..."/>
+                        </h1>
+                    </div>
                     <group>
-                        <field name="name"/>
-                        <field name="contragent_id"/>
-                        <!-- Поле для прямой загрузки документов -->
-                        <field name="file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}" 
-                               help="Основные файлы сверок - Excel, PDF и другие документы"/>
-                        <!-- Кнопка превью файлов -->
-                        <div class="preview-files-container">
-                            <button type="object" name="preview_files" class="btn btn-info btn-sm">
-                                <i class="fa fa-eye"></i>
-                            </button>
-                        </div>
-                        <!-- Поле для отображения всех вложений -->
-                        <!-- <field name="attachment_ids" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"
-                               help="Все вложения записи с расширенными возможностями просмотра и редактирования"/> -->
+                        <group>
+                            <field name="contragent_id"/>
+                        </group>
+                        <group>
+                            <field name="sverka1_files_count" string="Файлов сверки 1"/>
+                            <field name="sverka2_files_count" string="Файлов сверки 2"/>
+                            <field name="total_files_count" string="Всего файлов"/>
+                        </group>
                     </group>
+                    
+                    <notebook>
+                        <page string="Сверка">
+                            <field name="sverka1_file_attachments" widget="many2many_binary" 
+                                   options="{'no_create': False, 'no_open': False}"
+                                   help="Файлы сверки 1"/>
+                        </page>
+                        
+                        <page string="Сверка ТДК">
+                            <field name="sverka2_file_attachments" widget="many2many_binary" 
+                                   options="{'no_create': False, 'no_open': False}"
+                                   help="Файлы сверки 2"/>
+                        </page>
+                        
+                        <page string="Все файлы">
+                            <field name="file_attachments" widget="many2many_binary" 
+                                   options="{'no_create': False, 'no_open': False}"
+                                   help="Все файлы сверки"/>
+                        </page>
+                    </notebook>
                 </sheet>
                 <!-- Виджет чата -->
                 <chatter>

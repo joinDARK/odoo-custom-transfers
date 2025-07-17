@@ -920,6 +920,7 @@ class Dashboard(models.Model):
             # ==================== НОВЫЕ ГРАФИКИ МЕНЕДЖЕРОВ ====================
             'managers_by_zayavki': self.get_managers_by_zayavki_data(date_from, date_to),
             'managers_closed_zayavki': self.get_managers_closed_zayavki_data(date_from, date_to),
+            'zayavka_status_data': self._get_safe_zayavka_status_data(date_from, date_to),
             'zayavki_deal_cycles': self.get_zayavki_deal_cycles_data(date_from, date_to),
             'contragent_avg_reward_percent': self.get_contragent_avg_reward_percent_data(date_from, date_to),
             'managers_efficiency_data': self.get_managers_efficiency_data(date_from, date_to),
@@ -1030,6 +1031,131 @@ class Dashboard(models.Model):
         return managers_list
     
 
+    
+    @api.model
+    def get_zayavka_status_data(self, date_from=None, date_to=None):
+        """Получить РЕАЛЬНЫЕ данные по статусам заявок"""
+        import logging
+        _logger = logging.getLogger(__name__)
+        
+        _logger.info(f"🔍 get_zayavka_status_data вызван с параметрами: date_from={date_from}, date_to={date_to}")
+        
+        try:
+            # Формируем базовый домен для фильтрации
+            domain = []
+            
+            # Добавляем фильтрацию по датам, если они указаны
+            if date_from and date_to:
+                domain.extend([('date_placement', '>=', date_from), ('date_placement', '<=', date_to)])
+            elif date_from:
+                domain.append(('date_placement', '>=', date_from))
+            elif date_to:
+                domain.append(('date_placement', '<=', date_to))
+            
+            # Получаем заявки с учетом фильтров
+            zayavki = self.env['amanat.zayavka'].search(domain)
+            _logger.info(f"✅ Найдено заявок всего: {len(zayavki)}")
+            
+            # Если заявок нет, пробуем получить хотя бы все заявки без фильтров
+            if len(zayavki) == 0:
+                _logger.info("🔄 Заявок с фильтрами не найдено, получаем все заявки...")
+                zayavki = self.env['amanat.zayavka'].search([])
+                _logger.info(f"✅ Всего заявок в базе: {len(zayavki)}")
+            
+            # Если заявок все еще нет, возвращаем пустой список
+            if len(zayavki) == 0:
+                _logger.warning("❌ Заявок в базе нет!")
+                return []
+            
+            # Фильтруем заявки, которые не должны отображаться в дашборде
+            filtered_zayavki = []
+            for zayavka in zayavki:
+                # Проверяем поле hide_in_dashboard, если оно есть
+                if hasattr(zayavka, 'hide_in_dashboard'):
+                    if not zayavka.hide_in_dashboard:
+                        filtered_zayavki.append(zayavka)
+                else:
+                    # Если поля нет, добавляем заявку
+                    filtered_zayavki.append(zayavka)
+            
+            _logger.info(f"✅ Отфильтрованных заявок: {len(filtered_zayavki)}")
+            
+            # Подсчитываем количество по каждому статусу
+            status_counts = {}
+            
+            # Маппинг статусов к понятным названиям
+            status_names = {
+                'close': 'Закрыта',
+                'cancel': 'Отменена',
+                'draft': 'Черновик',
+                'process': 'В работе',
+                'review': 'На рассмотрении',
+                'approved': 'Одобрена',
+                'rejected': 'Отклонена',
+                'return': 'Возврат',
+                'open': 'Открыта',
+                'done': 'Выполнена',
+                'confirmed': 'Подтверждена'
+            }
+            
+            for zayavka in filtered_zayavki:
+                # Получаем статус заявки
+                status = getattr(zayavka, 'status', 'unknown')
+                
+                # Преобразуем статус в понятное название
+                status_name = status_names.get(status, status or 'Неизвестно')
+                
+                # Увеличиваем счетчик для этого статуса
+                status_counts[status_name] = status_counts.get(status_name, 0) + 1
+            
+            _logger.info(f"📊 Подсчет статусов завершен: {status_counts}")
+            
+            # Преобразуем в список для графика
+            result = []
+            for status_name, count in status_counts.items():
+                result.append({
+                    'name': status_name,
+                    'count': count
+                })
+            
+            # Сортируем по убыванию количества
+            result.sort(key=lambda x: x['count'], reverse=True)
+            
+            _logger.info(f"✅ Данные статусов заявок готовы: {len(result)} статусов")
+            _logger.info(f"📋 Итоговый результат: {result}")
+            
+            return result
+            
+        except Exception as e:
+            _logger.error(f"❌ Ошибка получения данных статусов заявок: {e}", exc_info=True)
+            
+            # В случае ошибки пробуем получить хотя бы базовые данные
+            try:
+                _logger.info("🔄 Пытаемся получить базовые данные...")
+                all_zayavki = self.env['amanat.zayavka'].search([])
+                if len(all_zayavki) > 0:
+                    # Простой подсчет статусов без сложных проверок
+                    status_counts = {}
+                    for zayavka in all_zayavki:
+                        status = getattr(zayavka, 'status', 'unknown')
+                        status_counts[status] = status_counts.get(status, 0) + 1
+                    
+                    result = []
+                    for status, count in status_counts.items():
+                        result.append({
+                            'name': status,
+                            'count': count
+                        })
+                    
+                    result.sort(key=lambda x: x['count'], reverse=True)
+                    _logger.info(f"✅ Возвращаем базовые данные: {result}")
+                    return result
+                else:
+                    _logger.warning("❌ Данных нет даже для базового запроса")
+                    return []
+            except Exception as fallback_error:
+                _logger.error(f"❌ Ошибка в fallback: {fallback_error}")
+                return []
     
     @api.model
     def get_zayavki_deal_cycles_data(self, date_from=None, date_to=None):
@@ -1585,14 +1711,18 @@ class Dashboard(models.Model):
         if date_to is None:
             date_to = kwargs.get('date_to')
         
-        _logger.info(f"Запрошены данные для графика: {chart_type}, период: {date_from} - {date_to}")
+        _logger.info(f"🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА: get_full_chart_data вызван с параметрами:")
+        _logger.info(f"  - chart_type: '{chart_type}' ({type(chart_type)})")
+        _logger.info(f"  - date_from: {date_from} ({type(date_from)})")
+        _logger.info(f"  - date_to: {date_to} ({type(date_to)})")
+        _logger.info(f"  - kwargs: {kwargs}")
         
         try:
             if not chart_type:
-                _logger.error("Не указан тип графика (chart_type)")
+                _logger.error("❌ Не указан тип графика (chart_type)")
                 return {'error': 'Не указан тип графика'}
             
-            _logger.info(f"Обработка запроса для типа графика: '{chart_type}' с фильтрацией по датам")
+            _logger.info(f"🔄 Обработка запроса для типа графика: '{chart_type}' с фильтрацией по датам")
             
             # Возвращаем данные для разных типов графиков с учетом дат
             chart_data_mapping = {
@@ -1619,6 +1749,7 @@ class Dashboard(models.Model):
                 'managers_efficiency': self._get_safe_managers_efficiency(date_from, date_to),
                 
                 # Статусы и циклы
+                'zayavka_status_data': self._get_safe_zayavka_status_data(date_from, date_to),
                 'deal_cycles': self._get_safe_deal_cycles(date_from, date_to),
                 
                 # Данные по типам сделок
@@ -1631,11 +1762,16 @@ class Dashboard(models.Model):
                 'orders_by_status': self._get_safe_orders_by_status(date_from, date_to),
             }
             
-            _logger.info(f"Доступные типы графиков: {list(chart_data_mapping.keys())}")
+            _logger.info(f"📋 Доступные типы графиков: {list(chart_data_mapping.keys())}")
             
             if chart_type in chart_data_mapping:
+                _logger.info(f"🎯 Найден тип графика '{chart_type}', вызываем соответствующий метод...")
                 result = chart_data_mapping[chart_type]
-                _logger.info(f"✅ Возвращены данные для {chart_type} за период {date_from}-{date_to}, тип результата: {type(result)}, длина: {len(result) if isinstance(result, (list, dict)) else 'N/A'}")
+                _logger.info(f"📊 Результат для {chart_type}:")
+                _logger.info(f"  - Тип результата: {type(result)}")
+                _logger.info(f"  - Длина: {len(result) if isinstance(result, (list, dict)) else 'N/A'}")
+                _logger.info(f"  - Первые 3 элемента: {result[:3] if isinstance(result, list) and len(result) > 0 else result}")
+                _logger.info(f"  - Полный результат: {result}")
                 
                 return result
             else:
@@ -2330,6 +2466,30 @@ class Dashboard(models.Model):
                     {'name': 'Менеджер 2', 'efficiency': 84.2}]
     
 
+    
+    def _get_safe_zayavka_status_data(self, date_from=None, date_to=None):
+        """Безопасное получение данных статусов заявок с фильтрацией по датам"""
+        import logging
+        _logger = logging.getLogger(__name__)
+        
+        _logger.info(f"🔍 _get_safe_zayavka_status_data вызван с параметрами: date_from={date_from}, date_to={date_to}")
+        
+        try:
+            # Вызываем основной метод для получения статусов заявок
+            result = self.get_zayavka_status_data(date_from, date_to)
+            _logger.info(f"✅ get_zayavka_status_data вернул {len(result)} записей")
+            
+            # Возвращаем реальные данные
+            return result
+        except Exception as e:
+            _logger.error(f"❌ Ошибка в _get_safe_zayavka_status_data: {e}", exc_info=True)
+            # В случае ошибки все равно пробуем получить данные
+            try:
+                _logger.info("🔄 Пытаемся получить данные напрямую...")
+                return self.get_zayavka_status_data()
+            except Exception as fallback_error:
+                _logger.error(f"❌ Ошибка в fallback: {fallback_error}")
+                return []
     
     def _get_safe_deal_cycles(self, date_from=None, date_to=None):
         """Безопасное получение циклов сделок с фильтрацией по датам"""
