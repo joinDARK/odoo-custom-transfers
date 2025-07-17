@@ -97,6 +97,11 @@
                 </div>
               </group>
             </page>
+            <page string="Комментарий">
+              <group>
+                <field name="comment"/>
+              </group>
+            </page>
           </notebook>
           <!-- Блок «Роялти» -->
         </sheet>
@@ -144,6 +149,7 @@
         <field width="100" name="cross_envelope"/>
         <field width="100" name="cross_rate"/>
         <field width="200" name="cross_conversion_currency"/>
+        <field width="200" name="comment"/>
       </list>
     </field>
   </record>

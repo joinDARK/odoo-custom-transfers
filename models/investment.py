@@ -61,6 +61,9 @@ class Investment(models.Model, AmanatBaseModel):
         ('THB', 'THB'), ('THB_cash', 'THB КЭШ'),
     ], string='Валюта', tracking=True)
 
+    # комментарий
+    comment = fields.Text(string='Комментарий', tracking=True)
+
     # Флаги автоматизации
     create_action = fields.Boolean(string='Создать', tracking=True)
     to_delete = fields.Boolean(string='Удалить', tracking=True)
@@ -559,6 +562,15 @@ class Investment(models.Model, AmanatBaseModel):
             period_label = period_selection.get(inv.period, inv.period)
 
             # 2) Создание нового ордера
+            # Формируем комментарий: автоматический + комментарий из поля
+            auto_comment = _('Сделка Инвестиция %s %s%%') % (period_label or '', inv.percent * 100)
+            
+            # Объединяем комментарии согласно требованиям
+            if inv.comment:
+                final_comment = _('Инвестиция: %s; %s') % (auto_comment, inv.comment)
+            else:
+                final_comment = _('Инвестиция: %s') % auto_comment
+            
             order_vals = {
                 'date': inv.date,
                 'type': 'transfer',  # предполагается, что есть тип 'transfer'
@@ -568,7 +580,7 @@ class Investment(models.Model, AmanatBaseModel):
                 'amount': inv.amount,
                 'wallet_1_id': wallet.id,
                 'wallet_2_id': wallet.id,
-                'comment': _('Сделка Инвестиция %s %s%%') % (period_label or '', inv.percent * 100),
+                'comment': final_comment,
             }
             # Плательщики (если есть), выбираем первый подходящий
             payer_1 = Payer.search([('contragents_ids', 'in', inv.sender.id)], limit=1)

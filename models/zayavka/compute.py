@@ -1,4 +1,7 @@
 from odoo import api, fields, models
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class ZayavkaComputes(models.Model):
     _inherit = 'amanat.zayavka'
@@ -107,10 +110,18 @@ class ZayavkaComputes(models.Model):
         for rec in self:
             rec.client_reward = rec.reward_percent * rec.rate_field * rec.amount
 
-    @api.depends('best_rate', 'hidden_commission', 'amount', 'plus_currency')
+    @api.depends('best_rate', 'hidden_commission', 'amount', 'plus_currency', 'total_client', 'rate_real')
     def _compute_our_client_reward(self):
         for rec in self:
-            rec.our_client_reward = rec.best_rate * rec.hidden_commission * (rec.amount + rec.plus_currency)
+            our_client_reward = rec.best_rate * rec.hidden_commission * (rec.amount + rec.plus_currency)
+            if rec.hidden_commission:
+                # ! Вознаграждение наше Клиент = (Курс * Скрытая комиссия * (Сумма заявки + Плюс валюта))
+                rec.our_client_reward = our_client_reward
+            else:
+                # ! Вознаграждение наше Клиент = Итого Клиент - (Курс реал * Сумма заявки + Вознаграждение наше Клиент)
+                # Считаем также, как вознаграждение не наше
+                _logger.info(f'rec.our_client_reward: {rec.total_client} - ({rec.rate_real} + {our_client_reward}) = {rec.total_client - (rec.rate_real + our_client_reward)}')
+                rec.our_client_reward = rec.total_client - (rec.rate_real + our_client_reward)
 
     @api.depends('subagent_ids', 'subagent_ids.payer_ids')
     def _compute_subagent_payer_ids(self):
@@ -119,10 +130,16 @@ class ZayavkaComputes(models.Model):
             payers = rec.subagent_ids.mapped('payer_ids')
             rec.subagent_payer_ids = [(6, 0, payers.ids)]
 
-    @api.depends('total_client', 'rate_real', 'our_client_reward')
+    @api.depends('total_client', 'rate_real', 'our_client_reward', 'hidden_commission')
     def _compute_non_our_client_reward(self):
         for rec in self:
-            rec.non_our_client_reward = rec.total_client - (rec.rate_real + rec.our_client_reward)
+            if rec.hidden_commission:
+                # ! Вознаграждение не наше Клиент = 0, если скрытая комиссия == 0
+                rec.non_our_client_reward = 0.0
+            else:
+                _logger.info(f'rec.non_our_client_reward: {rec.total_client} - ({rec.rate_real} + {rec.our_client_reward}) =  {rec.total_client - (rec.rate_real + rec.our_client_reward)}')
+                # ! Вознаграждение не наше Клиент = Итого Клиент - (Курс реал + Вознаграждение наше)
+                rec.non_our_client_reward = rec.total_client - (rec.rate_real + rec.our_client_reward)
 
     @api.depends('application_amount_rub_contract', 'client_reward')
     def _compute_total_client(self):
@@ -1249,18 +1266,23 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.status_range = 'no'
 
-    @api.depends('export_agent_flag', 'contragent_id', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward')
+    @api.depends('export_agent_flag', 'contragent_id', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate')
     def _compute_application_amount_rub_contract(self):
         for record in self:
+            if record.deal_type == 'export':
+                comp_amount_rub = record.amount * record.best_rate
+            else:
+                comp_amount_rub = record.amount * record.rate_field
+
             if record.export_agent_flag:
                 if record.contragent_id.name == 'Сбербанк':
-                    record.application_amount_rub_contract = record.amount * record.rate_field - record.sber_reward
+                    record.application_amount_rub_contract = comp_amount_rub - record.sber_reward
                 elif record.contragent_id.name == 'Совкомбанк':
-                    record.application_amount_rub_contract = record.amount * record.rate_field - record.sovok_reward
+                    record.application_amount_rub_contract = comp_amount_rub - record.sovok_reward
                 else:
-                    record.application_amount_rub_contract = record.amount * record.rate_field - record.client_reward
+                    record.application_amount_rub_contract = comp_amount_rub - record.client_reward
             else:
-                record.application_amount_rub_contract = record.amount * record.rate_field
+                record.application_amount_rub_contract = comp_amount_rub
 
     @api.depends('xe_rate', 'amount')
     def _compute_usd_equivalent(self):
