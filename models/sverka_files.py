@@ -81,10 +81,59 @@ class AmanatSverkaFiles(models.Model, AmanatBaseModel):
                 'type': 'success',
             }
         }
+
+    def preview_sverka1_files(self):
+        """Превью файлов сверки 1"""
+        if not self.sverka1_file_attachments:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Нет файлов',
+                    'message': 'Файлы сверки не найдены',
+                    'sticky': False,
+                    'type': 'warning',
+                }
+            }
+        
+        # Прямой вызов JavaScript функции
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'javascript_call',
+            'params': {
+                'function': 'showSverka1FilesPreview',
+                'args': [self.id]
+            }
+        }
+
+    def preview_sverka2_files(self):
+        """Превью файлов сверки ТДК"""
+        if not self.sverka2_file_attachments:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Нет файлов',
+                    'message': 'Файлы сверки ТДК не найдены',
+                    'sticky': False,
+                    'type': 'warning',
+                }
+            }
+        
+        # Прямой вызов JavaScript функции
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'javascript_call',
+            'params': {
+                'function': 'showSverka2FilesPreview',
+                'args': [self.id]
+            }
+        }
     
     def action_download_sverka1_files(self):
         """Скачать файлы сверки 1"""
-        if not self.sverka1_file_attachments:
+        files = self.sverka1_file_attachments
+        if not files or len(files) == 0:
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
@@ -96,10 +145,11 @@ class AmanatSverkaFiles(models.Model, AmanatBaseModel):
                 }
             }
         
-        if len(self.sverka1_file_attachments) == 1:
+        if len(files) == 1:
+            attachment = files[0]
             return {
                 'type': 'ir.actions.act_url',
-                'url': self.sverka1_file_attachments[0].url,
+                'url': attachment.url or f'/web/content/ir.attachment/{attachment.id}/datas',
                 'target': 'new',
             }
         
@@ -108,14 +158,15 @@ class AmanatSverkaFiles(models.Model, AmanatBaseModel):
             'type': 'ir.actions.act_window',
             'name': 'Файлы сверки 1',
             'res_model': 'ir.attachment',
-            'domain': [('id', 'in', self.sverka1_file_attachments.ids)],
+            'domain': [('id', 'in', [f.id for f in files])],
             'view_mode': 'tree,form',
             'target': 'new',
         }
     
     def action_download_sverka2_files(self):
         """Скачать файлы сверки 2"""
-        if not self.sverka2_file_attachments:
+        files = self.sverka2_file_attachments
+        if not files or len(files) == 0:
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
@@ -127,10 +178,11 @@ class AmanatSverkaFiles(models.Model, AmanatBaseModel):
                 }
             }
         
-        if len(self.sverka2_file_attachments) == 1:
+        if len(files) == 1:
+            attachment = files[0]
             return {
                 'type': 'ir.actions.act_url',
-                'url': self.sverka2_file_attachments[0].url,
+                'url': attachment.url or f'/web/content/ir.attachment/{attachment.id}/datas',
                 'target': 'new',
             }
         
@@ -139,7 +191,7 @@ class AmanatSverkaFiles(models.Model, AmanatBaseModel):
             'type': 'ir.actions.act_window',
             'name': 'Файлы сверки 2',
             'res_model': 'ir.attachment',
-            'domain': [('id', 'in', self.sverka2_file_attachments.ids)],
+            'domain': [('id', 'in', [f.id for f in files])],
             'view_mode': 'tree,form',
             'target': 'new',
         }

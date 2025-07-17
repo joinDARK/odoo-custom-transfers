@@ -8,9 +8,8 @@
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-                <button width="30" title="Превью файлов" type="object" name="preview_files" icon="fa-eye" class="btn-info"/>
-                <button width="30" title="Скачать сверка" type="object" name="action_download_sverka1_files" icon="fa-download" class="btn-success"/>
-                <button width="30" title="Скачать сверка ТДК" type="object" name="action_download_sverka2_files" icon="fa-download" class="btn-warning"/>
+                <button width="30" title="Превью сверки" type="object" name="preview_sverka1_files" icon="fa-eye" class="btn-primary"/>
+                <button width="30" title="Превью сверки ТДК" type="object" name="preview_sverka2_files" icon="fa-eye" class="btn-success"/>
                 <field name="name"/>
                 <field name="contragent_id"/>
                 <field name="sverka1_file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
@@ -27,9 +26,8 @@
         <field name="arch" type="xml">
             <form string="Сверка файлы">
                 <header>
-                    <button type="object" name="action_download_sverka1_files" string="Скачать сверка" class="btn-success"/>
-                    <button type="object" name="action_download_sverka2_files" string="Скачать сверка ТДК" class="btn-warning"/>
-                    <button type="object" name="preview_files" string="Превью файлов" class="btn-info"/>
+                    <button type="object" name="preview_sverka1_files" string="Превью сверки" class="btn-primary" icon="fa-eye"/>
+                    <button type="object" name="preview_sverka2_files" string="Превью сверки ТДК" class="btn-success" icon="fa-eye"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -42,8 +40,8 @@
                             <field name="contragent_id"/>
                         </group>
                         <group>
-                            <field name="sverka1_files_count" string="Файлов сверки 1"/>
-                            <field name="sverka2_files_count" string="Файлов сверки 2"/>
+                            <field name="sverka1_files_count" string="Файлов сверки"/>
+                            <field name="sverka2_files_count" string="Файлов сверки ТДК"/>
                             <field name="total_files_count" string="Всего файлов"/>
                         </group>
                     </group>
@@ -52,13 +50,13 @@
                         <page string="Сверка">
                             <field name="sverka1_file_attachments" widget="many2many_binary" 
                                    options="{'no_create': False, 'no_open': False}"
-                                   help="Файлы сверки 1"/>
+                                   help="Файлы сверки"/>
                         </page>
                         
                         <page string="Сверка ТДК">
                             <field name="sverka2_file_attachments" widget="many2many_binary" 
                                    options="{'no_create': False, 'no_open': False}"
-                                   help="Файлы сверки 2"/>
+                                   help="Файлы сверки ТДК"/>
                         </page>
                         
                         <page string="Все файлы">
