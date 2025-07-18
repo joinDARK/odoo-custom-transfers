@@ -190,17 +190,16 @@ class ZayavkaComputes(models.Model):
                     value = max(0.002 * total_client, 25000)
                     rec.client_operating_expenses = value / partner_rate
 
-    @api.depends('total_client', 'real_post_conversion_rate', 'percent_from_expense_rule', 'correction', 'deal_type', 'amount')
+    @api.depends('total_client', 'real_post_conversion_rate', 'percent_from_expense_rule', 'correction', 'deal_type', 'amount', 'currency')
     def _compute_client_real_operating_expenses(self):
         for rec in self:
             percent_rule = rec.percent_from_expense_rule or 0.0
+            amount = rec.amount or 0.0
 
             if rec.deal_type == 'export':
                 # ! Расход на операционную деятельность Клиент реал = Процент (from Правило расход) * Сумма заявки
-                amount = rec.amount or 0.0
                 rec.client_real_operating_expenses = percent_rule * amount
             else:
-                # ! Расход на операционную деятельность Клиент Реал = ((Процент (from Правило расход) - Корректировка) * Итого Клиент) / Курс после конвертации реал
                 total_client = rec.total_client or 0.0
                 real_post_rate = rec.real_post_conversion_rate or 0.0
                 correction = rec.correction or 0.0
@@ -208,7 +207,12 @@ class ZayavkaComputes(models.Model):
                 if total_client == 0 or real_post_rate == 0:
                     rec.client_real_operating_expenses = 0.0
                 else:
-                    rec.client_real_operating_expenses = ((percent_rule - correction) * total_client) / real_post_rate
+                    if rec.currency == 'usdt':
+                        # ! Расход на операционную деятельность Клиент Реал = Процент (from Правило расход) * Сумма заявки
+                        rec.client_real_operating_expenses = amount * percent_rule
+                    else:
+                        # ! Расход на операционную деятельность Клиент Реал = ((Процент (from Правило расход) - Корректировка) * Итого Клиент) / Курс после конвертации реал (если не USDT)
+                        rec.client_real_operating_expenses = ((percent_rule - correction) * total_client) / real_post_rate
 
     @api.depends('client_real_operating_expenses', 'payer_cross_rate_usd_auto')
     def _compute_client_real_operating_expenses_usd(self):
@@ -337,6 +341,7 @@ class ZayavkaComputes(models.Model):
         'payer_profit_currency',
         'deal_type',
         'reward_percent',
+        'currency',
     )
     def _compute_fin_res_client_real(self):
         for rec in self:
@@ -349,16 +354,20 @@ class ZayavkaComputes(models.Model):
                 
                 rec.fin_res_client_real = (amount * reward_percent) - client_payment_cost - client_real_operating_expenses
             else:
-                # ! Фин рез Клиент реал = Итого Клиент - Расход платежа Клиент - Себестоимость денег Клиент Реал - Скрытая комиссия Клиент Реал - Расход на операционную деятельность Клиент Реал - Сумма заявки - Финансовый результат клиента
-                rec.fin_res_client_real = (
-                    (rec.client_currency_bought_real or 0.0) -
-                    (rec.client_payment_cost or 0.0) -
-                    (rec.cost_of_money_client_real or 0.0) -
-                    (rec.hidden_partner_commission_real or 0.0) -
-                    (rec.client_real_operating_expenses or 0.0) -
-                    (rec.amount or 0.0) -
-                    (rec.payer_profit_currency or 0.0)
-                )
+                if rec.currency == 'usdt':
+                    # ! Фин рез Клиент реал = (Сумма заявки * % Вознаграждения) - Расход на операционную деятельность Клиент Реал - Расход платежа Клиент
+                    rec.fin_res_client_real = (rec.amount * rec.reward_percent) - rec.client_real_operating_expenses - rec.client_payment_cost
+                else:
+                    # ! Фин рез Клиент реал = Итого Клиент - Расход платежа Клиент - Себестоимость денег Клиент Реал - Скрытая комиссия Клиент Реал - Расход на операционную деятельность Клиент Реал - Сумма заявки - Финансовый результат клиента
+                    rec.fin_res_client_real = (
+                        (rec.client_currency_bought_real or 0.0) -
+                        (rec.client_payment_cost or 0.0) -
+                        (rec.cost_of_money_client_real or 0.0) -
+                        (rec.hidden_partner_commission_real or 0.0) -
+                        (rec.client_real_operating_expenses or 0.0) -
+                        (rec.amount or 0.0) -
+                        (rec.payer_profit_currency or 0.0)
+                    )
 
     @api.depends('fin_res_client_real', 'payer_cross_rate_usd_auto')
     def _compute_fin_res_client_real_usd(self):
