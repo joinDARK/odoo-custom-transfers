@@ -107,7 +107,7 @@ class Transfer(models.Model, AmanatBaseModel):
     receiver_id_accrual = fields.Many2one('amanat.contragent', string='Получатель начисления', tracking=True)
     receiver_payer_id_accrual = fields.Many2one('amanat.payer', string='Плательщик получателя начисления', tracking=True)
     receiver_wallet_id_accrual = fields.Many2one('amanat.wallet', string='Кошелек получателя начисления', tracking=True)
-
+    comment_accrual = fields.Text(string='Комментарий начисления', tracking=True)
     is_complex = fields.Boolean(string='Сложный перевод', default=False, tracking=True)
     intermediary_1_id = fields.Many2one('amanat.contragent', string='Посредник 1', tracking=True)
     intermediary_1_payer_id = fields.Many2one(

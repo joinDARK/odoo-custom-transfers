@@ -164,11 +164,11 @@
                                     <group>
                                         <field name="amount_accrual"/>
                                     </group>
-                                    <group>
+                                    <!-- <group>
                                         <field name="sender_id_accrual" readonly="1"/>
                                         <field name="sender_payer_id_accrual" readonly="1"/>
-                                        <field name="sender_wallet_id_accrual"/>
-                                    </group>
+                                        <field name="sender_wallet_id_accrual" readonly="1"/>
+                                    </group> -->
                                     <group>
                                         <field name="receiver_id_accrual"/>
                                         <field name="receiver_payer_id_accrual"/>
@@ -177,6 +177,9 @@
                                     <group>
                                         <field name="create_accrual" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
                                         <field name="delete_accrual" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                    </group>
+                                    <group>
+                                        <field name="comment_accrual"/>
                                     </group>
                                 </div>
                             </group>

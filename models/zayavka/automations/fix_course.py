@@ -8,12 +8,27 @@ class ZayavkaFixCourseAutomations(models.Model):
 
     @api.model
     def run_all_fix_course_automations(self):
-        self._run_fix_course_sovok_import()
-        self._run_fix_course_sber_import()
-        self._run_fix_course_client_import()
-        self._run_fix_course_sovok_export()
-        self._run_fix_course_sber_export()
-        self._run_fix_course_client_export()
+        if self.is_sovcombank_contragent and not self.is_sberbank_contragent:
+            if self.deal_type != "export":
+                _logger.info("[Фиксация курса] Считаем как Совкомбанк; Вид сделки: импорт")
+                self._run_fix_course_sovok_import()
+            else:
+                _logger.info("[Фиксация курса] Считаем как Совкомбанк; Вид сделки: экспорт")
+                self._run_fix_course_sovok_export()
+        elif self.is_sberbank_contragent and not self.is_sovcombank_contragent:
+            if self.deal_type != "export":
+                _logger.info("[Фиксация курса] Считаем как Сбербанк; Вид сделки: импорт")
+                self._run_fix_course_sber_import()
+            else:
+                _logger.info("[Фиксация курса] Считаем как Сбербанк; Вид сделки: экспорт")
+                self._run_fix_course_sber_export()
+        else:
+            if self.deal_type != "export":
+                _logger.info("[Фиксация курса] Считаем как Клиент (Индивидуальная); Вид сделки: импорт")
+                self._run_fix_course_client_import()
+            else:
+                _logger.info("[Фиксация курса] Считаем как Клиент (Индивидуальная); Вид сделки: экспорт")
+                self._run_fix_course_client_export()
 
     @api.model
     def _run_fix_course_sovok_import(self):
@@ -25,15 +40,9 @@ class ZayavkaFixCourseAutomations(models.Model):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 
-        # Проверка контрагента - должен быть Совкомбанк
         contragent = self.contragent_id
-        if not contragent or contragent.name != "Совкомбанк":
-            _logger.warning(f"Контрагент не равен 'Совкомбанк' (найден: '{contragent.name if contragent else 'Не указан'}'). Скрипт остановлен.")
-            return
-
-        # Проверка вида сделки - должен быть Импорт
-        if self.deal_type != "import":
-            _logger.warning(f"Вид сделки не равен 'Импорт' (найден: '{self.deal_type}'). Скрипт остановлен.")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         # Извлекаем необходимые поля
@@ -160,15 +169,9 @@ class ZayavkaFixCourseAutomations(models.Model):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 
-        # Проверка контрагента - должен быть Сбербанк
         contragent = self.contragent_id
-        if not contragent or contragent.name != "Cбербанк":
-            _logger.warning(f"Контрагент не равен 'Сбербанк' (найден: '{contragent.name if contragent else 'Не указан'}'). Скрипт остановлен.")
-            return
-
-        # Проверка вида сделки - должен быть Импорт
-        if self.deal_type != "import":
-            _logger.warning(f"Вид сделки не равен 'Импорт' (найден: '{self.deal_type}'). Скрипт остановлен.")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         # Извлекаем необходимые поля
@@ -296,19 +299,9 @@ class ZayavkaFixCourseAutomations(models.Model):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 
-        # Проверка контрагента - НЕ должен быть Совкомбанк или Сбербанк
         contragent = self.contragent_id
         if not contragent:
             _logger.warning("Поле 'Контрагент' не заполнено.")
-            return
-            
-        if contragent.name == "Совкомбанк" or contragent.name == "Cбербанк":
-            _logger.warning(f"Контрагент равен '{contragent.name}'. Скрипт остановлен.")
-            return
-
-        # Проверка вида сделки - должен быть Импорт
-        if self.deal_type != "import":
-            _logger.warning(f"Вид сделки не равен 'Импорт' (найден: '{self.deal_type}'). Скрипт остановлен.")
             return
 
         # Извлекаем необходимые поля
@@ -436,15 +429,9 @@ class ZayavkaFixCourseAutomations(models.Model):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 
-        # Проверка контрагента - должен быть Совкомбанк
         contragent = self.contragent_id
-        if not contragent or contragent.name != "Совкомбанк":
-            _logger.warning(f"Контрагент не равен 'Совкомбанк' (найден: '{contragent.name if contragent else 'Не указан'}'). Скрипт остановлен.")
-            return
-
-        # Проверка вида сделки - должен быть Экспорт
-        if self.deal_type != "export":
-            _logger.warning(f"Вид сделки не равен 'Экспорт' (найден: '{self.deal_type}'). Скрипт остановлен.")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         # Извлекаем необходимые поля
@@ -572,15 +559,9 @@ class ZayavkaFixCourseAutomations(models.Model):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 
-        # Проверка контрагента - должен быть Сбербанк
         contragent = self.contragent_id
-        if not contragent or contragent.name != "Сбербанк":
-            _logger.warning(f"Контрагент не равен 'Сбербанк' (найден: '{contragent.name if contragent else 'Не указан'}'). Скрипт остановлен.")
-            return
-
-        # Проверка вида сделки - должен быть Экспорт
-        if self.deal_type != "export":
-            _logger.warning(f"Вид сделки не равен 'Экспорт' (найден: '{self.deal_type}'). Скрипт остановлен.")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         # Извлекаем необходимые поля
@@ -708,19 +689,9 @@ class ZayavkaFixCourseAutomations(models.Model):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 
-        # Проверка контрагента - НЕ должен быть Совкомбанк или Сбербанк
         contragent = self.contragent_id
         if not contragent:
             _logger.warning("Поле 'Контрагент' не заполнено.")
-            return
-            
-        if contragent.name in ("Совкомбанк", "Сбербанк"):
-            _logger.warning(f"Контрагент равен '{contragent.name}'. Скрипт остановлен.")
-            return
-
-        # Проверка вида сделки - должен быть Экспорт
-        if self.deal_type != "export":
-            _logger.warning(f"Вид сделки не равен 'Экспорт' (найден: '{self.deal_type}'). Скрипт остановлен.")
             return
 
         # Извлекаем необходимые поля

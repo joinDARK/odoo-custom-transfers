@@ -953,13 +953,12 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.equivalent_amount_usd = amount
 
-    @api.depends('contragent_id.name', 'sovok_reward', 'sber_reward', 'client_reward')
+    @api.depends('is_sovcombank_contragent', 'is_sberbank_contragent', 'sovok_reward', 'sber_reward', 'client_reward')
     def _compute_contract_reward(self):
         for rec in self:
-            contragent = (rec.contragent_id.name or '').lower()
-            if 'совкомбанк' in contragent:
+            if rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
                 rec.contract_reward = rec.sovok_reward or 0.0
-            elif 'сбербанк' in contragent:
+            elif rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
                 rec.contract_reward = rec.sber_reward or 0.0
             else:
                 rec.contract_reward = rec.client_reward or 0.0
@@ -984,15 +983,14 @@ class ZayavkaComputes(models.Model):
         for rec in self:
             rec.calculation = (rec.total_amount or 0.0) - (rec.received_on_our_pc or 0.0) - (rec.agent_on_pc or 0.0)
 
-    @api.depends('contragent_id.name', 'total_sovok_management', 'total_sber_management', 'total_client_management', 'sum_from_extracts')
+    @api.depends('is_sovcombank_contragent', 'is_sberbank_contragent', 'total_sovok_management', 'total_sber_management', 'total_client_management', 'sum_from_extracts')
     def _compute_waiting_for_replenishment(self):
         for rec in self:
-            contragent_name = (rec.contragent_id.name or '').strip().lower()
             sum_extracts = rec.sum_from_extracts or 0.0
 
-            if 'совкомбанк' in contragent_name:
+            if rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
                 value = (rec.total_sovok_management or 0.0) - sum_extracts
-            elif 'сбербанк' in contragent_name:
+            elif rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
                 value = (rec.total_sber_management or 0.0) - sum_extracts
             else:
                 value = (rec.total_client_management or 0.0) - sum_extracts
@@ -1124,7 +1122,8 @@ class ZayavkaComputes(models.Model):
         'currency',
         'taken_in_work_date',
         'deal_closed_date',
-        'contragent_id',
+        'is_sovcombank_contragent',
+        'is_sberbank_contragent',
         'date_received_on_pc_payment',
         'assignment_signed_sovcom',
         'rate_fixation_date'
@@ -1139,7 +1138,7 @@ class ZayavkaComputes(models.Model):
                 else:
                     rec.date_days = 1
             else:
-                if (rec.contragent_id.name or '').strip() == 'Совкомбанк':
+                if rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
                     if rec.date_received_on_pc_payment and rec.assignment_signed_sovcom:
                         rec.date_days = (rec.date_received_on_pc_payment - rec.assignment_signed_sovcom).days
                     else:
@@ -1158,7 +1157,8 @@ class ZayavkaComputes(models.Model):
             rec.sebestoimost_denej_sovok_partner = ((date_days + 1) / 25) * 0.04 * kupili_valyutu
 
     @api.depends(
-        'contragent_id.name',
+        'is_sovcombank_contragent',
+        'is_sberbank_contragent',
         'rate_real',
         'application_amount_rub_contract',
         'price_list_partners_id_accrual_percentage',
@@ -1171,7 +1171,6 @@ class ZayavkaComputes(models.Model):
     )
     def _compute_hidden_partner_commission(self):
         for rec in self:
-            contragent = (rec.contragent_id.name or '').strip().lower()
             partner_rate = rec.partner_post_conversion_rate or 1  # На всякий случай, чтобы не делить на ноль
 
             # Сумма начислений
@@ -1183,9 +1182,9 @@ class ZayavkaComputes(models.Model):
                 (rec.price_list_partners_id_5_accrual_percentage or 0.0)
             )
 
-            if 'совкомбанк' in contragent:
+            if rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
                 value = (rec.rate_real or 0.0) * accrual_sum / partner_rate if partner_rate else 0.0
-            elif 'сбербанк' in contragent:
+            elif rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
                 value = (rec.application_amount_rub_contract or 0.0) * accrual_sum / partner_rate if partner_rate else 0.0
             else:
                 value = (rec.non_our_client_reward or 0.0) / partner_rate if partner_rate else 0.0
@@ -1193,7 +1192,8 @@ class ZayavkaComputes(models.Model):
             rec.hidden_partner_commission = value
 
     @api.depends(
-        'contragent_id.name',
+        'is_sovcombank_contragent',
+        'is_sberbank_contragent',
         'rate_real',
         'price_list_partners_id_accrual_percentage',
         'price_list_partners_id_2_accrual_percentage',
@@ -1206,7 +1206,6 @@ class ZayavkaComputes(models.Model):
     )
     def _compute_hidden_partner_commission_real(self):
         for rec in self:
-            contragent = (rec.contragent_id.name or '').strip().lower()
             jess_rate = rec.jess_rate or 1  # На всякий случай, чтобы не делить на ноль
 
             accrual = (
@@ -1217,9 +1216,9 @@ class ZayavkaComputes(models.Model):
                 (rec.price_list_partners_id_5_accrual_percentage or 0.0)
             )
 
-            if 'совкомбанк' in contragent:
+            if rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
                 value = (rec.rate_real or 0.0) * accrual / jess_rate if jess_rate else 0.0
-            elif 'сбербанк' in contragent:
+            elif rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
                 value = (rec.amount or 0.0) * accrual
             else:
                 value = (rec.non_our_client_reward or 0.0) / jess_rate if jess_rate else 0.0
@@ -1266,7 +1265,7 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.status_range = 'no'
 
-    @api.depends('export_agent_flag', 'contragent_id', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate')
+    @api.depends('export_agent_flag', 'is_sovcombank_contragent', 'is_sberbank_contragent', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate')
     def _compute_application_amount_rub_contract(self):
         for record in self:
             if record.deal_type == 'export':
@@ -1275,9 +1274,9 @@ class ZayavkaComputes(models.Model):
                 comp_amount_rub = record.amount * record.rate_field
 
             if record.export_agent_flag:
-                if record.contragent_id.name == 'Сбербанк':
+                if record.is_sberbank_contragent and not record.is_sovcombank_contragent:
                     record.application_amount_rub_contract = comp_amount_rub - record.sber_reward
-                elif record.contragent_id.name == 'Совкомбанк':
+                elif record.is_sovcombank_contragent and not record.is_sberbank_contragent:
                     record.application_amount_rub_contract = comp_amount_rub - record.sovok_reward
                 else:
                     record.application_amount_rub_contract = comp_amount_rub - record.client_reward
@@ -1396,7 +1395,8 @@ class ZayavkaComputes(models.Model):
                 rec.reward_percent = rec.hand_reward_percent or 0.0
 
     @api.depends(
-        'contragent_id.name',
+        'is_sovcombank_contragent',
+        'is_sberbank_contragent',
         'rate_real',
         'our_sber_reward',
         'non_our_sber_reward',
@@ -1406,15 +1406,13 @@ class ZayavkaComputes(models.Model):
     )
     def _compute_total_fact(self):
         for rec in self:
-            contragent = (rec.contragent_id.name or '').lower()
-
-            if 'сбербанк' in contragent:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
                 rec.total_fact = (
                     (rec.rate_real or 0.0) +
                     (rec.our_sber_reward or 0.0) +
                     (rec.non_our_sber_reward or 0.0)
                 )
-            elif 'совкомбанк' in contragent:
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
                 rec.total_fact = (
                     (rec.rate_real or 0.0) +
                     (rec.our_sovok_reward or 0.0) +

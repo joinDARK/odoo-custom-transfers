@@ -8,10 +8,28 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
 
     @api.model
     def run_all_send_to_reconciliation_automations(self):
-        self._run_send_to_reconciliation()
-        self._run_send_to_reconciliation_sber()
-        self._run_send_to_reconciliation_client()
-        self._run_send_to_reconciliation_export()
+        if self.is_sberbank_contragent and not self.is_sovcombank_contragent:
+            if self.deal_type != "export":
+                _logger.info("[ВЫХОД ЗАЯВКИ] Считаем как Сбербанк; Вид сделки: импорт")
+                self._run_send_to_reconciliation_sber()
+            else:
+                _logger.info("[ВЫХОД ЗАЯВКИ] Считаем как Сбербанк; Вид сделки: экспорт")
+                self._run_send_to_reconciliation_sber_export()
+        elif self.is_sovcombank_contragent and not self.is_sberbank_contragent:
+            if self.deal_type != "export":
+                _logger.info("[ВЫХОД ЗАЯВКИ] Считаем как Совкомбанк; Вид сделки: импорт")
+                self._run_send_to_reconciliation()
+            else:
+                _logger.info("[ВЫХОД ЗАЯВКИ] Считаем как Совкомбанк; Вид сделки: экспорт")
+                self._run_send_to_reconciliation()
+        else:
+            if self.deal_type != "export":
+                _logger.info("[ВЫХОД ЗАЯВКИ] Cчитаем как Клиентскую (Индивидуальная); Вид сделки: импорт")
+                self._run_send_to_reconciliation_client()
+            else:
+                _logger.info("[ВЫХОД ЗАЯВКИ] Cчитаем как Клиентскую (Индивидуальная); Вид сделки: экспорт")
+                self._run_send_to_reconciliation_client_export()
+
         self._run_cash_fin_rez_distribution()
 
     @api.model
@@ -20,13 +38,8 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         _logger.info(f"Получен ID заявки: {record_id}")
 
         contragent = self.contragent_id
-        if not contragent or contragent.name != "Совкомбанк":
-            _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Совкомбанк', найден: {contragent.name if contragent else 'Не указан'}")
-            return
-
-        deal_type = self.deal_type
-        if deal_type != "import":
-            _logger.warning(f"Запись не проходит фильтр: Вид сделки должен быть 'Импорт', найден: {deal_type if deal_type else 'не указан'}")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         num_zayavka = self.zayavka_num
@@ -161,13 +174,8 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         _logger.info(f"Получен ID заявки: {record_id}")
 
         contragent = self.contragent_id
-        if not contragent or contragent.name != "Сбербанк":
-            _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Сбербанк', найден: {contragent.name if contragent else 'Не указан'}")
-            return
-
-        deal_type = self.deal_type
-        if deal_type != "import":
-            _logger.warning(f"Запись не проходит фильтр: Вид сделки должен быть 'Импорт', найден: {deal_type if deal_type else 'не указан'}")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         num_zayavka = self.zayavka_num
@@ -305,16 +313,6 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         if not contragent:
             _logger.warning("Поле 'Контрагент' не заполнено.")
             return
-        
-        # Фильтр: контрагент НЕ должен быть Совкомбанком или Сбербанком
-        if contragent.name == "Совкомбанк" or contragent.name == "Сбербанк":
-            _logger.warning(f"Запись не проходит фильтр: Контрагент не должен быть 'Совкомбанк' или 'Сбербанк', найден: {contragent.name}")
-            return
-
-        deal_type = self.deal_type
-        if deal_type != "import":
-            _logger.warning(f"Запись не проходит фильтр: Вид сделки должен быть 'Импорт', найден: {deal_type if deal_type else 'не указан'}")
-            return
 
         num_zayavka = self.zayavka_num
         if not num_zayavka:
@@ -448,12 +446,6 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 
-        # Фильтр: вид сделки должен быть "Экспорт"
-        deal_type = self.deal_type
-        if deal_type != "export":
-            _logger.warning(f"Запись не проходит фильтр: Вид сделки должен быть 'Экспорт', найден: {deal_type if deal_type else 'не указан'}")
-            return
-
         num_zayavka = self.zayavka_num
         if not num_zayavka:
             _logger.warning("Поле '№ заявки' не заполнено.")
@@ -461,8 +453,8 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
 
         # Получаем контрагента для определения логики "Скрытая комиссия Партнера"
         contragent = self.contragent_id
-        if not contragent or contragent.name != "Совкомбанк":
-            _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Совкомбанк', найден: {contragent.name if contragent else 'Не указан'}")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         # Получаем/создаём нужные записи
@@ -578,13 +570,8 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         _logger.info(f"Получен ID заявки: {record_id}")
 
         contragent = self.contragent_id
-        if not contragent or contragent.name != "Сбербанк":
-            _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Сбербанк', найден: {contragent.name if contragent else 'Не указан'}")
-            return
-
-        deal_type = self.deal_type
-        if deal_type != "export":
-            _logger.warning(f"Запись не проходит фильтр: Вид сделки должен быть 'Экспорт', найден: {deal_type if deal_type else 'не указан'}")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         num_zayavka = self.zayavka_num
@@ -706,16 +693,6 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         contragent = self.contragent_id
         if not contragent:
             _logger.warning("Поле 'Контрагент' не заполнено.")
-            return
-        
-        # Фильтр: контрагент НЕ должен быть Совкомбанком или Сбербанком
-        if contragent.name == "Совкомбанк" or contragent.name == "Сбербанк":
-            _logger.warning(f"Запись не проходит фильтр: Контрагент не должен быть 'Совкомбанк' или 'Сбербанк', найден: {contragent.name}")
-            return
-
-        deal_type = self.deal_type
-        if deal_type != "import":
-            _logger.warning(f"Запись не проходит фильтр: Вид сделки должен быть 'Импорт', найден: {deal_type if deal_type else 'не указан'}")
             return
 
         num_zayavka = self.zayavka_num

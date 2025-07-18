@@ -75,6 +75,16 @@
                   </group>
                 </div>
               </group>
+              <group>
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="is_sberbank_contragent" invisible="is_sovcombank_contragent"/>
+                  </group>
+                  <group>
+                    <field name="is_sovcombank_contragent" invisible="is_sberbank_contragent"/>
+                  </group>
+                </div>
+              </group>
               <group string="Ввод данных Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
                 <div class="o-form-group-2 top">
                   <group>
