@@ -15,12 +15,27 @@ class CreateOrderZayavka(models.Model):
             # Определяем контрагента и тип сделки
             _logger.info(f"Обрабатываем заявку {zayavka.id}: контрагент='{zayavka.contragent_id.name}', тип='{zayavka.deal_type}'")
             
-            zayavka._run_fin_entry_automation_sovok_import()
-            zayavka._run_fin_entry_automation_sovok_export()
-            zayavka._run_fin_entry_automation_sber_import()
-            zayavka._run_fin_entry_automation_sber_export()
-            zayavka._run_fin_entry_automation_client_import()
-            zayavka._run_fin_entry_automation_client_export()
+            if self.is_sberbank_contragent and not self.is_sovcombank_contragent:
+                if self.deal_type != "export":
+                    _logger.info("[ВХОД ЗАЯВКИ] Считаем как Сбербанк; Вид сделки: импорт")
+                    self._run_fin_entry_automation_sber_import()
+                else:
+                    _logger.info("[ВХОД ЗАЯВКИ] Считаем как Сбербанк; Вид сделки: экспорт")
+                    self._run_fin_entry_automation_sber_export()
+            elif self.is_sovcombank_contragent and not self.is_sberbank_contragent:
+                if self.deal_type != "export":
+                    _logger.info("[ВХОД ЗАЯВКИ] Считаем как Совкомбанк; Вид сделки: импорт")
+                    self._run_fin_entry_automation_sovok_import()
+                else:
+                    _logger.info("[ВХОД ЗАЯВКИ] Считаем как Совкомбанк; Вид сделки: экспорт")
+                    self._run_fin_entry_automation_sovok_export()
+            else:
+                if self.deal_type != "export":
+                    _logger.info("[ВХОД ЗАЯВКИ] Считаем как Клиент (Индивидуальная); Вид сделки: импорт")
+                    self._run_fin_entry_automation_client_import()
+                else:
+                    _logger.info("[ВХОД ЗАЯВКИ] Считаем как Клиент (Индивидуальная); Вид сделки: экспорт")
+                    self._run_fin_entry_automation_client_export()
         
         return True
 

@@ -1904,21 +1904,10 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     is_sberbank_contragent = fields.Boolean(
-        string='Контрагент — Сбербанк',
-        compute='_compute_contragent_flags',
-        store=True
+        string='Расчет заявки, как Сбербанк',
+        default=False,
     )
     is_sovcombank_contragent = fields.Boolean(
-        string='Контрагент — Совкомбанк',
-        compute='_compute_contragent_flags',
-        store=True
+        string='Расчет заявки, как Совкомбанк',
+        default=False,
     )
-    @api.depends('contragent_id.name')
-    def _compute_contragent_flags(self):
-        for record in self:
-            if record.contragent_id:
-                name = (record.contragent_id.name or '').strip().lower()
-            else:
-                name = ''
-            record.is_sberbank_contragent = name == 'сбербанк'
-            record.is_sovcombank_contragent = name == 'совкомбанк'

@@ -4493,6 +4493,9 @@ export class AmanatDashboard extends Component {
                          Array.isArray(fullData) ? fullData.length : 
                          (typeof fullData === 'object' && fullData !== null) ? Object.keys(fullData).length : 0;
         
+        // Определяем, показывать ли подсказку о кликах
+        const showClickHint = this.shouldEnableClicksInModal(chartType);
+        
         modal.innerHTML = `
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
@@ -4512,6 +4515,12 @@ export class AmanatDashboard extends Component {
                                 Показаны все данные без фильтров по датам. 
                                 Всего записей: <strong>${dataCount}</strong>
                             </p>
+                            ${showClickHint ? `
+                            <p class="text-info mb-0 mt-2">
+                                <i class="fa fa-mouse-pointer me-2"></i>
+                                <strong>Подсказка:</strong> Кликните на столбец, чтобы перейти к соответствующим заявкам
+                            </p>
+                            ` : ''}
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -4662,8 +4671,35 @@ export class AmanatDashboard extends Component {
                                 data: fullData.data,
                                 title: chartTitle,
                                 showFullData: true, // Отключаем ограничение TOP-3
-                                clickable: false // Отключаем клики в полной версии
+                                clickable: this.shouldEnableClicksInModal(chartType) // Включаем клики для интерактивных графиков
                             };
+                            
+                            // Добавляем обработчик кликов для различных типов графиков
+                            if (this.shouldEnableClicksInModal(chartType)) {
+                                chartConfig.onClick = (event, elements) => {
+                                    if (elements.length > 0) {
+                                        const index = elements[0].index;
+                                        const clickedValue = fullData.labels[index];
+                                        console.log('🎯 Клик в модальном окне:', { chartType, clickedValue, index });
+                                        
+                                        // Закрываем модальное окно с правильной очисткой
+                                        const modal = document.getElementById('fullChartModal');
+                                        if (modal) {
+                                            // Уничтожаем график перед закрытием
+                                            if (this.charts['fullChart']) {
+                                                this.charts['fullChart'].destroy();
+                                                delete this.charts['fullChart'];
+                                            }
+                                            
+                                            modal.style.display = 'none';
+                                            modal.remove();
+                                        }
+                                        
+                                        // Вызываем соответствующий метод на основе типа графика
+                                        this.handleModalChartClick(chartType, clickedValue, index, fullData);
+                                    }
+                                };
+                            }
                             
                             console.log('🎨 Рендерим горизонтальный столбчатый график в модальном окне:', {
                                 chartType,
@@ -5215,6 +5251,78 @@ export class AmanatDashboard extends Component {
         } else {
             // Fallback - простой alert
             alert(message);
+        }
+    }
+    
+    shouldEnableClicksInModal(chartType) {
+        /**
+         * Определяет, должны ли быть включены клики для данного типа графика в модальном окне
+         */
+        const clickableChartTypes = [
+            'managers_efficiency',
+            'zayavka_status_data',
+            'contragents_by_zayavki',
+            'agents_by_zayavki', 
+            'clients_by_zayavki',
+            'subagents_by_zayavki',
+            'payers_by_zayavki',
+            'managers_by_zayavki',
+            'managers_closed_zayavki'
+        ];
+        
+        return clickableChartTypes.includes(chartType);
+    }
+    
+    handleModalChartClick(chartType, clickedValue, index, fullData) {
+        /**
+         * Обрабатывает клики в модальном окне в зависимости от типа графика
+         */
+        console.log('🎯 Обработка клика в модальном окне:', { chartType, clickedValue, index });
+        
+        try {
+            switch (chartType) {
+                case 'managers_efficiency':
+                    this.openZayavkiByManager(clickedValue);
+                    break;
+                    
+                case 'zayavka_status_data':
+                    this.openZayavkiByStatus(clickedValue);
+                    break;
+                    
+                case 'contragents_by_zayavki':
+                    this.openZayavkiByContragent(clickedValue);
+                    break;
+                    
+                case 'agents_by_zayavki':
+                    this.openZayavkiByAgent(clickedValue);
+                    break;
+                    
+                case 'clients_by_zayavki':
+                    this.openZayavkiByClient(clickedValue);
+                    break;
+                    
+                case 'subagents_by_zayavki':
+                    this.openZayavkiBySubagent(clickedValue);
+                    break;
+                    
+                case 'payers_by_zayavki':
+                    this.openZayavkiByPayer(clickedValue);
+                    break;
+                    
+                case 'managers_by_zayavki':
+                    this.openZayavkiByManager(clickedValue);
+                    break;
+                    
+                case 'managers_closed_zayavki':
+                    this.openZayavkiByManagerClosed(clickedValue);
+                    break;
+                    
+                default:
+                    console.warn('⚠️ Неизвестный тип графика для обработки кликов:', chartType);
+                    break;
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при обработке клика в модальном окне:', error);
         }
     }
 

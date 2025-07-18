@@ -8,12 +8,27 @@ class ZayavkaFinEntryAutomations(models.Model):
 
     @api.model
     def run_all_fin_entry_automations(self):
-        self._run_fin_entry_automation_sovok_import()
-        self._run_fin_entry_automation_sber_import()
-        self._run_fin_entry_automation_client_import()
-        self._run_fin_entry_automation_sovok_export()
-        self._run_fin_entry_automation_sber_export()
-        self._run_fin_entry_automation_client_export()
+        if self.is_sberbank_contragent and not self.is_sovcombank_contragent:
+            if self.deal_type != "export":
+                _logger.info("[ФИН ВХОД ЗАЯВКИ] Считаем как Сбербанк; Вид сделки: импорт")
+                self._run_fin_entry_automation_sber_import()
+            else:
+                _logger.info("[ФИН ВХОД ЗАЯВКИ] Считаем как Сбербанк; Вид сделки: экспорт")
+                self._run_fin_entry_automation_sber_export()
+        elif self.is_sovcombank_contragent and not self.is_sberbank_contragent:
+            if self.deal_type != "export":
+                _logger.info("[ФИН ВХОД ЗАЯВКИ] Считаем как Совкомбанк; Вид сделки: импорт")
+                self._run_fin_entry_automation_sovok_import()
+            else:
+                _logger.info("[ФИН ВХОД ЗАЯВКИ] Считаем как Совкомбанк; Вид сделки: экспорт")
+                self._run_fin_entry_automation_sovok_export()
+        else:
+            if self.deal_type != "export":
+                _logger.info("[ФИН ВХОД ЗАЯВКИ] Считаем как Клиент (Индивидуальная); Вид сделки: импорт")
+                self._run_fin_entry_automation_client_import()
+            else:
+                _logger.info("[ФИН ВХОД ЗАЯВКИ] Считаем как Клиент (Индивидуальная); Вид сделки: экспорт")
+                self._run_fin_entry_automation_client_export()
 
     @api.model
     def _run_fin_entry_automation_sovok_import(self):
@@ -23,12 +38,9 @@ class ZayavkaFinEntryAutomations(models.Model):
         _logger.info(f"Получен ID заявки: {record_id}")
 
         # Филтруем по условию: Контрагент "Совкомбанк" и вид сделки "Импорт"
-        if (self.contragent_id.name != 'Совкомбанк'):
-            _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Совкомбанк', найден: {self.contragent_id.name or 'Не указан'}")
-            return
-        
-        if (self.deal_type != 'import'):
-            _logger.warning("Запись не проходит фильтр: Вид сделки должен быть 'Импорт'")
+        contragent = self.contragent_id
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         # Удаляем старые ордера, сверки и контейнеры
@@ -122,7 +134,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 **self._get_reconciliation_currency_fields(currency, amount),
                 'order_id': [(6, 0, [order1.id])],
-                'partner_id': self.contragent_id.id,
+                'partner_id': contragent.id,
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
                 'wallet_id': agentka_wallet.id,
@@ -160,7 +172,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'date': date,
                 'currency': currency,
                 **self._get_reconciliation_currency_fields(currency, -amount),
-                'partner_id': self.contragent_id.id,
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order2.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
@@ -181,7 +193,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                     'date': date,
                     'currency': 'rub',
                     **self._get_reconciliation_currency_fields('rub', amount_in_rub),
-                    'partner_id': self.contragent_id.id,
+                    'partner_id': contragent.id,
                     'order_id': [(6, 0, [order2.id])],
                     'sender_id': [(6, 0, [client_payer.id])],
                     'receiver_id': [(6, 0, [agent_payer.id])],
@@ -219,7 +231,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'date': date,
                 'currency': 'rub',
                 **self._get_reconciliation_currency_fields('rub', our_sovok_reward),
-                'partner_id': self.contragent_id.id,
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order3.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
@@ -311,13 +323,9 @@ class ZayavkaFinEntryAutomations(models.Model):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 
-        # Филтруем по условию: Контрагент "Сбербанк" и вид сделки "Импорт"
-        if (self.contragent_id.name != 'Сбербанк'):
-            _logger.warning(f"Запись не проходит фильтр: Контрагент должен быть 'Сбербанк', найден: {self.contragent_id.name or 'Не указан'}")
-            return
-        
-        if (self.deal_type != 'import'):
-            _logger.warning("Запись не проходит фильтр: Вид сделки должен быть 'Импорт'")
+        contragent = self.contragent_id
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         # Удаляем старые ордера, сверки и контейнеры
@@ -416,7 +424,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 **self._get_reconciliation_currency_fields(currency, amount),
                 'order_id': [(6, 0, [order1.id])],
-                'partner_id': self.contragent_id.id,
+                'partner_id': contragent.id,
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
                 'wallet_id': agentka_wallet.id,
@@ -454,7 +462,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'date': date,
                 'currency': currency,
                 **self._get_reconciliation_currency_fields(currency, -amount),
-                'partner_id': self.contragent_id.id,
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order2.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
@@ -476,7 +484,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                     'date': date,
                     'currency': 'rub',
                     **self._get_reconciliation_currency_fields('rub', amount_in_rub),
-                    'partner_id': self.contragent_id.id,
+                    'partner_id': contragent.id,
                     'order_id': [(6, 0, [order2.id])],
                     'sender_id': [(6, 0, [client_payer.id])],
                     'receiver_id': [(6, 0, [agent_payer.id])],
@@ -514,7 +522,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'date': date,
                 'currency': 'rub',
                 **self._get_reconciliation_currency_fields('rub', our_reward_amount),
-                'partner_id': self.contragent_id.id,
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order3.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
@@ -552,7 +560,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'date': date,
                 'currency': 'rub',
                 **self._get_reconciliation_currency_fields('rub', not_our_reward_amount),
-                'partner_id': self.contragent_id.id,
+                'partner_id': contragent.id,
                 'order_id': [(6, 0, [order4.id])],
                 'sender_id': [(6, 0, [client_payer.id])],
                 'receiver_id': [(6, 0, [agent_payer.id])],
@@ -643,15 +651,10 @@ class ZayavkaFinEntryAutomations(models.Model):
 
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
-
-        deal_type = self.deal_type
-        if deal_type != 'import':
-            _logger.warning("Запись не проходит фильтр: Вид сделки должен быть 'Импорт'")
-            return
         
         contragent = self.contragent_id
-        if (contragent.name == 'Совкомбанк' or contragent.name == 'Сбербанк'):
-            _logger.warning("Запись не проходит фильтр: Контрагент не должен быть 'Совкомбанк' или 'Сбербанк'")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
         
         # Удаляем старые ордера, сверки и контейнеры
@@ -976,12 +979,8 @@ class ZayavkaFinEntryAutomations(models.Model):
         _logger.info(f"Получен ID заявки: {record_id}")
 
         contragent = self.contragent_id
-        if (contragent.name != 'Совкомбанк'):
-            _logger.warning("Запись не проходит фильтр: Контрагент должен быть 'Совкомбанк'")
-            return
-        
-        if (self.deal_type != 'export'):
-            _logger.warning("Запись не проходит фильтр: Вид сделки должен быть 'Экспорт'")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         # Удаляем старые ордера, сверки и контейнеры
@@ -1269,12 +1268,8 @@ class ZayavkaFinEntryAutomations(models.Model):
         _logger.info(f"Получен ID заявки: {record_id}")
 
         contragent = self.contragent_id
-        if (contragent.name != 'Сбербанк'):
-            _logger.warning("Запись не проходит фильтр: Контрагент должен быть 'Сбербанк'")
-            return
-        
-        if (self.deal_type != 'export'):
-            _logger.warning("Запись не проходит фильтр: Вид сделки должен быть 'Экспорт'")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
 
         # Удаляем старые ордера, сверки и контейнеры
@@ -1601,15 +1596,10 @@ class ZayavkaFinEntryAutomations(models.Model):
 
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
-
-        deal_type = self.deal_type
-        if deal_type != 'export':
-            _logger.warning("Запись не проходит фильтр: Вид сделки должен быть 'Экспорт'")
-            return
         
         contragent = self.contragent_id
-        if (contragent.name == 'Совкомбанк' or contragent.name == 'Сбербанк'):
-            _logger.warning("Запись не проходит фильтр: Контрагент не должен быть 'Совкомбанк' или 'Сбербанк'")
+        if not contragent:
+            _logger.warning("Контрагент не найден")
             return
         
         # Удаляем старые ордера, сверки и контейнеры

@@ -12,7 +12,7 @@ class ZayavkaGetPaymentRequest(models.Model):
         old_ids, new_ids — это множества id связанных записей до и после изменения.
         Здесь можно прописать любой скрипт/логику.
         """
-        _logger.info(f'=== АВТОМАТИЗАЦИЯ get_payment_request ЗАПУЩЕНА ===')
+        _logger.info('=== АВТОМАТИЗАЦИЯ get_payment_request ЗАПУЩЕНА ===')
         _logger.info(f'Заявка ID: {self.id}')
         _logger.info(f'Поле "Выписка разнос" изменилось: было {old_ids}, стало {new_ids}')
 
@@ -28,13 +28,15 @@ class ZayavkaGetPaymentRequest(models.Model):
             _logger.info("Нет новых выписок для обработки.")
             return
 
-        # Определяем сумму заявки по контрагенту
-        contragent = self.contragent_id
-        if contragent and contragent.name == "Совкомбанк":
+        # Определяем сумму заявки по флагу контрагента
+        if self.is_sovcombank_contragent and not self.is_sberbank_contragent:
+            _logger.info("Считаем как Совкомбанк")
             required_sum = self.total_sovok
-        elif contragent and contragent.name == "Сбербанк":
+        elif self.is_sberbank_contragent and not self.is_sovcombank_contragent:
+            _logger.info("Считаем как Сбербанк")
             required_sum = self.total_sber
         else:
+            _logger.info("Считаем как Клиент")
             required_sum = self.total_client
 
         _logger.info(f"Требуемая сумма для погашения: {required_sum}")
