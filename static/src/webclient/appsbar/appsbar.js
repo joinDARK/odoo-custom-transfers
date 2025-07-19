@@ -31,6 +31,7 @@ export class AppsBar extends Component {
                     { name: "Контейнер", action: "amanat.money_action" },
                     { name: "Сверка", action: "amanat.reconciliation_action" },
                     { name: "Сверка файлы", action: "amanat.action_amanat_sverka_files" },
+                    { name: "Касса файлы", action: "amanat.action_amanat_kassa_files" },
                 ],
             },
             {

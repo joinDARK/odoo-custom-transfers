@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Последовательность для Касса файлы -->
+        <record id="seq_kassa_files" model="ir.sequence">
+            <field name="name">Касса файлы</field>
+            <field name="code">amanat.kassa_files.sequence</field>
+            <field name="prefix">KF</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo> 

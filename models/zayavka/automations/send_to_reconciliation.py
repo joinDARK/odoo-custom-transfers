@@ -21,7 +21,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 self._run_send_to_reconciliation()
             else:
                 _logger.info("[ВЫХОД ЗАЯВКИ] Считаем как Совкомбанк; Вид сделки: экспорт")
-                self._run_send_to_reconciliation()
+                self._run_send_to_reconciliation_export()
         else:
             if self.deal_type != "export":
                 _logger.info("[ВЫХОД ЗАЯВКИ] Cчитаем как Клиентскую (Индивидуальная); Вид сделки: импорт")

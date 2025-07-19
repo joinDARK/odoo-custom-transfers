@@ -105,6 +105,7 @@
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="dollar_cross_rate"/>
                     <field name="jess_rate"/>
+                    <field name="hidden_rate"/>
                   </group>
                 </div>
               </group>
@@ -176,6 +177,7 @@
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="dollar_cross_rate"/>
                     <field name="jess_rate"/>
+                    <field name="hidden_rate"/>
                   </group>
                 </div>
               </group>
@@ -248,6 +250,7 @@
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="dollar_cross_rate"/>
                     <field name="jess_rate"/>
+                    <field name="hidden_rate"/>
                   </group>
                 </div>
               </group>
@@ -971,9 +974,6 @@
                     <field name="range_date_end_copy"/>
                     <field name="status_range"/>
                     <field name="status_range_copy"/>
-                  </group>
-                  <group string="Прочие поля">
-                    <field name="hidden_rate"/>
                   </group>
                 </page>
                 <page string="Compute-поля" groups="!amanat.group_amanat_manager">

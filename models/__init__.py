@@ -34,6 +34,7 @@ from . import investment
 from . import manager
 from . import extracts
 from . import sverka_files
+from . import kassa_files
 from . import period
 from . import price_list_payer_carrying_out
 from . import payment_order_rule

@@ -328,6 +328,15 @@
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
 
+    <!-- Меню для Касса файлы -->
+    <menuitem 
+        id="amanat_menu_kassa_files" 
+        name="Касса файлы"
+        parent="amanat_menu_main_group"
+        action="action_amanat_kassa_files"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
+    />
+
     <!-- Меню для Investment -->
     <menuitem 
         id="amanat_menu_investment" 
