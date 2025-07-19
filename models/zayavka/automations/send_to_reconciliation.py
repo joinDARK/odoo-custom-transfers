@@ -37,6 +37,10 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
 
+        finka = self.env['amanat.contragent'].search([('name', '=', 'Финка')], limit=1)
+        if not finka:
+            return
+
         contragent = self.contragent_id
         if not contragent:
             _logger.warning("Контрагент не найден")
@@ -918,6 +922,14 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         wallet_agentka = self.env['amanat.wallet'].search([('name', '=', 'Агентка')], limit=1)
         if not wallet_agentka:
             _logger.warning("Кошелёк 'Агентка' не найден.")
+        
+        # Находим держателя для долгового контейнера
+        cash_holder = contragent_model.search([('name', '=', cash_source)], limit=1)
+        if not cash_holder:
+            _logger.warning(f"Запись для держателя с наименованием '{cash_source}' не найдена в таблице 'Контрагент'.")
+            return
+        
+        _logger.info(f"Найден держатель '{cash_holder.name}' (ID={cash_holder.id})")
 
         # Создаём положительный контейнер для финреза
         positive_container = self._create_money({
@@ -929,15 +941,20 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
             'order_id': fin_rez_order.id if fin_rez_order else False,  # Привязываем к найденному ордеру
             **self._get_currency_fields(currency, used_fin_rez_sum)
         })
-        _logger.info(f"Создан положительный контейнер для 'Фин рез' (ID={positive_container.id}), сумма: {used_fin_rez_sum} {currency}")
+        _logger.info(f"Создан положительный контейнер для 'Фин рез' (ID={positive_container.id}), сумма: {used_fin_rez_sum} {currency} {fin_rez_order}")
 
-        # Находим держателя для долгового контейнера
-        cash_holder = contragent_model.search([('name', '=', cash_source)], limit=1)
-        if not cash_holder:
-            _logger.warning(f"Запись для держателя с наименованием '{cash_source}' не найдена в таблице 'Контрагент'.")
-            return
-        
-        _logger.info(f"Найден держатель '{cash_holder.name}' (ID={cash_holder.id})")
+        # Создаем сверку
+        self._create_reconciliation({
+            'date': deal_closed_date,
+            'partner_id': fin_rez_contragent.id,
+            'currency': currency,
+            'order_id': [(4, fin_rez_order.id)],
+            'sender_id': [(4, fin_rez_contragent.payer_ids[0].id)],
+            'receiver_id': [(4, cash_holder.payer_ids[0].id)],
+            'wallet_id': wallet_agentka.id if wallet_agentka else False,
+            **self._get_reconciliation_currency_fields(currency, used_fin_rez_sum)
+        })
+        _logger.info(f"Создана сверка для 'Фин рез', сумма: {used_fin_rez_sum} {currency} {fin_rez_contragent.name} {cash_holder.name}")
 
         # Создаём долговой контейнер
         debt_container = self._create_money({
@@ -949,7 +966,20 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
             'order_id': fin_rez_order.id if fin_rez_order else False,  # Привязываем к тому же ордеру
             **self._get_currency_fields(currency, -used_fin_rez_sum)
         })
-        _logger.info(f"Создан долговой контейнер для '{cash_source}' (Держатель: {cash_holder.name}, ID={debt_container.id}), сумма: -{used_fin_rez_sum} {currency}")
+        _logger.info(f"Создан долговой контейнер для '{cash_source}' (Держатель: {cash_holder.name}, ID={debt_container.id}), сумма: -{used_fin_rez_sum} {currency} {fin_rez_order}")
+
+        # Создаем сверку
+        self._create_reconciliation({
+            'date': deal_closed_date,
+            'partner_id': cash_holder.id,
+            'currency': currency,
+            'order_id': [(4, fin_rez_order.id)],
+            'sender_id': [(4, fin_rez_contragent.payer_ids[0].id)],
+            'receiver_id': [(4, cash_holder.payer_ids[0].id)],
+            'wallet_id': wallet_agentka.id if wallet_agentka else False,
+            **self._get_reconciliation_currency_fields(currency, -used_fin_rez_sum)
+        })
+        _logger.info(f"Создана сверка для '{cash_source}', сумма: -{used_fin_rez_sum} {currency} {cash_holder.name} {fin_rez_contragent.name}")
 
         _logger.info("Скрипт завершён: создан положительный контейнер для Фин рез и долговой контейнер для выбранной кассы.")
         return True

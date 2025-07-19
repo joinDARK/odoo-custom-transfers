@@ -8,18 +8,11 @@
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-                <button width="30" title="Скачать Excel" type="object" name="download_excel_file" icon="fa-download" class="btn-primary"/>
                 <button width="30" title="Превью Excel" type="object" name="preview_excel_files" icon="fa-eye" class="btn-success"/>
-                <button width="30" title="Повторить скачивание" type="object" name="retry_download" icon="fa-refresh" class="btn-warning"/>
-                <field name="sequence"/>
+                <button width="30" title="Скачать Excel" type="object" name="download_excel_file" icon="fa-download" class="btn-primary"/>
                 <field name="name"/>
                 <field name="kassa_type"/>
                 <field name="creation_date"/>
-                <field name="status"/>
-                <field name="file_size"/>
-                <field name="rows_count"/>
-                <field name="operations_count"/>
-                <field name="excel_files_count"/>
                 <field name="excel_file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
             </list>
         </field>
@@ -35,7 +28,6 @@
                 <header>
                     <button type="object" name="download_excel_file" string="Скачать Excel" class="btn-primary" icon="fa-download"/>
                     <button type="object" name="preview_excel_files" string="Превью Excel" class="btn-success" icon="fa-eye"/>
-                    <button type="object" name="retry_download" string="Повторить скачивание" class="btn-warning" icon="fa-refresh"/>
                     <field name="status" widget="statusbar"/>
                 </header>
                 <sheet>
