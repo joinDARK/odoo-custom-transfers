@@ -1,6 +1,6 @@
 # models/transfer.py
 from odoo import models, fields, api
-from .base_model import AmanatBaseModel
+from ..base_model import AmanatBaseModel
 import logging
 
 _logger = logging.getLogger(__name__)

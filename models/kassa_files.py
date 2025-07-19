@@ -87,9 +87,11 @@ class AmanatKassaFiles(models.Model, AmanatBaseModel):
         """Скачивает файл с сервера и сохраняет как вложение"""
         if not self.download_url:
             _logger.error(f"Нет URL для скачивания файла {self.name}")
+            self.status = 'error'
             return False
         
         try:
+            _logger.info(f"Начинаем скачивание файла {self.name} с URL: {self.download_url}")
             # Скачиваем файл
             response = requests.get(self.download_url, timeout=30)
             
@@ -173,13 +175,23 @@ class AmanatKassaFiles(models.Model, AmanatBaseModel):
     @api.model
     def create_from_server_response(self, server_response, kassa_type, filter_field=None, date_from=None, date_to=None):
         """Создает запись на основе ответа сервера"""
+        # Извлекаем URL из объекта fileUrl
+        file_url_obj = server_response.get('fileUrl', {})
+        download_url = None
+        
+        if isinstance(file_url_obj, dict):
+            download_url = file_url_obj.get('url')
+        elif isinstance(file_url_obj, str):
+            # На случай если сервер вернет строку напрямую
+            download_url = file_url_obj
+        
         values = {
             'name': server_response.get('fileName', 'Неизвестный файл'),
             'kassa_type': kassa_type,
             'filter_field': filter_field,
             'date_from': date_from,
             'date_to': date_to,
-            'download_url': server_response.get('fileUrl'),
+            'download_url': download_url,
             'file_size': server_response.get('fileSize', 0),
             'rows_count': server_response.get('rowsCount', 0),
             'operations_count': server_response.get('operationsCount', 0),

@@ -182,9 +182,20 @@ class ZayavkaKassaWizard(models.TransientModel):
         """Отправляет данные заявок на внешний сервер"""
         data = []
         
+        # Логируем количество входящих заявок
+        _logger.info(f"Получено для отправки заявок: {len(zayavkas)}")
+        if not zayavkas:
+            _logger.warning("Список заявок для отправки пуст!")
+            return {
+                'server_response': 'No applications to send',
+                'server_status': 'error',
+                'sent_count': 0
+            }
+        
         try:
             # Подготавливаем данные для отправки
-            for zayavka in zayavkas:
+            for i, zayavka in enumerate(zayavkas):
+                _logger.info(f"Обрабатываем заявку {i+1}/{len(zayavkas)}: {zayavka.zayavka_num}")
                 # Вычисляем дополнительные поля
                 expense_payment_currency = zayavka.amount * (zayavka.percent_from_payment_order_rule / 100) if zayavka.percent_from_payment_order_rule else 0
                 reward_percent_minus_hidden = zayavka.hand_reward_percent - zayavka.hidden_commission if zayavka.hand_reward_percent and zayavka.hidden_commission else 0
@@ -230,6 +241,23 @@ class ZayavkaKassaWizard(models.TransientModel):
                 jess_rate_usd = zayavka.jess_rate if zayavka.currency == 'usd' else 0
                 jess_rate_cny = zayavka.jess_rate if zayavka.currency == 'cny' else 0
                 jess_rate_eur = zayavka.jess_rate if zayavka.currency == 'euro' else 0
+                
+                # Получаем русские названия для условий оплаты и вида сделки
+                payment_conditions_dict = {
+                    'accred': 'Аккредитив',
+                    'prepayment': 'Предоплата',
+                    'postpayment': 'Постоплата',
+                    'escrow': 'Эскроу'
+                }
+                
+                deal_type_dict = {
+                    'import': 'Импорт',
+                    'export': 'Экспорт'
+                }
+                
+                # Получаем русские названия
+                payment_conditions_ru = payment_conditions_dict.get(zayavka.payment_conditions, zayavka.payment_conditions) if zayavka.payment_conditions else None
+                deal_type_ru = deal_type_dict.get(zayavka.deal_type, zayavka.deal_type) if zayavka.deal_type else None
                 
                 zayavka_data = {
                     # Основные данные
@@ -311,8 +339,8 @@ class ZayavkaKassaWizard(models.TransientModel):
                     'fin_res_percent': fin_res_percent,
                     
                     # Условия и типы
-                    'payment_conditions': zayavka.payment_conditions,
-                    'deal_type': zayavka.deal_type,
+                    'payment_conditions': payment_conditions_ru,
+                    'deal_type': deal_type_ru,
                     'with_accreditive': zayavka.with_accreditive,
                     'bank': zayavka.bank,
                     
@@ -340,10 +368,6 @@ class ZayavkaKassaWizard(models.TransientModel):
                 'Accept': 'application/json'
             }
             
-            # Логируем структуру данных перед отправкой
-            _logger.info(f"Структура данных для отправки: type={type(data)}, length={len(data)}")
-            _logger.info(f"Первые 200 символов данных: {str(data)[:200]}")
-            
             # Проверяем, что данные не пустые
             if not data:
                 _logger.warning("Данные для отправки пустые!")
@@ -353,35 +377,45 @@ class ZayavkaKassaWizard(models.TransientModel):
                     'sent_count': 0
                 }
             
-            # Пробуем отправить данные в формате JSON
-            try:
+            # Оборачиваем данные в объект, как ожидает сервер
+            payload = {
+                "data": data,  # Массив заявок в поле data
+                "type": "financial_results",
+                "fileName": self.kassa_type + "_" + self.field_name + "_" + self.date_from.isoformat(),
+                "kassa_type": self.kassa_type,
+                "filter_info": {
+                    "field_name": self.field_name,
+                    "date_from": self.date_from.isoformat() if self.date_from else None,
+                    "date_to": self.date_to.isoformat() if self.date_to else None
+                }
+            }
+            
+            # Логируем структуру данных перед отправкой
+            _logger.info(f"Структура payload для отправки: type={type(payload)}")
+            _logger.info(f"Количество заявок в data: {len(data)}")
+            _logger.info(f"Ключи payload: {list(payload.keys())}")
+            
+            # Пробуем отправить данные в формате объекта с массивом
+            response = requests.post(
+                api_url,
+                json=payload,  # Отправляем объект с данными
+                headers=headers,
+                timeout=30
+            )
+            
+            _logger.info(f"Отправлено {len(data)} заявок на сервер. Статус ответа: {response.status_code}")
+            
+            # Если сервер все еще ожидает просто массив, пробуем альтернативный формат
+            if response.status_code == 400 and "массивом" in response.text:
+                _logger.info("Пробуем отправить данные как простой массив...")
+                
                 response = requests.post(
                     api_url,
-                    json=data,  # Отправляем как JSON массив
+                    json=data,  # Отправляем просто массив
                     headers=headers,
                     timeout=30
                 )
-            except Exception as e:
-                _logger.error(f"Ошибка при отправке данных как JSON: {str(e)}")
-                
-                # Пробуем альтернативный способ отправки
-                import json
-                try:
-                    response = requests.post(
-                        api_url,
-                        data=json.dumps(data),  # Отправляем как строку JSON
-                        headers=headers,
-                        timeout=30
-                    )
-                except Exception as e2:
-                    _logger.error(f"Альтернативная отправка также не удалась: {str(e2)}")
-                    return {
-                        'server_response': str(e2),
-                        'server_status': 'connection_error',
-                        'sent_count': len(data)
-                    }
-            
-            _logger.info(f"Отправлено {len(data)} заявок на сервер. Статус ответа: {response.status_code}")
+                _logger.info(f"Альтернативная отправка. Статус ответа: {response.status_code}")
             
             if response.status_code == 200:
                 response_data = response.json()

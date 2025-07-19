@@ -105,7 +105,6 @@
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="dollar_cross_rate"/>
                     <field name="jess_rate"/>
-                    <field name="hidden_rate"/>
                   </group>
                 </div>
               </group>
@@ -177,7 +176,6 @@
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="dollar_cross_rate"/>
                     <field name="jess_rate"/>
-                    <field name="hidden_rate"/>
                   </group>
                 </div>
               </group>
@@ -250,7 +248,6 @@
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="dollar_cross_rate"/>
                     <field name="jess_rate"/>
-                    <field name="hidden_rate"/>
                   </group>
                 </div>
               </group>

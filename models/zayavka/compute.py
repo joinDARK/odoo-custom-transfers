@@ -652,10 +652,13 @@ class ZayavkaComputes(models.Model):
         for rec in self:
             rec.fin_res_sber_real_rub = (rec.fin_res_sber_real_usd or 0.0) * (rec.payer_cross_rate_rub or 0.0)
 
-    @api.depends('rate_field', 'hand_reward_percent', 'amount')
+    @api.depends('rate_field', 'hand_reward_percent', 'amount', 'deal_type')
     def _compute_our_sovok_reward(self):
         for rec in self:
-            rec.our_sovok_reward = (rec.rate_field - rec.hand_reward_percent) * rec.amount
+            if rec.deal_type == 'export':
+                rec.our_sovok_reward = 0  # Для экспорта устанавливаем 0
+            else:
+                rec.our_sovok_reward = (rec.rate_field - rec.hand_reward_percent) * rec.amount
 
     @api.depends('deal_type', 'our_sovok_reward')
     def _compute_sovok_reward(self): # Здесь все нормально
