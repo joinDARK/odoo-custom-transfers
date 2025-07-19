@@ -1,5 +1,10 @@
 from odoo import models, fields, api
 from datetime import datetime, timedelta
+import requests
+import json
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class ZayavkaKassaWizard(models.TransientModel):
@@ -112,7 +117,7 @@ class ZayavkaKassaWizard(models.TransientModel):
             self.date_to = today
 
     def action_apply_filter(self):
-        """Применяет фильтр к заявкам"""
+        """Применяет фильтр к заявкам и отправляет данные на сервер"""
         domain = []
         
         # Фильтр по дате
@@ -130,6 +135,7 @@ class ZayavkaKassaWizard(models.TransientModel):
         # Фильтр по кассе
         if self.kassa_type and self.kassa_type != 'all':
             # Получаем контрагентов из выбранной кассы
+            kassa_records = None
             if self.kassa_type == 'kassa_ivan':
                 kassa_records = self.env['amanat.kassa_ivan'].search([])
             elif self.kassa_type == 'kassa_2':
@@ -144,12 +150,280 @@ class ZayavkaKassaWizard(models.TransientModel):
                 # Если в кассе нет записей, возвращаем пустой результат
                 domain.append(('id', '=', False))
         
-        return {
+        # Получаем отфильтрованные заявки
+        filtered_zayavkas = self.env['amanat.zayavka'].search(domain)
+        
+        # Отправляем данные на сервер и получаем информацию о результате
+        server_response_info = self._send_data_to_server(filtered_zayavkas)
+        
+        # Формируем действие для открытия отфильтрованных заявок
+        action = {
             'type': 'ir.actions.act_window',
-            'name': f'Заявки - Касса: {dict(self._fields["kassa_type"].selection)[self.kassa_type]}',
+            'name': f'Заявки - Касса: {self.kassa_type}',
             'res_model': 'amanat.zayavka',
             'view_mode': 'list,form',
             'domain': domain,
             'target': 'main',
-            'context': self.env.context,
-        } 
+            'context': {
+                **self.env.context,
+                'filtered_zayavkas_count': len(filtered_zayavkas),
+                'kassa_filter_applied': True,
+                'kassa_type': self.kassa_type,
+                'filter_field': self.field_name,
+                'date_from': self.date_from.isoformat() if self.date_from else None,
+                'date_to': self.date_to.isoformat() if self.date_to else None,
+                **server_response_info,  # Добавляем информацию о результате отправки на сервер
+            },
+        }
+        
+        return action
+
+    def _send_data_to_server(self, zayavkas):
+        """Отправляет данные заявок на внешний сервер"""
+        data = []
+        
+        try:
+            # Подготавливаем данные для отправки
+            for zayavka in zayavkas:
+                # Вычисляем дополнительные поля
+                expense_payment_currency = zayavka.amount * (zayavka.percent_from_payment_order_rule / 100) if zayavka.percent_from_payment_order_rule else 0
+                reward_percent_minus_hidden = zayavka.hand_reward_percent - zayavka.hidden_commission if zayavka.hand_reward_percent and zayavka.hidden_commission else 0
+                export_reward_currency = zayavka.amount * (zayavka.hand_reward_percent / 100) if zayavka.hand_reward_percent and zayavka.deal_type == 'export' else 0
+                
+                # Фин рез в % 
+                fin_res_percent = 0
+                if zayavka.deal_type == 'export':
+                    fin_res_percent = (zayavka.fin_res_client_real / zayavka.amount) * 100 if zayavka.amount else 0
+                else:
+                    fin_res_percent = (zayavka.fin_res_client_real / zayavka.cost_of_money_client_real) * 100 if zayavka.cost_of_money_client_real else 0
+                
+                # Эквивалент доллара по XE
+                usd_equivalent_xe = zayavka.amount * zayavka.xe_rate if zayavka.xe_rate else 0
+                
+                # Агентское вознаграждение наше (тезер)
+                agent_reward_tezer = zayavka.hidden_commission * zayavka.amount if zayavka.hidden_commission else 0
+                
+                # Расход на операционную деятельность от инвойса
+                invoice_operational_expense = zayavka.amount * (zayavka.percent_from_expense_rule / 100) if zayavka.percent_from_expense_rule else 0
+                
+                # Расход субагента
+                subagent_expense = zayavka.amount * ((zayavka.price_list_carrying_out_accrual_percentage or 0) + (zayavka.price_list_profit_id.percent_accrual or 0)) / 100
+                
+                # Количество дней просрочки (разные для разных банков)
+                days_overdue_sber = 0
+                days_overdue_sovcom = 0
+                days_overdue_individual = 0
+                days_overdue_vtb = 0
+                
+                if zayavka.date_received_on_pc_payment and zayavka.rate_fixation_date:
+                    days_diff = (zayavka.date_received_on_pc_payment - zayavka.rate_fixation_date).days
+                    if zayavka.bank == 'sberbank':
+                        days_overdue_sber = days_diff
+                    elif zayavka.bank == 'sovcombank':
+                        days_overdue_sovcom = days_diff
+                    elif zayavka.bank == 'vtb':
+                        days_overdue_vtb = days_diff
+                    else:
+                        days_overdue_individual = days_diff
+                
+                # Курс Джесс по валютам
+                jess_rate_usd = zayavka.jess_rate if zayavka.currency == 'usd' else 0
+                jess_rate_cny = zayavka.jess_rate if zayavka.currency == 'cny' else 0
+                jess_rate_eur = zayavka.jess_rate if zayavka.currency == 'euro' else 0
+                
+                zayavka_data = {
+                    # Основные данные
+                    'zayavka_id': zayavka.zayavka_id,
+                    'zayavka_num': zayavka.zayavka_num,
+                    'status': zayavka.status,
+                    'date_placement': zayavka.date_placement.isoformat() if zayavka.date_placement else None,
+                    'taken_in_work_date': zayavka.taken_in_work_date.isoformat() if zayavka.taken_in_work_date else None,
+                    
+                    # Контрагенты
+                    'contragent_id': zayavka.contragent_id.id if zayavka.contragent_id else None,
+                    'contragent_name': zayavka.contragent_id.name if zayavka.contragent_id else None,
+                    'subagent_ids': [subagent.id for subagent in zayavka.subagent_ids],
+                    'subagent_names': [subagent.name for subagent in zayavka.subagent_ids],
+                    'client_id': zayavka.client_id.id if zayavka.client_id else None,
+                    'client_name': zayavka.client_id.name if zayavka.client_id else None,
+                    'manager_ids': [manager.id for manager in zayavka.manager_ids],
+                    'manager_names': [manager.name for manager in zayavka.manager_ids],
+                    'subagent_payer_ids': [payer.id for payer in zayavka.subagent_payer_ids],
+                    'subagent_payer_names': [payer.name for payer in zayavka.subagent_payer_ids],
+                    
+                    # Даты
+                    'deal_closed_date': zayavka.deal_closed_date.isoformat() if zayavka.deal_closed_date else None,
+                    'rate_fixation_date': zayavka.rate_fixation_date.isoformat() if zayavka.rate_fixation_date else None,
+                    'date_received_on_pc_payment': zayavka.date_received_on_pc_payment.isoformat() if zayavka.date_received_on_pc_payment else None,
+                    'date_received_tezera': zayavka.date_received_tezera.isoformat() if zayavka.date_received_tezera else None,
+                    
+                    # Суммы и валюты
+                    'amount': zayavka.amount,
+                    'currency': zayavka.currency,
+                    'total_client': zayavka.total_client,
+                    'equivalent_amount_usd': zayavka.equivalent_amount_usd,
+                    'usd_equivalent_xe': usd_equivalent_xe,
+                    
+                    # Суммы по валютам
+                    'amount_usd': zayavka.amount if zayavka.currency == 'usd' else 0,
+                    'amount_cny': zayavka.amount if zayavka.currency == 'cny' else 0,
+                    'amount_aed': zayavka.amount if zayavka.currency == 'aed' else 0,
+                    'amount_thb': zayavka.amount if zayavka.currency == 'thb' else 0,
+                    'amount_eur': zayavka.amount if zayavka.currency == 'euro' else 0,
+                    'amount_idr': zayavka.amount if zayavka.currency == 'idr' else 0,
+                    
+                    # Проценты и комиссии
+                    'hand_reward_percent': zayavka.hand_reward_percent,
+                    'hidden_commission': zayavka.hidden_commission,
+                    'reward_percent_minus_hidden': reward_percent_minus_hidden,
+                    'hidden_partner_commission_real': zayavka.hidden_partner_commission_real,
+                    'plus_dollar': zayavka.plus_dollar,
+                    
+                    # Курсы
+                    'hidden_rate': zayavka.hidden_rate,
+                    'rate_field': zayavka.rate_field,
+                    'jess_rate': zayavka.jess_rate,
+                    'jess_rate_usd': jess_rate_usd,
+                    'jess_rate_cny': jess_rate_cny,
+                    'jess_rate_eur': jess_rate_eur,
+                    'xe_rate': zayavka.xe_rate,
+                    
+                    # Расходы
+                    'conversion_expenses_currency': zayavka.conversion_expenses_currency,
+                    'payment_order_rf_client': zayavka.payment_order_rf_client,
+                    'expense_payment_currency': expense_payment_currency,
+                    'client_payment_cost': zayavka.client_payment_cost,
+                    'cost_of_money_client_real': zayavka.cost_of_money_client_real,
+                    'client_real_operating_expenses': zayavka.client_real_operating_expenses,
+                    'invoice_operational_expense': invoice_operational_expense,
+                    'subagent_expense': subagent_expense,
+                    
+                    # Вознаграждения
+                    'export_reward_currency': export_reward_currency,
+                    'our_client_reward': zayavka.our_client_reward,
+                    'non_our_client_reward': zayavka.non_our_client_reward,
+                    'agent_our_reward': zayavka.agent_our_reward,
+                    'agent_reward_tezer': agent_reward_tezer,
+                    
+                    # Финансовые результаты
+                    'fin_res_client_real': zayavka.fin_res_client_real,
+                    'fin_res_client_real_rub': zayavka.fin_res_client_real_rub,
+                    'fin_res_percent': fin_res_percent,
+                    
+                    # Условия и типы
+                    'payment_conditions': zayavka.payment_conditions,
+                    'deal_type': zayavka.deal_type,
+                    'with_accreditive': zayavka.with_accreditive,
+                    'bank': zayavka.bank,
+                    
+                    # Дни просрочки
+                    'days_overdue_sber': days_overdue_sber,
+                    'days_overdue_sovcom': days_overdue_sovcom,
+                    'days_overdue_individual': days_overdue_individual,
+                    'days_overdue_vtb': days_overdue_vtb,
+                    
+                    # Комментарии
+                    'comment': zayavka.comment,
+                    
+                    # Информация о фильтре
+                    'kassa_type': self.kassa_type,
+                    'filter_field': self.field_name,
+                    'date_from': self.date_from.isoformat() if self.date_from else None,
+                    'date_to': self.date_to.isoformat() if self.date_to else None,
+                }
+                data.append(zayavka_data)
+            
+            # Отправляем POST запрос на сервер
+            api_url = "http://92.255.207.48:8085/api/salesRegisters"  # Используем HTTP вместо HTTPS
+            headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+            
+            # Логируем структуру данных перед отправкой
+            _logger.info(f"Структура данных для отправки: type={type(data)}, length={len(data)}")
+            _logger.info(f"Первые 200 символов данных: {str(data)[:200]}")
+            
+            # Проверяем, что данные не пустые
+            if not data:
+                _logger.warning("Данные для отправки пустые!")
+                return {
+                    'server_response': 'No data to send',
+                    'server_status': 'error',
+                    'sent_count': 0
+                }
+            
+            # Пробуем отправить данные в формате JSON
+            try:
+                response = requests.post(
+                    api_url,
+                    json=data,  # Отправляем как JSON массив
+                    headers=headers,
+                    timeout=30
+                )
+            except Exception as e:
+                _logger.error(f"Ошибка при отправке данных как JSON: {str(e)}")
+                
+                # Пробуем альтернативный способ отправки
+                import json
+                try:
+                    response = requests.post(
+                        api_url,
+                        data=json.dumps(data),  # Отправляем как строку JSON
+                        headers=headers,
+                        timeout=30
+                    )
+                except Exception as e2:
+                    _logger.error(f"Альтернативная отправка также не удалась: {str(e2)}")
+                    return {
+                        'server_response': str(e2),
+                        'server_status': 'connection_error',
+                        'sent_count': len(data)
+                    }
+            
+            _logger.info(f"Отправлено {len(data)} заявок на сервер. Статус ответа: {response.status_code}")
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                _logger.info(f"Успешный ответ от сервера: {response_data}")
+                
+                # Создаем запись в модели kassa_files
+                kassa_files_model = self.env['amanat.kassa_files']
+                kassa_file = kassa_files_model.create_from_server_response(
+                    response_data,
+                    self.kassa_type,
+                    self.field_name,
+                    self.date_from,
+                    self.date_to
+                )
+                
+                # Возвращаем информацию о результате
+                return {
+                    'server_response': response_data,
+                    'server_status': 'success',
+                    'sent_count': len(data),
+                    'kassa_file_id': kassa_file.id if kassa_file else None,
+                    'kassa_file_name': kassa_file.name if kassa_file else None
+                }
+            else:
+                _logger.error(f"Ошибка при отправке данных на сервер: {response.status_code} - {response.text}")
+                return {
+                    'server_response': response.text,
+                    'server_status': 'error',
+                    'sent_count': len(data)
+                }
+        
+        except requests.exceptions.RequestException as e:
+            _logger.error(f"Ошибка подключения к серверу: {str(e)}")
+            return {
+                'server_response': str(e),
+                'server_status': 'connection_error',
+                'sent_count': len(data)
+            }
+        except Exception as e:
+            _logger.error(f"Неожиданная ошибка при отправке данных: {str(e)}")
+            return {
+                'server_response': str(e),
+                'server_status': 'unexpected_error',
+                'sent_count': len(data)
+            } 

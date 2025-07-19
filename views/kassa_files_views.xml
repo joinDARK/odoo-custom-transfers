@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- LIST VIEW -->
+    <record id="view_amanat_kassa_files_list" model="ir.ui.view">
+        <field name="name">amanat.kassa_files.list</field>
+        <field name="model">amanat.kassa_files</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list editable="top" multi_edit="1">
+                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Скачать Excel" type="object" name="download_excel_file" icon="fa-download" class="btn-primary"/>
+                <button width="30" title="Превью Excel" type="object" name="preview_excel_files" icon="fa-eye" class="btn-success"/>
+                <button width="30" title="Повторить скачивание" type="object" name="retry_download" icon="fa-refresh" class="btn-warning"/>
+                <field name="sequence"/>
+                <field name="name"/>
+                <field name="kassa_type"/>
+                <field name="creation_date"/>
+                <field name="status"/>
+                <field name="file_size"/>
+                <field name="rows_count"/>
+                <field name="operations_count"/>
+                <field name="excel_files_count"/>
+                <field name="excel_file_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_amanat_kassa_files_form" model="ir.ui.view">
+        <field name="name">amanat.kassa_files.form</field>
+        <field name="model">amanat.kassa_files</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Касса файлы">
+                <header>
+                    <button type="object" name="download_excel_file" string="Скачать Excel" class="btn-primary" icon="fa-download"/>
+                    <button type="object" name="preview_excel_files" string="Превью Excel" class="btn-success" icon="fa-eye"/>
+                    <button type="object" name="retry_download" string="Повторить скачивание" class="btn-warning" icon="fa-refresh"/>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Наименование файла..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="kassa_type"/>
+                            <field name="filter_field"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="creation_date"/>
+                            <field name="file_size"/>
+                            <field name="rows_count"/>
+                            <field name="operations_count"/>
+                            <field name="excel_files_count"/>
+                            <field name="total_files_count"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Техническая информация">
+                        <field name="download_url" widget="url"/>
+                        <field name="server_response" widget="text"/>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Excel файлы">
+                            <field name="excel_file_attachments" widget="many2many_binary" 
+                                   options="{'no_create': False, 'no_open': False}"
+                                   help="Скачанные Excel файлы"/>
+                        </page>
+                        
+                        <page string="Все документы">
+                            <field name="file_attachments" widget="many2many_binary" 
+                                   options="{'no_create': False, 'no_open': False}"
+                                   help="Все файлы касс"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                
+                <!-- Чат и активности -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_amanat_kassa_files_search" model="ir.ui.view">
+        <field name="name">amanat.kassa_files.search</field>
+        <field name="model">amanat.kassa_files</field>
+        <field name="arch" type="xml">
+            <search string="Поиск файлов касс">
+                <field name="name"/>
+                <field name="kassa_type"/>
+                <field name="creation_date"/>
+                <field name="status"/>
+                <separator/>
+                <filter string="Скачанные" name="downloaded" domain="[('status', '=', 'downloaded')]"/>
+                <filter string="Ошибки" name="error" domain="[('status', '=', 'error')]"/>
+                <filter string="Ожидают" name="pending" domain="[('status', '=', 'pending')]"/>
+                <separator/>
+                <filter string="Касса Иван" name="kassa_ivan" domain="[('kassa_type', '=', 'kassa_ivan')]"/>
+                <filter string="Касса 2" name="kassa_2" domain="[('kassa_type', '=', 'kassa_2')]"/>
+                <filter string="Касса 3" name="kassa_3" domain="[('kassa_type', '=', 'kassa_3')]"/>
+                <separator/>
+                <group expand="0" string="Группировка">
+                    <filter string="По кассе" name="group_by_kassa" context="{'group_by': 'kassa_type'}"/>
+                    <filter string="По статусу" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="По дате создания" name="group_by_creation_date" context="{'group_by': 'creation_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_amanat_kassa_files" model="ir.actions.act_window">
+        <field name="name">Касса файлы</field>
+        <field name="res_model">amanat.kassa_files</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">main</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Создайте первый файл касс
+            </p>
+            <p>
+                Здесь хранятся файлы, сгенерированные после фильтрации заявок по кассам.
+            </p>
+        </field>
+    </record>
+</odoo> 
