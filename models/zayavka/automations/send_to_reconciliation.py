@@ -39,6 +39,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
 
         finka = self.env['amanat.contragent'].search([('name', '=', 'Финка')], limit=1)
         if not finka:
+            _logger.warning("Контрагент 'Финка' не найден")
             return
 
         contragent = self.contragent_id
@@ -163,7 +164,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 'currency': currency,
                 'order_id': [(4, order.id)],
                 'partner_id': contragent2.id,
-                'sender_id': [(4, agent_payer.id)],
+                'sender_id': [(4, finka.payer_ids[0].id)],
                 'receiver_id': [(4, payer2.id)],
                 'wallet_id': wallet_agentka.id,
                 **self._get_reconciliation_currency_fields(currency, -sum_value)
@@ -176,6 +177,12 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
     def _run_send_to_reconciliation_sber(self):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
+
+
+        finka = self.env['amanat.contragent'].search([('name', '=', 'Финка')], limit=1)
+        if not finka:
+            _logger.warning("Контрагент 'Финка' не найден")
+            return
 
         contragent = self.contragent_id
         if not contragent:
@@ -299,7 +306,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 'currency': currency,
                 'order_id': [(4, order.id)],
                 'partner_id': contragent2.id,
-                'sender_id': [(4, agent_payer.id)],
+                'sender_id': [(4, finka.payer_ids[0].id)],
                 'receiver_id': [(4, payer2.id)],
                 'wallet_id': wallet_agentka.id,
                 **self._get_reconciliation_currency_fields(currency, -sum_value)
@@ -312,6 +319,12 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
     def _run_send_to_reconciliation_client(self):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
+
+
+        finka = self.env['amanat.contragent'].search([('name', '=', 'Финка')], limit=1)
+        if not finka:
+            _logger.warning("Контрагент 'Финка' не найден")
+            return
 
         contragent = self.contragent_id
         if not contragent:
@@ -436,7 +449,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 'currency': currency,
                 'order_id': [(4, order.id)],
                 'partner_id': contragent2.id,
-                'sender_id': [(4, agent_payer.id)],
+                'sender_id': [(4, finka.payer_ids[0].id)],
                 'receiver_id': [(4, payer2.id)],
                 'wallet_id': wallet_agentka.id,
                 **self._get_reconciliation_currency_fields(currency, -sum_value)
@@ -449,6 +462,12 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
     def _run_send_to_reconciliation_export(self):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
+
+
+        finka = self.env['amanat.contragent'].search([('name', '=', 'Финка')], limit=1)
+        if not finka:
+            _logger.warning("Контрагент 'Финка' не найден")
+            return
 
         num_zayavka = self.zayavka_num
         if not num_zayavka:
@@ -559,7 +578,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 'currency': currency,
                 'order_id': [(4, order.id)],
                 'partner_id': contragent2.id,
-                'sender_id': [(4, agent_payer.id)],
+                'sender_id': [(4, finka.payer_ids[0].id)],
                 'receiver_id': [(4, payer2.id)],
                 'wallet_id': wallet_agentka.id,
                 **self._get_reconciliation_currency_fields(currency, -sum_value)
@@ -572,6 +591,12 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
     def _run_send_to_reconciliation_sber_export(self):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
+
+
+        finka = self.env['amanat.contragent'].search([('name', '=', 'Финка')], limit=1)
+        if not finka:
+            _logger.warning("Контрагент 'Финка' не найден")
+            return
 
         contragent = self.contragent_id
         if not contragent:
@@ -680,7 +705,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 'currency': currency,
                 'order_id': [(4, order.id)],
                 'partner_id': contragent2.id,
-                'sender_id': [(4, agent_payer.id)],
+                'sender_id': [(4, finka.payer_ids[0].id)],
                 'receiver_id': [(4, payer2.id)],
                 'wallet_id': wallet_agentka.id,
                 **self._get_reconciliation_currency_fields(currency, -sum_value)
@@ -693,6 +718,12 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
     def _run_send_to_reconciliation_client_export(self):
         record_id = self.id
         _logger.info(f"Получен ID заявки: {record_id}")
+
+
+        finka = self.env['amanat.contragent'].search([('name', '=', 'Финка')], limit=1)
+        if not finka:
+            _logger.warning("Контрагент 'Финка' не найден")
+            return
 
         contragent = self.contragent_id
         if not contragent:
@@ -802,7 +833,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 'currency': currency,
                 'order_id': [(4, order.id)],
                 'partner_id': contragent2.id,
-                'sender_id': [(4, agent_payer.id)],
+                'sender_id': [(4, finka.payer_ids[0].id)],
                 'receiver_id': [(4, payer2.id)],
                 'wallet_id': wallet_agentka.id,
                 **self._get_reconciliation_currency_fields(currency, -sum_value)
@@ -912,6 +943,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         
         if not fin_rez_orders:
             _logger.warning(f"Не найдены ордера с контрагентом 'Фин рез' для заявки {record_id}")
+            return
         
         _logger.info(f"Найдено {len(fin_rez_orders)} ордеров с контрагентом 'Фин рез'")
         
@@ -922,6 +954,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
         wallet_agentka = self.env['amanat.wallet'].search([('name', '=', 'Агентка')], limit=1)
         if not wallet_agentka:
             _logger.warning("Кошелёк 'Агентка' не найден.")
+            return
         
         # Находим держателя для долгового контейнера
         cash_holder = contragent_model.search([('name', '=', cash_source)], limit=1)

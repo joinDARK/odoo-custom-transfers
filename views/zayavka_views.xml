@@ -1380,6 +1380,140 @@
                 <field name="whose_mistake"/>
                 <field name="zayavka_mistake"/>
               </group>
+              <group>
+                <div class="text-uppercase fw-bolder small">Возврат по кроссу <span class="o_stat_value"><field name="cross_return" class="o_field_boolean mb-0"/></span></div>
+              </group>
+              <group invisible="not cross_return">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="cross_return_date"/>
+                    <field name="cross_return_bank_rate"/>
+                  </group>
+                  <group>
+                    <field name="cross_return_currency_pair"/>
+                    <field name="cross_return_conversion_amount"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Возврат с последующей оплатой" invisible="problem_stage != '1'">
+                <div>
+                  <group>
+                    <div class="text-uppercase fw-medium">Сменить плательщика <span class="o_stat_value"><field name="change_payer" class="o_field_boolean mb-0"/></span></div>
+                  </group>
+                  <group invisible="not change_payer">
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="return_commission"/>
+                      </group>
+                      <group>
+                        <field name="payers_for_return" widget="many2many_tags" domain="[('id', 'in', possible_payers)]"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group>
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payment_date_again_1"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_paid_date_again_1"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_received_date_again_1"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group invisible="not payment_date_again_1 or not supplier_currency_paid_date_again_1 or not supplier_currency_received_date_again_1">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payment_date_again_2"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_paid_date_again_2"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_received_date_again_2"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group invisible="not payment_date_again_2 or not supplier_currency_paid_date_again_2 or not supplier_currency_received_date_again_2">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payment_date_again_3"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_paid_date_again_3"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_received_date_again_3"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group invisible="not payment_date_again_3 or not supplier_currency_paid_date_again_3 or not supplier_currency_received_date_again_3">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payment_date_again_4"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_paid_date_again_4"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_received_date_again_4"/>
+                      </group>
+                    </div>
+                  </group>
+                  <group invisible="not payment_date_again_4 or not supplier_currency_paid_date_again_4 or not supplier_currency_received_date_again_4">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payment_date_again_5"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_paid_date_again_5"/>
+                      </group>
+                      <group>
+                        <field name="supplier_currency_received_date_again_5"/>
+                      </group>
+                    </div>
+                  </group>
+                </div>
+              </group>
+              <group string="Возврат с возвратом основной суммы" invisible="problem_stage != '2'">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="return_amount_to_client"/>
+                  </group>
+                  <group>
+                    <field name="payment_order_date_to_client_account"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Возврат с возвратом всей суммы" invisible="problem_stage != '3'">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="return_amount"/>
+                  </group>
+                  <group>
+                    <field name="payment_order_date_to_client_account_return_all"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Возврат с частичной оплатой вознаграждения" invisible="problem_stage != '4'">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="return_amount_to_reward"/>
+                  </group>
+                  <group>
+                    <field name="payment_order_date_to_client_account_return_all"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Возврат на предоплату следующего заказа" invisible="problem_stage != '5'">
+                <div>
+                  <group>
+                    <field name="return_amount"/>
+                  </group>
+                </div>
+              </group>
             </page>
           </notebook>
         </sheet>
