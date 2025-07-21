@@ -1199,9 +1199,11 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     problem_stage = fields.Selection(
         [
-            ('1', 'Возврат с последующей отменой'),
-            ('2', 'Возврат с повторной оплатой'),
-            ('3', 'Деньги не сели поставщику'),
+            ('1', 'Возврат с последующей оплатой'),
+            ('2', 'Возврат с возвратом основной суммы'),
+            ('3', 'Возврат с возвратом всей суммы'),
+            ('4', 'Возврат с частичной оплатой вознаграждения'),
+            ('5', 'Возврат на предоплату следующего заказа'),
         ],
         string='Стадии проблемы',
         tracking=True
@@ -1907,7 +1909,164 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Расчет заявки, как Сбербанк',
         default=False,
     )
+
     is_sovcombank_contragent = fields.Boolean(
         string='Расчет заявки, как Совкомбанк',
         default=False,
     )
+
+    # Возвраты
+    cross_return = fields.Boolean(string='Возврат по кроссу', default=False, tracking=True)
+    cross_return_date = fields.Date(string='Дата возврата по кроссу', tracking=True)
+    cross_return_currency_pair = fields.Selection(
+        [
+            ('usd_cny', 'USD/CNY'),
+            ('cny_usd', 'CNY/USD'),
+            ('euro_usd', 'EURO/USD'),
+            ('usd_euro', 'USD/EURO'),
+            ('aed_usd', 'AED/USD'),
+            ('usd_aed', 'USD/AED'),
+            ('thb_usd', 'THB/USD'),
+            ('usd_thb', 'USD/THB')
+        ],
+        string='Валютная пара возврата по кроссу',
+        tracking=True
+    )
+    cross_return_bank_rate = fields.Float(string='Кросс-курс банка возврата по кроссу', tracking=True)
+    cross_return_conversion_amount = fields.Float(
+        string='Сумма после конвертации', 
+        tracking=True, 
+        readonly=False,
+        compute='_compute_cross_return_conversion_amount'
+    )
+
+    # Поля для возврата с последующей оплатой (problem_stage == '1')
+    change_payer = fields.Boolean(string='Сменить плательщика', default=False, tracking=True)
+
+    return_commission = fields.Float(
+        string='Комиссия на возврат',
+        digits=(16, 2),
+        tracking=True,
+    )
+
+    payers_for_return = fields.Many2many(
+        'amanat.payer',
+        'amanat_zayavka_payer_return_rel',  # Уникальная таблица связи
+        'zayavka_id',
+        'payer_id',
+        string='Плательщик для возврата',
+        tracking=True,
+    )
+
+    possible_payers = fields.Many2many(
+        'amanat.payer',
+        compute='_compute_possible_payers',
+        store=False,  # Не храним в БД, только для domain
+    )
+
+    payment_date_again_1 = fields.Date(
+        string='Передано в оплату (Импорт) повторно',
+        tracking=True,
+    )
+
+    supplier_currency_paid_date_again_1 = fields.Date(
+        string='Оплачена валюта поставщику повторно',
+        tracking=True,
+    )
+
+    supplier_currency_received_date_again_1 = fields.Date(
+        string='Получена валюта поставщиком (Импорт) повторно',
+        tracking=True,
+    )
+
+    payment_date_again_2 = fields.Date(
+        string='Передано в оплату (Импорт) повторно',
+        tracking=True,
+    )
+
+    supplier_currency_paid_date_again_2 = fields.Date(
+        string='Оплачена валюта поставщику повторно',
+        tracking=True,
+    )
+
+    supplier_currency_received_date_again_2 = fields.Date(
+        string='Получена валюта поставщиком (Импорт) повторно',
+        tracking=True,
+    )
+
+    payment_date_again_3 = fields.Date(
+        string='Передано в оплату (Импорт) повторно',
+        tracking=True,
+    )
+
+    supplier_currency_paid_date_again_3 = fields.Date(
+        string='Оплачена валюта поставщику повторно',
+        tracking=True,
+    )
+
+    supplier_currency_received_date_again_3 = fields.Date(
+        string='Получена валюта поставщиком (Импорт) повторно',
+        tracking=True,
+    )
+
+    payment_date_again_4 = fields.Date(
+        string='Передано в оплату (Импорт) повторно',
+        tracking=True,
+    )
+
+    supplier_currency_paid_date_again_4 = fields.Date(
+        string='Оплачена валюта поставщику повторно',
+        tracking=True,
+    )
+
+    supplier_currency_received_date_again_4 = fields.Date(
+        string='Получена валюта поставщиком (Импорт) повторно',
+        tracking=True,
+    )
+
+    payment_date_again_5 = fields.Date(
+        string='Передано в оплату (Импорт) повторно',
+        tracking=True,
+    )
+
+    supplier_currency_paid_date_again_5 = fields.Date(
+        string='Оплачена валюта поставщику повторно',
+        tracking=True,
+    )
+
+    supplier_currency_received_date_again_5 = fields.Date(
+        string='Получена валюта поставщиком (Импорт) повторно',
+        tracking=True,
+    )
+
+    # Поля для возврата с возвратом основной суммы (problem_stage == '2')
+    return_amount_to_client = fields.Float(
+        string='Сумма на возврат клиенту',
+        digits=(16, 2),
+        tracking=True,
+    )
+
+    payment_order_date_to_client_account = fields.Date(
+        string='Дата платежного поручения на расчетный счет клиента',
+        tracking=True,
+    )
+
+    # Поля для возврата с возвратом всей суммы (problem_stage == '3')
+    return_amount = fields.Float(
+        string='Сумма на возврат',
+        digits=(16, 2),
+        tracking=True,
+    )
+
+    payment_order_date_to_client_account_return_all = fields.Date(
+        string='Дата возврата на расчетный счет клиента',
+        tracking=True,
+    )
+
+    # Поля для возврата с частичной оплатой вознаграждения (problem_stage == '4')
+    return_amount_to_reward = fields.Float(
+        string='Сумма вознаграждения на возврат',
+        digits=(16, 2),
+        tracking=True,
+    )
+

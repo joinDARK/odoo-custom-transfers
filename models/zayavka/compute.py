@@ -1,3 +1,4 @@
+import re
 from odoo import api, fields, models
 import logging
 
@@ -136,13 +137,13 @@ class ZayavkaComputes(models.Model):
     def _compute_non_our_client_reward(self):
         for rec in self:
             if rec.hidden_commission:
+                _logger.info(f'rec.non_our_client_reward: total_client({rec.total_client}) - (rate_real({rec.rate_real}) + our_client_reward({rec.our_client_reward})) = {rec.total_client - (rec.rate_real + rec.our_client_reward)}')
+                # ! Вознаграждение не наше Клиент = Итого Клиент - (Курс реал + Вознаграждение наше)
+                rec.non_our_client_reward = rec.total_client - (rec.rate_real + rec.our_client_reward)
+            else:
                 # ! Вознаграждение не наше Клиент = 0, если скрытая комиссия == 0
                 _logger.info(f'rec.non_our_client_reward: 0')
                 rec.non_our_client_reward = 0.0
-            else:
-                _logger.info(f'rec.non_our_client_reward: {rec.total_client} - ({rec.rate_real} + {rec.our_client_reward}) =  {rec.total_client - (rec.rate_real + rec.our_client_reward)}')
-                # ! Вознаграждение не наше Клиент = Итого Клиент - (Курс реал + Вознаграждение наше)
-                rec.non_our_client_reward = rec.total_client - (rec.rate_real + rec.our_client_reward)
 
     @api.depends('application_amount_rub_contract', 'client_reward')
     def _compute_total_client(self):
@@ -652,13 +653,14 @@ class ZayavkaComputes(models.Model):
         for rec in self:
             rec.fin_res_sber_real_rub = (rec.fin_res_sber_real_usd or 0.0) * (rec.payer_cross_rate_rub or 0.0)
 
-    @api.depends('rate_field', 'hand_reward_percent', 'amount', 'deal_type')
+    @api.depends('rate_field', 'hand_reward_percent', 'amount', 'deal_type', 'best_rate')
     def _compute_our_sovok_reward(self):
         for rec in self:
             if rec.deal_type == 'export':
-                rec.our_sovok_reward = 0  # Для экспорта устанавливаем 0
+                _logger.info(f'rec.our_sovok_reward: ({rec.rate_field} * {rec.amount}) - ({rec.amount} * {rec.best_rate}) = {rec.rate_field * rec.amount - (rec.amount * rec.best_rate)}')
+                rec.our_sovok_reward = (rec.rate_field * rec.amount) - (rec.amount * rec.best_rate)
             else:
-                rec.our_sovok_reward = (rec.rate_field - rec.hand_reward_percent) * rec.amount
+                rec.our_sovok_reward = (rec.rate_field - rec.hand_reward_percent) - (rec.best_rate * rec.amount)
 
     @api.depends('deal_type', 'our_sovok_reward')
     def _compute_sovok_reward(self): # Здесь все нормально
@@ -1299,11 +1301,14 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.status_range = 'no'
 
-    @api.depends('export_agent_flag', 'is_sovcombank_contragent', 'is_sberbank_contragent', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate')
+    @api.depends('export_agent_flag', 'is_sovcombank_contragent', 'is_sberbank_contragent', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate', 'hand_reward_percent')
     def _compute_application_amount_rub_contract(self):
         for record in self:
             if record.deal_type == 'export':
-                comp_amount_rub = record.amount * record.best_rate
+                if record.export_agent_flag:
+                    comp_amount_rub = record.amount * record.best_rate
+                else:
+                    comp_amount_rub = record.amount * (record.rate_field - (record.rate_field * record.hand_reward_percent))
             else:
                 comp_amount_rub = record.amount * record.rate_field
 
@@ -1463,18 +1468,26 @@ class ZayavkaComputes(models.Model):
             reward = rec.reward_percent or 0.0
             rec.calculated_percent = ((1 + conv) * (1 + reward)) - 1
 
-    @api.depends('amount', 'best_rate', 'export_agent_flag')
+    @api.depends('amount', 'best_rate', 'export_agent_flag', 'rate_field', 'hand_reward_percent', 'deal_type', 'is_sberbank_contragent', 'is_sovcombank_contragent', 'sber_reward', 'sovok_reward', 'client_reward')
     def _compute_rate_real(self):
-        for rec in self:
-            if rec.export_agent_flag:
-                if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
-                    rec.rate_real = ((rec.amount or 0.0) * (rec.best_rate or 0.0)) - rec.sber_reward
-                elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
-                    rec.rate_real = ((rec.amount or 0.0) * (rec.best_rate or 0.0)) - rec.sovok_reward
+        for record in self:
+            if record.deal_type == 'export':
+                if record.export_agent_flag:
+                    comp_amount = record.amount * record.best_rate
                 else:
-                    rec.rate_real = ((rec.amount or 0.0) * (rec.best_rate or 0.0)) - rec.client_reward
+                    comp_amount = record.amount * (record.rate_field - (record.rate_field * record.hand_reward_percent))
             else:
-                rec.rate_real = (rec.amount or 0.0) * (rec.best_rate or 0.0)
+                comp_amount = record.amount * record.best_rate
+
+            if record.export_agent_flag:
+                if record.is_sberbank_contragent and not record.is_sovcombank_contragent:
+                    record.rate_real = comp_amount - record.sber_reward
+                elif record.is_sovcombank_contragent and not record.is_sberbank_contragent:
+                    record.rate_real = comp_amount - record.sovok_reward
+                else:
+                    record.rate_real = comp_amount - record.client_reward
+            else:
+                record.rate_real = comp_amount
 
     @api.depends(
         'amount',
@@ -1542,3 +1555,24 @@ class ZayavkaComputes(models.Model):
             # Вычисляем разность в днях
             delta = end_date - rec.taken_in_work_date
             rec.deal_cycle_days = delta.days
+
+    @api.depends('cross_return_bank_rate', 'sum_stuck')
+    def _compute_cross_return_conversion_amount(self):
+        for rec in self:
+            rec.cross_return_conversion_amount = rec.sum_stuck * (rec.cross_return_bank_rate or 0.0)
+
+    @api.depends('subagent_ids', 'subagent_ids.payer_ids')  # Зависит от subagent_ids и их payer_ids
+    def _compute_possible_payers(self):
+        for rec in self:
+            rec.possible_payers = rec.subagent_ids.mapped('payer_ids')
+
+    @api.onchange('subagent_ids')
+    def _onchange_subagent_ids(self):
+        """Очищаем невалидные плательщиков и обновляем domain (но domain через computed)"""
+        if self.subagent_ids:
+            payer_ids = self.subagent_ids.mapped('payer_ids').ids
+            # Фильтруем существующие значения
+            valid_payers = self.payers_for_return.filtered(lambda p: p.id in payer_ids)
+            self.payers_for_return = valid_payers
+        else:
+            self.payers_for_return = False  # Очищаем полностью
