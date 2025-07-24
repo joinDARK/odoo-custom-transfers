@@ -11,6 +11,8 @@
                 <field name="date_end"/>
                 <field name="percent" widget="percentage"/>
                 <field name="zayavka_ids"/>
+                <field name="min_application_amount"/>
+                <field name="max_application_amount"/>
             </list>
         </field>
     </record>
@@ -26,6 +28,8 @@
                     <field name="date_end"/>
                     <field name="percent" widget="percentage"/>
                     <field name="zayavka_ids"/>
+                    <field name="min_application_amount"/>
+                    <field name="max_application_amount"/>
                 </group>
             </form>
         </field>

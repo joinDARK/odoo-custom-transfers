@@ -4,6 +4,7 @@
     <menuitem 
         id="amanat_menu_root" 
         name="ТДК"
+        action="action_amanat_welcome"
         sequence="10"
     />
 
@@ -37,16 +38,16 @@
     <menuitem 
         id="amanat_menu_main_group" 
         name="Основные" 
-        parent="amanat_menu_root" 
+        parent="amanat_menu_root"
         sequence="1"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector,amanat.group_amanat_treasurer"
     />
 
     <!-- Группировака "Перевод"-->
     <menuitem 
         id="amanat_menu_transfer_group" 
         name="Перевод" 
-        parent="amanat_menu_root" 
+        parent="amanat_menu_root"
         sequence="2"
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
@@ -55,7 +56,7 @@
     <menuitem 
         id="amanat_menu_manuals_group" 
         name="Справочники" 
-        parent="amanat_menu_root" 
+        parent="amanat_menu_root"
         sequence="3"
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
@@ -64,16 +65,16 @@
     <menuitem 
         id="amanat_menu_orders_group" 
         name="Заявки" 
-        parent="amanat_menu_root" 
+        parent="amanat_menu_root"
         sequence="4"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector,amanat.group_amanat_treasurer"
     />
 
     <!-- Группировака "Золото"-->
     <menuitem 
         id="amanat_menu_golds_group" 
         name="Золото" 
-        parent="amanat_menu_root" 
+        parent="amanat_menu_root"
         sequence="5"
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
@@ -191,7 +192,7 @@
             name="Выписка разнос"
             parent="amanat_menu_main_group"
             action="extract_delivery_action"
-            groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
+            groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector,amanat.group_amanat_treasurer"
     />
 
     <!-- Меню для страны -->
@@ -203,13 +204,23 @@
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
-    <!-- Меню для заявки -->
+    <!-- Меню для заявки (обычные пользователи) -->
     <menuitem 
         id="amanat_menu_zayavka"
         name="Заявки"
         parent="amanat_menu_orders_group"
         action="zayavka_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector,amanat.group_amanat_limited_access"
+    />
+
+    <!-- Меню для заявки (казначеи) -->
+    <menuitem 
+        id="amanat_menu_zayavka_treasurer"
+        name="Заявки"
+        parent="amanat_menu_orders_group"
+        action="zayavka_action_treasurer"
+        groups="amanat.group_amanat_treasurer"
+        sequence="1"
     />
 
     <!-- Меню для резерва -->
@@ -307,7 +318,7 @@
         name="Выписки"
         parent="amanat_menu_main_group"
         action="action_amanat_extracts"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector,amanat.group_amanat_treasurer"
     />
 
     <!-- Меню для Период -->

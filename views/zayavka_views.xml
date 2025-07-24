@@ -1,8 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+  <!-- Упрощенное представление для казначеев -->
+  <record id="view_amanat_zayavka_form_treasurer" model="ir.ui.view">
+    <field name="name">amanat.zayavka.form.treasurer</field>
+    <field name="model">amanat.zayavka</field>
+    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
+    <field name="priority">20</field>
+    <field name="arch" type="xml">
+      <form string="Заявки (Казначей)">
+        <header>
+          <h1><field name="zayavka_id" readonly="1"/></h1>
+        </header>
+        <sheet>
+          <group string="Основная информация">
+            <div class="o-form-group-2">
+              <group>
+                <field name="zayavka_num"/>
+                <field name="status"/>
+                <field name="date_placement"/>
+              </group>
+              <group>
+                <field name="contragent_id"/>
+                <field name="client_id"/>
+                <field name="country_id"/>
+              </group>
+            </div>
+            <field name="comment"/>
+          </group>
+          <group string="Даты операций">
+            <div class="o-form-group-3">
+              <group>
+                <field name="invoice_date"/>
+                <field name="payment_date"/>
+              </group>
+              <group>
+                <field name="supplier_currency_paid_date"/>
+                <field name="supplier_currency_received_date"/>
+              </group>
+              <group>
+                <field name="deal_closed_date"/>
+                <field name="deal_cycle_days"/>
+              </group>
+            </div>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
   <record id="view_amanat_zayavka_form" model="ir.ui.view">
     <field name="name">amanat.zayavka.form</field>
     <field name="model">amanat.zayavka</field>
+    <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
     <field name="arch" type="xml">
       <form string="Заявки">
         <header>
@@ -10,25 +59,63 @@
         </header>
         <sheet>
           <notebook>
-            <page string="Основное">
+            <!-- Упрощенная страница для ограниченного доступа -->
+            <page string="Основные данные" groups="amanat.group_amanat_limited_access">
+              <group string="Базовая информация">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="zayavka_num"/>
+                    <field name="status"/>
+                    <field name="date_placement"/>
+                  </group>
+                  <group>
+                    <field name="contragent_id"/>
+                    <field name="client_id"/>
+                    <field name="country_id"/>
+                  </group>
+                </div>
+                <field name="comment"/>
+              </group>
+              <group string="Даты">
+                <div class="o-form-group-3">
+                  <group>
+                    <field name="invoice_date"/>
+                    <field name="payment_date"/>
+                  </group>
+                  <group>
+                    <field name="supplier_currency_paid_date"/>
+                    <field name="supplier_currency_received_date"/>
+                  </group>
+                  <group>
+                    <field name="deal_closed_date"/>
+                    <field name="deal_cycle_days"/>
+                  </group>
+                </div>
+              </group>
+            </page>
+            
+            <page string="Основное" groups="!amanat.group_amanat_limited_access">
               <group string="Основная информация">
                 <div class="o-form-group">
                   <group>
                     <field name="zayavka_num"/>
-                    <field name="manager_ids" widget="many2many_tags"/>
-                    <field name="checker_ids" widget="many2many_tags"/>
+                    <!-- Поля для всех, кроме группы ограниченного доступа -->
+                    <field name="manager_ids" widget="many2many_tags" groups="!amanat.group_amanat_limited_access"/>
+                    <field name="checker_ids" widget="many2many_tags" groups="!amanat.group_amanat_limited_access"/>
                   </group>
                   <group>
                     <field name="status"/>
                     <field name="date_placement"/>
-                    <field name="taken_in_work_date"/>
+                    <!-- Скрываем для ограниченного доступа -->
+                    <field name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/>
                     <field name="country_id"/>
                   </group>
                   <group>
                     <field name="contragent_id"/>
-                    <field name="agent_id"/>
+                    <field name="agent_id" groups="!amanat.group_amanat_limited_access"/>
                     <field name="client_id"/>
-                    <field name="inn"/>
+                    <!-- Полностью скрываем ИНН для ограниченного доступа -->
+                    <field name="inn" groups="!amanat.group_amanat_limited_access"/>
                     <!-- <field name="client_inn"/> -->
                   </group>
                 </div>
@@ -49,7 +136,8 @@
                 </div>
                 <field name="application_sequence"/>
               </group>
-              <group string="Сравнение курса">
+              <!-- Скрываем финансовые данные для ограниченного доступа -->
+              <group string="Сравнение курса" groups="!amanat.group_amanat_limited_access">
                 <div class="o-form-group">
                   <group>
                     <field name="investing_rate"/>
@@ -85,7 +173,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Ввод данных Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
+              <group string="Ввод данных Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent" groups="!amanat.group_amanat_limited_access">
                 <div class="o-form-group-2 top">
                   <group>
                     <field name="payment_conditions"/>
@@ -946,7 +1034,7 @@
                     </div>
                   </group>
                 </page>
-                <page string="Нераспределенные" groups="!amanat.group_amanat_manager">
+                <page string="Нераспределенные" groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager">
                   <group>
                     <field name="for_khalida_temp"/>
                     <field name="bank_cross_rate"/>
@@ -973,7 +1061,7 @@
                     <field name="status_range_copy"/>
                   </group>
                 </page>
-                <page string="Compute-поля" groups="!amanat.group_amanat_manager">
+                <page string="Compute-поля" groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager">
                   <group>
                     <field name="usd_equivalent"/>
                     <field name="conversion_expenses_rub"/>
@@ -1013,7 +1101,7 @@
                 </page>
               </notebook>
             </page>
-            <page string="Калькулятор кросс курса">
+            <page string="Калькулятор кросс курса" groups="!amanat.group_amanat_limited_access">
               <group>
                 <div class="text-uppercase fw-bolder small">Кросс <span class="o_stat_value"><field name="is_cross" class="o_field_boolean mb-0"/></span></div>
               </group>
@@ -1050,7 +1138,7 @@
                 </div>
               </group>
             </page>
-            <page string="Даты">
+            <page string="Даты" groups="!amanat.group_amanat_limited_access">
               <group>
                 <div class="o-form-group-2">
                   <group>
@@ -1084,7 +1172,7 @@
                     <field name="client_ruble_paid_date"/>
                     <field name="act_report_signed_date"/>
                     <field name="date_received_on_pc_payment"/>
-                    <field name="date_agent_on_pc"/>
+                    <field name="date_agent_on_pc" invisible="1"/>
                   </group>
                   <group>
                     <field name="accreditive_revealed_date"/>
@@ -1094,7 +1182,7 @@
                 </div>
               </group>
             </page>
-            <page string="Документы">
+            <page string="Документы" groups="!amanat.group_amanat_limited_access">
               <group string="Заявка">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
@@ -1320,7 +1408,7 @@
               </group>
             </page>
 
-            <page string="SWIFT">
+            <page string="SWIFT" groups="!amanat.group_amanat_limited_access">
               <group>
                 <div class="o-form-group-2">
                   <group>
@@ -1355,7 +1443,7 @@
                 <field name="swift_status_info" nolabel="1"/>
               </group> -->
             </page>
-            <page string="Проблемы">
+            <page string="Проблемы" groups="!amanat.group_amanat_limited_access">
               <group>
                 <div class="o-form-group">
                   <group>
@@ -1403,7 +1491,7 @@
                   <group invisible="not change_payer">
                     <div class="o-form-group-2">
                       <group>
-                        <field name="return_commission"/>
+                        <field name="return_commission" widget="percentage"/>
                       </group>
                       <group>
                         <field name="payers_for_return" widget="many2many_tags" domain="[('id', 'in', possible_payers)]"/>
@@ -1526,9 +1614,36 @@
     </field>
   </record>
 
+  <!-- Упрощенное списочное представление для казначеев -->
+  <record id="zayavka_list_view_treasurer" model="ir.ui.view">
+    <field name="name">zayavka.list.treasurer</field>
+    <field name="model">amanat.zayavka</field>
+    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
+    <field name="priority">20</field>
+    <field name="arch" type="xml">
+      <list string="Заявки (Казначей)" create="false" delete="false">
+        <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+        <field name="zayavka_id"/>
+        <field name="zayavka_num"/>
+        <field name="status"/>
+        <field name="date_placement"/>
+        <field name="contragent_id"/>
+        <field name="client_id"/>
+        <field name="country_id"/>
+        <field name="invoice_date"/>
+        <field name="payment_date"/>
+        <field name="supplier_currency_paid_date"/>
+        <field name="supplier_currency_received_date"/>
+        <field name="deal_closed_date"/>
+        <field name="deal_cycle_days"/>
+      </list>
+    </field>
+  </record>
+
   <record id="zayavka_list_view" model="ir.ui.view">
     <field name="name">zayavka.list</field>
     <field name="model">amanat.zayavka</field>
+    <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
     <field name="arch" type="xml">
       <list editable="top">
         <header>
@@ -1548,25 +1663,27 @@
         <field width="200" name="zayavka_num"/>
         <field width="200" name="status"/>
         <field width="200" name="date_placement"/>
-        <field width="200" name="taken_in_work_date"/>
+        <!-- Ограниченный доступ: скрываем конфиденциальные поля -->
+        <field width="200" name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/>
         <field width="200" name="contragent_id"/>
-        <field width="200" name="agent_id"/>
+        <field width="200" name="agent_id" groups="!amanat.group_amanat_limited_access"/>
         <field width="200" name="client_id"/>
-        <field width="200" name="inn"/>
+        <field width="200" name="inn" groups="!amanat.group_amanat_limited_access"/>
         <!-- <field width="200" name="client_inn"/> -->
-        <field width="200" name="exporter_importer_name"/>
+        <field width="200" name="exporter_importer_name" groups="!amanat.group_amanat_limited_access"/>
         <field width="200" name="bank_swift"/>
         <field width="200" name="country_id"/>
         <field width="200" name="payment_conditions"/>
         <field width="200" name="deal_type"/>
-        <field width="200" name="investing_rate"/>
-        <field width="200" name="cb_rate"/>
-        <field width="200" name="cross_rate"/>
-        <field width="200" name="exchange_rate_1"/>
-        <field width="200" name="exchange_rate_2"/>
-        <field width="200" name="exchange_rate_3"/>
-        <field width="200" name="best_rate_name"/>
-        <field width="200" name="best_rate"/>
+        <!-- Финансовые поля - скрыты для ограниченного доступа -->
+        <field width="200" name="investing_rate" groups="!amanat.group_amanat_limited_access"/>
+        <field width="200" name="cb_rate" groups="!amanat.group_amanat_limited_access"/>
+        <field width="200" name="cross_rate" groups="!amanat.group_amanat_limited_access"/>
+        <field width="200" name="exchange_rate_1" groups="!amanat.group_amanat_limited_access"/>
+        <field width="200" name="exchange_rate_2" groups="!amanat.group_amanat_limited_access"/>
+        <field width="200" name="exchange_rate_3" groups="!amanat.group_amanat_limited_access"/>
+        <field width="200" name="best_rate_name" groups="!amanat.group_amanat_limited_access"/>
+        <field width="200" name="best_rate" groups="!amanat.group_amanat_limited_access"/>
         <field width="200" name="client_payment_cost"/>
         <field width="200" name="conversion_ratio" widget="percentage"/>
         <field width="200" name="conversion_auto" widget="percentage"/>
@@ -1826,11 +1943,24 @@
     </field>
   </record>
 
+  <!-- Действие для казначеев с упрощенными представлениями -->
+  <record id="zayavka_action_treasurer" model="ir.actions.act_window">
+    <field name="name">Заявки (Казначей)</field>
+    <field name="res_model">amanat.zayavka</field>
+    <field name="view_mode">list,form</field>
+    <field name="view_ids" eval="[(5, 0, 0),
+                                   (0, 0, {'view_mode': 'list', 'view_id': ref('zayavka_list_view_treasurer')}),
+                                   (0, 0, {'view_mode': 'form', 'view_id': ref('view_amanat_zayavka_form_treasurer')})]"/>
+    <field name="target">main</field>
+    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
+  </record>
+
   <record id="zayavka_action" model="ir.actions.act_window">
     <field name="name">Заявки</field>
     <field name="res_model">amanat.zayavka</field>
     <field name="view_mode">list,form</field>
     <field name="target">main</field>
+    <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
   </record>
 
   <record id="zayavka_search_view" model="ir.ui.view">

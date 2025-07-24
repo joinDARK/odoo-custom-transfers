@@ -7,6 +7,12 @@
         <field name="category_id" ref="base.module_category_amanat"/>
     </record>
 
+    <!-- Группа для директоров -->
+    <record id="group_amanat_director" model="res.groups">
+        <field name="name">Директор</field>
+        <field name="category_id" ref="base.module_category_amanat"/>
+    </record>
+
     <!-- Группа для менеджеров -->
     <record id="group_amanat_manager" model="res.groups">
         <field name="name">Manager</field>
@@ -27,5 +33,31 @@
     <record id="group_amanat_inspector" model="res.groups">
         <field name="name">Inspector</field>
         <field name="category_id" ref="base.module_category_amanat"/>
+    </record>
+
+    <!--Группа для Фин менеджеров-->
+    <record id="group_amanat_fin_manager" model="res.groups">
+        <field name="name">Финансовый менеджер</field>
+        <field name="category_id" ref="base.module_category_amanat"/>
+    </record>
+
+    <!--Группа для Фин менеджеров Джесс-->
+    <record id="group_amanat_fin_manager_jess" model="res.groups">
+        <field name="name">Финансовый менеджер (Джесс)</field>
+        <field name="category_id" ref="base.module_category_amanat"/>
+    </record>
+
+    <!-- Группа для ограниченного доступа к заявкам (Ильзира) -->
+    <record id="group_amanat_limited_access" model="res.groups">
+        <field name="name">Ограниченный доступ к заявкам</field>
+        <field name="category_id" ref="base.module_category_amanat"/>
+        <field name="comment">Группа для пользователей с ограниченным доступом к полям заявок</field>
+    </record>
+
+    <!-- Группа для казначея -->
+    <record id="group_amanat_treasurer" model="res.groups">
+        <field name="name">Казначей</field>
+        <field name="category_id" ref="base.module_category_amanat"/>
+        <field name="comment">Доступ только к выпискам, выпискам разнос и заявкам</field>
     </record>
 </odoo>

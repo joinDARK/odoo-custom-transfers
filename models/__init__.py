@@ -62,3 +62,6 @@ from . import ir_attachment
 from . import signature_library
 from . import zayavka_signature_position
 from . import zayavka_signature_assignment
+
+# Calculators
+from . import calculators

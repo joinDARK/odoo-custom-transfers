@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Данные для настройки пользователей казначея -->
+    <!-- Этот файл нужно применить только один раз -->
+    <data noupdate="1">
+        <!-- Пример назначения пользователя по логину в группу казначея -->
+        <!-- Раскомментируйте и замените 'treasurer_username' на реальный логин -->
+        <!--
+        <function model="res.users" name="write">
+            <value model="res.users" search="[('login', '=', 'treasurer_username')]"/>
+            <value eval="{'groups_id': [(4, ref('amanat.group_amanat_treasurer'))]}"/>
+        </function>
+        -->
+        
+        <!-- Можно добавить несколько пользователей -->
+        <!--
+        <function model="res.users" name="write">
+            <value model="res.users" search="[('login', '=', 'another_treasurer')]"/>
+            <value eval="{'groups_id': [(4, ref('amanat.group_amanat_treasurer'))]}"/>
+        </function>
+        -->
+    </data>
+</odoo> 

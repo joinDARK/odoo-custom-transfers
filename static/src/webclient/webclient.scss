@@ -8,6 +8,8 @@ html, body {
 .o_web_client {
 	display: grid !important;
     height: 100vh; // Фиксированная высота на всю высоту экрана
+    max-height: 100vh; // Предотвращаем переполнение
+    overflow: hidden; // Скрываем переполнение на уровне контейнера
     grid-template-areas:
         "banner banner"
         "navbar navbar"
@@ -18,7 +20,7 @@ html, body {
     
     // Когда сайдбар полностью скрыт, убираем его из grid
     &.mk_sidebar_hidden {
-        grid-template-columns: 0fr 1fr;
+        grid-template-columns: 0 1fr;
         
         > .mk_apps_sidebar_panel {
             display: none;
@@ -46,9 +48,13 @@ html, body {
     }
     > .mk_apps_sidebar_panel {
     	grid-area: sidebar;
+        overflow: hidden; // Предотвращаем переполнение сайдбара
+        min-height: 0; // Позволяем сжиматься
     }
     > .o_action_manager {
     	grid-area: content;
+        overflow: auto; // Добавляем скролл для содержимого при необходимости
+        min-height: 0; // Позволяем сжиматься ниже содержимого
     }
     > .o-main-components-container {
     	grid-area: components;

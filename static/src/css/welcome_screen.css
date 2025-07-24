@@ -1,0 +1,148 @@
+/* Стили для приветственного экрана модуля ТДК */
+
+.amanat-welcome-container {
+    min-height: calc(100vh - 120px);
+    background: #f9f9f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.amanat-welcome-content {
+    max-width: 1200px;
+    width: 100%;
+    background: #fff;
+    border-radius: 6px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+}
+
+.amanat-welcome-header {
+    margin-bottom: 40px;
+}
+
+.amanat-logo {
+    margin-bottom: 20px;
+}
+
+.amanat-logo i {
+    color: #875a7b;
+}
+
+.amanat-welcome-title {
+    color: #2f3349;
+    font-size: 2.8rem;
+    font-weight: 300;
+    margin-bottom: 15px;
+}
+
+.amanat-welcome-subtitle {
+    color: #666;
+    font-size: 1.2rem;
+    margin-bottom: 0;
+}
+
+.amanat-welcome-features {
+    margin-bottom: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.amanat-feature-card {
+    background: #fff;
+    border-radius: 4px;
+    padding: 24px 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    height: 100%;
+}
+
+.amanat-feature-card:hover {
+    border-color: #875a7b;
+}
+
+.amanat-feature-icon {
+    margin-bottom: 16px;
+}
+
+.amanat-feature-card h4 {
+    color: #2f3349;
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.amanat-feature-card p {
+    color: #555;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    margin-bottom: 0;
+}
+
+.amanat-welcome-footer {
+    padding-top: 24px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.amanat-welcome-footer p {
+    font-size: 1rem;
+    margin-bottom: 0;
+    color: #777;
+}
+
+.amanat-welcome-footer i {
+    margin-right: 8px;
+    color: #875a7b;
+}
+
+/* Цветовые классы для иконок */
+.text-yellow {
+    color: #f0ad4e !important;
+}
+
+.text-purple {
+    color: #875a7b !important;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .amanat-welcome-content {
+        padding: 32px 20px;
+    }
+    
+    .amanat-welcome-title {
+        font-size: 2.4rem;
+    }
+    
+    .amanat-welcome-subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .amanat-feature-card {
+        margin-bottom: 16px;
+    }
+}
+
+@media (max-width: 576px) {
+    .amanat-welcome-container {
+        padding: 20px 15px;
+    }
+    
+    .amanat-welcome-content {
+        padding: 24px 16px;
+    }
+    
+    .amanat-welcome-title {
+        font-size: 2rem;
+    }
+    
+    .amanat-welcome-subtitle {
+        font-size: 1rem;
+    }
+} 

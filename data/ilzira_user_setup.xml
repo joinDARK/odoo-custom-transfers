@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Данные для настройки пользователя Ильзира -->
+    <!-- Этот файл нужно применить только один раз -->
+    <data noupdate="1">
+        <!-- Найти пользователя по логину и добавить в группу казначея -->
+        <function model="res.users" name="write">
+            <value model="res.users" search="[('login', '=', 'ilzira')]"/>
+            <value eval="{'groups_id': [(3, ref('amanat.group_amanat_limited_access')), (4, ref('amanat.group_amanat_treasurer'))]}"/>
+        </function>
+    </data>
+</odoo> 

@@ -98,6 +98,7 @@ class ZayavkaFiksDashboard(models.Model):
             'cny_sum': f"{currency_sums['cny']:,.0f}",
             'euro_sum': f"{currency_sums['euro']:,.0f}",
             'aed_sum': f"{currency_sums['aed']:,.0f}",
+            'usdt_sum': f"{currency_sums['usdt']:,.0f}",
             'chart_data': chart_data,
             'today_data': today_data
         }
@@ -205,11 +206,36 @@ class ZayavkaFiksDashboard(models.Model):
             
             _logger.info(f"Итоговые средние курсы: USD={avg_usd}, CNY={avg_cny}, EURO={avg_euro}, AED={avg_aed}")
             
+            # USDT курсы
+            usdt_zayavki = zayavki.filtered(lambda z: z.currency in ['usdt', 'usdt_cashe'])
+            _logger.info(f"Найдено {len(usdt_zayavki)} USDT заявок")
+            if usdt_zayavki:
+                usdt_rates = []
+                for z in usdt_zayavki:
+                    best_rate = z.best_rate if z.best_rate and z.best_rate > 0 else None
+                    rate_field = z.rate_field if z.rate_field and z.rate_field > 0 else None
+                    rate = best_rate or rate_field
+                    
+                    if rate and rate > 0:
+                        usdt_rates.append(rate)
+                        _logger.info(f"  USDT заявка {z.id}: курс {rate} (best_rate={z.best_rate}, rate_field={z.rate_field})")
+                    else:
+                        _logger.info(f"  USDT заявка {z.id}: пропущена - нет валидного курса (best_rate={z.best_rate}, rate_field={z.rate_field})")
+                        
+                avg_usdt = sum(usdt_rates) / len(usdt_rates) if usdt_rates else None
+                _logger.info(f"Средний USDT курс: {avg_usdt} (использовано {len(usdt_rates)} заявок)")
+            else:
+                avg_usdt = None
+                _logger.info("USDT заявки не найдены")
+            
+            _logger.info(f"Итоговые средние курсы: USD={avg_usd}, CNY={avg_cny}, EURO={avg_euro}, AED={avg_aed}, USDT={avg_usdt}")
+            
             return {
                 'usd': f"{avg_usd:,.4f}".replace('.', ',') if avg_usd else "0",
                 'cny': f"{avg_cny:,.4f}".replace('.', ',') if avg_cny else "0",
                 'euro': f"{avg_euro:,.4f}".replace('.', ',') if avg_euro else "0",
-                'aed': f"{avg_aed:,.4f}".replace('.', ',') if avg_aed else "0"
+                'aed': f"{avg_aed:,.4f}".replace('.', ',') if avg_aed else "0",
+                'usdt': f"{avg_usdt:,.4f}".replace('.', ',') if avg_usdt else "0"
             }
                 
         except Exception as e:
@@ -218,7 +244,8 @@ class ZayavkaFiksDashboard(models.Model):
                 'usd': "0",
                 'cny': "0",
                 'euro': "0",
-                'aed': "0"
+                'aed': "0",
+                'usdt': "0"
             }
     
     def _calculate_currency_sums(self, zayavki):
@@ -232,7 +259,8 @@ class ZayavkaFiksDashboard(models.Model):
                 'usd': 0,
                 'cny': 0,
                 'euro': 0,
-                'aed': 0
+                'aed': 0,
+                'usdt': 0
             }
             
             for z in zayavki:
@@ -250,13 +278,16 @@ class ZayavkaFiksDashboard(models.Model):
                     elif z.currency in ['aed', 'aed_cashe']:
                         sums['aed'] += amount
                         _logger.info(f"  AED заявка {z.id}: сумма {amount}")
+                    elif z.currency in ['usdt', 'usdt_cashe']:
+                        sums['usdt'] += amount
+                        _logger.info(f"  USDT заявка {z.id}: сумма {amount}")
             
-            _logger.info(f"Итоговые суммы: USD={sums['usd']}, CNY={sums['cny']}, EURO={sums['euro']}, AED={sums['aed']}")
+            _logger.info(f"Итоговые суммы: USD={sums['usd']}, CNY={sums['cny']}, EURO={sums['euro']}, AED={sums['aed']}, USDT={sums['usdt']}")
             return sums
             
         except Exception as e:
             _logger.error(f"Ошибка подсчета сумм по валютам: {e}")
-            return {'usd': 0, 'cny': 0, 'euro': 0, 'aed': 0}
+            return {'usd': 0, 'cny': 0, 'euro': 0, 'aed': 0, 'usdt': 0}
     
     def _calculate_usd_equivalents(self, zayavki):
         """
@@ -294,6 +325,8 @@ class ZayavkaFiksDashboard(models.Model):
                             euro_usd += usd_eq
                         elif z.currency in ['aed', 'aed_cashe']:
                             usd_eq = amount / 3.67  # Примерный курс AED к USD
+                        elif z.currency in ['usdt', 'usdt_cashe']:
+                            usd_eq = 0  # USDT не учитывается в эквиваленте USD
                         else:
                             usd_eq = 0
                         
@@ -317,26 +350,29 @@ class ZayavkaFiksDashboard(models.Model):
         """
         try:
             return {
-                'labels': ['USD', 'CNY', 'EURO', 'AED'],
+                'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT'],
                 'datasets': [{
                     'label': 'Сумма по валютам',
                     'data': [
                         currency_sums['usd'],
                         currency_sums['cny'],
                         currency_sums['euro'],
-                        currency_sums['aed']
+                        currency_sums['aed'],
+                        currency_sums['usdt']
                     ],
                     'backgroundColor': [
                         '#5b9bd5',  # USD - голубой
                         '#70ad47',  # CNY - зеленый  
                         '#ffc000',  # EURO - желтый
-                        '#7030a0'   # AED - фиолетовый
+                        '#7030a0',  # AED - фиолетовый
+                        '#ff6b35'   # USDT - оранжевый
                     ],
                     'borderColor': [
                         '#4472c4',
                         '#548235',
                         '#d99694',
-                        '#5b2c87'
+                        '#5b2c87',
+                        '#e85a2b'
                     ],
                     'borderWidth': 1,
                     'borderRadius': 4,
@@ -346,11 +382,11 @@ class ZayavkaFiksDashboard(models.Model):
         except Exception as e:
             _logger.error(f"Ошибка подготовки данных для графика: {e}")
             return {
-                'labels': ['USD', 'CNY', 'EURO', 'AED'],
+                'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT'],
                 'datasets': [{
                     'label': 'Сумма по валютам',
-                    'data': [0, 0, 0, 0],
-                    'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0']
+                    'data': [0, 0, 0, 0, 0],
+                    'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0', '#ff6b35']
                 }]
             } 
     
@@ -375,7 +411,8 @@ class ZayavkaFiksDashboard(models.Model):
                         'usd': "0",
                         'cny': "0",
                         'euro': "0",
-                        'aed': "0"
+                        'aed': "0",
+                        'usdt': "0"
                     },
                     'total_count': 0,
                     'equivalent_usd': "0,00",
@@ -385,12 +422,13 @@ class ZayavkaFiksDashboard(models.Model):
                     'cny_sum': "0",
                     'euro_sum': "0",
                     'aed_sum': "0",
+                    'usdt_sum': "0",
                     'chart_data': {
-                        'labels': ['USD', 'CNY', 'EURO', 'AED'],
+                        'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT'],
                         'datasets': [{
                             'label': 'Сумма по валютам',
-                            'data': [0, 0, 0, 0],
-                            'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0']
+                            'data': [0, 0, 0, 0, 0],
+                            'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0', '#ff6b35']
                         }]
                     }
                 }
@@ -419,6 +457,7 @@ class ZayavkaFiksDashboard(models.Model):
                 'cny_sum': f"{today_currency_sums['cny']:,.0f}",
                 'euro_sum': f"{today_currency_sums['euro']:,.0f}",
                 'aed_sum': f"{today_currency_sums['aed']:,.0f}",
+                'usdt_sum': f"{today_currency_sums['usdt']:,.0f}",
                 'chart_data': today_chart_data
             }
             
@@ -429,7 +468,8 @@ class ZayavkaFiksDashboard(models.Model):
                     'usd': "0",
                     'cny': "0", 
                     'euro': "0",
-                    'aed': "0"
+                    'aed': "0",
+                    'usdt': "0"
                 },
                 'total_count': 0,
                 'equivalent_usd': "0,00",
@@ -439,12 +479,13 @@ class ZayavkaFiksDashboard(models.Model):
                 'cny_sum': "0",
                 'euro_sum': "0",
                 'aed_sum': "0",
+                'usdt_sum': "0",
                 'chart_data': {
-                    'labels': ['USD', 'CNY', 'EURO', 'AED'],
+                    'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT'],
                     'datasets': [{
                         'label': 'Сумма по валютам',
-                        'data': [0, 0, 0, 0],
-                        'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0']
+                        'data': [0, 0, 0, 0, 0],
+                        'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0', '#ff6b35']
                     }]
                 }
             } 
@@ -455,26 +496,29 @@ class ZayavkaFiksDashboard(models.Model):
         """
         try:
             return {
-                'labels': ['USD', 'CNY', 'EURO', 'AED'],
+                'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT'],
                 'datasets': [{
                     'label': 'Сумма по валютам сегодня',
                     'data': [
                         currency_sums['usd'],
                         currency_sums['cny'],
                         currency_sums['euro'],
-                        currency_sums['aed']
+                        currency_sums['aed'],
+                        currency_sums['usdt']
                     ],
                     'backgroundColor': [
                         '#5b9bd5',  # USD - голубой
                         '#70ad47',  # CNY - зеленый  
                         '#ffc000',  # EURO - желтый
-                        '#7030a0'   # AED - фиолетовый
+                        '#7030a0',  # AED - фиолетовый
+                        '#ff6b35'   # USDT - оранжевый
                     ],
                     'borderColor': [
                         '#4472c4',
                         '#548235',
                         '#d99694',
-                        '#5b2c87'
+                        '#5b2c87',
+                        '#e85a2b'
                     ],
                     'borderWidth': 1,
                     'borderRadius': 4,
@@ -484,11 +528,11 @@ class ZayavkaFiksDashboard(models.Model):
         except Exception as e:
             _logger.error(f"Ошибка подготовки данных для графика за сегодня: {e}")
             return {
-                'labels': ['USD', 'CNY', 'EURO', 'AED'],
+                'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT'],
                 'datasets': [{
                     'label': 'Сумма по валютам сегодня',
-                    'data': [0, 0, 0, 0],
-                    'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0']
+                    'data': [0, 0, 0, 0, 0],
+                    'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0', '#ff6b35']
                 }]
             }
     

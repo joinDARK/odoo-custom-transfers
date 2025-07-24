@@ -1,0 +1,108 @@
+/* Calculator Background Styles */
+.calculator-background {
+    background-image: url('/amanat/static/src/img/calculator_background.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Фон только для калькуляторов через CSS классы */
+
+.calculator-form-background {
+    background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
+    background-image: url('/amanat/static/src/img/calculator_bg_optimized.jpg') !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-attachment: local !important;
+    border-radius: 10px !important;
+    padding: 20px !important;
+    margin: 10px !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    min-height: 100vh !important;
+}
+
+/* Улучшение читаемости текста на фоне */
+.calculator-form-background .o_form_sheet {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 10px !important;
+    padding: 20px !important;
+    margin: 10px 0 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+.calculator-form-background .oe_title h1 {
+    color: #7c3aed;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.calculator-form-background .oe_title h2 {
+    color: #be185d;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Стилизация групп полей */
+.calculator-form-background .o_group {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+    border: 1px solid rgba(236, 72, 153, 0.2);
+}
+
+.calculator-form-background .o_horizontal_separator {
+    color: #be185d;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* List view styling */
+.calculator-list-background {
+    background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
+    background-image: url('/amanat/static/src/img/calculator_bg_optimized.jpg') !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-attachment: fixed !important;
+    min-height: 100vh !important;
+}
+
+.calculator-list-background .o_list_view {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 10px !important;
+    margin: 20px !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Дополнительные сильные селекторы для калькуляторов */
+[data-model="amanat.calculator.50.usd.wizard"] .o_form_view,
+[data-model="amanat.calculator.fixed.fee.wizard"] .o_form_view,
+[data-model="amanat.calculator.125.usd.wizard"] .o_form_view {
+    background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
+    background-image: url('/amanat/static/src/img/calculator_bg_optimized.jpg') !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    min-height: 100vh !important;
+}
+
+[data-model="amanat.calculator.50.usd.wizard"] .o_list_view,
+[data-model="amanat.calculator.fixed.fee.wizard"] .o_list_view,
+[data-model="amanat.calculator.125.usd.wizard"] .o_list_view {
+    background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
+    background-image: url('/amanat/static/src/img/calculator_bg_optimized.jpg') !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    min-height: 100vh !important;
+}
+
+/* Простой тест - применяем ко всем формам в модуле amanat */
+.o_form_view[data-model*="calculator"] {
+    background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
+    min-height: 100vh !important;
+}
+
+/* Стили готовы - фон применяется только к калькуляторам */

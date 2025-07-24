@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- QWeb шаблон для приветственного экрана -->
+    <t t-name="amanat_welcome_template">
+        <div class="amanat-welcome-container">
+            <div class="amanat-welcome-content">
+                <div class="amanat-welcome-header">
+                    <div class="amanat-logo">
+                        <i class="fa fa-building fa-4x text-primary"></i>
+                    </div>
+                    <h1 class="amanat-welcome-title">Добро пожаловать в ТДК</h1>
+                    <p class="amanat-welcome-subtitle">
+                        Система управления валютными операциями и переводами
+                    </p>
+                </div>
+                
+                <div class="amanat-welcome-features">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="amanat-feature-card">
+                                <div class="amanat-feature-icon">
+                                    <i class="fa fa-exchange fa-2x text-success"></i>
+                                </div>
+                                <h4>Валютные операции</h4>
+                                <p>Управление переводами, конвертациями и валютным резервом</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="amanat-feature-card">
+                                <div class="amanat-feature-icon">
+                                    <i class="fa fa-table fa-2x text-info"></i>
+                                </div>
+                                <h4>Вычислительные таблицы</h4>
+                                <p>Ордеры, контейнеры, сверка и управление файлами</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="amanat-feature-card">
+                                <div class="amanat-feature-icon">
+                                    <i class="fa fa-users fa-2x text-warning"></i>
+                                </div>
+                                <h4>Справочники</h4>
+                                <p>Контрагенты, плательщики, страны и менеджеры</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="amanat-feature-card">
+                                <div class="amanat-feature-icon">
+                                    <i class="fa fa-star fa-2x text-yellow"></i>
+                                </div>
+                                <h4>Золото</h4>
+                                <p>Управление золотыми сделками и операциями</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="amanat-feature-card">
+                                <div class="amanat-feature-icon">
+                                    <i class="fa fa-money fa-2x text-success"></i>
+                                </div>
+                                <h4>Касса</h4>
+                                <p>Управление кассовыми операциями и заявками</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="amanat-feature-card">
+                                <div class="amanat-feature-icon">
+                                    <i class="fa fa-bar-chart fa-2x text-purple"></i>
+                                </div>
+                                <h4>Аналитика</h4>
+                                <p>Дашборды и отчеты для принятия решений</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="amanat-welcome-footer">
+                    <p class="text-muted">
+                        <i class="fa fa-info-circle"></i>
+                        Выберите раздел в боковом меню для начала работы
+                    </p>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates> 

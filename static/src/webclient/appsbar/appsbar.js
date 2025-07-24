@@ -49,6 +49,7 @@ export class AppsBar extends Component {
                 items: [
                     { name: "Золото сделка", action: "amanat.gold_deal_action" },
                     { name: "Партнеры золото", action: "amanat.partner_gold_action" },
+                    { name: "Контрагенты золото", action: "amanat.contragent_gold_action" },
                 ],
             },
             {
@@ -67,6 +68,14 @@ export class AppsBar extends Component {
                 ],
             },
             {
+                name: "Правила",
+                items: [
+                    { name: "Правила Расход на операционную деятельность", action: "amanat.action_expense_rule" },
+                    { name: "Правила Себестоимость денег", action: "amanat.action_money_cost_rule" },
+                    { name: "Правила Платежка РФ", action: "amanat.action_payment_order_rule" },
+                ],
+            },
+            {
                 name: "Кассы",
                 items: [
                     { name: "Касса Иван", action: "amanat.kassa_ivan_action" },
@@ -80,6 +89,14 @@ export class AppsBar extends Component {
                     { name: "Аналитический дашборд", action: "amanat.action_amanat_analytics_dashboard_js" },
                     { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
                     { name: "Фикс заявка", action: "amanat.zayavka_fiks_dashboard_action_menu" },
+                ],
+            },
+            {
+                name: "Калькуляторы",
+                items: [
+                    { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                    { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
+                    { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
                 ],
             },
             {
@@ -213,7 +230,218 @@ export class AppsBar extends Component {
     }
 
     getFilteredMenuData() {
-        // Если пользователь - менеджер, показываем только ограниченное меню
+        if (this.state.userGroups.is_director) {
+            return [
+                {
+                    name: "Валютные операции",
+                    items: [
+                        { name: "Перевод", action: "amanat.transfer_action" },
+                        { name: "Конвертации", action: "amanat.conversion_action" },
+                        { name: "Валютный резерв", action: "amanat.reserve_action" },
+                        { name: "Инвестиции", action: "amanat.investment_action" },
+                    ],
+                },
+                {
+                    name: "Вычислительные таблицы",
+                    items: [
+                        { name: "Ордер", action: "amanat.order_action" },
+                        { name: "Контейнер", action: "amanat.money_action" },
+                        { name: "Сверка", action: "amanat.reconciliation_action" },
+                        { name: "Сверка файлы", action: "amanat.action_amanat_sverka_files" },
+                        { name: "Касса файлы", action: "amanat.action_amanat_kassa_files" },
+                    ],
+                },
+                {
+                    name: "Справочники",
+                    items: [
+                        { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "Плательщики", action: "amanat.payer_action" },
+                        { name: "Страны", action: "amanat.country_action" },
+                        { name: "Менеджеры", action: "amanat.manager_action" },
+                        { name: "Библиотека подписей", action: "amanat.signature_library_action" },
+                    ],
+                },
+                {
+                    name: "Золото",
+                    items: [
+                        { name: "Золото сделка", action: "amanat.gold_deal_action" },
+                        { name: "Партнеры золото", action: "amanat.partner_gold_action" },
+                        { name: "Контрагенты золото", action: "amanat.contragent_gold_action" },
+                    ],
+                },
+                {
+                    name: "Выписки",
+                    items: [
+                        { name: "Выписки", action: "amanat.action_amanat_extracts" },
+                        { name: "Выписка разнос", action: "amanat.extract_delivery_action" },
+                    ],
+                },
+                {
+                    name: "Прайс листы",
+                    items: [
+                        { name: "Прайс лист партнеры", action: "amanat.price_list_partners_action" },
+                        { name: "Прайс лист Плательщика", action: "amanat.price_list_payer_profit_action" },
+                        { name: "Прайс лист Плательщика За проведение", action: "amanat.price_list_payer_carrying_out_action" },
+                    ],
+                },
+                {
+                    name: "Правила",
+                    items: [
+                        { name: "Правила Расход на операционную деятельность", action: "amanat.action_expense_rule" },
+                        { name: "Правила Себестоимость денег", action: "amanat.action_money_cost_rule" },
+                        { name: "Правила Платежка РФ", action: "amanat.action_payment_order_rule" },
+                    ],
+                },
+                {
+                    name: "Кассы",
+                    items: [
+                        { name: "Касса Иван", action: "amanat.kassa_ivan_action" },
+                        { name: "Касса 2", action: "amanat.kassa_2_action" },
+                        { name: "Касса 3", action: "amanat.kassa_3_action" },
+                    ],
+                },
+                {
+                    name: "Анализ",
+                    items: [
+                        { name: "Аналитический дашборд", action: "amanat.action_amanat_analytics_dashboard_js" },
+                        { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
+                        { name: "Фикс заявка", action: "amanat.zayavka_fiks_dashboard_action_menu" },
+                    ],
+                },
+                {
+                    name: "Калькуляторы",
+                    items: [
+                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
+                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
+                    ],
+                },
+                {
+                    name: "Заявки",
+                    action: "amanat.zayavka_action",
+                    actionMethod: "openZayvaki",
+                }
+            ];
+        }
+
+        if (this.state.userGroups.is_dilara) {
+            return [
+                {
+                    name: "Справочники",
+                    items: [
+                        { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "Страны", action: "amanat.country_action" },
+                        { name: "Плательщики", action: "amanat.payer_action" },
+                        { name: "Менеджеры", action: "amanat.manager_action" },
+                    ],
+                },
+                {
+                    name: "Анализ",
+                    items: [
+                        { name: "Аналитический дашборд", action: "amanat.action_amanat_analytics_dashboard_js" },
+                        { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
+                        { name: "Фикс заявка", action: "amanat.zayavka_fiks_dashboard_action_menu" },
+                    ],
+                },
+                {
+                    name: "Заявки",
+                    action: "amanat.zayavka_action",
+                    actionMethod: "openZayvaki",
+                },
+                {
+                    name: "Калькуляторы",
+                    items: [
+                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
+                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
+                    ],
+                },
+            ];
+        }
+
+        if (this.state.userGroups.is_fin_manager_jess) {
+            return [
+                {
+                    name: "Справочники",
+                    items: [
+                        { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "Страны", action: "amanat.country_action" },
+                        { name: "Плательщики", action: "amanat.payer_action" },
+                        { name: "Менеджеры", action: "amanat.manager_action" },
+                    ],
+                },
+                {
+                    name: "Валютные операции",
+                    items: [
+                        { name: "Перевод", action: "amanat.transfer_action" },
+                        { name: "Конвертации", action: "amanat.conversion_action" },
+                        { name: "Валютный резерв", action: "amanat.reserve_action" },
+                        { name: "Инвестиции", action: "amanat.investment_action" },
+                    ],
+                },
+                {
+                    name: "Вычислительные таблицы",
+                    items: [
+                        { name: "Ордер", action: "amanat.order_action" },
+                        { name: "Контейнер", action: "amanat.money_action" },
+                        { name: "Сверка", action: "amanat.reconciliation_action" },
+                        { name: "Сверка файлы", action: "amanat.action_amanat_sverka_files" },
+                        { name: "Касса файлы", action: "amanat.action_amanat_kassa_files" },
+                    ],
+                },
+                {
+                    name: "Выписки",
+                    items: [
+                        { name: "Выписки", action: "amanat.action_amanat_extracts" },
+                        { name: "Выписка разнос", action: "amanat.extract_delivery_action" },
+                    ],
+                },
+                {
+                    name: "Калькуляторы",
+                    items: [
+                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
+                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
+                    ],
+                },
+            ];
+        }
+
+        if (this.state.userGroups.is_fin_manager) {
+            return [
+                {
+                    name: "Справочники",
+                    items: [
+                        { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "Страны", action: "amanat.country_action" },
+                        { name: "Плательщики", action: "amanat.payer_action" },
+                        { name: "Менеджеры", action: "amanat.manager_action" },
+                    ],
+                },
+                {
+                    name: "Вычислительные таблицы",
+                    items: [
+                        { name: "Ордер", action: "amanat.order_action" },
+                        { name: "Контейнер", action: "amanat.money_action" },
+                        { name: "Сверка", action: "amanat.reconciliation_action" },
+                    ],
+                },
+                {
+                    name: "Заявки",
+                    action: "amanat.zayavka_action",
+                    actionMethod: "openZayvaki",
+                },
+                {
+                    name: "Калькуляторы",
+                    items: [
+                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
+                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
+                    ],
+                },
+            ];
+        }
+        
         if (this.state.userGroups.is_manager && !this.state.userGroups.is_senior_manager && !this.state.userGroups.is_admin) {
             return [
                 {
@@ -229,6 +457,14 @@ export class AppsBar extends Component {
                     name: "Заявки",
                     action: "amanat.zayavka_action",
                     actionMethod: "openZayvaki",
+                },
+                {
+                    name: "Калькуляторы",
+                    items: [
+                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
+                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
+                    ],
                 },
             ];
         }

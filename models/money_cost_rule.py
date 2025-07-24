@@ -16,3 +16,6 @@ class MoneyCostRule(models.Model):
     )
     date_start = fields.Date(string="Дата начало", tracking=True)
     date_end = fields.Date(string="Дата конец", tracking=True)
+
+    min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)
+    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True)
