@@ -67,13 +67,15 @@ export class ZayavkaFiksDashboard extends Component {
             '#5b9bd5',  // USD - голубой
             '#70ad47',  // CNY - зеленый
             '#ffc000',  // EURO - желтый
-            '#7030a0'   // AED - фиолетовый
+            '#7030a0',  // AED - фиолетовый
+            '#ff6b35'   // USDT - оранжевый
         ];
         chartData.datasets[0].borderColor = [
             '#4472c4',
             '#548235',
             '#d99694',
-            '#5b2c87'
+            '#5b2c87',
+            '#e85a2b'
         ];
         chartData.datasets[0].borderWidth = 1;
         chartData.datasets[0].borderRadius = 4;
@@ -172,13 +174,15 @@ export class ZayavkaFiksDashboard extends Component {
             '#5b9bd5',  // USD - голубой
             '#70ad47',  // CNY - зеленый
             '#ffc000',  // EURO - желтый
-            '#7030a0'   // AED - фиолетовый
+            '#7030a0',  // AED - фиолетовый
+            '#ff6b35'   // USDT - оранжевый
         ];
         chartData.datasets[0].borderColor = [
             '#4472c4',
             '#548235',
             '#d99694',
-            '#5b2c87'
+            '#5b2c87',
+            '#e85a2b'
         ];
         chartData.datasets[0].borderWidth = 1;
         chartData.datasets[0].borderRadius = 4;

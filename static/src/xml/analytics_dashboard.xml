@@ -287,6 +287,95 @@
                                 <!-- <p class="comparison-description">Add a description</p> -->
                     </div>
                     
+                            <!-- Блок настройки периодов сравнения -->
+                            <div class="comparison-date-ranges">
+                                <div class="row">
+                                    <!-- Первый период сравнения -->
+                                    <div class="col-md-6">
+                                        <div class="comparison-period-card">
+                                            <h4>Период 1</h4>
+                                            
+                                            <!-- Кнопки быстрого выбора для первого периода -->
+                                            <div class="quick-period-buttons">
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod1('week')">
+                                                    За неделю
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod1('month')">
+                                                    За месяц
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod1('3months')">
+                                                    За 3 месяца
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod1('year')">
+                                                    За год
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod1('all')">
+                                                    За всё время
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <div class="form-group">
+                                                        <label for="comparison_date_to_1">Дата конца (начало всегда с 01.01.1970)</label>
+                                                        <input type="date" id="comparison_date_to_1" class="form-control" 
+                                                               t-model="state.comparisonDateTo1" 
+                                                               t-on-change="onComparisonDateTo1Change"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Второй период сравнения -->
+                                    <div class="col-md-6">
+                                        <div class="comparison-period-card">
+                                            <h4>Период 2</h4>
+                                            
+                                            <!-- Кнопки быстрого выбора для второго периода -->
+                                            <div class="quick-period-buttons">
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod2('week')">
+                                                    За неделю
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod2('month')">
+                                                    За месяц
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod2('3months')">
+                                                    За 3 месяца
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod2('year')">
+                                                    За год
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
+                                                        t-on-click="() => this.setComparisonQuickPeriod2('all')">
+                                                    За всё время
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <div class="form-group">
+                                                        <label for="comparison_date_to_2">Дата конца (начало всегда с 01.01.1970)</label>
+                                                        <input type="date" id="comparison_date_to_2" class="form-control" 
+                                                               t-model="state.comparisonDateTo2" 
+                                                               t-on-change="onComparisonDateTo2Change"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                    
                             <!-- Поле поиска -->
                             <div class="search-field">
                                 <input type="text" 

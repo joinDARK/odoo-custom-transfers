@@ -16,18 +16,36 @@ class ZayavkaRuleForManagement(models.Model):
             'money_cost_rule_id': False,
         })
 
-        # 4. Получаем дату
+        # 4. Получаем дату и сумму
         deal_closed_date = self.deal_closed_date
+        equivalent_sum = self.equivalent_amount_usd
+        
         if not deal_closed_date:
             _logger.error(f'Поле "сделка закрыта" пустое у заявки {self.id}.')
             return
 
-        # 5. Поиск подходящих записей
+        if equivalent_sum is None:
+            _logger.warning(f'Поле "equivalent_amount_usd" пустое у заявки {self.id}.')
+            return
+
+        # 5. Поиск подходящих записей с учетом даты и суммы
         def find_matching_rule(model, date_field_start, date_field_end):
-            return self.env[model].search([
+            domain = [
                 (date_field_start, '<=', deal_closed_date),
                 (date_field_end, '>=', deal_closed_date)
-            ], limit=1)
+            ]
+            
+            # Добавляем условия по сумме заявки: min < equivalent_sum И max > equivalent_sum
+            domain += [
+                ('min_application_amount', '<=', equivalent_sum),
+                ('max_application_amount', '>=', equivalent_sum),
+            ]
+
+            rule = self.env[model].search(domain, limit=1)
+            _logger.info(f"[find_matching_rule] найдена запись {rule.name} для заявки {self.id}")
+            _logger.info(f"[find_matching_rule] {rule}: rule_date_start = {rule.date_start}, rule_date_end = {rule.date_end} zayavka_date = {deal_closed_date}")
+            _logger.info(f"[find_matching_rule] {rule}: min_application_amount = {rule.min_application_amount}, max_application_amount = {rule.max_application_amount} zayavka_amount = {equivalent_sum}")
+            return rule
 
         payment_rule = find_matching_rule('amanat.payment_order_rule', 'date_start', 'date_end')
         expense_rule = find_matching_rule('amanat.expense_rule', 'date_start', 'date_end')

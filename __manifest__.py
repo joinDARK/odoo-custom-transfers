@@ -65,6 +65,11 @@
         "views/swift_api_config_views.xml",
         "views/signature_library_views.xml",
         "views/zayavka_signature_views.xml",
+        # Calculator views
+        "views/calculator_50_usd_views.xml",
+        "views/calculator_fixed_fee_views.xml",
+        "views/calculator_125_usd_views.xml",
+        "views/welcome_views.xml",
         "views/menu.xml",
         # 6) Остальные файлы
         "data/transfer_sequence.xml",
@@ -89,6 +94,9 @@
         "data/analytics_dashboard_data.xml",
         "data/zayavka_fiks_dashboard_data.xml",
         "data/demo_signature_library.xml",
+        "data/ilzira_user_setup.xml",
+        "data/treasurer_users_setup.xml",
+        "data/update_ilzira_group.xml",
         # "data/mass_editing_actions.xml",
     ],
     "assets": {
@@ -114,6 +122,8 @@
             # "amanat/static/src/js/list_view_enhanced.js",
             # "amanat/static/src/js/fixed_columns_calculator.js",
             # "amanat/static/src/js/writeoff_context.js",
+            "amanat/static/src/js/menu_sections_handler.js",
+            "amanat/static/src/js/welcome_screen.js",
             "amanat/static/src/js/list_view_numbering.js",
             "amanat/static/src/js/chatter_toggle.js",
             "amanat/static/src/js/swift_commands.js",
@@ -123,6 +133,7 @@
             "amanat/static/src/xml/amanat_dashboard.xml",
             "amanat/static/src/xml/analytics_dashboard.xml",
             "amanat/static/src/xml/zayavka_fiks_dashboard.xml",
+            "amanat/static/src/xml/welcome_screen.xml",
             (
                 "after",
                 "web/static/src/webclient/webclient.js",
@@ -151,6 +162,8 @@
             "amanat/static/src/webclient/appsbar/appsbar.xml",
             "amanat/static/src/webclient/appsbar/appsbar.scss",
             "amanat/static/src/css/style.css",
+            "amanat/static/src/css/menu_sections_handler.css",
+            "amanat/static/src/css/welcome_screen.css",
             "amanat/static/src/css/realtime_highlight.css",
             "amanat/static/src/css/amanat_dashboard.css",
             "amanat/static/src/css/dashboard_charts_compact.css",

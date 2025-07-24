@@ -106,8 +106,21 @@ class Transfer(models.Model, AmanatBaseModel):
     sender_wallet_id_accrual = fields.Many2one('amanat.wallet', string='Кошелек отправителя начисления', tracking=True)
     receiver_id_accrual = fields.Many2one('amanat.contragent', string='Получатель начисления', tracking=True)
     receiver_payer_id_accrual = fields.Many2one('amanat.payer', string='Плательщик получателя начисления', tracking=True)
-    receiver_wallet_id_accrual = fields.Many2one('amanat.wallet', string='Кошелек получателя начисления', tracking=True)
+    receiver_wallet_id_accrual = fields.Many2one(
+        'amanat.wallet', 
+        string='Кошелек получателя начисления', 
+        tracking=True,
+        default=lambda self: self._get_default_unmarked_wallet()
+    )
     comment_accrual = fields.Text(string='Комментарий начисления', tracking=True)
+    
+    # Объединенные комментарии
+    combined_comment = fields.Text(
+        string='Объединенные комментарии', 
+        compute='_compute_combined_comment', 
+        store=False
+    )
+    
     is_complex = fields.Boolean(string='Сложный перевод', default=False, tracking=True)
     intermediary_1_id = fields.Many2one('amanat.contragent', string='Посредник 1', tracking=True)
     intermediary_1_payer_id = fields.Many2one(
@@ -171,6 +184,25 @@ class Transfer(models.Model, AmanatBaseModel):
     manager_id = fields.Many2one('res.users', string='Manager', tracking=True, default=lambda self: self.env.user.id)
     inspector_id = fields.Many2one('res.users', string='Inspector', tracking=True)
 
+    def _get_default_unmarked_wallet(self):
+        """Возвращает ID кошелька 'Неразмеченные', создает если не существует"""
+        Wallet = self.env['amanat.wallet']
+        unmarked = Wallet.search([('name', '=', 'Неразмеченные')], limit=1)
+        if not unmarked:
+            unmarked = Wallet.create({'name': 'Неразмеченные'})
+        return unmarked.id
+
+    @api.depends('comment', 'comment_accrual')
+    def _compute_combined_comment(self):
+        """Объединяет основные комментарии и комментарии начисления через ';'"""
+        for record in self:
+            comments = []
+            if record.comment:
+                comments.append(record.comment.strip())
+            if record.comment_accrual:
+                comments.append(record.comment_accrual.strip())
+            record.combined_comment = '; '.join(comments) if comments else ''
+
     @api.onchange('sender_id')
     def _onchange_sender_id(self):
         if self.sender_id:
@@ -206,6 +238,15 @@ class Transfer(models.Model, AmanatBaseModel):
             self.intermediary_2_payer_id = payer.id if payer else False
         else:
             self.intermediary_2_payer_id = False
+
+    @api.onchange('receiver_id_accrual')
+    def _onchange_receiver_id_accrual(self):
+        if self.receiver_id_accrual:
+            payer = self.env['amanat.payer'].search(
+                [('contragents_ids', 'in', self.receiver_id_accrual.id)], limit=1)
+            self.receiver_payer_id_accrual = payer.id if payer else False
+        else:
+            self.receiver_payer_id_accrual = False
 
     # Новые формулы для вычисления суммы посредников
     @api.depends('amount', 'sending_commission_percent','intermediary_1_commission_percent')
@@ -271,7 +312,7 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_2_id': record.receiver_payer_id.id,
             'currency': record.currency,
             'amount': record.amount,
-            'comment': record.comment,
+            'comment': record.combined_comment,
             'operation_percent': record.sending_commission_percent,
             # Используем команду для Many2many: (6, 0, [record.id])
             'transfer_id': [(6, 0, [record.id])],
@@ -314,7 +355,7 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_2_id': record.intermediary_1_payer_id.id,
             'currency': record.currency,
             'amount': record.amount,
-            'comment': record.comment,
+            'comment': record.combined_comment,
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
@@ -340,7 +381,7 @@ class Transfer(models.Model, AmanatBaseModel):
                 'payer_2_id': record.receiver_payer_id.id,
                 'currency': record.currency,
                 'amount': comp_sum,
-                'comment': record.comment,
+                'comment': record.combined_comment,
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
             })
@@ -379,7 +420,7 @@ class Transfer(models.Model, AmanatBaseModel):
             'payer_2_id': record.intermediary_1_payer_id.id,
             'currency': record.currency,
             'amount': record.amount,
-            'comment': record.comment,
+            'comment': record.combined_comment,
             'operation_percent': record.sending_commission_percent,
             'transfer_id': [(6, 0, [record.id])],
         })
@@ -405,7 +446,7 @@ class Transfer(models.Model, AmanatBaseModel):
                 'payer_2_id': record.intermediary_2_payer_id.id,
                 'currency': record.currency,
                 'amount': record.intermediary_1_sum,
-                'comment': record.comment,
+                'comment': record.combined_comment,
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
             })
@@ -431,7 +472,7 @@ class Transfer(models.Model, AmanatBaseModel):
                 'payer_2_id': record.receiver_payer_id.id,
                 'currency': record.currency,
                 'amount': record.intermediary_2_sum,
-                'comment': record.comment,
+                'comment': record.combined_comment,
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
             })
@@ -564,7 +605,7 @@ class Transfer(models.Model, AmanatBaseModel):
                 _logger.error(f"ОШИБКА при обработке удаления: {str(e)}")
                 raise e
 
-        # Роялти
+        
         to_process_royalty = self.filtered(lambda rec: rec.royalti_Transfer)
         if to_process_royalty:
             _logger.info(f"Обрабатываем роялти для записей: {[rec.name for rec in to_process_royalty]}")
@@ -755,7 +796,7 @@ class Transfer(models.Model, AmanatBaseModel):
                     'payer_1_id': royalty_payer.id if royalty_payer else False,
                     'payer_2_id': recipient_payer.id if recipient_payer else False,
                     'currency': self.currency,
-                    'comment': self.comment,
+                    'comment': self.combined_comment,
                     'amount': royalty_sum,
                     'transfer_id': [(6, 0, [self.id])],
                 })
@@ -937,7 +978,7 @@ class Transfer(models.Model, AmanatBaseModel):
         return [
             'id', 'display_name', 'name', 'state', 'date', 'currency', 'amount',
             'sender_id', 'receiver_id', 'sender_payer_id', 'receiver_payer_id',
-            'create_date', 'write_date', 'manager_id', 'comment', 'hash',
+            'create_date', 'write_date', 'manager_id', 'comment', 'comment_accrual', 'combined_comment', 'hash',
             'is_complex', 'intermediary_1_id', 'intermediary_2_id',
             'create_accrual', 'delete_accrual', 'date_accrual', 'currency_accrual', 'amount_accrual',
             'sender_id_accrual', 'sender_payer_id_accrual', 'sender_wallet_id_accrual',

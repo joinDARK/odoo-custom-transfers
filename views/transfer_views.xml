@@ -6,36 +6,46 @@
         <field name="type">list</field>
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
-                <button width="30" title="Кнопка формы" string="" type="object" name="open_form" icon="fa-external-link"/>
-                <field width="200" name="name"/> 
-                <field width="100" name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                <field width="200" name="state"/>
-                <field width="200" name="date"/>
-                <field width="200" name="hash"/>
-                <field width="200" name="currency"/>
-                <field width="200" name="amount"/>
-                <field width="200" name="sender_payer_id"/>
-                <field width="200" name="sender_wallet_id"/>
-                <field width="200" name="sender_id"/>
-                <field width="200" name="sending_commission_percent" widget="percentage" options="{'rounding': 2}"/>
-                <field width="200" name="receiver_payer_id"/>
-                <field width="200" name="receiver_wallet_id"/>
-                <field width="200" name="receiver_id"/>
-                <field width="200" name="order_ids" widget="many2many_tags"/>
-                <field width="200" name="is_complex"/>
-                <field width="200" name="royalti_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                <field width="200" name="royalty_recipient_1"/>
-                <field width="200" name="royalty_recipient_2"/>
-                <field width="200" name="royalty_recipient_3"/>
-                <field width="200" name="royalty_recipient_4"/>
-                <field width="200" name="royalty_recipient_5"/>
-                <field width="200" name="royalty_percent_1" widget="percentage" options="{'rounding': 2}"/>
-                <field width="200" name="royalty_percent_2" widget="percentage" options="{'rounding': 2}"/>
-                <field width="200" name="royalty_percent_3" widget="percentage" options="{'rounding': 2}"/>
-                <field width="200" name="royalty_percent_4" widget="percentage" options="{'rounding': 2}"/>
-                <field width="200" name="royalty_percent_5" widget="percentage" options="{'rounding': 2}"/>
-                <field width="200" name="delete_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                <field width="200" name="comment"/>
+                <button width="30" title="Кнопка формы" string="" type="object" name="open_form"
+                    icon="fa-external-link" />
+                <field width="200" name="name" />
+                <field width="100" name="create_order"
+                    groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
+                <field width="200" name="state" />
+                <field width="200" name="date" />
+                <field width="200" name="hash" />
+                <field width="200" name="currency" />
+                <field width="200" name="amount" />
+                <field width="200" name="sender_payer_id" />
+                <field width="200" name="sender_wallet_id" />
+                <field width="200" name="sender_id" />
+                <field width="200" name="sending_commission_percent" widget="percentage"
+                    options="{'rounding': 2}" />
+                <field width="200" name="receiver_payer_id" />
+                <field width="200" name="receiver_wallet_id" />
+                <field width="200" name="receiver_id" />
+                <field width="200" name="order_ids" widget="many2many_tags" />
+                <field width="200" name="is_complex" />
+                <field width="200" name="royalti_Transfer"
+                    groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
+                <field width="200" name="royalty_recipient_1" />
+                <field width="200" name="royalty_recipient_2" />
+                <field width="200" name="royalty_recipient_3" />
+                <field width="200" name="royalty_recipient_4" />
+                <field width="200" name="royalty_recipient_5" />
+                <field width="200" name="royalty_percent_1" widget="percentage"
+                    options="{'rounding': 2}" />
+                <field width="200" name="royalty_percent_2" widget="percentage"
+                    options="{'rounding': 2}" />
+                <field width="200" name="royalty_percent_3" widget="percentage"
+                    options="{'rounding': 2}" />
+                <field width="200" name="royalty_percent_4" widget="percentage"
+                    options="{'rounding': 2}" />
+                <field width="200" name="royalty_percent_5" widget="percentage"
+                    options="{'rounding': 2}" />
+                <field width="200" name="delete_Transfer"
+                    groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
+                <field width="200" name="comment" />
             </list>
         </field>
     </record>
@@ -46,7 +56,9 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <h1><field name="name" readonly="1"/></h1>
+                    <h1>
+                        <field name="name" readonly="1" />
+                    </h1>
                 </header>
                 <sheet>
                     <notebook>
@@ -57,16 +69,17 @@
                             <group>
                                 <div class="o-form-group">
                                     <group>
-                                        <field name="date"/>
-                                        <field name="state"/>
+                                        <field name="date" />
+                                        <field name="state" />
                                     </group>
                                     <group>
-                                        <field name="currency"/>
-                                        <field name="amount"/>
+                                        <field name="currency" />
+                                        <field name="amount" />
                                     </group>
                                     <group>
-                                        <field name="sending_commission_percent" widget="percentage" options="{'rounding': 2}"/>
-                                        <field name="hash"/>
+                                        <field name="sending_commission_percent" widget="percentage"
+                                            options="{'rounding': 2}" />
+                                        <field name="hash" />
                                     </group>
                                 </div>
                             </group>
@@ -76,23 +89,25 @@
                             <group>
                                 <div class="o-form-group-2">
                                     <group>
-                                        <field name="sender_id"/>
-                                        <field name="sender_payer_id"/>
-                                        <field name="sender_wallet_id"/>
+                                        <field name="sender_id" />
+                                        <field name="sender_payer_id" />
+                                        <field name="sender_wallet_id" />
                                     </group>
                                     <group>
-                                        <field name="receiver_id"/>
-                                        <field name="receiver_payer_id"/>
-                                        <field name="receiver_wallet_id"/>
+                                        <field name="receiver_id" />
+                                        <field name="receiver_payer_id" />
+                                        <field name="receiver_wallet_id" />
                                     </group>
                                     <group>
-                                        <field name="create_order" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                        <field name="create_order"
+                                            groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
                                     </group>
                                     <group>
-                                        <field name="delete_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                        <field name="delete_Transfer"
+                                            groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
                                     </group>
                                 </div>
-                                <field name="order_ids"/>
+                                <field name="order_ids" />
                             </group>
                         </page>
                         <page string="Сложные переводы">
@@ -100,23 +115,31 @@
                                 <h2>Сложные переводы</h2>
                             </header>
                             <group>
-                                <field name="is_complex"/>
+                                <field name="is_complex" />
                             </group>
                             <group>
                                 <div class="o-form-group-2">
                                     <group>
-                                        <field name="intermediary_1_id" invisible="not is_complex"/>
-                                        <field name="intermediary_1_payer_id" invisible="not is_complex"/>
-                                        <field name="intermediary_1_wallet_id" invisible="not is_complex"/>
-                                        <field name="intermediary_1_commission_percent" widget="percentage" options="{'rounding': 2}" invisible="not is_complex"/>
-                                        <field name="intermediary_1_sum" invisible="not is_complex"/>
+                                        <field name="intermediary_1_id" invisible="not is_complex" />
+                                        <field name="intermediary_1_payer_id"
+                                            invisible="not is_complex" />
+                                        <field name="intermediary_1_wallet_id"
+                                            invisible="not is_complex" />
+                                        <field name="intermediary_1_commission_percent"
+                                            widget="percentage" options="{'rounding': 2}"
+                                            invisible="not is_complex" />
+                                        <field name="intermediary_1_sum" invisible="not is_complex" />
                                     </group>
                                     <group>
-                                        <field name="intermediary_2_id" invisible="not is_complex"/>
-                                        <field name="intermediary_2_payer_id" invisible="not is_complex"/>
-                                        <field name="intermediary_2_wallet_id" invisible="not is_complex"/>
-                                        <field name="intermediary_2_commission_percent" widget="percentage" options="{'rounding': 2}" invisible="not is_complex"/>
-                                        <field name="intermediary_2_sum" invisible="not is_complex"/>
+                                        <field name="intermediary_2_id" invisible="not is_complex" />
+                                        <field name="intermediary_2_payer_id"
+                                            invisible="not is_complex" />
+                                        <field name="intermediary_2_wallet_id"
+                                            invisible="not is_complex" />
+                                        <field name="intermediary_2_commission_percent"
+                                            widget="percentage" options="{'rounding': 2}"
+                                            invisible="not is_complex" />
+                                        <field name="intermediary_2_sum" invisible="not is_complex" />
                                     </group>
                                 </div>
                             </group>
@@ -126,70 +149,76 @@
                                 <h2>Роялти</h2>
                             </header>
                             <group>
-                                <field name="royalti_Transfer" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                <field name="royalti_Transfer"
+                                    groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
                             </group>
                             <group>
                                 <div class="o-form-group-2">
                                     <group>
-                                        <field name="royalty_recipient_1"/>
-                                        <field name="royalty_recipient_2"/>
-                                        <field name="royalty_recipient_3"/>
-                                        <field name="royalty_recipient_4"/>
-                                        <field name="royalty_recipient_5"/>
+                                        <field name="royalty_recipient_1" />
+                                        <field name="royalty_recipient_2" />
+                                        <field name="royalty_recipient_3" />
+                                        <field name="royalty_recipient_4" />
+                                        <field name="royalty_recipient_5" />
                                     </group>
                                     <group>
-                                        <field name="royalty_percent_1" widget="percentage" options="{'rounding': 2}"/>
-                                        <field name="royalty_percent_2" widget="percentage" options="{'rounding': 2}"/>
-                                        <field name="royalty_percent_3" widget="percentage" options="{'rounding': 2}"/>
-                                        <field name="royalty_percent_4" widget="percentage" options="{'rounding': 2}"/>
-                                        <field name="royalty_percent_5" widget="percentage" options="{'rounding': 2}"/>
-                                    </group>
-                                </div>                            
-                            </group>
-                        </page>
-                        <page string="Комментарии">
-                            <group>
-                                <field name="comment"/>
-                            </group>
-                        </page>
-                        <page string="Начисления">
-                            <group>
-                                <div class="o-form-group-3">
-                                    <group>
-                                        <field name="date_accrual"/>                                
-                                    </group>
-                                    <group>
-                                        <field name="currency_accrual"/>
-                                    </group>
-                                    <group>
-                                        <field name="amount_accrual"/>
-                                    </group>
-                                    <!-- <group>
-                                        <field name="sender_id_accrual" readonly="1"/>
-                                        <field name="sender_payer_id_accrual" readonly="1"/>
-                                        <field name="sender_wallet_id_accrual" readonly="1"/>
-                                    </group> -->
-                                    <group>
-                                        <field name="receiver_id_accrual"/>
-                                        <field name="receiver_payer_id_accrual"/>
-                                        <field name="receiver_wallet_id_accrual"/>
-                                    </group>
-                                    <group>
-                                        <field name="create_accrual" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                                        <field name="delete_accrual" groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                                    </group>
-                                    <group>
-                                        <field name="comment_accrual"/>
+                                        <field name="royalty_percent_1" widget="percentage"
+                                            options="{'rounding': 2}" />
+                                        <field name="royalty_percent_2" widget="percentage"
+                                            options="{'rounding': 2}" />
+                                        <field name="royalty_percent_3" widget="percentage"
+                                            options="{'rounding': 2}" />
+                                        <field name="royalty_percent_4" widget="percentage"
+                                            options="{'rounding': 2}" />
+                                        <field name="royalty_percent_5" widget="percentage"
+                                            options="{'rounding': 2}" />
                                     </group>
                                 </div>
                             </group>
                         </page>
+                        <page string="Комментарии">
+                            <group>
+                                <field name="comment" />
+                            </group>
+                        </page>
+                        <page string="Начисления">
+                            <group col="2">
+                                <!-- Левая колонка: начисление -->
+                                <group col="1">
+                                    <field name="date_accrual"/>
+                                    <field name="currency_accrual"/>
+                                    <field name="amount_accrual"/>
+                                </group>
+                        
+                                <!-- Правая колонка: получатель -->
+                                <group col="1">
+                                    <field name="receiver_id_accrual"/>
+                                    <field name="receiver_payer_id_accrual"/>
+                                    <field name="receiver_wallet_id_accrual"/>
+                                </group>
+                            </group>
+                        
+                            <!-- Отдельный блок: чекбоксы -->
+                            <group col="2">
+                                <field name="create_accrual"
+                                       groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                <field name="delete_accrual"
+                                       groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                            </group>
+                        
+                            <!-- Комментарий -->
+                            <group>
+                                <field name="comment_accrual"/>
+                            </group>
+                        </page>
+                        
+
                     </notebook>
                 </sheet>
                 <chatter>
-                    <field name="message_follower_ids"/>
-                    <field name="activity_ids"/>
-                    <field name="message_ids"/>
+                    <field name="message_follower_ids" />
+                    <field name="activity_ids" />
+                    <field name="message_ids" />
                 </chatter>
             </form>
         </field>

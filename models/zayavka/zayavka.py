@@ -1376,7 +1376,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     date_agent_on_pc = fields.Date(
-        string='Постеупление на PC',
+        string='Поступление на PC',
         tracking=True,
     )
 
@@ -1945,7 +1945,6 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     return_commission = fields.Float(
         string='Комиссия на возврат',
-        digits=(16, 2),
         tracking=True,
     )
 

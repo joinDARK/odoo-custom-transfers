@@ -35,7 +35,12 @@ export class AnalyticsDashboard extends Component {
             loadingRates: false,
             // Общая сумма эквивалентов всех контрагентов
             totalBalanceSummary: null,
-            loadingTotalSummary: false
+            loadingTotalSummary: false,
+            // Отдельные даты для сравнения
+            comparisonDateFrom1: '1970-01-01', // дата начала для первого периода сравнения (всегда с 1970)
+            comparisonDateTo1: '',              // дата конца для первого периода сравнения
+            comparisonDateFrom2: '1970-01-01', // дата начала для второго периода сравнения (всегда с 1970)
+            comparisonDateTo2: ''               // дата конца для второго периода сравнения
         });
         
         onWillStart(this.willStart);
@@ -262,15 +267,23 @@ export class AnalyticsDashboard extends Component {
      */
     async loadContragentsComparison() {
         try {
-            // Подготавливаем параметры - не передаем пустые даты
+            // Подготавливаем параметры - используем отдельные даты для сравнения
             const params = {};
-            if (this.state.dateFrom && this.state.dateFrom.trim()) {
-                params.date_from1 = this.state.dateFrom;
-                params.date_from2 = this.state.dateFrom;
+            
+            // Параметры для первого периода сравнения
+            if (this.state.comparisonDateFrom1 && this.state.comparisonDateFrom1.trim()) {
+                params.date_from1 = this.state.comparisonDateFrom1;
             }
-            if (this.state.dateTo && this.state.dateTo.trim()) {
-                params.date_to1 = this.state.dateTo;
-                params.date_to2 = this.state.dateTo;
+            if (this.state.comparisonDateTo1 && this.state.comparisonDateTo1.trim()) {
+                params.date_to1 = this.state.comparisonDateTo1;
+            }
+            
+            // Параметры для второго периода сравнения
+            if (this.state.comparisonDateFrom2 && this.state.comparisonDateFrom2.trim()) {
+                params.date_from2 = this.state.comparisonDateFrom2;
+            }
+            if (this.state.comparisonDateTo2 && this.state.comparisonDateTo2.trim()) {
+                params.date_to2 = this.state.comparisonDateTo2;
             }
             
             const result = await this.orm.call(
@@ -318,6 +331,26 @@ export class AnalyticsDashboard extends Component {
             this.loadContragentsBalance(),
             this.loadContragentsComparison()
         ]);
+    }
+    
+    /**
+     * Обработка изменения даты конца для первого периода сравнения
+     */
+    async onComparisonDateTo1Change(ev) {
+        console.log('Comparison date to 1 changed:', this.state.comparisonDateTo1);
+        // Дата начала всегда остается 1970-01-01
+        this.state.comparisonDateFrom1 = '1970-01-01';
+        await this.loadContragentsComparison();
+    }
+    
+    /**
+     * Обработка изменения даты конца для второго периода сравнения
+     */
+    async onComparisonDateTo2Change(ev) {
+        console.log('Comparison date to 2 changed:', this.state.comparisonDateTo2);
+        // Дата начала всегда остается 1970-01-01
+        this.state.comparisonDateFrom2 = '1970-01-01';
+        await this.loadContragentsComparison();
     }
     
     /**
@@ -383,6 +416,118 @@ export class AnalyticsDashboard extends Component {
             this.loadContragentsBalance(),
             this.loadContragentsComparison()
         ]);
+    }
+    
+    /**
+     * Установка быстрого периода для первого сравнения
+     */
+    async setComparisonQuickPeriod1(period) {
+        console.log('Comparison quick period 1 selected:', period);
+        
+        const today = new Date();
+        const dateFrom = '1970-01-01'; // Всегда начинаем с 1970 года
+        let dateTo = '';
+        
+        switch (period) {
+            case 'week':
+                const startOfWeek = new Date(today);
+                const dayOfWeek = today.getDay();
+                const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                startOfWeek.setDate(today.getDate() - daysToMonday);
+                
+                dateTo = startOfWeek.toISOString().split('T')[0];
+                break;
+                
+            case 'month':
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                
+                dateTo = startOfMonth.toISOString().split('T')[0];
+                break;
+                
+            case '3months':
+                const threeMonthsAgo = new Date(today);
+                threeMonthsAgo.setMonth(today.getMonth() - 3);
+                
+                dateTo = threeMonthsAgo.toISOString().split('T')[0];
+                break;
+                
+            case 'year':
+                const startOfYear = new Date(today.getFullYear(), 0, 1);
+                
+                dateTo = startOfYear.toISOString().split('T')[0];
+                break;
+                
+            case 'all':
+                dateTo = today.toISOString().split('T')[0];
+                break;
+                
+            default:
+                console.warn('Unknown period:', period);
+                return;
+        }
+        
+        this.state.comparisonDateFrom1 = dateFrom;
+        this.state.comparisonDateTo1 = dateTo;
+        
+        console.log(`Comparison period 1 set: ${period}, from: ${dateFrom}, to: ${dateTo}`);
+        
+        await this.loadContragentsComparison();
+    }
+    
+    /**
+     * Установка быстрого периода для второго сравнения
+     */
+    async setComparisonQuickPeriod2(period) {
+        console.log('Comparison quick period 2 selected:', period);
+        
+        const today = new Date();
+        const dateFrom = '1970-01-01'; // Всегда начинаем с 1970 года
+        let dateTo = '';
+        
+        switch (period) {
+            case 'week':
+                const startOfWeek = new Date(today);
+                const dayOfWeek = today.getDay();
+                const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                startOfWeek.setDate(today.getDate() - daysToMonday);
+                
+                dateTo = startOfWeek.toISOString().split('T')[0];
+                break;
+                
+            case 'month':
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                
+                dateTo = startOfMonth.toISOString().split('T')[0];
+                break;
+                
+            case '3months':
+                const threeMonthsAgo = new Date(today);
+                threeMonthsAgo.setMonth(today.getMonth() - 3);
+                
+                dateTo = threeMonthsAgo.toISOString().split('T')[0];
+                break;
+                
+            case 'year':
+                const startOfYear = new Date(today.getFullYear(), 0, 1);
+                
+                dateTo = startOfYear.toISOString().split('T')[0];
+                break;
+                
+            case 'all':
+                dateTo = today.toISOString().split('T')[0];
+                break;
+                
+            default:
+                console.warn('Unknown period:', period);
+                return;
+        }
+        
+        this.state.comparisonDateFrom2 = dateFrom;
+        this.state.comparisonDateTo2 = dateTo;
+        
+        console.log(`Comparison period 2 set: ${period}, from: ${dateFrom}, to: ${dateTo}`);
+        
+        await this.loadContragentsComparison();
     }
     
     /**

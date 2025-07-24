@@ -7,10 +7,10 @@
     height: calc(100vh - 60px);
     font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
     color: #333333;
-    
+
     .dashboard-header {
         margin-bottom: 20px;
-        
+
         h2 {
             font-size: 1.5rem;
             font-weight: 600;
@@ -18,17 +18,17 @@
             margin: 0;
         }
     }
-    
+
     .date-range-card {
         background: #ffffff;
         padding: 20px;
         border: 1px solid #ddd;
         margin-bottom: 30px;
         border-radius: 4px;
-        
+
         .date-range-header {
             margin-bottom: 15px;
-            
+
             h3 {
                 font-size: 1.1rem;
                 font-weight: 600;
@@ -36,7 +36,7 @@
                 margin: 0;
             }
         }
-        
+
         // Стили для кнопок быстрого выбора периодов
         .quick-period-buttons {
             margin-bottom: 20px;
@@ -44,9 +44,9 @@
             flex-wrap: wrap;
             gap: 8px;
             justify-content: center;
-            
+
             .period-btn {
-                background: #f8f9fa;
+                // background: #f8f9fa;
                 border: 1px solid #dee2e6;
                 border-radius: 4px;
                 padding: 8px 16px;
@@ -56,20 +56,20 @@
                 transition: all 0.2s ease;
                 cursor: pointer;
                 white-space: nowrap;
-                
+
                 &:hover {
                     background: #e9ecef;
                     border-color: #ccc;
                     color: #333333;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
                 }
-                
+
                 &:active {
                     background: #dee2e6;
                     border-color: #aaa;
-                    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+                    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
                 }
-                
+
                 &:focus {
                     outline: none;
                     border-color: #999999;
@@ -77,18 +77,18 @@
                 }
             }
         }
-        
+
         .form-group {
             margin-bottom: 15px;
-            
+
             label {
                 font-weight: 500;
-                color: #666666;
+                // color: #666666;
                 margin-bottom: 5px;
                 display: block;
                 font-size: 13px;
             }
-            
+
             .form-control {
                 border: 1px solid #ccc;
                 border-radius: 4px;
@@ -96,30 +96,30 @@
                 font-size: 14px;
                 background: #ffffff;
                 color: #333333;
-                
+
                 &:focus {
                     border-color: #007bff;
                     outline: none;
                     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
                 }
-                
+
                 &::placeholder {
                     color: #999999;
                 }
             }
         }
     }
-    
+
     .rates-section {
         margin-bottom: 30px;
     }
-    
+
     .today-section {
         margin-bottom: 30px;
-        
+
         .section-header {
             margin-bottom: 20px;
-            
+
             h3 {
                 font-size: 1.2rem;
                 font-weight: 600;
@@ -127,13 +127,13 @@
                 margin: 0;
             }
         }
-        
+
         .today-card {
-            background: #f8f9fa;
+            // background: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 4px;
             padding: 15px;
-            
+
             .metric-label {
                 color: #666666;
                 font-weight: 500;
@@ -142,7 +142,7 @@
                 margin-bottom: 8px;
                 text-transform: uppercase;
             }
-            
+
             .metric-value {
                 color: #333333;
                 font-size: 1.4rem;
@@ -150,13 +150,13 @@
                 font-weight: 600;
             }
         }
-        
+
         .today-chart {
             background: #ffffff;
             border: 1px solid #dee2e6;
             border-radius: 4px;
             padding: 20px;
-            
+
             .chart-header {
                 h3 {
                     color: #333333;
@@ -166,10 +166,10 @@
             }
         }
     }
-    
+
     .metrics-section {
         margin-bottom: 30px;
-        
+
         // Заголовок секции
         .section-title {
             font-size: 1.2rem;
@@ -178,19 +178,19 @@
             margin-bottom: 20px;
         }
     }
-    
+
     .metric-card {
-        background: #f8f9fa;
+        // background: #f8f9fa;
         border: 1px solid #dee2e6;
         border-radius: 4px;
         padding: 15px;
         margin-bottom: 15px;
         transition: box-shadow 0.2s ease;
-        
+
         &:hover {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        
+
         .metric-label {
             font-size: 0.75rem;
             color: #666666;
@@ -199,7 +199,7 @@
             text-transform: uppercase;
             line-height: 1.2;
         }
-        
+
         .metric-value {
             font-size: 1.4rem;
             font-weight: 600;
@@ -207,44 +207,44 @@
             line-height: 1;
         }
     }
-    
+
     // Специальные стили для карточек курсов - как на скриншоте
     .rates-section .metric-card {
-        background: #f8f9fa;
+        // background: #f8f9fa;
         border: 1px solid #dee2e6;
-        
+
         .metric-label {
             color: #666666;
             font-size: 0.75rem;
             font-weight: 500;
         }
-        
+
         .metric-value {
             color: #333333;
             font-size: 1.3rem;
             font-weight: 600;
         }
     }
-    
+
     .loading-dashboard {
         display: flex;
         justify-content: center;
         align-items: center;
         min-height: 200px;
-        background: #f8f9fa;
+        // background: #f8f9fa;
         border: 1px solid #dee2e6;
         border-radius: 4px;
         margin: 20px 0;
-        
+
         .text-center {
             color: #666666;
-            
+
             i {
                 margin-bottom: 10px;
                 color: #007bff;
                 font-size: 1.5rem;
             }
-            
+
             p {
                 font-size: 0.9rem;
                 font-weight: 500;
@@ -252,26 +252,26 @@
             }
         }
     }
-    
+
     .no-data-dashboard {
         display: flex;
         justify-content: center;
         align-items: center;
         min-height: 200px;
-        background: #f8f9fa;
+        // background: #f8f9fa;
         border: 1px solid #dee2e6;
         border-radius: 4px;
         margin: 20px 0;
-        
+
         .text-center {
             color: #666666;
-            
+
             i {
                 margin-bottom: 10px;
                 font-size: 1.5rem;
                 color: #dc3545;
             }
-            
+
             p {
                 font-size: 0.9rem;
                 font-weight: 500;
@@ -279,20 +279,20 @@
             }
         }
     }
-    
+
     .chart-section {
         margin-bottom: 30px;
-        
+
         .chart-card {
             background: #ffffff;
             border: 1px solid #dee2e6;
             border-radius: 4px;
             padding: 20px;
-            
+
             .chart-header {
                 text-align: center;
                 margin-bottom: 20px;
-                
+
                 h3 {
                     font-size: 1.1rem;
                     font-weight: 600;
@@ -300,12 +300,12 @@
                     margin: 0;
                 }
             }
-            
+
             .chart-container {
                 position: relative;
                 height: 300px;
                 width: 100%;
-                
+
                 canvas {
                     max-width: 100%;
                     height: 100%;
@@ -319,23 +319,23 @@
 @media (max-width: 768px) {
     .zayavka-fiks-dashboard {
         padding: 15px;
-        
+
         .dashboard-header {
             margin-bottom: 15px;
-            
+
             h2 {
                 font-size: 1.3rem;
             }
         }
-        
+
         .date-range-card {
             padding: 15px;
-            
+
             // Адаптивные стили для кнопок периодов на мобильных
             .quick-period-buttons {
                 margin-bottom: 15px;
                 gap: 6px;
-                
+
                 .period-btn {
                     font-size: 12px;
                     padding: 6px 12px;
@@ -347,24 +347,24 @@
                 }
             }
         }
-        
+
         .metric-card {
             padding: 12px;
-            
+
             .metric-label {
                 font-size: 0.7rem;
                 margin-bottom: 6px;
             }
-            
+
             .metric-value {
                 font-size: 1.2rem;
             }
         }
-        
+
         .chart-section {
             .chart-card {
                 padding: 15px;
-                
+
                 .chart-container {
                     height: 250px;
                 }
@@ -376,15 +376,15 @@
 @media (max-width: 576px) {
     .zayavka-fiks-dashboard {
         padding: 10px;
-        
+
         .date-range-card {
             padding: 12px;
-            
+
             // Адаптивные стили для кнопок периодов на очень маленьких экранах
             .quick-period-buttons {
                 flex-direction: column;
                 gap: 8px;
-                
+
                 .period-btn {
                     font-size: 11px;
                     padding: 8px 12px;
@@ -393,19 +393,19 @@
                 }
             }
         }
-        
+
         .metric-card {
             padding: 10px;
-            
+
             .metric-value {
                 font-size: 1.1rem;
             }
         }
-        
+
         .chart-section {
             .chart-card {
                 padding: 12px;
-                
+
                 .chart-container {
                     height: 200px;
                 }
@@ -419,20 +419,20 @@
     &::-webkit-scrollbar {
         width: 6px;
     }
-    
+
     &::-webkit-scrollbar-track {
         background: #f1f1f1;
     }
-    
+
     &::-webkit-scrollbar-thumb {
         background: #c1c1c1;
         border-radius: 3px;
-        
+
         &:hover {
             background: #a8a8a8;
         }
     }
-    
+
     scrollbar-width: thin;
     scrollbar-color: #c1c1c1 #f1f1f1;
 }
@@ -443,9 +443,10 @@
         margin-left: -7.5px;
         margin-right: -7.5px;
     }
-    
-    .col, [class*="col-"] {
+
+    .col,
+    [class*="col-"] {
         padding-left: 7.5px;
         padding-right: 7.5px;
     }
-} 
+}

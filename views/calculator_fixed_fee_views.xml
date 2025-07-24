@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Список для калькулятора фиксированного вознаграждения -->
+    <record id="calculator_fixed_fee_list_view" model="ir.ui.view">
+        <field name="name">amanat.calculator.fixed.fee.wizard.list</field>
+        <field name="model">amanat.calculator.fixed.fee.wizard</field>
+        <field name="arch" type="xml">
+            <list string="История расчетов фиксированного вознаграждения" class="calculator-list-background">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="real_currency"/>
+                <field name="real_amount"/>
+                <field name="client_currency"/>
+                <field name="client_amount"/>
+                <field name="final_rate" optional="hide"/>
+                <field name="embed_percent" optional="hide"/>
+                <field name="create_uid"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Форма для калькулятора фиксированного вознаграждения -->
+    <record id="calculator_fixed_fee_form_view" model="ir.ui.view">
+        <field name="name">amanat.calculator.fixed.fee.wizard.form</field>
+        <field name="model">amanat.calculator.fixed.fee.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Калькулятор фиксированного вознаграждения" class="calculator-form-background">
+                <sheet style="background: rgba(255, 255, 255, 0.95) !important; border-radius: 10px !important; padding: 20px !important; margin: 10px !important; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;">
+                    <div class="oe_title">
+                        <h1>Калькулятор фиксированного вознаграждения</h1>
+                        <h2>
+                            <field name="name" placeholder="Название расчета..." readonly="1"/>
+                        </h2>
+                    </div>
+                    
+                    <group string="Основные параметры">
+                        <field name="date"/>
+                    </group>
+                    
+                    <group string="Реальный">
+                        <group>
+                            <field name="real_currency"/>
+                            <field name="real_amount"/>
+                            <field name="real_cb_rate"/>
+                            <field name="real_rub_amount" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="general_percent_rate"/>
+                            <field name="general_percent_amount" readonly="1"/>
+                            <field name="real_rub_total" readonly="1"/>
+                            <field name="our_percent_rate"/>
+                            <field name="our_percent_amount" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Клиенту">
+                        <group>
+                            <field name="client_currency"/>
+                            <field name="client_amount"/>
+                            <field name="client_total_rate"/>
+                            <field name="client_rub_amount" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="client_percent_amount"/>
+                            <field name="client_rub_total" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Итого">
+                        <group>
+                            <field name="reward_difference" readonly="1"/>
+                            <field name="add_to_payment" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="final_rate" readonly="1"/>
+                            <field name="embed_percent" readonly="1"/>
+                        </group>
+                    </group>
+                
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Действие для калькулятора фиксированного вознаграждения -->
+    <record id="action_amanat_calculator_fixed_fee" model="ir.actions.act_window">
+        <field name="name">Калькулятор для фиксированного вознаграждения</field>
+        <field name="res_model">amanat.calculator.fixed.fee.wizard</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">main</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Создайте первый расчет фиксированного вознаграждения!
+            </p>
+            <p>
+                Здесь вы можете рассчитать фиксированные и дополнительные вознаграждения в различных валютах.
+            </p>
+        </field>
+    </record>
+</odoo> 

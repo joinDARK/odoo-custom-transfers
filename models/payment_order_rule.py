@@ -20,6 +20,9 @@ class PaymentOrderRule(models.Model):
     )
     percent = fields.Float(string="Процент", tracking=True)
 
+    min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)
+    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True)
+
     @api.depends('percent')
     def _compute_name(self):
         for rec in self:

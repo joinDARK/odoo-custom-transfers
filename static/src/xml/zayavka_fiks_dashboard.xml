@@ -57,6 +57,14 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">Курс USDT</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.average_rates.usdt"/>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Вторая строка: Эквивалент в $ и суммы по валютам -->
@@ -98,6 +106,14 @@
                                         <div class="metric-label">AED</div>
                                         <div class="metric-value">
                                             <t t-esc="state.dashboardData.today_data.aed_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card today-card">
+                                        <div class="metric-label">USDT</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.today_data.usdt_sum"/>
                                         </div>
                                     </div>
                                 </div>
@@ -211,6 +227,14 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">USDT договор</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.average_rates.usdt"/>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Вторая строка: Эквивалент в $ и суммы по валютам -->
@@ -252,6 +276,14 @@
                                         <div class="metric-label">AED</div>
                                         <div class="metric-value">
                                             <t t-esc="state.dashboardData.aed_sum"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="metric-card">
+                                        <div class="metric-label">USDT</div>
+                                        <div class="metric-value">
+                                            <t t-esc="state.dashboardData.usdt_sum"/>
                                         </div>
                                     </div>
                                 </div>

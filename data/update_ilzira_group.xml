@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Принудительное обновление группы пользователя Ильзира -->
+    <data>
+        <!-- Удаляем Ильзиру из группы ограниченного доступа и добавляем в казначеи -->
+        <function model="res.users" name="write">
+            <value model="res.users" search="[('login', '=', 'ilzira')]"/>
+            <value eval="{
+                'groups_id': [
+                    (3, ref('amanat.group_amanat_limited_access')),
+                    (3, ref('amanat.group_amanat_manager')),
+                    (3, ref('amanat.group_amanat_inspector')),
+                    (4, ref('amanat.group_amanat_treasurer'))
+                ]
+            }"/>
+        </function>
+    </data>
+</odoo> 

@@ -4,7 +4,6 @@
     min-width: 200px;
     width: 300px; // Стандартная ширина
     height: 100%; // Занимает всю высоту grid-области
-    min-height: 100vh; // Минимальная высота на всю высоту экрана
     overflow-y: auto;
     transition: none; // Убираем анимацию для плавного изменения размера
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
@@ -47,7 +46,6 @@
 
     .mk_apps_sidebar {
         height: 100%;
-        min-height: 100vh; // Минимальная высота на всю высоту экрана
         display: flex;
         flex-direction: column;
         justify-content: space-between;

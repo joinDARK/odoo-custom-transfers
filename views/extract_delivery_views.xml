@@ -57,10 +57,10 @@
                 <field width="200" name="statement_part_19"/>
                 <field width="200" name="statement_part_20"/>
                 <field width="200" name="remaining_statement"/>
-                <field width="200" name="range_field"/>
-                <field width="200" name="date_start"/>
-                <field width="200" name="date_end"/>
-                <field width="200" name="range_status"/>
+                <field width="200" name="range_field" invisible="1"/>
+                <field width="200" name="date_start" invisible="1"/>
+                <field width="200" name="date_end" invisible="1"/>
+                <field width="200" name="range_status" invisible="1"/>
             </list>
         </field>
     </record>
@@ -145,7 +145,7 @@
                                 <field name="direction_choice"/>
                             </group>
                         </page>
-                        <page string="Линки">
+                        <page string="Линки" groups="!amanat.group_amanat_fin_manager_jess">
                             <group>
                                 <field name="applications"/>
                                 <field name="currency_reserve"/>
@@ -155,7 +155,7 @@
                                 <field name="gold_deal"/>
                             </group>
                         </page>
-                        <page string="Выписка дробь">
+                        <page string="Выписка дробь" groups="!amanat.group_amanat_fin_manager_jess">
                             <group string="Информация о выписке">
                                 <div class="o-form-group">
                                     <group>
@@ -239,7 +239,7 @@
                                 </div>
                             </group>
                         </page>
-                        <page string="Выписка разнос Джесс">
+                        <page string="Выписка разнос Джесс" groups="amanat.group_amanat_fin_manager_jess">
                             <group>
                                 <div class="o-form-group">
                                     <group>
@@ -261,7 +261,7 @@
                                 </div>
                             </group>
                         </page>
-                        <page string="Диапазон">
+                        <page string="Диапазон" groups="!amanat.group_amanat_fin_manager_jess">
                             <group>
                                 <field name="range_field"/>
                                 <field name="date_start"/>
@@ -269,7 +269,7 @@
                                 <field name="range_status"/>
                             </group>
                         </page>
-                        <page string="Остальные поля">
+                        <page string="Остальные поля" groups="!amanat.group_amanat_fin_manager_jess">
                             <group string="Заявка">
                                 <field name="applications"/>
                             </group>
@@ -301,4 +301,3 @@
         <field name="target">main</field>
     </record>
 </odoo>
-

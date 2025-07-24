@@ -47,8 +47,13 @@ class ResUsers(models.Model):
         return {
             'is_manager': user.has_group('amanat.group_amanat_manager'),
             'is_senior_manager': user.has_group('amanat.group_amanat_senior_manager'),
+            'is_fin_manager': user.has_group('amanat.group_amanat_fin_manager'),
+            'is_fin_manager_jess': user.has_group('amanat.group_amanat_fin_manager_jess'),
+            'is_director': user.has_group('amanat.group_amanat_director'),
             'is_admin': user.has_group('amanat.group_amanat_admin'),
             'is_inspector': user.has_group('amanat.group_amanat_inspector'),
+            'is_dilara': user.name == 'Диляра',  # Добавляем проверку имени пользователя
+            'user_name': user.name,  # Добавляем имя пользователя для отладки
         }
 
     def write(self, vals):

@@ -1,0 +1,29 @@
+/* Стили для управления отображением menu sections в модуле Amanat */
+
+/* Когда активен модуль Amanat, принудительно скрываем o_menu_sections */
+body.amanat_module_active .o_menu_sections {
+    display: none !important;
+}
+
+/* Дополнительные стили для случаев, когда menu sections нужно скрыть */
+.o_webclient.amanat_active .o_menu_sections {
+    display: none !important;
+}
+
+/* Обеспечиваем, что в других модулях menu sections отображается нормально */
+body:not(.amanat_module_active) .o_menu_sections {
+    display: block;
+}
+
+/* Стили для плавного перехода при переключении */
+.o_menu_sections {
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Когда скрыто через JS, убираем также пространство */
+.o_menu_sections[style*="display: none"] {
+    height: 0;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+} 

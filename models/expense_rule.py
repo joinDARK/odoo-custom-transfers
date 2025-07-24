@@ -15,3 +15,6 @@ class ExpenseRule(models.Model, AmanatBaseModel):
     )
     date_start = fields.Date(string="Дата начала", tracking=True)
     date_end = fields.Date(string="Дата конца", tracking=True)
+
+    min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)
+    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True)

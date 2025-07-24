@@ -14,6 +14,8 @@
                         <field name="date_start"/>
                         <field name="date_end"/>
                         <field name="zayavka_ids"/>
+                        <field name="min_application_amount"/>
+                        <field name="max_application_amount"/>
                     </group>
                 </sheet>
             </form>
@@ -31,6 +33,8 @@
                 <field name="extra_days"/>
                 <field name="date_start"/>
                 <field name="date_end"/>
+                <field name="min_application_amount"/>
+                <field name="max_application_amount"/>
             </list>
         </field>
     </record>
