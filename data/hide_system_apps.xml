@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Скрываем системные приложения для не-администраторов -->
+    
+    <!-- Настройки -->
+    <record id="base.menu_administration" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Продажи -->
+    <record id="sale.sale_menu_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Покупки -->
+    <record id="purchase.menu_purchase_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Склад/Инвентарь -->
+    <record id="stock.menu_stock_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Бухгалтерия -->
+    <record id="account.menu_finance" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- CRM -->
+    <record id="crm.crm_menu_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Проекты -->
+    <record id="project.menu_main_pm" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- HR/Сотрудники -->
+    <record id="hr.menu_hr_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Производство -->
+    <record id="mrp.menu_mrp_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Маркетинг -->
+    <record id="mass_mailing.mass_mailing_menu_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- Календарь -->
+    <record id="calendar.mail_menu_calendar" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- События -->
+    <record id="event.event_main_menu" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Веб-сайт -->
+    <record id="website.menu_website_configuration" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Обсуждения -->
+    <record id="mail.menu_root_discuss" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Контакты -->
+    <record id="contacts.menu_contacts" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Приложения -->
+    <record id="base.menu_management" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Студия (если установлена) -->
+    <record id="web_studio.studio_menu_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Документы -->
+    <record id="documents.menu_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Подписки -->
+    <record id="sale_subscription.menu_sale_subscription_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Планирование -->
+    <record id="planning.planning_menu_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Расписания -->
+    <record id="resource.menu_resource_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Опросы -->
+    <record id="survey.menu_surveys" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Временные листы -->
+    <record id="hr_timesheet.timesheet_menu_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Мероприятия -->
+    <record id="event.event_main_menu" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Блог -->
+    <record id="website_blog.menu_blog" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- eCommerce -->
+    <record id="website_sale.menu_website_sale" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- PoS -->
+    <record id="point_of_sale.menu_point_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- Интеграции -->
+    <record id="base.menu_custom" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    
+    <!-- IoT -->
+    <record id="iot.iot_menu_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+</odoo> 

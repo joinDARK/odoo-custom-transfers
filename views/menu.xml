@@ -28,12 +28,6 @@
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager"
     /> -->
 
-
-    
-
-
-
-
     <!-- Группировака "Основное"-->
     <menuitem 
         id="amanat_menu_main_group" 

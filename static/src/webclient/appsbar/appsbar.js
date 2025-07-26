@@ -427,6 +427,22 @@ export class AppsBar extends Component {
                     ],
                 },
                 {
+                    name: "Прайс листы",
+                    items: [
+                        { name: "Прайс лист партнеры", action: "amanat.price_list_partners_action" },
+                        { name: "Прайс лист Плательщика", action: "amanat.price_list_payer_profit_action" },
+                        { name: "Прайс лист Плательщика За проведение", action: "amanat.price_list_payer_carrying_out_action" },
+                    ],
+                },
+                {
+                    name: "Правила",
+                    items: [
+                        { name: "Правила Расход на операционную деятельность", action: "amanat.action_expense_rule" },
+                        { name: "Правила Себестоимость денег", action: "amanat.action_money_cost_rule" },
+                        { name: "Правила Платежка РФ", action: "amanat.action_payment_order_rule" },
+                    ],
+                },
+                {
                     name: "Заявки",
                     action: "amanat.zayavka_action",
                     actionMethod: "openZayvaki",

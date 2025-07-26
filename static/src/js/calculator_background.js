@@ -13,7 +13,7 @@ function applyCalculatorBackground() {
     // Применяем стили к формам
     calculatorForms.forEach(form => {
         form.style.background = 'linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899)';
-        form.style.backgroundImage = 'url("/amanat/static/src/img/calculator_bg_optimized.jpg")';
+        form.style.backgroundImage = 'url("/amanat/static/src/img/calculator_background.png")';
         form.style.backgroundSize = 'cover';
         form.style.backgroundRepeat = 'no-repeat';
         form.style.backgroundPosition = 'center';
@@ -24,7 +24,7 @@ function applyCalculatorBackground() {
     // Применяем стили к спискам
     calculatorLists.forEach(list => {
         list.style.background = 'linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899)';
-        list.style.backgroundImage = 'url("/amanat/static/src/img/calculator_bg_optimized.jpg")';
+        list.style.backgroundImage = 'url("/amanat/static/src/img/calculator_background.png")';
         list.style.backgroundSize = 'cover';
         list.style.backgroundRepeat = 'no-repeat';
         list.style.backgroundPosition = 'center';
@@ -36,7 +36,7 @@ function applyCalculatorBackground() {
     const calculatorViews = document.querySelectorAll('[data-model*="calculator"]');
     calculatorViews.forEach(view => {
         view.style.background = 'linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899)';
-        view.style.backgroundImage = 'url("/amanat/static/src/img/calculator_bg_optimized.jpg")';
+        view.style.backgroundImage = 'url("/amanat/static/src/img/calculator_background.png")';
         view.style.backgroundSize = 'cover';
         view.style.backgroundRepeat = 'no-repeat';
         view.style.backgroundPosition = 'center';
