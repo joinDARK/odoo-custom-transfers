@@ -17,6 +17,7 @@
         # 3) Затем правила доступа (record rules). Можно до или после menu.xml,
         #    главное, чтобы security_groups.xml был до него.
         "security/record_rules.xml",
+        # 3) Скрываем системные приложения
         # 4) Потом представления для моделей
         "views/automation_views.xml",
         "views/contragent_views.xml",
@@ -177,6 +178,8 @@
             "amanat/static/src/js/action_handler.js",
             "amanat/static/src/js/kassa_filter_handler.js",
             "amanat/static/src/xml/attachment_preview.xml",
+            # "amanat/static/src/css/calculator_background.css",
+            # "amanat/static/src/js/calculator_background.js",
         ],
     },
     "external_dependencies": {

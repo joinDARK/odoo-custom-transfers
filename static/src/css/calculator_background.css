@@ -1,6 +1,6 @@
 /* Calculator Background Styles */
 .calculator-background {
-    background-image: url('/amanat/static/src/img/calculator_background.png');
+    background-image: url('amanat/static/src/img/calculator_background.png');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -12,7 +12,7 @@
 
 .calculator-form-background {
     background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
-    background-image: url('/amanat/static/src/img/calculator_bg_optimized.jpg') !important;
+    background-image: url('amanat/static/src/img/calculator_background.png') !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
     background-position: center !important;
@@ -61,7 +61,7 @@
 /* List view styling */
 .calculator-list-background {
     background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
-    background-image: url('/amanat/static/src/img/calculator_bg_optimized.jpg') !important;
+    background-image: url('amanat/static/src/img/calculator_background.png') !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
     background-position: center !important;
@@ -81,7 +81,7 @@
 [data-model="amanat.calculator.fixed.fee.wizard"] .o_form_view,
 [data-model="amanat.calculator.125.usd.wizard"] .o_form_view {
     background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
-    background-image: url('/amanat/static/src/img/calculator_bg_optimized.jpg') !important;
+    background-image: url('amanat/static/src/img/calculator_background.png') !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
     background-position: center !important;
@@ -92,7 +92,7 @@
 [data-model="amanat.calculator.fixed.fee.wizard"] .o_list_view,
 [data-model="amanat.calculator.125.usd.wizard"] .o_list_view {
     background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
-    background-image: url('/amanat/static/src/img/calculator_bg_optimized.jpg') !important;
+    background-image: url('amanat/static/src/img/calculator_background.png') !important;
     background-size: cover !important;
     background-repeat: no-repeat !important;
     background-position: center !important;
