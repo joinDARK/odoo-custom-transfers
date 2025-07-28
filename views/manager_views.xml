@@ -42,6 +42,9 @@
                         <field name="wrong_applications"/>
                         <field name="efficiency" readonly="1"/>
                     </group>
+                    <group>
+                        <field name="user_id"/>
+                    </group>
                 </sheet>
             </form>
         </field>

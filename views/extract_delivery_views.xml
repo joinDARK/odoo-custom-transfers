@@ -23,7 +23,7 @@
                 <field width="200" name="create_transfer_bulinan"/>
                 <field width="200" name="dds_article"/>
                 <field width="200" name="direction_choice"/>
-                <field width="200" name="applications"/>
+                <field width="200" name="applications" widget="many2many_tags"/>
                 <field width="200" name="currency_reserve"/>
                 <field width="200" name="transfer_ids"/>
                 <field width="200" name="deal"/>

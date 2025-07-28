@@ -1645,7 +1645,7 @@
     <field name="model">amanat.zayavka</field>
     <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
     <field name="arch" type="xml">
-      <list editable="top">
+      <list editable="top" multi_edit="1">
         <header>
             <button name="%(action_zayavka_date_range_wizard)d" 
                     string="Диапазон" 
@@ -1665,6 +1665,8 @@
         <field width="200" name="date_placement"/>
         <!-- Ограниченный доступ: скрываем конфиденциальные поля -->
         <field width="200" name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/>
+        <field width="200" name="manager_ids" widget="many2many_tags"/>
+        <field width="200" name="checker_ids" widget="many2many_tags"/>
         <field width="200" name="contragent_id"/>
         <field width="200" name="agent_id" groups="!amanat.group_amanat_limited_access"/>
         <field width="200" name="client_id"/>
