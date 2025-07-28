@@ -4237,70 +4237,9 @@ export class AmanatDashboard extends Component {
         try {
             // Если fullData не передан или пустой, загружаем полные данные с сервера
             if (!fullData || (Array.isArray(fullData) && fullData.length === 0) || (typeof fullData === 'object' && Object.keys(fullData).length === 0)) {
-                console.log('🔄 Загружаем ВСЕ данные с сервера для типа графика:', chartType, 'БЕЗ фильтрации по датам для модального окна');
+                console.log('Загружаем данные для графика:', chartType);
                 
-                console.log('📞 Вызываем сервер для получения данных графика:', {
-                    method: 'get_full_chart_data',
-                    chartType: chartType,
-                    parametersForServer: {
-                        chart_type: chartType,
-                        date_from: null,
-                        date_to: null
-                    }
-                });
-                
-                console.log('🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА: Проверяем модель amanat.dashboard');
-                console.log('🔍 self.orm:', this.orm);
-                console.log('🔍 Вызов: amanat.dashboard.get_full_chart_data');
-                
-                let response;
-                try {
-                    response = await this.orm.call(
-                        'amanat.dashboard',
-                        'get_full_chart_data',
-                        [],
-                        {
-                            chart_type: chartType,
-                            date_from: null,  // Для модального окна загружаем все данные без фильтров
-                            date_to: null
-                        }
-                    );
-                } catch (ormError) {
-                    console.error('❌ Ошибка при вызове ORM:', ormError);
-                    console.error('🔍 Детали ошибки:', {
-                        message: ormError.message,
-                        stack: ormError.stack,
-                        name: ormError.name,
-                        cause: ormError.cause
-                    });
-                    
-                    // Попробуем альтернативный подход
-                    console.log('🔄 Попытка вызова через get_dashboard_data...');
-                    try {
-                        const dashboardData = await this.orm.call(
-                            'amanat.dashboard',
-                            'get_dashboard_data',
-                            [],
-                            {
-                                date_from: null,
-                                date_to: null
-                            }
-                        );
-                        
-                        console.log('✅ get_dashboard_data вернул:', dashboardData);
-                        
-                        if (chartType === 'zayavka_status_data' && dashboardData.zayavka_status_data) {
-                            response = dashboardData.zayavka_status_data;
-                            console.log('✅ Извлекли zayavka_status_data из dashboard data:', response);
-                        } else {
-                            console.log('❌ Не удалось найти данные для типа:', chartType);
-                            response = [];
-                        }
-                    } catch (altError) {
-                        console.error('❌ Альтернативный вызов тоже не сработал:', altError);
-                        response = [];
-                    }
-                }
+                let response = await this._loadChartDataSafely(chartType);
                 
                 console.log('📞 Получен ответ от сервера:', {
                     rawResponse: response,
@@ -4963,6 +4902,46 @@ export class AmanatDashboard extends Component {
             
             checkCharts();
         });
+    }
+
+    async _loadChartDataSafely(chartType) {
+        /**
+         * Упрощенный метод для безопасной загрузки данных графика
+         * Заменяет сложную многоуровневую обработку ошибок
+         */
+        try {
+            console.log(`Загружаем данные для ${chartType} через get_full_chart_data`);
+            return await this.orm.call(
+                'amanat.dashboard',
+                'get_full_chart_data',
+                [],
+                {
+                    chart_type: chartType,
+                    date_from: null,
+                    date_to: null
+                }
+            );
+        } catch (error) {
+            console.warn(`Не удалось загрузить данные через get_full_chart_data: ${error.message}`);
+            
+            // Попробуем fallback метод
+            try {
+                console.log(`Пробуем альтернативный метод get_dashboard_data для ${chartType}`);
+                const dashboardData = await this.orm.call(
+                    'amanat.dashboard',
+                    'get_dashboard_data',
+                    [],
+                    { date_from: null, date_to: null }
+                );
+                
+                // Извлекаем нужные данные
+                return dashboardData[chartType] || [];
+            } catch (fallbackError) {
+                console.error(`Ошибка загрузки данных для ${chartType}:`, fallbackError.message);
+                this.showErrorMessage(`Не удалось загрузить данные для графика`);
+                return [];
+            }
+        }
     }
 
     getChartMappings() {

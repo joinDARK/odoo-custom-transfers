@@ -1,5 +1,5 @@
 # models/dashboard.py
-from odoo import models, fields, api
+from odoo import models, fields, api, tools
 import json
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -148,12 +148,102 @@ class Dashboard(models.Model):
         compute='_compute_avg_stats'
     )
     
+    # ==================== ХЕЛПЕР МЕТОДЫ ДЛЯ ОПТИМИЗАЦИИ ====================
+    
+    def _get_filtered_transfers(self, date_from=None, date_to=None, limit=1000):
+        """Получение переводов с фильтрами для оптимизации производительности"""
+        domain = []
+        if date_from:
+            domain.append(('create_date', '>=', date_from))
+        if date_to:
+            domain.append(('create_date', '<=', date_to))
+        
+        return self.env['amanat.transfer'].search(domain, limit=limit, order='create_date desc')
+    
+    def _get_filtered_orders(self, date_from=None, date_to=None, limit=1000):
+        """Получение ордеров с фильтрами для оптимизации производительности"""
+        domain = []
+        if date_from:
+            domain.append(('create_date', '>=', date_from))
+        if date_to:
+            domain.append(('create_date', '<=', date_to))
+        
+        return self.env['amanat.order'].search(domain, limit=limit, order='create_date desc')
+    
+    def _get_filtered_zayavki(self, date_from=None, date_to=None, limit=1000):
+        """Получение заявок с фильтрами для оптимизации производительности"""
+        domain = []
+        if date_from:
+            domain.append(('create_date', '>=', date_from))
+        if date_to:
+            domain.append(('create_date', '<=', date_to))
+        
+        return self.env['amanat.zayavka'].search(domain, limit=limit, order='create_date desc')
+    
+    # ==================== ХЕЛПЕРЫ ДЛЯ СТАТУСОВ ====================
+    
+    def _get_status_names_mapping(self):
+        """Получить маппинг статусов заявок к русским названиям"""
+        return {
+            '1_no_chat': '1. не создан чат',
+            'close': 'заявка закрыта',
+            'cancel': 'отменено клиентом',
+            'export_recipient_agreed': 'согласован получатель (только для Экспорта)',
+            '10_swift_received': '10. получен свифт',
+            '1_chat_created': "1'. создан чат",
+            '4_agent_contract_signed': '4. подписан агент. договор',
+            '15_return': '15. возврат',
+            '16_paid_after_return': '16. оплачено повторно после возврата',
+            'waiting_rub': 'ждем рубли',
+            '17_money_received': '17. деньги у получателя',
+            '5_invoice_issued': '5. выставлен инвойс на плательщика',
+            '3_payer_approval': '3. согласование плательщика',
+            'waiting_currency_export': 'ждём валюту (только для Экспорта)',
+            '9': '9. передано на оплату',
+            '17': '17`. ждём поступление валюты получателю',
+            '6': '6. зафиксирован курс',
+            'get_rub': 'получили рубли',
+            'recevier_rub': 'рубли у получателя (только для Экспорта)',
+            'receiver_rub': 'рубли у получателя (только для Экспорта)',  # Исправление опечатки
+            '13': '13. запрошен свифт 199',
+            'take_currency': 'получили валюту (только для Экспорта)',
+            '7': '7. Подписано поручение',
+            'send_payment_rub': 'передали на оплату рубли (только для Экспорта)',
+            'wait_send_payment': 'Ожидает передачи в оплату',
+            'get_pp': 'Получена пп',
+        }
+    
+    # ==================== КЭШИРОВАННЫЕ МЕТОДЫ ====================
+    
+    @tools.ormcache('date_from', 'date_to')
+    def _get_cached_dashboard_stats(self, date_from=None, date_to=None):
+        """Кэшированное получение основной статистики дашборда"""
+        transfers = self._get_filtered_transfers(date_from=date_from, date_to=date_to)
+        orders = self._get_filtered_orders(date_from=date_from, date_to=date_to)
+        money_containers = self.env['amanat.money'].search([])
+        
+        stats = {
+            'transfers_count': len(transfers),
+            'active_transfers': len(transfers.filtered(lambda t: hasattr(t, 'state') and t.state == 'open')),
+            'closed_transfers': len(transfers.filtered(lambda t: hasattr(t, 'state') and t.state == 'close')),
+            'orders_count': len(orders),
+            'money_containers_count': len(money_containers),
+        }
+        return stats
+    
+    @api.model
+    def clear_dashboard_cache(self):
+        """Метод для очистки кэша дашборда"""
+        self.env.registry.clear_cache()
+        return True
+    
     # ==================== ВЫЧИСЛЕНИЯ ====================
     
-    @api.depends()
+    @api.depends()  # Computed поле агрегирующее данные из amanat.transfer
     def _compute_transfers_stats(self):
         for record in self:
-            transfers = self.env['amanat.transfer'].search([])
+            # Используем оптимизированный метод с ограничением
+            transfers = record._get_filtered_transfers(limit=5000)
             
             record.total_transfers = len(transfers)
             # Проверяем наличие поля state в модели transfer
@@ -184,7 +274,8 @@ class Dashboard(models.Model):
     @api.depends()
     def _compute_orders_stats(self):
         for record in self:
-            orders = self.env['amanat.order'].search([])
+            # Используем оптимизированный метод с ограничением
+            orders = record._get_filtered_orders(limit=5000)
             
             record.total_orders = len(orders)
             record.draft_orders = len(orders.filtered(lambda o: o.status == 'draft'))
@@ -201,65 +292,70 @@ class Dashboard(models.Model):
             record.debt_containers = len(money_containers.filtered(lambda m: m.state == 'debt'))
             record.empty_containers = len(money_containers.filtered(lambda m: m.state == 'empty'))
     
-    @api.depends()
+    @api.depends()  # Computed поле, зависящее от внешних моделей
     def _compute_currency_balances(self):
+        # Оптимизация: загружаем money_containers один раз для всех записей
+        money_containers = self.env['amanat.money'].search([])
+        
         for record in self:
-            money_containers = self.env['amanat.money'].search([])
-            
-                    # Безопасное получение и суммирование значений
-        try:
-            rub_values = []
-            for val in money_containers:
-                if hasattr(val, 'remains_rub'):
-                    try:
-                        rub_values.append(float(val.remains_rub or 0))
-                    except (ValueError, TypeError):
-                        rub_values.append(0.0)
-            record.total_rub_balance = sum(rub_values)
-            
-            usd_values = []
-            for val in money_containers:
-                if hasattr(val, 'remains_usd'):
-                    try:
-                        usd_values.append(float(val.remains_usd or 0))
-                    except (ValueError, TypeError):
-                        usd_values.append(0.0)
-            record.total_usd_balance = sum(usd_values)
-            
-            usdt_values = []
-            for val in money_containers:
-                if hasattr(val, 'remains_usdt'):
-                    try:
-                        usdt_values.append(float(val.remains_usdt or 0))
-                    except (ValueError, TypeError):
-                        usdt_values.append(0.0)
-            record.total_usdt_balance = sum(usdt_values)
-            
-            euro_values = []
-            for val in money_containers:
-                if hasattr(val, 'remains_euro'):
-                    try:
-                        euro_values.append(float(val.remains_euro or 0))
-                    except (ValueError, TypeError):
-                        euro_values.append(0.0)
-            record.total_euro_balance = sum(euro_values)
-            
-            cny_values = []
-            for val in money_containers:
-                if hasattr(val, 'remains_cny'):
-                    try:
-                        cny_values.append(float(val.remains_cny or 0))
-                    except (ValueError, TypeError):
-                        cny_values.append(0.0)
-            record.total_cny_balance = sum(cny_values)
-            
-        except Exception:
-            # В случае ошибки устанавливаем все значения в 0
-            record.total_rub_balance = 0.0
-            record.total_usd_balance = 0.0
-            record.total_usdt_balance = 0.0
-            record.total_euro_balance = 0.0
-            record.total_cny_balance = 0.0
+            try:
+                # Безопасное получение и суммирование значений RUB
+                rub_values = []
+                for val in money_containers:
+                    if hasattr(val, 'remains_rub'):
+                        try:
+                            rub_values.append(float(val.remains_rub or 0))
+                        except (ValueError, TypeError):
+                            rub_values.append(0.0)
+                record.total_rub_balance = sum(rub_values)
+                
+                # Безопасное получение и суммирование значений USD
+                usd_values = []
+                for val in money_containers:
+                    if hasattr(val, 'remains_usd'):
+                        try:
+                            usd_values.append(float(val.remains_usd or 0))
+                        except (ValueError, TypeError):
+                            usd_values.append(0.0)
+                record.total_usd_balance = sum(usd_values)
+                
+                # Безопасное получение и суммирование значений USDT
+                usdt_values = []
+                for val in money_containers:
+                    if hasattr(val, 'remains_usdt'):
+                        try:
+                            usdt_values.append(float(val.remains_usdt or 0))
+                        except (ValueError, TypeError):
+                            usdt_values.append(0.0)
+                record.total_usdt_balance = sum(usdt_values)
+                
+                # Безопасное получение и суммирование значений EURO
+                euro_values = []
+                for val in money_containers:
+                    if hasattr(val, 'remains_euro'):
+                        try:
+                            euro_values.append(float(val.remains_euro or 0))
+                        except (ValueError, TypeError):
+                            euro_values.append(0.0)
+                record.total_euro_balance = sum(euro_values)
+                
+                # Безопасное получение и суммирование значений CNY
+                cny_values = []
+                for val in money_containers:
+                    if hasattr(val, 'remains_cny'):
+                        try:
+                            cny_values.append(float(val.remains_cny or 0))
+                        except (ValueError, TypeError):
+                            cny_values.append(0.0)
+                record.total_cny_balance = sum(cny_values)
+                
+            except Exception:
+                # В случае ошибки устанавливаем все значения в 0
+                record.total_rub_balance = 0.0
+                record.total_usd_balance = 0.0
+                record.total_usdt_balance = 0.0
+                record.total_euro_balance = 0.0
+                record.total_cny_balance = 0.0
     
     @api.depends()
     def _compute_completion_rates(self):
@@ -433,7 +529,7 @@ class Dashboard(models.Model):
             'thb': 'THB', 'thb_cashe': 'THB КЭШ'
         }
         for transfer in transfers:
-            currency = currency_map.get(transfer.currency, transfer.currency or 'Unknown')
+            currency = currency_map.get(transfer.currency, transfer.currency or 'rub')
             if currency not in transfers_by_currency:
                 transfers_by_currency[currency] = 0
             transfers_by_currency[currency] += transfer.amount
@@ -604,14 +700,44 @@ class Dashboard(models.Model):
         usd_rate = 100.0  # Можно получить из справочника курсов валют
         zayavki_usd_equivalent = zayavki_closed_amount / usd_rate if zayavki_closed_amount > 0 else 0.0
         
-        # Заявки по статусам
+        # Заявки по статусам с русскими названиями
+        status_names = {
+            '1_no_chat': '1. не создан чат',
+            'close': 'заявка закрыта',
+            'cancel': 'отменено клиентом',
+            'export_recipient_agreed': 'согласован получатель (только для Экспорта)',
+            '10_swift_received': '10. получен свифт',
+            '1_chat_created': "1'. создан чат",
+            '4_agent_contract_signed': '4. подписан агент. договор',
+            '15_return': '15. возврат',
+            '16_paid_after_return': '16. оплачено повторно после возврата',
+            'waiting_rub': 'ждем рубли',
+            '17_money_received': '17. деньги у получателя',
+            '5_invoice_issued': '5. выставлен инвойс на плательщика',
+            '3_payer_approval': '3. согласование плательщика',
+            'waiting_currency_export': 'ждём валюту (только для Экспорта)',
+            '9': '9. передано на оплату',
+            '17': '17`. ждём поступление валюты получателю',
+            '6': '6. зафиксирован курс',
+            'get_rub': 'получили рубли',
+            'recevier_rub': 'рубли у получателя (только для Экспорта)',
+            'receiver_rub': 'рубли у получателя (только для Экспорта)',
+            '13': '13. запрошен свифт 199',
+            'take_currency': 'получили валюту (только для Экспорта)',
+            '7': '7. Подписано поручение',
+            'send_payment_rub': 'передали на оплату рубли (только для Экспорта)',
+            'wait_send_payment': 'Ожидает передачи в оплату',
+            'get_pp': 'Получена пп',
+        }
+        
         zayavki_by_status = {}
         for zayavka in zayavki:
             status = zayavka.status
-            if status in zayavki_by_status:
-                zayavki_by_status[status] += 1
+            status_name = status_names.get(status, status or 'Неизвестно')
+            if status_name in zayavki_by_status:
+                zayavki_by_status[status_name] += 1
             else:
-                zayavki_by_status[status] = 1
+                zayavki_by_status[status_name] = 1
         
         # Заявки по месяцам
         zayavki_by_month = []
@@ -630,7 +756,7 @@ class Dashboard(models.Model):
         # Заявки по валютам
         zayavki_by_currency = {}
         for zayavka in zayavki:
-            currency = currency_map.get(zayavka.currency, zayavka.currency or 'Unknown')
+            currency = currency_map.get(zayavka.currency, zayavka.currency or 'rub')
             if currency not in zayavki_by_currency:
                 zayavki_by_currency[currency] = 0
             zayavki_by_currency[currency] += (zayavka.amount or 0)
@@ -638,8 +764,8 @@ class Dashboard(models.Model):
         # Заявки по типам сделок
         zayavki_by_deal_type = {}
         for zayavka in zayavki:
-            deal_type = zayavka.deal_type or 'Не указан'
-            deal_type_name = 'Импорт' if deal_type == 'import' else ('Экспорт' if deal_type == 'export' else deal_type)
+            deal_type = zayavka.deal_type or 'import'  # По умолчанию импорт
+            deal_type_name = 'Импорт' if deal_type == 'import' else ('Экспорт' if deal_type == 'export' else 'Импорт')
             if deal_type_name not in zayavki_by_deal_type:
                 zayavki_by_deal_type[deal_type_name] = 0
             zayavki_by_deal_type[deal_type_name] += 1
@@ -656,8 +782,9 @@ class Dashboard(models.Model):
                     contragent_zayavki_counts[zayavka.contragent_id.name] = 0
                 contragent_zayavki_counts[zayavka.contragent_id.name] += 1
         
+        # Ограничиваем до топ-3 контрагентов для обычного отображения в дашборде
         top_contragents_by_zayavki = []
-        for name, count in sorted(contragent_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
+        for name, count in sorted(contragent_zayavki_counts.items(), key=lambda x: x[1], reverse=True)[:3]:
             top_contragents_by_zayavki.append({'name': name, 'count': count})
         
         # Если нет данных, возвращаем пустой список
@@ -770,11 +897,11 @@ class Dashboard(models.Model):
         # Средняя сумма заявок по агентам
         agent_avg_amount_dict = {}
         for zayavka in zayavki_visible:
-            if zayavka.agent_id and zayavka.agent_id.name and zayavka.total_fact:
+            if zayavka.agent_id and zayavka.agent_id.name and zayavka.amount and zayavka.amount > 0:
                 agent_name = zayavka.agent_id.name
                 if agent_name not in agent_avg_amount_dict:
                     agent_avg_amount_dict[agent_name] = {'total_amount': 0, 'count': 0}
-                agent_avg_amount_dict[agent_name]['total_amount'] += zayavka.total_fact
+                agent_avg_amount_dict[agent_name]['total_amount'] += zayavka.amount
                 agent_avg_amount_dict[agent_name]['count'] += 1
 
         # Формируем список средних сумм заявок по агентам
@@ -797,14 +924,14 @@ class Dashboard(models.Model):
         # Если нет данных, возвращаем пустой список
         # Frontend покажет сообщение "Нет данных по этому диапазону"
 
-        # Средняя сумма заявок по клиентам
+        # Средняя сумма заявок по клиентам (используем основное поле amount)
         client_avg_amount_dict = {}
         for zayavka in zayavki_visible:
-            if zayavka.client_id and zayavka.client_id.name and zayavka.total_fact:
+            if zayavka.client_id and zayavka.client_id.name and zayavka.amount and zayavka.amount > 0:
                 client_name = zayavka.client_id.name
                 if client_name not in client_avg_amount_dict:
                     client_avg_amount_dict[client_name] = {'total_amount': 0, 'count': 0}
-                client_avg_amount_dict[client_name]['total_amount'] += zayavka.total_fact
+                client_avg_amount_dict[client_name]['total_amount'] += zayavka.amount
                 client_avg_amount_dict[client_name]['count'] += 1
         
         # Вычисляем среднюю сумму для каждого клиента
@@ -1083,10 +1210,37 @@ class Dashboard(models.Model):
             # Подсчитываем количество по каждому статусу
             status_counts = {}
             
-            # Маппинг статусов к понятным названиям
+            # Маппинг статусов к понятным названиям (все статусы из модели zayavka)
             status_names = {
-                'close': 'Закрыта',
-                'cancel': 'Отменена',
+                # Основные статусы заявок из модели
+                '1_no_chat': '1. не создан чат',
+                'close': 'заявка закрыта',
+                'cancel': 'отменено клиентом',
+                'export_recipient_agreed': 'согласован получатель (только для Экспорта)',
+                '10_swift_received': '10. получен свифт',
+                '1_chat_created': "1'. создан чат",
+                '4_agent_contract_signed': '4. подписан агент. договор',
+                '15_return': '15. возврат',
+                '16_paid_after_return': '16. оплачено повторно после возврата',
+                'waiting_rub': 'ждем рубли',
+                '17_money_received': '17. деньги у получателя',
+                '5_invoice_issued': '5. выставлен инвойс на плательщика',
+                '3_payer_approval': '3. согласование плательщика',
+                'waiting_currency_export': 'ждём валюту (только для Экспорта)',
+                '9': '9. передано на оплату',
+                '17': '17`. ждём поступление валюты получателю',
+                '6': '6. зафиксирован курс',
+                'get_rub': 'получили рубли',
+                'recevier_rub': 'рубли у получателя (только для Экспорта)',
+                'receiver_rub': 'рубли у получателя (только для Экспорта)',  # Исправление опечатки
+                '13': '13. запрошен свифт 199',
+                'take_currency': 'получили валюту (только для Экспорта)',
+                '7': '7. Подписано поручение',
+                'send_payment_rub': 'передали на оплату рубли (только для Экспорта)',
+                'wait_send_payment': 'Ожидает передачи в оплату',
+                'get_pp': 'Получена пп',
+                
+                # Дополнительные статусы для совместимости
                 'draft': 'Черновик',
                 'process': 'В работе',
                 'review': 'На рассмотрении',
@@ -1136,14 +1290,46 @@ class Dashboard(models.Model):
                 if len(all_zayavki) > 0:
                     # Простой подсчет статусов без сложных проверок
                     status_counts = {}
+                    
+                    # Тот же маппинг статусов для консистентности
+                    status_names = {
+                        '1_no_chat': '1. не создан чат',
+                        'close': 'заявка закрыта',
+                        'cancel': 'отменено клиентом',
+                        'export_recipient_agreed': 'согласован получатель (только для Экспорта)',
+                        '10_swift_received': '10. получен свифт',
+                        '1_chat_created': "1'. создан чат",
+                        '4_agent_contract_signed': '4. подписан агент. договор',
+                        '15_return': '15. возврат',
+                        '16_paid_after_return': '16. оплачено повторно после возврата',
+                        'waiting_rub': 'ждем рубли',
+                        '17_money_received': '17. деньги у получателя',
+                        '5_invoice_issued': '5. выставлен инвойс на плательщика',
+                        '3_payer_approval': '3. согласование плательщика',
+                        'waiting_currency_export': 'ждём валюту (только для Экспорта)',
+                        '9': '9. передано на оплату',
+                        '17': '17`. ждём поступление валюты получателю',
+                        '6': '6. зафиксирован курс',
+                        'get_rub': 'получили рубли',
+                        'recevier_rub': 'рубли у получателя (только для Экспорта)',
+                        'receiver_rub': 'рубли у получателя (только для Экспорта)',
+                        '13': '13. запрошен свифт 199',
+                        'take_currency': 'получили валюту (только для Экспорта)',
+                        '7': '7. Подписано поручение',
+                        'send_payment_rub': 'передали на оплату рубли (только для Экспорта)',
+                        'wait_send_payment': 'Ожидает передачи в оплату',
+                        'get_pp': 'Получена пп',
+                    }
+                    
                     for zayavka in all_zayavki:
                         status = getattr(zayavka, 'status', 'unknown')
-                        status_counts[status] = status_counts.get(status, 0) + 1
+                        status_name = status_names.get(status, status or 'Неизвестно')
+                        status_counts[status_name] = status_counts.get(status_name, 0) + 1
                     
                     result = []
-                    for status, count in status_counts.items():
+                    for status_name, count in status_counts.items():
                         result.append({
-                            'name': status,
+                            'name': status_name,
                             'count': count
                         })
                     
@@ -1369,8 +1555,9 @@ class Dashboard(models.Model):
                         contragent_zayavki_counts[zayavka.contragent_id.name] = 0
                     contragent_zayavki_counts[zayavka.contragent_id.name] += 1
             
+            # Ограничиваем до топ-3 контрагентов для отображения в сравнении
             contragents_by_zayavki = []
-            for name, count in sorted(contragent_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
+            for name, count in sorted(contragent_zayavki_counts.items(), key=lambda x: x[1], reverse=True)[:3]:
                 contragents_by_zayavki.append({'name': name, 'count': count})
             
             # 2. Средний чек у контрагентов
@@ -1425,11 +1612,11 @@ class Dashboard(models.Model):
             # 5. Средняя сумма заявок под каждого агента
             agent_avg_amount_dict = {}
             for zayavka in zayavki_visible:
-                if zayavka.agent_id and zayavka.agent_id.name and zayavka.total_fact:
+                if zayavka.agent_id and zayavka.agent_id.name and zayavka.amount and zayavka.amount > 0:
                     agent_name = zayavka.agent_id.name
                     if agent_name not in agent_avg_amount_dict:
                         agent_avg_amount_dict[agent_name] = {'total_amount': 0, 'count': 0}
-                    agent_avg_amount_dict[agent_name]['total_amount'] += zayavka.total_fact
+                    agent_avg_amount_dict[agent_name]['total_amount'] += zayavka.amount
                     agent_avg_amount_dict[agent_name]['count'] += 1
 
             agent_avg_amount = []
@@ -1486,14 +1673,14 @@ class Dashboard(models.Model):
             for name, count in sorted(subagent_zayavki_counts.items(), key=lambda x: x[1], reverse=True):
                 subagents_by_zayavki.append({'name': name, 'count': count})
             
-            # 9. Средняя сумма заявок по клиентам
+            # 9. Средняя сумма заявок по клиентам (используем основное поле amount)
             client_avg_amount_dict = {}
             for zayavka in zayavki_visible:
-                if zayavka.client_id and zayavka.client_id.name and zayavka.total_fact:
+                if zayavka.client_id and zayavka.client_id.name and zayavka.amount and zayavka.amount > 0:
                     client_name = zayavka.client_id.name
                     if client_name not in client_avg_amount_dict:
                         client_avg_amount_dict[client_name] = {'total_amount': 0, 'count': 0}
-                    client_avg_amount_dict[client_name]['total_amount'] += zayavka.total_fact
+                    client_avg_amount_dict[client_name]['total_amount'] += zayavka.amount
                     client_avg_amount_dict[client_name]['count'] += 1
             
             client_avg_amount = []
@@ -1525,11 +1712,10 @@ class Dashboard(models.Model):
                 })
             deal_cycles.sort(key=lambda x: x['cycle_days'])
             
-            # 11. Типы сделок (ИМПОРТ/ЭКСПОРТ)
+            # 11. Типы сделок (ИМПОРТ/ЭКСПОРТ) - только заявки с указанным типом
             deal_types_count = {}
-            for zayavka in zayavki.filtered(lambda z: not z.hide_in_dashboard):
-                deal_type = zayavka.deal_type or 'Не указан'
-                deal_type_name = 'Импорт' if deal_type == 'import' else ('Экспорт' if deal_type == 'export' else 'Не указан')
+            for zayavka in zayavki.filtered(lambda z: not z.hide_in_dashboard and z.deal_type in ['import', 'export']):
+                deal_type_name = 'Импорт' if zayavka.deal_type == 'import' else 'Экспорт'
                 if deal_type_name not in deal_types_count:
                     deal_types_count[deal_type_name] = 0
                 deal_types_count[deal_type_name] += 1
@@ -1666,11 +1852,10 @@ class Dashboard(models.Model):
                 # Получаем месяц и год из даты размещения
                 month_key = zayavka.date_placement.strftime('%Y-%m')
                 
-                # Определяем тип сделки
-                deal_type = zayavka.deal_type or 'Не указан'
-                if deal_type == 'import':
+                # Определяем тип сделки (только обрабатываем заявки с указанным типом)
+                if zayavka.deal_type == 'import':
                     monthly_data[month_key]['Импорт'] += 1
-                elif deal_type == 'export':
+                elif zayavka.deal_type == 'export':
                     monthly_data[month_key]['Экспорт'] += 1
         
         # Создаем список месяцев за последние 12 месяцев
@@ -1724,42 +1909,43 @@ class Dashboard(models.Model):
             
             _logger.info(f"🔄 Обработка запроса для типа графика: '{chart_type}' с фильтрацией по датам")
             
-            # Возвращаем данные для разных типов графиков с учетом дат
+            # Возвращаем данные для разных типов графиков
+            # Для модального окна возвращаем ВСЕ данные без ограничений
             chart_data_mapping = {
-                # Заявки по контрагентам
-                'contragents_by_zayavki': self._get_safe_contragents_by_zayavki(date_from, date_to),
-                'contragent_avg_check': self._get_safe_contragent_avg_check(date_from, date_to),
-                'contragent_reward_percent': self._get_safe_contragent_reward_percent(date_from, date_to),
+                # Заявки по контрагентам - ВСЕ данные для модального окна
+                'contragents_by_zayavki': self._get_full_contragents_by_zayavki(),
+                'contragent_avg_check': self._get_full_contragent_avg_check(),
+                'contragent_reward_percent': self._get_full_contragent_reward_percent(),
                 
-                # Заявки по агентам
-                'agents_by_zayavki': self._get_safe_agents_by_zayavki(date_from, date_to),
-                'agent_avg_amount': self._get_safe_agent_avg_amount(date_from, date_to),
+                # Заявки по агентам - ВСЕ данные для модального окна
+                'agents_by_zayavki': self._get_full_agents_by_zayavki(),
+                'agent_avg_amount': self._get_full_agent_avg_amount(),
                 
-                # Заявки по клиентам
-                'clients_by_zayavki': self._get_safe_clients_by_zayavki(date_from, date_to),
-                'client_avg_amount': self._get_safe_client_avg_amount(date_from, date_to),
+                # Заявки по клиентам - ВСЕ данные для модального окна
+                'clients_by_zayavki': self._get_full_clients_by_zayavki(),
+                'client_avg_amount': self._get_full_client_avg_amount(),
                 
-                # Заявки по субагентам и платежщикам
-                'subagents_by_zayavki': self._get_safe_subagents_by_zayavki(date_from, date_to),
-                'payers_by_zayavki': self._get_safe_payers_by_zayavki(date_from, date_to),
+                # Заявки по субагентам и платежщикам - ВСЕ данные для модального окна
+                'subagents_by_zayavki': self._get_full_subagents_by_zayavki(),
+                'payers_by_zayavki': self._get_full_payers_by_zayavki(),
                 
-                # Данные по менеджерам
-                'managers_by_zayavki': self._get_safe_managers_by_zayavki(date_from, date_to),
-                'managers_closed_zayavki': self._get_safe_managers_closed_zayavki(date_from, date_to),
-                'managers_efficiency': self._get_safe_managers_efficiency(date_from, date_to),
+                # Данные по менеджерам - ВСЕ данные для модального окна
+                'managers_by_zayavki': self._get_full_managers_by_zayavki(),
+                'managers_closed_zayavki': self._get_full_managers_closed_zayavki(),
+                'managers_efficiency': self._get_full_managers_efficiency(),
                 
-                # Статусы и циклы
-                'zayavka_status_data': self._get_safe_zayavka_status_data(date_from, date_to),
-                'deal_cycles': self._get_safe_deal_cycles(date_from, date_to),
+                # Статусы и циклы - ВСЕ данные для модального окна
+                'zayavka_status_data': self._get_full_zayavki_status_distribution(),
+                'deal_cycles': self._get_full_deal_cycles(),
                 
-                # Данные по типам сделок
-                'deal_types': self._get_safe_deal_types(date_from, date_to),
-                'import_export_by_month': self._get_safe_import_export_by_month(date_from, date_to),
+                # Данные по типам сделок - ВСЕ данные для модального окна
+                'deal_types': self._get_full_deal_types(),
+                'import_export_by_month': self._get_full_import_export_by_month(),
                 
-                # Переводы и ордера
-                'transfers_by_currency': self._get_safe_transfers_by_currency(date_from, date_to),
-                'transfers_by_month': self._get_safe_transfers_by_month(date_from, date_to),
-                'orders_by_status': self._get_safe_orders_by_status(date_from, date_to),
+                # Переводы и ордера - ВСЕ данные для модального окна  
+                'transfers_by_currency': self._get_full_transfers_by_currency(),
+                'transfers_by_month': self._get_full_transfers_by_month(),
+                'orders_by_status': self._get_full_orders_by_status(),
             }
             
             _logger.info(f"📋 Доступные типы графиков: {list(chart_data_mapping.keys())}")
@@ -1857,10 +2043,10 @@ class Dashboard(models.Model):
                 for name, count in sorted(agent_counts.items(), key=lambda x: x[1], reverse=True)]
 
     def _get_full_agent_avg_amount(self):
-        """Получить среднюю сумму заявок по всем агентам"""
+        """Получить среднюю сумму заявок по всем агентам (используем основное поле amount)"""
         zayavki = self.env['amanat.zayavka'].search([
             ('hide_in_dashboard', '!=', True),
-            ('total_fact', '>', 0),
+            ('amount', '>', 0),
             ('agent_id', '!=', False)
         ])
         
@@ -1869,7 +2055,7 @@ class Dashboard(models.Model):
             name = zayavka.agent_id.name
             if name not in agent_amounts:
                 agent_amounts[name] = {'total_amount': 0, 'count': 0}
-            agent_amounts[name]['total_amount'] += zayavka.total_fact
+            agent_amounts[name]['total_amount'] += zayavka.amount
             agent_amounts[name]['count'] += 1
         
         result = []
@@ -1894,10 +2080,10 @@ class Dashboard(models.Model):
                 for name, count in sorted(client_counts.items(), key=lambda x: x[1], reverse=True)]
 
     def _get_full_client_avg_amount(self):
-        """Получить среднюю сумму заявок по всем клиентам"""
+        """Получить среднюю сумму заявок по всем клиентам (используем основное поле amount)"""
         zayavki = self.env['amanat.zayavka'].search([
             ('hide_in_dashboard', '!=', True),
-            ('total_fact', '>', 0),
+            ('amount', '>', 0),
             ('client_id', '!=', False)
         ])
         
@@ -1906,7 +2092,7 @@ class Dashboard(models.Model):
             name = zayavka.client_id.name
             if name not in client_amounts:
                 client_amounts[name] = {'total_amount': 0, 'count': 0}
-            client_amounts[name]['total_amount'] += zayavka.total_fact
+            client_amounts[name]['total_amount'] += zayavka.amount
             client_amounts[name]['count'] += 1
         
         result = []
@@ -1961,28 +2147,74 @@ class Dashboard(models.Model):
 
     def _get_full_zayavki_status_distribution(self):
         """Получить распределение всех заявок по статусам без ограничений"""
-        return self.get_zayavki_status_distribution_data()
+        return self.get_zayavka_status_data()
 
     def _get_full_deal_cycles(self):
         """Получить все циклы сделок без ограничений"""
         return self.get_zayavki_deal_cycles_data()
 
     def _get_full_deal_types(self):
-        """Получить все типы сделок без ограничений"""
-        zayavki = self.env['amanat.zayavka'].search([('hide_in_dashboard', '!=', True)])
+        """Получить все типы сделок без ограничений (только заявки с указанным типом сделки)"""
+        zayavki = self.env['amanat.zayavka'].search([
+            ('hide_in_dashboard', '!=', True),
+            ('deal_type', 'in', ['import', 'export'])  # Только заявки с указанным типом
+        ])
         
         deal_types = {}
         for zayavka in zayavki:
-            deal_type = zayavka.deal_type or 'Не указан'
-            deal_type_name = 'Импорт' if deal_type == 'import' else ('Экспорт' if deal_type == 'export' else 'Не указан')
-            deal_types[deal_type_name] = deal_types.get(deal_type_name, 0) + 1
+            if zayavka.deal_type:  # Дополнительная проверка
+                deal_type_name = 'Импорт' if zayavka.deal_type == 'import' else 'Экспорт'
+                deal_types[deal_type_name] = deal_types.get(deal_type_name, 0) + 1
         
         return deal_types
 
     def _get_full_import_export_by_month(self):
-        """Получить данные импорт/экспорт по месяцам для всего периода"""
-        zayavki = self.env['amanat.zayavka'].search([('hide_in_dashboard', '!=', True)])
-        return self.get_import_export_by_month_data(zayavki)
+        """Получить данные импорт/экспорт по месяцам для всего периода (все месяцы с данными)"""
+        from collections import defaultdict
+        from datetime import datetime
+        
+        # Загружаем заявки только с корректными типами сделок
+        zayavki = self.env['amanat.zayavka'].search([
+            ('hide_in_dashboard', '!=', True),
+            ('deal_type', 'in', ['import', 'export']),
+            ('date_placement', '!=', False)  # Только заявки с датой размещения
+        ])
+        
+        # Группируем заявки по месяцам и типам сделок
+        monthly_data = defaultdict(lambda: {'Импорт': 0, 'Экспорт': 0})
+        
+        for zayavka in zayavki:
+            if zayavka.date_placement:
+                # Получаем месяц и год из даты размещения
+                month_key = zayavka.date_placement.strftime('%Y-%m')
+                
+                # Определяем тип сделки
+                if zayavka.deal_type == 'import':
+                    monthly_data[month_key]['Импорт'] += 1
+                elif zayavka.deal_type == 'export':
+                    monthly_data[month_key]['Экспорт'] += 1
+        
+        # Сортируем месяцы и создаем полный список
+        sorted_months = sorted(monthly_data.keys())
+        
+        months = []
+        import_data = []
+        export_data = []
+        
+        for month_key in sorted_months:
+            # Преобразуем в читаемый формат
+            month_date = datetime.strptime(month_key, '%Y-%m')
+            month_label = month_date.strftime('%b %Y')
+            
+            months.append(month_label)
+            import_data.append(monthly_data[month_key]['Импорт'])
+            export_data.append(monthly_data[month_key]['Экспорт'])
+        
+        return {
+            'labels': months,
+            'import_data': import_data,
+            'export_data': export_data
+        }
 
     def _get_full_transfers_by_currency(self):
         """Получить все переводы по валютам без ограничений"""
@@ -2240,10 +2472,10 @@ class Dashboard(models.Model):
             for zayavka in zayavki:
                 if (hasattr(zayavka, 'agent_id') and zayavka.agent_id and 
                     hasattr(zayavka.agent_id, 'name') and 
-                    hasattr(zayavka, 'total_fact') and zayavka.total_fact):
+                    hasattr(zayavka, 'amount') and zayavka.amount and zayavka.amount > 0):
                     
                     name = getattr(zayavka.agent_id, 'name', 'Неизвестный агент')
-                    amount = float(getattr(zayavka, 'total_fact', 0) or 0)
+                    amount = float(getattr(zayavka, 'amount', 0) or 0)
                     
                     if name not in agent_amounts:
                         agent_amounts[name] = {'total_amount': 0, 'count': 0}
@@ -2332,10 +2564,10 @@ class Dashboard(models.Model):
             for zayavka in zayavki:
                 if (hasattr(zayavka, 'client_id') and zayavka.client_id and 
                     hasattr(zayavka.client_id, 'name') and 
-                    hasattr(zayavka, 'total_fact') and zayavka.total_fact):
+                    hasattr(zayavka, 'amount') and zayavka.amount and zayavka.amount > 0):
                     
                     name = getattr(zayavka.client_id, 'name', 'Неизвестный клиент')
-                    amount = float(getattr(zayavka, 'total_fact', 0) or 0)
+                    amount = float(getattr(zayavka, 'amount', 0) or 0)
                     
                     if name not in client_amounts:
                         client_amounts[name] = {'total_amount': 0, 'count': 0}
@@ -2522,9 +2754,8 @@ class Dashboard(models.Model):
             
             deal_types = {}
             for zayavka in zayavki:
-                if hasattr(zayavka, 'deal_type'):
-                    deal_type = getattr(zayavka, 'deal_type', None) or 'Не указан'
-                    deal_type_name = 'Импорт' if deal_type == 'import' else ('Экспорт' if deal_type == 'export' else 'Не указан')
+                if hasattr(zayavka, 'deal_type') and zayavka.deal_type in ['import', 'export']:
+                    deal_type_name = 'Импорт' if zayavka.deal_type == 'import' else 'Экспорт'
                     deal_types[deal_type_name] = deal_types.get(deal_type_name, 0) + 1
             
             if deal_types:

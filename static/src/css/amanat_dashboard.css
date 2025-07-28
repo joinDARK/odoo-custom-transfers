@@ -124,30 +124,30 @@
 /* Chart Containers */
 .chart-container-small {
     position: relative;
-    height: 120px !important;
+    height: clamp(100px, 15vh, 140px);
     flex: 1;
-    max-height: 120px !important;
+    max-height: clamp(100px, 15vh, 140px);
 }
 
 .chart-container-medium {
     position: relative;
-    height: 140px !important;
+    height: clamp(120px, 18vh, 160px);
     flex: 1;
-    max-height: 140px !important;
+    max-height: clamp(120px, 18vh, 160px);
 }
 
 .chart-container-large {
     position: relative;
-    height: 180px !important;
+    height: clamp(150px, 22vh, 220px);
     flex: 1;
-    max-height: 180px !important;
+    max-height: clamp(150px, 22vh, 220px);
 }
 
 .chart-container-extra-compact {
     position: relative;
-    height: 160px !important;
+    height: clamp(120px, 16vh, 180px);
     flex: 1;
-    max-height: 160px !important;
+    max-height: clamp(120px, 16vh, 180px);
 }
 
 /* Принудительные стили для всех canvas в графиках */
@@ -186,23 +186,23 @@
     }
     
     .chart-container-small {
-        height: 100px !important;
-        max-height: 100px !important;
+        height: clamp(80px, 12vh, 110px);
+        max-height: clamp(80px, 12vh, 110px);
     }
     
     .chart-container-medium {
-        height: 120px !important;
-        max-height: 120px !important;
+        height: clamp(90px, 14vh, 130px);
+        max-height: clamp(90px, 14vh, 130px);
     }
     
     .chart-container-large {
-        height: 150px !important;
-        max-height: 150px !important;
+        height: clamp(100px, 16vh, 160px);
+        max-height: clamp(100px, 16vh, 160px);
     }
     
     .chart-container-extra-compact {
-        height: 130px !important;
-        max-height: 130px !important;
+        height: clamp(85px, 13vh, 140px);
+        max-height: clamp(85px, 13vh, 140px);
     }
 }
 
@@ -248,23 +248,23 @@
     }
     
     .chart-container-small {
-        height: 120px !important;
-        max-height: 120px !important;
+        height: clamp(100px, 14vh, 130px);
+        max-height: clamp(100px, 14vh, 130px);
     }
     
     .chart-container-medium {
-        height: 140px !important;
-        max-height: 140px !important;
+        height: clamp(120px, 16vh, 150px);
+        max-height: clamp(120px, 16vh, 150px);
     }
     
     .chart-container-large {
-        height: 160px !important;
-        max-height: 160px !important;
+        height: clamp(140px, 18vh, 170px);
+        max-height: clamp(140px, 18vh, 170px);
     }
     
     .chart-container-extra-compact {
-        height: 120px !important;
-        max-height: 120px !important;
+        height: clamp(100px, 14vh, 130px);
+        max-height: clamp(100px, 14vh, 130px);
     }
 }
 
