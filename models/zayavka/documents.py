@@ -2,6 +2,9 @@ from odoo import api, fields, models
 import base64
 import io
 import logging
+import subprocess
+import tempfile
+import os
 try:
     import pymupdf
     PYMUPDF_AVAILABLE = True
@@ -220,38 +223,38 @@ class AmanatZayavkaDocuments(models.Model):
         domain=[('document_type', '=', 'report')]
     )
 
-    # Методы для определения подписей в каждом типе документа
+    # Методы для определения подписей в каждом типе документа (поддерживает DOCX и PDF)
     def action_detect_signatures_zayavka(self):
-        """Определить позиции подписей в заявке"""
+        """Определить позиции подписей в заявке (DOCX/PDF)"""
         return self._detect_signatures_for_document('zayavka', self.zayavka_attachments, 'zayavka_signature_state')
 
     def action_detect_signatures_invoice(self):
-        """Определить позиции подписей в инвойсе"""
+        """Определить позиции подписей в инвойсе (DOCX/PDF)"""
         return self._detect_signatures_for_document('invoice', self.invoice_attachments, 'invoice_signature_state')
 
     def action_detect_signatures_assignment(self):
-        """Определить позиции подписей в поручении"""
+        """Определить позиции подписей в поручении (DOCX/PDF)"""
         return self._detect_signatures_for_document('assignment', self.assignment_attachments, 'assignment_signature_state')
 
     def action_detect_signatures_swift(self):
-        """Определить позиции подписей в SWIFT"""
+        """Определить позиции подписей в SWIFT (DOCX/PDF)"""
         return self._detect_signatures_for_document('swift', self.swift_attachments, 'swift_signature_state')
 
     def action_detect_signatures_swift103(self):
-        """Определить позиции подписей в SWIFT 103"""
+        """Определить позиции подписей в SWIFT 103 (DOCX/PDF)"""
         return self._detect_signatures_for_document('swift103', self.swift103_attachments, 'swift103_signature_state')
 
     def action_detect_signatures_swift199(self):
-        """Определить позиции подписей в SWIFT 199"""
+        """Определить позиции подписей в SWIFT 199 (DOCX/PDF)"""
         return self._detect_signatures_for_document('swift199', self.swift199_attachments, 'swift199_signature_state')
 
     def action_detect_signatures_report(self):
-        """Определить позиции подписей в акт-отчете"""
+        """Определить позиции подписей в акт-отчете (DOCX/PDF)"""
         return self._detect_signatures_for_document('report', self.report_attachments, 'report_signature_state')
 
-    # Методы для подписания каждого типа документа
+    # Методы для подписания каждого типа документа (DOCX→PDF с подписями)
     def action_sign_zayavka(self):
-        """Подписать заявку"""
+        """Подписать заявку (DOCX→PDF с подписями)"""
         return self._sign_document('zayavka', self.zayavka_attachments, 'signed_zayavka_attachments', 'zayavka_signature_state')
 
     def action_sign_invoice(self):
@@ -308,16 +311,28 @@ class AmanatZayavkaDocuments(models.Model):
         return self._reset_document('report', 'report_attachments', 'signed_report_attachments', 'report_signature_state')
 
     def _detect_signatures_for_document(self, document_type, attachments, state_field):
-        """Универсальный метод для определения подписей в документе"""
+        """Универсальный метод для определения подписей в документе (поддерживает DOCX и PDF)"""
         if not attachments:
             from odoo.exceptions import UserError
-            raise UserError(f'Сначала загрузите PDF файл для {document_type}')
+            raise UserError(f'Сначала загрузите DOCX или PDF файл для {document_type}')
         
         # Берем первое вложение для анализа
         attachment = attachments[0] if attachments else None
         if not attachment:
             from odoo.exceptions import UserError
             raise UserError(f'Нет вложений для анализа в {document_type}')
+        
+        # Определяем тип файла
+        file_type = self._detect_file_type(attachment.datas)
+        
+        if file_type == 'docx':
+            # Конвертируем DOCX в PDF для анализа (не изменяем исходное вложение)
+            pdf_data = self._convert_docx_to_pdf(attachment.datas)
+        elif file_type == 'pdf':
+            pdf_data = attachment.datas
+        else:
+            from odoo.exceptions import UserError
+            raise UserError(f'Неподдерживаемый тип файла для {document_type}. Поддерживаются только DOCX и PDF.')
         
         # Удаляем существующие позиции и назначения для данного типа документа
         position_model = self.env['amanat.zayavka.signature.position']
@@ -336,7 +351,7 @@ class AmanatZayavkaDocuments(models.Model):
         existing_assignments.unlink()
         
         # Автоматически находим позиции
-        found_positions = self._auto_find_signatures(document_type, attachment.datas)
+        found_positions = self._auto_find_signatures(document_type, pdf_data)
         
         # Создаем назначения подписей
         if found_positions:
@@ -350,8 +365,94 @@ class AmanatZayavkaDocuments(models.Model):
             'tag': 'reload',
         }
 
+    def _detect_file_type(self, file_data):
+        """Определить тип файла по заголовку"""
+        if not file_data:
+            return None
+            
+        try:
+            # Декодируем первые байты для определения типа
+            decoded_data = base64.b64decode(file_data)
+            
+            # DOCX файлы начинаются с PK (ZIP архив)
+            if decoded_data[:2] == b'PK':
+                # Дополнительная проверка на DOCX
+                if b'word/' in decoded_data[:1000] or b'[Content_Types].xml' in decoded_data[:1000]:
+                    return 'docx'
+            
+            # PDF файлы начинаются с %PDF
+            if decoded_data[:4] == b'%PDF':
+                return 'pdf'
+                
+            return 'unknown'
+            
+        except Exception as e:
+            _logger.error(f"Ошибка при определении типа файла: {str(e)}")
+            return 'unknown'
+
+    def _convert_docx_to_pdf(self, docx_data):
+        """Конвертировать DOCX в PDF используя LibreOffice"""
+        if not docx_data:
+            raise ValueError("Отсутствуют данные DOCX файла")
+            
+        try:
+            # Создаем временные файлы
+            with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as docx_temp:
+                docx_temp.write(base64.b64decode(docx_data))
+                docx_temp_path = docx_temp.name
+            
+            # Создаем временную директорию для вывода
+            temp_dir = tempfile.mkdtemp()
+            
+            try:
+                # Конвертируем с помощью LibreOffice
+                cmd = [
+                    'libreoffice', 
+                    '--headless', 
+                    '--convert-to', 'pdf',
+                    '--outdir', temp_dir,
+                    docx_temp_path
+                ]
+                
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                
+                if result.returncode != 0:
+                    raise RuntimeError(f"LibreOffice завершился с ошибкой: {result.stderr}")
+                
+                # Находим созданный PDF файл
+                pdf_filename = os.path.splitext(os.path.basename(docx_temp_path))[0] + '.pdf'
+                pdf_path = os.path.join(temp_dir, pdf_filename)
+                
+                if not os.path.exists(pdf_path):
+                    raise FileNotFoundError("PDF файл не был создан")
+                
+                # Читаем PDF и кодируем в base64
+                with open(pdf_path, 'rb') as pdf_file:
+                    pdf_data = pdf_file.read()
+                    return base64.b64encode(pdf_data)
+                    
+            finally:
+                # Очищаем временные файлы
+                try:
+                    os.unlink(docx_temp_path)
+                    pdf_filename = os.path.splitext(os.path.basename(docx_temp_path))[0] + '.pdf'
+                    pdf_path_cleanup = os.path.join(temp_dir, pdf_filename)
+                    if os.path.exists(pdf_path_cleanup):
+                        os.unlink(pdf_path_cleanup)
+                    os.rmdir(temp_dir)
+                except:
+                    pass  # Игнорируем ошибки очистки
+                    
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("Превышено время ожидания конвертации DOCX в PDF. Проверьте, что LibreOffice установлен и доступен.")
+        except FileNotFoundError:
+            raise RuntimeError("LibreOffice не найден. Установите LibreOffice для конвертации DOCX файлов.")
+        except Exception as e:
+            _logger.error(f"Ошибка при конвертации DOCX в PDF: {str(e)}")
+            raise RuntimeError(f"Не удалось конвертировать DOCX в PDF: {str(e)}")
+
     def _auto_find_signatures(self, document_type, pdf_file):
-        """Автоматический поиск белого текста 'Подпись' и 'Печать' в PDF"""
+        """Автоматический поиск белого текста 'Подпись' и 'Печать' в PDF (PDF может быть сконвертирован из DOCX)"""
         if not PYMUPDF_AVAILABLE:
             _logger.warning("PyMuPDF не установлен. Автоматический поиск недоступен.")
             return []
@@ -508,7 +609,7 @@ class AmanatZayavkaDocuments(models.Model):
         }
 
     def _generate_signed_document(self, document_type, source_file):
-        """Генерируем подписанный PDF документ"""
+        """Генерируем подписанный PDF документ из DOCX или PDF исходника"""
         if not PYMUPDF_AVAILABLE:
             # Fallback: просто копируем оригинальный файл
             _logger.warning("PyMuPDF не установлен. Возвращаем оригинальный файл.")
@@ -519,8 +620,20 @@ class AmanatZayavkaDocuments(models.Model):
             raise UserError(f'Отсутствует исходный файл для {document_type}')
             
         try:
-            # Декодируем оригинальный PDF
-            pdf_data = base64.b64decode(source_file)
+            # Определяем тип исходного файла
+            file_type = self._detect_file_type(source_file)
+            
+            if file_type == 'docx':
+                # Конвертируем DOCX в PDF
+                pdf_data_b64 = self._convert_docx_to_pdf(source_file)
+                pdf_data = base64.b64decode(pdf_data_b64)
+            elif file_type == 'pdf':
+                # Декодируем оригинальный PDF
+                pdf_data = base64.b64decode(source_file)
+            else:
+                from odoo.exceptions import UserError
+                raise UserError(f'Неподдерживаемый тип файла для {document_type}. Поддерживаются только DOCX и PDF.')
+            
             doc = pymupdf.open(stream=pdf_data, filetype="pdf")
             
             # Получаем назначения подписей с изображениями для данного типа документа

@@ -132,6 +132,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     best_rate = fields.Float(
         string='Лучший курс',
         compute='_compute_best_rate',
+        digits=(16, 4),
         readonly=False,
         tracking=True,
         store=True,
@@ -930,7 +931,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     accreditation_commission = fields.Float(string='Комиссия + аккред', tracking=True)
     escrow_commission = fields.Float(string='Комиссия + эскроу', tracking=True)
 
-    rate_field = fields.Float(string='Курс', tracking=True)
+    rate_field = fields.Float(string='Курс', tracking=True, digits=(16, 4))
 
     hidden_rate = fields.Float(string='Скрытый курс', tracking=True)
 
@@ -1155,13 +1156,15 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     subagent_ids = fields.Many2many('amanat.contragent', string='Субагент', tracking=True)
 
+    # Корректируем домен в subagent_payer_ids
     subagent_payer_ids = fields.Many2many(
         'amanat.payer',
         string='Плательщик Субагента',
-        compute='_compute_subagent_payer_ids',
-        store=True,
+        domain="[('id', 'in', domain_subagent_payer_ids or [])]",
         tracking=True
     )
+
+    domain_subagent_payer_ids = fields.Json(string='Домен плательщика субагента', compute='_compute_domain_subagent_payer_ids', store=True)
 
     application_sequence = fields.Char(string='Порядковый номер заявления', tracking=True)
 
@@ -2069,3 +2072,5 @@ class Zayavka(models.Model, AmanatBaseModel):
         tracking=True,
     )
 
+    prefix = fields.Boolean(string='Перефикс', default=False)
+    hidden_hadge = fields.Boolean(string='Не отображать хэдж', default=False)

@@ -126,12 +126,16 @@ class ZayavkaComputes(models.Model):
                 _logger.info(f'rec.our_client_reward: {rec.total_client} - ({rec.rate_real} + {our_client_reward}) = {rec.total_client - (rec.rate_real + our_client_reward)}')
                 rec.our_client_reward = rec.total_client - (rec.rate_real + our_client_reward)
 
-    @api.depends('subagent_ids', 'subagent_ids.payer_ids')
-    def _compute_subagent_payer_ids(self):
-        for rec in self:
-            # Собираем всех плательщиков для выбранных субагентов
-            payers = rec.subagent_ids.mapped('payer_ids')
-            rec.subagent_payer_ids = [(6, 0, payers.ids)]
+    # Добавляем вычисляемое поле типа Json для списка ID
+    @api.depends('subagent_ids')
+    def _compute_domain_subagent_payer_ids(self):
+        for record in self:
+            if record.subagent_ids:
+                payer_ids = record.subagent_ids.mapped('payer_ids').ids
+                record.domain_subagent_payer_ids = payer_ids
+            else:
+                record.subagent_payer_ids = False
+                record.domain_subagent_payer_ids = []
 
     @api.depends('total_client', 'rate_real', 'our_client_reward', 'hidden_commission')
     def _compute_non_our_client_reward(self):
@@ -1586,17 +1590,6 @@ class ZayavkaComputes(models.Model):
     def _compute_possible_payers(self):
         for rec in self:
             rec.possible_payers = rec.subagent_ids.mapped('payer_ids')
-
-    @api.onchange('subagent_ids')
-    def _onchange_subagent_ids(self):
-        """Очищаем невалидные плательщиков и обновляем domain (но domain через computed)"""
-        if self.subagent_ids:
-            payer_ids = self.subagent_ids.mapped('payer_ids').ids
-            # Фильтруем существующие значения
-            valid_payers = self.payers_for_return.filtered(lambda p: p.id in payer_ids)
-            self.payers_for_return = valid_payers
-        else:
-            self.payers_for_return = False  # Очищаем полностью
 
     @api.onchange('reward_percent')
     def _onchange_reward_percent(self):

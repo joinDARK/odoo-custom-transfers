@@ -443,6 +443,12 @@ export class AppsBar extends Component {
                     ],
                 },
                 {
+                    name: "Анализ",
+                    items: [
+                        { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
+                    ],
+                },
+                {
                     name: "Заявки",
                     action: "amanat.zayavka_action",
                     actionMethod: "openZayvaki",

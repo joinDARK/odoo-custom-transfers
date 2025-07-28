@@ -31,6 +31,7 @@ access_amanat_payer_inspector,amanat.payer,model_amanat_payer,group_amanat_inspe
 access_amanat_transfer_admin,amanat.transfer,model_amanat_transfer,group_amanat_admin,1,1,1,1
 access_amanat_transfer_senior_manager,amanat.transfer,model_amanat_transfer,group_amanat_senior_manager,1,1,1,1
 access_amanat_transfer_fin_manager_jess,amanat.transfer,model_amanat_transfer,group_amanat_fin_manager_jess,1,1,1,1
+access_amanat_transfer_fin_manager,amanat.transfer,model_amanat_transfer,group_amanat_fin_manager,1,0,0,0
 access_amanat_transfer_director,amanat.transfer,model_amanat_transfer,group_amanat_director,1,1,1,1
 access_amanat_transfer_manager,amanat.transfer,model_amanat_transfer,group_amanat_manager,1,1,1,0
 access_amanat_transfer_inspector,amanat.transfer,model_amanat_transfer,group_amanat_inspector,1,0,0,0

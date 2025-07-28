@@ -238,6 +238,8 @@ class ZayavkaMethods(models.Model):
         # Добавляем поле для конкретной валюты
         if currency in currency_field_map:
             result[currency_field_map[currency]] = amount
+        else:
+            _logger.warning(f"Валюта {currency} не найдена в currency_field_map")
 
         return result
     
@@ -268,6 +270,8 @@ class ZayavkaMethods(models.Model):
         # Добавляем поле для конкретной валюты
         if currency in currency_field_map:
             result[currency_field_map[currency]] = amount
+        else:
+            _logger.warning(f"Валюта {currency} не найдена в currency_field_map")
 
         return result
 
@@ -276,3 +280,14 @@ class ZayavkaMethods(models.Model):
         if contragent and contragent.payer_ids:
             return contragent.payer_ids[0]
         return False
+
+    def action_create_new_zayavka(self):
+        """Открывает форму для создания новой заявки"""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Новая заявка',
+            'res_model': 'amanat.zayavka',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': dict(self.env.context, default_status='1_no_chat')
+        }

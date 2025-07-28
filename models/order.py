@@ -60,7 +60,8 @@ class Order(models.Model, AmanatBaseModel):
         [
             ('rub', 'RUB'), ('rub_cashe', 'RUB КЭШ'), ('usd', 'USD'), ('usd_cashe', 'USD КЭШ'), ('usdt', 'USDT'), ('euro', 'EURO'),
             ('euro_cashe', 'EURO КЭШ'), ('cny', 'CNY'), ('cny_cashe', 'CNY КЭШ'), ('aed', 'AED'), ('aed_cashe', 'AED КЭШ'),
-            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ'),
+            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ'), ('idr', 'IDR'), ('idr_cashe', 'IDR КЭШ'),
+            ('inr', 'INR'), ('inr_cashe', 'INR КЭШ')
         ],
         string='Валюта',
         default='rub',
@@ -264,7 +265,9 @@ class Order(models.Model, AmanatBaseModel):
             ('euro', 'EURO'), ('euro_cashe', 'EURO КЭШ'),
             ('cny', 'CNY'), ('cny_cashe', 'CNY КЭШ'),
             ('aed', 'AED'), ('aed_cashe', 'AED КЭШ'),
-            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ')
+            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ'),
+            ('idr', 'IDR'), ('idr_cashe', 'IDR КЭШ'),
+            ('inr', 'INR'), ('inr_cashe', 'INR КЭШ')
         ],
         string='Валюта (from Заявки)',
         compute='_compute_currency_from_zayavka',

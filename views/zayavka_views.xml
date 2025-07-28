@@ -7,7 +7,7 @@
     <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
     <field name="priority">20</field>
     <field name="arch" type="xml">
-      <form string="Заявки (Казначей)">
+      <form string="Заявки (Казначей)" create="false">
         <header>
           <h1><field name="zayavka_id" readonly="1"/></h1>
         </header>
@@ -53,7 +53,7 @@
     <field name="model">amanat.zayavka</field>
     <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
     <field name="arch" type="xml">
-      <form string="Заявки">
+      <form string="Заявки" create="false">
         <header>
           <h1><field name="zayavka_id" readonly="1"/></h1>
         </header>
@@ -123,6 +123,43 @@
                 <field name="bank_swift"/>
                 <field name="comment"/>
               </group>
+              <!-- Скрываем финансовые данные для ограниченного доступа -->
+              <group string="Сравнение курса" groups="!amanat.group_amanat_limited_access">
+                <div class="o-form-group">
+                  <group>
+                    <field name="investing_rate"/>
+                    <field name="exchange_rate_1"/>
+                  </group>
+                  <group>
+                    <field name="cb_rate"/>
+                    <field name="exchange_rate_2"/>
+                  </group>
+                  <group>
+                    <field name="cross_rate"/>
+                    <field name="exchange_rate_3"/>
+                  </group>
+                </div>
+              </group>
+              <group>
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="best_rate_name"/>
+                  </group>
+                  <group>
+                    <field name="best_rate"/>
+                  </group>
+                </div>
+              </group>
+              <group>
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="is_sberbank_contragent" invisible="is_sovcombank_contragent"/>
+                  </group>
+                  <group>
+                    <field name="is_sovcombank_contragent" invisible="is_sberbank_contragent"/>
+                  </group>
+                </div>
+              </group>
               <group string="Субагент">
                 <div class="o-form-group-2">
                   <group>
@@ -181,6 +218,7 @@
                     <field name="currency"/>
                     <field name="rate_field"/>
                     <field name="rate_fixation_date"/>
+                    <field name="prefix"/>
                     <field name="plus_dollar"/>
                     <field name="xe_rate"/>
                     <field name="export_agent_flag" invisible="deal_type != 'export'"/>
@@ -191,6 +229,7 @@
                     <field name="amount"/>
                     <field name="best_rate"/>
                     <field name="hand_reward_percent" widget="percentage"/>
+                    <field name="hidden_hadge"/>
                     <field name="dollar_cross_rate"/>
                     <field name="jess_rate"/>
                   </group>
@@ -252,6 +291,7 @@
                     <field name="currency"/>
                     <field name="rate_field"/>
                     <field name="rate_fixation_date"/>
+                    <field name="prefix"/>
                     <field name="plus_dollar"/>
                     <field name="xe_rate"/>
                     <field name="export_agent_flag" invisible="deal_type != 'export'"/>
@@ -262,6 +302,7 @@
                     <field name="amount"/>
                     <field name="best_rate"/>
                     <field name="hand_reward_percent" widget="percentage"/>
+                    <field name="hidden_hadge"/>
                     <field name="dollar_cross_rate"/>
                     <field name="jess_rate"/>
                   </group>
@@ -324,6 +365,7 @@
                     <field name="currency"/>
                     <field name="rate_field"/>
                     <field name="rate_fixation_date"/>
+                    <field name="prefix"/>
                     <field name="plus_dollar"/>
                     <field name="xe_rate"/>
                     <field name="export_agent_flag" invisible="deal_type != 'export'"/>
@@ -334,6 +376,7 @@
                     <field name="amount"/>
                     <field name="best_rate"/>
                     <field name="hand_reward_percent" widget="percentage"/>
+                    <field name="hidden_hadge"/>
                     <field name="dollar_cross_rate"/>
                     <field name="jess_rate"/>
                   </group>
@@ -1645,8 +1688,14 @@
     <field name="model">amanat.zayavka</field>
     <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
     <field name="arch" type="xml">
-      <list editable="top" multi_edit="1">
+      <list editable="top" multi_edit="1" create="false">
         <header>
+            <button name="action_create_new_zayavka" 
+                    string="Новый" 
+                    type="object" 
+                    class="btn-primary"
+                    icon="fa-plus"
+                    display="always"/>
             <button name="%(action_zayavka_date_range_wizard)d" 
                     string="Диапазон" 
                     type="action" 
@@ -1662,285 +1711,15 @@
         <field name="zayavka_id"/>
         <field width="200" name="zayavka_num"/>
         <field width="200" name="status"/>
-        <field width="200" name="date_placement"/>
+        <!-- <field width="200" name="date_placement"/> -->
         <!-- Ограниченный доступ: скрываем конфиденциальные поля -->
-        <field width="200" name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="manager_ids" widget="many2many_tags"/>
-        <field width="200" name="checker_ids" widget="many2many_tags"/>
+        <!-- <field width="200" name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/> -->
+        <!-- <field width="200" name="checker_ids" widget="many2many_tags"/> -->
         <field width="200" name="contragent_id"/>
         <field width="200" name="agent_id" groups="!amanat.group_amanat_limited_access"/>
         <field width="200" name="client_id"/>
-        <field width="200" name="inn" groups="!amanat.group_amanat_limited_access"/>
+        <!-- <field width="200" name="inn" groups="!amanat.group_amanat_limited_access"/> -->
         <!-- <field width="200" name="client_inn"/> -->
-        <field width="200" name="exporter_importer_name" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="bank_swift"/>
-        <field width="200" name="country_id"/>
-        <field width="200" name="payment_conditions"/>
-        <field width="200" name="deal_type"/>
-        <!-- Финансовые поля - скрыты для ограниченного доступа -->
-        <field width="200" name="investing_rate" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="cb_rate" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="cross_rate" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="exchange_rate_1" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="exchange_rate_2" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="exchange_rate_3" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="best_rate_name" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="best_rate" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="client_payment_cost"/>
-        <field width="200" name="conversion_ratio" widget="percentage"/>
-        <field width="200" name="conversion_auto" widget="percentage"/>
-        <field width="200" name="hand_reward_percent"/>
-        <field width="200" name="instruction_number"/>
-        <field width="200" name="instruction_signed_date"/>
-        <field width="200" name="usd_equivalent"/>
-        <field width="200" name="jess_rate"/>
-        <field width="200" name="currency"/>
-        <field width="200" name="is_cross"/>
-        <field width="200" name="currency_pair"/>
-        <field width="200" name="cross_rate_usd_rub"/>
-        <field width="200" name="cross_rate_pair"/>
-        <field width="200" name="xe_rate"/>
-        <field width="200" name="conversion_expenses_rub"/>
-        <field width="200" name="conversion_expenses_currency"/>
-        <!-- <field width="200" name="xe_rate_auto"/> -->
-        <field width="200" name="real_cross_rate"/>
-        <field width="200" name="course_profitable"/>
-        <field width="200" name="amount"/>
-        <field width="200" name="vip_conditions"/>
-        <field width="200" name="vip_commission"/>
-        <field width="200" name="hidden_commission"/>
-        <field width="200" name="bank_commission"/>
-        <field width="200" name="accreditation_commission"/>
-        <field width="200" name="escrow_commission"/>
-        <field width="200" name="rate_field"/>
-        <field width="200" name="hidden_rate"/>
-        <field width="200" name="conversion_percent"/>
-        <field width="200" name="bank_cross_rate"/>
-        <field width="200" name="plus_dollar"/>
-        <field width="200" name="dollar_cross_rate"/>
-        <field width="200" name="plus_currency"/>
-        <field width="200" name="invoice_plus_percent"/>
-        <field width="200" name="reward_percent"/>
-        <field width="200" name="sovok_reward"/>
-        <field width="200" name="payment_cost_sovok"/>
-        <field width="200" name="sber_reward"/>
-        <field width="200" name="bank_select"/>
-        <field width="200" name="xe_select"/>
-        <field width="200" name="client_reward"/>
-        <field width="200" name="extract_delivery_ids"/>
-        <field width="200" name="bank_vypiska"/>
-        <field width="200" name="our_sovok_reward"/>
-        <field width="200" name="price_list_percent_accrual" widget="percentage"/>
-        <field width="200" name="payer_profit_currency"/>
-        <field width="200" name="our_sber_reward"/>
-        <field width="200" name="our_client_reward"/>
-        <field width="200" name="non_our_sber_reward"/>
-        <field width="200" name="non_our_client_reward"/>
-        <field width="200" name="export_agent_flag"/>
-        <field width="200" name="application_amount_rub_contract"/>
-        <field width="200" name="total_sovok"/>
-        <field width="200" name="total_sovok_management"/>
-        <field width="200" name="total_sber"/>
-        <field width="200" name="total_sber_management"/>
-        <field width="200" name="total_client"/>
-        <field width="200" name="total_client_management"/>
-        <field width="200" name="total_fact"/>
-        <field width="200" name="calculated_percent"/>
-        <field width="200" name="overall_sovok_percent"/>
-        <field width="200" name="overall_sber_percent"/>
-        <field width="200" name="sum_from_extracts"/>
-        <field width="200" name="rate_real"/>
-        <field width="200" name="rate_real_sber"/>
-        <field width="200" name="agent_reward"/>
-        <field width="200" name="actual_reward"/>
-        <field width="200" name="non_agent_reward"/>
-        <field width="200" name="agent_our_reward"/>
-        <field width="200" name="total_reward"/>
-        <field width="200" name="total_amount"/>
-        <field width="200" name="with_accreditive"/>
-        <field width="200" name="received_initial_docs"/>
-        <field width="200" name="invoice_date"/>
-        <field width="200" name="agent_contract_date"/>
-        <field width="200" name="bank_registration_date"/>
-        <field width="200" name="accreditive_open_date"/>
-        <field width="200" name="supplier_currency_paid_date"/>
-        <field width="200" name="payment_date"/>
-        <field width="200" name="supplier_currency_received_date"/>
-        <field width="200" name="client_ruble_paid_date"/>
-        <field width="200" name="accreditive_revealed_date"/>
-        <field width="200" name="act_report_signed_date"/>
-        <field width="200" name="deal_closed_date"/>
-        <field width="200" name="deal_cycle_days"/>
-        <field width="200" name="payment_purpose"/>
-        <field width="200" name="subagent_ids"/>
-        <field width="200" name="subagent_payer_ids"/>
-        <field width="200" name="application_sequence"/>
-        <field width="200" name="subagent_docs_prepared_date"/>
-        <field width="200" name="swift_received_date"/>
-        <field width="200" name="swift_103_requested_date"/>
-        <field width="200" name="swift_199_requested_date"/>
-        <field width="200" name="swift_103_received_date"/>
-        <field width="200" name="swift_199_received_date"/>
-        <field width="200" name="return_requested_date"/>
-        <field width="200" name="return_money_received_date"/>
-        <field width="200" name="swift_status"/>
-        <field width="200" name="price_list_profit_id"/>
-        <field width="200" name="is_money_stuck"/>
-        <field width="200" name="correction"/>
-        <field width="200" name="send_to_reconciliation"/>
-        <field width="200" name="fin_entry_check"/>
-        <field width="200" name="for_khalida_temp"/>
-        <field width="200" name="hide_in_dashboard"/>
-        <field width="200" name="date_received_on_pc_payment"/>
-        <field width="200" name="date_received_tezera"/>
-        <field width="200" name="problem_stage"/>
-        <field width="200" name="problem_comment"/>
-        <field width="200" name="currency_stuck"/>
-        <field width="200" name="sum_stuck"/>
-        <field width="200" name="whose_mistake"/>
-        <field width="200" name="zayavka_link"/>
-        <field width="200" name="invoice_link"/>
-        <field width="200" name="assignment_link"/>
-        <field width="200" name="swift_link"/>
-        <field width="200" name="swift103_link"/>
-        <field width="200" name="swift199_link"/>
-        <field width="200" name="report_link"/>
-        <field width="200" name="money_ran_out"/>
-        <field width="200" name="received_on_our_pc"/>
-        <field width="200" name="agent_on_pc"/>
-        <field width="200" name="calculation"/>
-        <field width="200" name="bank"/>
-        <field width="200" name="zayavka_mistake"/>
-        <field width="200" name="date_received_on_pc12"/>
-        <field width="200" name="date_agent_on_pc"/>
-        <field width="200" name="waiting_for_replenishment"/>
-        <field width="200" name="deal_amount_received"/>
-        <field width="200" name="total_amount_received"/>
-        <field width="200" name="order_ids"/>
-        <field width="200" name="error_sovok"/>
-        <field width="200" name="error_sber"/>
-        <field width="200" name="error_in_rate"/>
-        <field width="200" name="error_in_bank_rate"/>
-        <field width="200" name="error_in_xe_rate"/>
-        <field width="200" name="partner_post_conversion_rate"/>
-        <field width="200" name="payer_cross_rate_usd"/>
-        <field width="200" name="payer_cross_rate_usd_auto"/>
-        <field width="200" name="real_post_conversion_rate"/>
-        <field width="200" name="real_post_conversion_rate_usd"/>
-        <field width="200" name="payer_cross_rate_rub"/>
-        <field width="200" name="real_post_conversion_rate_rub"/>
-        <field width="200" name="date_received_on_pc_auto"/>
-        <field width="200" name="price_list_carrying_out_id"/>
-        <field width="200" name="price_list_carrying_out_accrual_percentage" widget="percentage"/>
-        <field width="200" name="price_list_carrying_out_fixed_deal_fee"/>
-        <field width="200" name="payment_order_rule_id"/>
-        <field width="200" name="percent_from_payment_order_rule" widget="percentage"/>
-        <field width="200" name="price_list_partners_id"/>
-        <field width="200" name="price_list_partners_id_accrual_percentage" widget="percentage"/>
-        <field width="200" name="price_list_partners_id_fixed_deal_fee"/>
-        <field width="200" name="price_list_partners_id_2"/>
-        <field width="200" name="price_list_partners_id_2_accrual_percentage" widget="percentage"/>
-        <field width="200" name="price_list_partners_id_2_fixed_deal_fee"/>
-        <field width="200" name="price_list_partners_id_3"/>
-        <field width="200" name="price_list_partners_id_3_accrual_percentage" widget="percentage"/>
-        <field width="200" name="price_list_partners_id_3_fixed_deal_fee"/>
-        <field width="200" name="price_list_partners_id_4"/>
-        <field width="200" name="price_list_partners_id_4_accrual_percentage" widget="percentage"/>
-        <field width="200" name="price_list_partners_id_4_fixed_deal_fee"/>
-        <field width="200" name="price_list_partners_id_5"/>
-        <field width="200" name="price_list_partners_id_5_accrual_percentage" widget="percentage"/>
-        <field width="200" name="price_list_partners_id_5_fixed_deal_fee"/>
-        <field width="200" name="money_cost_rule_id"/>
-        <field width="200" name="money_cost_rule_credit_rate" widget="percentage"/>
-        <field width="200" name="money_cost_rule_credit_period"/>
-        <field width="200" name="money_cost_rule_extra_days"/>
-        <field width="200" name="expense_rule_id"/>
-        <field width="200" name="percent_from_expense_rule" widget="percentage"/>
-        <!-- <field width="200" name="range_id"/> -->
-        <!-- <field width="200" name="range_date_start"/> -->
-        <!-- <field width="200" name="range_date_end"/> -->
-        <!-- <field width="200" name="range_date_start_copy"/> -->
-        <!-- <field width="200" name="range_date_end_copy"/> -->
-        <!-- <field width="200" name="status_range_copy"/> -->
-        <!-- <field width="200" name="status_range"/> -->
-        <field width="200" name="zayavka_attachments"/>
-        <field width="200" name="invoice_attachments"/>
-        <field width="200" name="assignment_attachments"/>
-        <field width="200" name="swift_attachments"/>
-        <field width="200" name="swift103_attachments"/>
-        <field width="200" name="swift199_attachments"/>
-        <field width="200" name="report_attachments"/>
-        <field width="200" name="client_operating_expenses"/>
-        <field width="200" name="client_real_operating_expenses"/>
-        <field width="200" name="client_real_operating_expenses_usd"/>
-        <field width="200" name="client_real_operating_expenses_rub"/>
-        <field width="200" name="client_currency_bought"/>
-        <field width="200" name="client_currency_bought_real"/>
-        <field width="200" name="client_currency_bought_real_usd"/>
-        <field width="200" name="client_currency_bought_real_rub"/>
-        <field width="200" name="hidden_partner_commission_real"/>
-        <field width="200" name="hidden_partner_commission"/>
-        <field width="200" name="hidden_partner_commission_real_usd"/>
-        <field width="200" name="hidden_partner_commission_real_rub"/>
-        <field width="200" name="payer_profit_usd"/>
-        <field width="200" name="payer_profit_rub"/>
-        <field width="200" name="date_days"/>
-        <field width="200" name="assignment_signed_sovcom"/>
-        <field width="200" name="payment_order_rf_sovok"/>
-        <!-- <field width="200" name="operating_expenses_sovok_partner"/> -->
-        <field width="200" name="operating_expenses_sovok_real"/>
-        <field width="200" name="operating_expenses_sovok_real_usd"/>
-        <field width="200" name="operating_expenses_sovok_real_rub"/>
-        <field width="200" name="payment_order_rf_sber"/>
-        <field width="200" name="client_payment_cost_usd"/>
-        <field width="200" name="client_payment_cost_rub"/>
-        <field width="200" name="cost_of_money_client"/>
-        <field width="200" name="cost_of_money_client_real"/>
-        <field width="200" name="cost_of_money_client_real_usd"/>
-        <field width="200" name="cost_of_money_client_real_rub"/>
-        <field width="200" name="fin_res_client"/>
-        <field width="200" name="fin_res_client_real"/>
-        <field width="200" name="fin_res_client_real_usd"/>
-        <field width="200" name="fin_res_client_real_rub"/>
-        <field width="200" name="sber_operating_expenses"/>
-        <field width="200" name="kupili_valyutu_sovok_partner"/>
-        <field width="200" name="kupili_valyutu_sovok_real"/>
-        <field width="200" name="kupili_valyutu_sovok_real_usd"/>
-        <field width="200" name="kupili_valyutu_sovok_real_rub"/>
-        <field width="200" name="payment_cost_sovok_partner_usd"/>
-        <field width="200" name="sebestoimost_denej_sovok_partner"/>
-        <field width="200" name="payment_cost_sovok_real_usd"/>
-        <field width="200" name="payment_cost_sovok_real_rub"/>
-        <field width="200" name="sebestoimost_denej_sovok_real"/>
-        <field width="200" name="sebestoimost_denej_sovok_real_usd"/>
-        <field width="200" name="sebestoimost_denej_sovok_real_rub"/>
-        <field width="200" name="fin_res_sovok_partner"/>
-        <field width="200" name="fin_res_sovok_real"/>
-        <field width="200" name="fin_res_sovok_real_usd"/>
-        <field width="200" name="fin_res_sovok_real_rub"/>
-        <field width="200" name="rate_fixation_date"/>
-        <field width="200" name="sber_operating_expenses_real"/>
-        <field width="200" name="sber_operating_expenses_real_usd"/>
-        <field width="200" name="sber_operating_expenses_real_rub"/>
-        <field width="200" name="kupili_valyutu_sber"/>
-        <field width="200" name="kupili_valyutu_sber_real"/>
-        <field width="200" name="kupili_valyutu_sber_real_usd"/>
-        <field width="200" name="kupili_valyutu_sber_real_rub"/>
-        <field width="200" name="sber_payment_cost_usd"/>
-        <field width="200" name="sber_payment_cost_rub"/>
-        <field width="200" name="sber_payment_cost_on_usd"/>
-        <field width="200" name="sber_payment_cost_on_usd_real"/>
-        <field width="200" name="sebestoimost_denej_sber"/>
-        <field width="200" name="sebestoimost_denej_sber_real"/>
-        <field width="200" name="sebestoimost_denej_sber_real_usd"/>
-        <field width="200" name="sebestoimost_denej_sber_real_rub"/>
-        <field width="200" name="fin_res_sber"/>
-        <field width="200" name="fin_res_sber_real"/>
-        <field width="200" name="fin_res_sber_real_usd"/>
-        <field width="200" name="fin_res_sber_real_rub"/>
-        <field width="200" name="period_id"/>
-        <field width="200" name="period_date_1"/>
-        <field width="200" name="period_date_2"/>
       </list>
     </field>
   </record>
@@ -1962,6 +1741,7 @@
     <field name="res_model">amanat.zayavka</field>
     <field name="view_mode">list,form</field>
     <field name="target">main</field>
+    <field name="context">{'default_status': '1_no_chat'}</field>
     <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
   </record>
 
