@@ -26,8 +26,7 @@
                 <field width="200" name="receiver_id" />
                 <field width="200" name="order_ids" widget="many2many_tags" />
                 <field width="200" name="is_complex" />
-                <field width="200" name="royalti_Transfer"
-                    groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
+                <field width="200" name="royalti_Transfer"/>
                 <field width="200" name="royalty_recipient_1" />
                 <field width="200" name="royalty_recipient_2" />
                 <field width="200" name="royalty_recipient_3" />
@@ -43,8 +42,7 @@
                     options="{'rounding': 2}" />
                 <field width="200" name="royalty_percent_5" widget="percentage"
                     options="{'rounding': 2}" />
-                <field width="200" name="delete_Transfer"
-                    groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
+                <field width="200" name="delete_Transfer"/>
                 <field width="200" name="comment" />
             </list>
         </field>
@@ -99,12 +97,10 @@
                                         <field name="receiver_wallet_id" />
                                     </group>
                                     <group>
-                                        <field name="create_order"
-                                            groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
+                                        <field name="create_order"/>
                                     </group>
                                     <group>
-                                        <field name="delete_Transfer"
-                                            groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
+                                        <field name="delete_Transfer"/>
                                     </group>
                                 </div>
                                 <field name="order_ids" />
@@ -149,8 +145,7 @@
                                 <h2>Роялти</h2>
                             </header>
                             <group>
-                                <field name="royalti_Transfer"
-                                    groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager" />
+                                <field name="royalti_Transfer"/>
                             </group>
                             <group>
                                 <div class="o-form-group-2">
@@ -200,10 +195,8 @@
                         
                             <!-- Отдельный блок: чекбоксы -->
                             <group col="2">
-                                <field name="create_accrual"
-                                       groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
-                                <field name="delete_accrual"
-                                       groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_manager"/>
+                                <field name="create_accrual"/>
+                                <field name="delete_accrual"/>
                             </group>
                         
                             <!-- Комментарий -->
