@@ -1231,7 +1231,7 @@
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="screen_sber_attachments" widget="many2many_binary_dragdrop" options="{'no_create': False, 'no_open': True}"/>
+                        <field name="screen_sber_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
                       </group>
                       <group>
                         <field name="signed_screen_sber_attachments" invisible="screen_sber_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
@@ -1457,7 +1457,7 @@
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="zayavka_start_attachments" widget="many2many_binary_dragdrop" options="{'no_create': False, 'no_open': True}"/>
+                        <field name="zayavka_start_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
                       </group>
                       <group>
                         <field name="signed_zayavka_start_attachments" invisible="zayavka_start_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
@@ -1523,7 +1523,7 @@
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="zayavka_end_attachments" widget="many2many_binary_dragdrop" options="{'no_create': False, 'no_open': True}"/>
+                        <field name="zayavka_end_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
                       </group>
                       <group>
                         <field name="signed_zayavka_end_attachments" invisible="zayavka_end_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
