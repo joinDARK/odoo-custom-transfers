@@ -18,6 +18,11 @@ class AmanatZayavkaSignaturePosition(models.Model):
             ('swift103', 'SWIFT 103'),
             ('swift199', 'SWIFT 199'),
             ('report', 'Акт-отчет'),
+            ('screen_sber', 'Скрин сбер'),
+            ('zayavka_start', 'Заявка Вход'),
+            ('zayavka_end', 'Заявка Выход'),
+            ('assignment_start', 'Поручение Вход'),
+            ('assignment_end', 'Поручение Выход'),
         ], 
         string='Тип документа', 
         required=True

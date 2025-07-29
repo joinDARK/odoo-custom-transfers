@@ -64,10 +64,22 @@ class Calculator50UsdWizard(models.Model):
 
     # Основные расчетные поля
     invoice_amount = fields.Float(string='Сумма инвойса', required=True, digits=(16, 4))
-    usd_investing_rate = fields.Float(string='Курс $ Инвестинг', required=True, digits=(16, 4))
+    
+    # Новые поля для курса доллара
+    usd_platform = fields.Selection([
+        ('investing', 'Инвестинг'),
+        ('cb', 'ЦБ'),
+    ], string='Платформа курса $', default='investing', required=True)
+    
+    usd_rate = fields.Float(string='Курс $', required=True, digits=(16, 4))
+    
+    usd_rate_label = fields.Char(
+        string='Название курса',
+        compute='_compute_usd_rate_label',
+        store=True
+    )
     
     # Поля для долларовых операций
-    usd_cb_rate = fields.Float(string='Курс $ ЦБ', digits=(16, 4))
     total_payment_rate = fields.Float(
         string='Итоговый курс для суммы платежа',
         compute='_compute_usd_fields',
@@ -124,6 +136,16 @@ class Calculator50UsdWizard(models.Model):
         digits=(16, 4)
     )
 
+    @api.depends('usd_platform')
+    def _compute_usd_rate_label(self):
+        for record in self:
+            if record.usd_platform == 'investing':
+                record.usd_rate_label = 'Курс $ Инвестинг'
+            elif record.usd_platform == 'cb':
+                record.usd_rate_label = 'Курс $ ЦБ'
+            else:
+                record.usd_rate_label = 'Курс $'
+
     @api.depends('date', 'currency', 'invoice_amount')
     def _compute_name(self):
         for record in self:
@@ -158,7 +180,7 @@ class Calculator50UsdWizard(models.Model):
                 record.eur_client_cross_rate = 0
 
     @api.depends('invoice_amount', 'yuan_client_cross_rate', 'eur_client_cross_rate', 
-                 'usd_investing_rate', 'agent_fee_percent', 'currency')
+                 'usd_rate', 'agent_fee_percent', 'currency')
     def _compute_amounts(self):
         for record in self:
             # Определяем кросскурс в зависимости от валюты
@@ -172,13 +194,13 @@ class Calculator50UsdWizard(models.Model):
                 cross_rate = 1.0
 
             # Сумма к оплате в рублях
-            if record.invoice_amount and record.usd_investing_rate and cross_rate:
-                record.amount_to_pay_rub = (record.invoice_amount / cross_rate) * record.usd_investing_rate
+            if record.invoice_amount and record.usd_rate and cross_rate:
+                record.amount_to_pay_rub = (record.invoice_amount / cross_rate) * record.usd_rate
             else:
                 record.amount_to_pay_rub = 0
 
-            # Сумма агентского вознаграждения (только для юань и евро)
-            if record.currency in ['cny', 'eur'] and record.amount_to_pay_rub and record.agent_fee_percent:
+            # Сумма агентского вознаграждения для всех валют
+            if record.amount_to_pay_rub and record.agent_fee_percent:
                 record.agent_fee_amount = record.amount_to_pay_rub * (record.agent_fee_percent / 100)
             else:
                 record.agent_fee_amount = 0
@@ -199,16 +221,16 @@ class Calculator50UsdWizard(models.Model):
                 record.yuan_to_rub_rate = 0
                 record.eur_to_rub_rate = 0
 
-    @api.depends('usd_investing_rate', 'amount_to_pay_rub', 'currency', 'usd_cb_rate', 'agent_fee_percent', 'invoice_amount')
+    @api.depends('usd_rate', 'amount_to_pay_rub', 'currency', 'usd_platform', 'agent_fee_percent', 'invoice_amount')
     def _compute_usd_fields(self):
         for record in self:
             if record.currency == 'usd':
-                # Итоговый курс для суммы платежа = "Курс $ ЦБ" * (1 + "% Агентское вознаграждение" / 100)
-                if record.usd_cb_rate:
+                # Итоговый курс для суммы платежа = курс * (1 + % агентского вознаграждения)
+                if record.usd_rate:
                     if record.agent_fee_percent:
-                        record.total_payment_rate = record.usd_cb_rate * (1 + record.agent_fee_percent / 100)
+                        record.total_payment_rate = record.usd_rate * (1 + record.agent_fee_percent / 100)
                     else:
-                        record.total_payment_rate = record.usd_cb_rate
+                        record.total_payment_rate = record.usd_rate
                 else:
                     record.total_payment_rate = 0
                 
@@ -218,9 +240,9 @@ class Calculator50UsdWizard(models.Model):
                 else:
                     record.payment_amount = 0
                 
-                # 50$ = 50 * "Курс $ Инвестинг"
-                if record.usd_investing_rate:
-                    record.usd_50_amount = 50 * record.usd_investing_rate
+                # 50$ = 50 * курс (всегда используем основной курс)
+                if record.usd_rate:
+                    record.usd_50_amount = 50 * record.usd_rate
                 else:
                     record.usd_50_amount = 0
                 

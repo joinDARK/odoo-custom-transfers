@@ -860,6 +860,8 @@ export class AmanatDashboard extends Component {
                 ])];
                 
                 if (allSubagents.length > 0) {
+                    // Удаляем неправильное сохранение данных - renderComparisonHorizontalBarChart сделает это корректно
+                    
                     this.renderComparisonHorizontalBarChart('subagents-by-zayavki-chart', {
                         labels: allSubagents,
                         period1Data: allSubagents.map(name => {
@@ -872,6 +874,7 @@ export class AmanatDashboard extends Component {
                         }),
                         period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
                         period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        title: 'Количество заявок под каждого субагента',
                         clickable: true,
                         onClick: (event, elements) => {
                             if (elements.length > 0) {
@@ -885,7 +888,7 @@ export class AmanatDashboard extends Component {
                     this.showNoDataMessage('subagents-by-zayavki-chart', 'Субагенты по заявкам');
                 }
             } else if (this.state.zayavki.subagentsByZayavki && this.state.zayavki.subagentsByZayavki.length > 0) {
-                // Обычный режим - один период
+                // Обычный режим - один период (данные автоматически сохраняются в renderHorizontalBarChart)
                 this.renderHorizontalBarChart('subagents-by-zayavki-chart', {
                     labels: this.state.zayavki.subagentsByZayavki.map(s => s.name),
                     data: this.state.zayavki.subagentsByZayavki.map(s => s.count),
@@ -3975,9 +3978,9 @@ export class AmanatDashboard extends Component {
         
         // Градиент для периода 2 (темно-синий)
         const gradient2 = ctx.createLinearGradient(0, 0, canvas.width, 0);
-                gradient2.addColorStop(0, '#1e3a8a');    // Темно-синий
-        gradient2.addColorStop(0.5, '#3b82f6');  // Средний синий
-        gradient2.addColorStop(1, '#93c5fd');    // Светло-синий
+        gradient2.addColorStop(0, '#dc2626');    // Темно-синий
+        gradient2.addColorStop(0.5, '#ef4444');  // Средний синий
+        gradient2.addColorStop(1, '#f87171');    // Светло-синий
         
         const chartConfig = {
             type: 'bar',
@@ -4544,11 +4547,11 @@ export class AmanatDashboard extends Component {
                     dataLength = Object.keys(fullData).length;
                 }
                 
-                // Расчет адаптивной высоты
-                const baseHeight = 500;           // Базовая высота
-                const itemHeight = 30;            // Высота на один элемент для горизонтальных графиков
-                const minHeight = 400;            // Минимальная высота
-                const maxHeight = 1000;           // Максимальная высота
+                // Расчет адаптивной высоты для модальных окон (более компактные значения)
+                const baseHeight = 300;           // Базовая высота (уменьшено с 500)
+                const itemHeight = 25;            // Высота на один элемент (уменьшено с 30)
+                const minHeight = 250;            // Минимальная высота (уменьшено с 400)
+                const maxHeight = 700;            // Максимальная высота (уменьшено с 1000)
                 
                 let adaptiveHeight = baseHeight;
                 
@@ -4557,15 +4560,14 @@ export class AmanatDashboard extends Component {
                     adaptiveHeight = baseHeight + ((dataLength - 5) * itemHeight);
                 } else if (dataLength > 10) {
                     // Для других типов графиков тоже немного увеличиваем высоту при большом количестве данных
-                    adaptiveHeight = baseHeight + ((dataLength - 10) * 15);
+                    adaptiveHeight = baseHeight + ((dataLength - 10) * 12);
                 }
                 
                 // Применяем ограничения по высоте
                 adaptiveHeight = Math.max(minHeight, Math.min(maxHeight, adaptiveHeight));
                 
-                // Устанавливаем высоту canvas
-                canvas.height = adaptiveHeight;
-                canvas.style.height = adaptiveHeight + 'px';
+                // Устанавливаем высоту canvas с использованием стандартной функции
+                this.setupCanvasSize('fullChart', `${adaptiveHeight}px`, dataLength, renderType);
                 
                 console.log('📐 Установлена адаптивная высота canvas:', {
                     dataLength,

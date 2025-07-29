@@ -79,7 +79,7 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     inn = fields.Char(string='ИНН', related='client_id.payer_inn', store=True, readonly=True, tracking=True)
 
-    exporter_importer_name = fields.Text(string='Наименование Экспортера/Импортера', tracking=True)
+    exporter_importer_name = fields.Text(string='Наименование покупателя/продавца', tracking=True)
 
     bank_swift = fields.Text(string='SWIFT код банка', tracking=True)
 
@@ -851,7 +851,9 @@ class Zayavka(models.Model, AmanatBaseModel):
             ('euro', 'EURO'), ('euro_cashe', 'EURO КЭШ'),
             ('cny', 'CNY'), ('cny_cashe', 'CNY КЭШ'),
             ('aed', 'AED'), ('aed_cashe', 'AED КЭШ'),
-            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ')
+            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ'),
+            ('idr', 'IDR'), ('idr_cashe', 'IDR КЭШ'),
+            ('inr', 'INR'), ('inr_cashe', 'INR КЭШ'),
         ],
         string='Валюта',
         default='usd',
@@ -932,6 +934,14 @@ class Zayavka(models.Model, AmanatBaseModel):
     escrow_commission = fields.Float(string='Комиссия + эскроу', tracking=True)
 
     rate_field = fields.Float(string='Курс', tracking=True, digits=(16, 4))
+
+    effective_rate = fields.Float(
+        string='Эффективный курс',
+        compute='_compute_effective_rate',
+        store=True,
+        digits=(16, 4),
+        help='Лучший курс если доступен, иначе курс из поля rate_field'
+    )
 
     hidden_rate = fields.Float(string='Скрытый курс', tracking=True)
 
@@ -1338,6 +1348,46 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     report_link = fields.Char(string='Акт-отчет ссылка', tracking=True)
+
+    zayavka_start_attachments = fields.Many2many(
+        'ir.attachment', 
+        'zayavka_start_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Заявка Вход'
+    )
+
+    zayavka_end_attachments = fields.Many2many(
+        'ir.attachment', 
+        'zayavka_end_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Заявка Выход'
+    )
+
+    assignment_start_attachments = fields.Many2many(
+        'ir.attachment', 
+        'assignment_start_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Поручение Вход'
+    )
+
+    assignment_end_attachments = fields.Many2many(
+        'ir.attachment', 
+        'assignment_end_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Поручение Выход'
+    )
+
+    screen_sber_attachments = fields.Many2many(
+        'ir.attachment', 
+        'screen_sber_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Cкрин сбер'
+    )
 
     money_ran_out = fields.Boolean(string='Сели деньги', tracking=True, default=False)
 

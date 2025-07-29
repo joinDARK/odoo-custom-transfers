@@ -10,6 +10,8 @@
                 <field name="date"/>
                 <field name="currency"/>
                 <field name="invoice_amount"/>
+                <field name="usd_platform" optional="hide"/>
+                <field name="usd_rate" optional="hide"/>
                 <field name="amount_to_pay_rub"/>
                 <field name="payment_amount" optional="hide"/>
                 <field name="usd_50_amount" optional="hide"/>
@@ -41,8 +43,10 @@
                             <field name="invoice_amount"/>
                         </group>
                         <group>
-                            <field name="usd_investing_rate"/>
-                            <field name="usd_cb_rate" invisible="currency != 'usd'"/>
+                            <field name="usd_platform"/>
+                            <label for="usd_rate" string="Курс $ Инвестинг" invisible="usd_platform != 'investing'"/>
+                            <label for="usd_rate" string="Курс $ ЦБ" invisible="usd_platform != 'cb'"/>
+                            <field name="usd_rate" nolabel="1"/>
                             <field name="agent_fee_percent"/>
                         </group>
                     </group>
@@ -86,7 +90,7 @@
                     <group string="Суммы к оплате">
                         <group>
                             <field name="amount_to_pay_rub" readonly="1"/>
-                            <field name="agent_fee_amount" readonly="1" invisible="currency not in ['cny', 'eur']"/>
+                            <field name="agent_fee_amount" readonly="1"/>
                         </group>
                         <group>
                             <field name="total_amount_to_pay" readonly="1" class="oe_subtotal_footer_separator" invisible="currency == 'usd'"/>

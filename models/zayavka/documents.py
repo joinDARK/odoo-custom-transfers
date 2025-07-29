@@ -81,6 +81,46 @@ class AmanatZayavkaDocuments(models.Model):
         readonly=True
     )
 
+    signed_zayavka_start_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_zayavka_start_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанная заявка Вход',
+    )
+
+    signed_zayavka_end_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_zayavka_end_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанная заявка Выход',
+    )
+
+    signed_assignment_start_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_assignment_start_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанное поручение Вход',
+    )
+
+    signed_assignment_end_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_assignment_end_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанное поручение Выход',
+    )
+
+    signed_screen_sber_attachments = fields.Many2many(
+        'ir.attachment', 
+        'signed_screen_sber_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Подписанный скрин сбер',
+    )
+
     # Поля для статуса подписания каждого документа
     zayavka_signature_state = fields.Selection([
         ('draft', 'Загружен PDF'),
@@ -123,6 +163,36 @@ class AmanatZayavkaDocuments(models.Model):
         ('ready', 'Готов к подписанию'),
         ('signed', 'Подписан'),
     ], string='Статус подписания акт-отчета', default='draft')
+
+    zayavka_start_signature_state = fields.Selection([
+        ('draft', 'Загружен PDF'),
+        ('ready', 'Готов к подписанию'),
+        ('signed', 'Подписан'),
+    ], string='Статус подписания заявки Вход', default='draft')
+
+    zayavka_end_signature_state = fields.Selection([
+        ('draft', 'Загружен PDF'),
+        ('ready', 'Готов к подписанию'),
+        ('signed', 'Подписан'),
+    ], string='Статус подписания заявки Выход', default='draft')
+
+    assignment_start_signature_state = fields.Selection([
+        ('draft', 'Загружен PDF'),
+        ('ready', 'Готов к подписанию'),
+        ('signed', 'Подписан'),
+    ], string='Статус подписания поручения Вход', default='draft')
+
+    assignment_end_signature_state = fields.Selection([
+        ('draft', 'Загружен PDF'),
+        ('ready', 'Готов к подписанию'),
+        ('signed', 'Подписан'),
+    ], string='Статус подписания поручения Выход', default='draft')
+
+    screen_sber_signature_state = fields.Selection([
+        ('draft', 'Загружен PDF'),
+        ('ready', 'Готов к подписанию'),
+        ('signed', 'Подписан'),
+    ], string='Статус подписания скрина сбер', default='draft')
 
     # Связи с позициями и назначениями подписей для каждого типа документа
     zayavka_signature_position_ids = fields.One2many(
@@ -223,6 +293,76 @@ class AmanatZayavkaDocuments(models.Model):
         domain=[('document_type', '=', 'report')]
     )
 
+    zayavka_start_signature_position_ids = fields.One2many(
+        'amanat.zayavka.signature.position', 
+        'zayavka_id', 
+        string='Позиции подписей заявки Вход',
+        domain=[('document_type', '=', 'zayavka_start')]
+    )
+
+    zayavka_start_signature_assignment_ids = fields.One2many(
+        'amanat.zayavka.signature.assignment', 
+        'zayavka_id', 
+        string='Назначенные подписи заявки Вход',
+        domain=[('document_type', '=', 'zayavka_start')]
+    )
+
+    zayavka_end_signature_position_ids = fields.One2many(
+        'amanat.zayavka.signature.position', 
+        'zayavka_id', 
+        string='Позиции подписей заявки Выход',
+        domain=[('document_type', '=', 'zayavka_end')]
+    )
+
+    zayavka_end_signature_assignment_ids = fields.One2many(
+        'amanat.zayavka.signature.assignment', 
+        'zayavka_id', 
+        string='Назначенные подписи заявки Выход',
+        domain=[('document_type', '=', 'zayavka_end')]
+    )
+
+    assignment_start_signature_position_ids = fields.One2many(
+        'amanat.zayavka.signature.position', 
+        'zayavka_id', 
+        string='Позиции подписей поручения Вход',
+        domain=[('document_type', '=', 'assignment_start')]
+    )
+
+    assignment_start_signature_assignment_ids = fields.One2many(
+        'amanat.zayavka.signature.assignment', 
+        'zayavka_id', 
+        string='Назначенные подписи поручения Вход',
+        domain=[('document_type', '=', 'assignment_start')]
+    )
+
+    assignment_end_signature_position_ids = fields.One2many(
+        'amanat.zayavka.signature.position', 
+        'zayavka_id', 
+        string='Позиции подписей поручения Выход',
+        domain=[('document_type', '=', 'assignment_end')]
+    )
+
+    assignment_end_signature_assignment_ids = fields.One2many(
+        'amanat.zayavka.signature.assignment', 
+        'zayavka_id', 
+        string='Назначенные подписи поручения Выход',
+        domain=[('document_type', '=', 'assignment_end')]
+    )
+    
+    screen_sber_signature_position_ids = fields.One2many(
+        'amanat.zayavka.signature.position', 
+        'zayavka_id', 
+        string='Позиции подписей скрина сбер',
+        domain=[('document_type', '=', 'screen_sber')]
+    )
+
+    screen_sber_signature_assignment_ids = fields.One2many(
+        'amanat.zayavka.signature.assignment', 
+        'zayavka_id', 
+        string='Назначенные подписи скрина сбер',
+        domain=[('document_type', '=', 'screen_sber')]
+    )
+
     # Методы для определения подписей в каждом типе документа (поддерживает DOCX и PDF)
     def action_detect_signatures_zayavka(self):
         """Определить позиции подписей в заявке (DOCX/PDF)"""
@@ -251,6 +391,26 @@ class AmanatZayavkaDocuments(models.Model):
     def action_detect_signatures_report(self):
         """Определить позиции подписей в акт-отчете (DOCX/PDF)"""
         return self._detect_signatures_for_document('report', self.report_attachments, 'report_signature_state')
+
+    def action_detect_signatures_zayavka_start(self):
+        """Определить позиции подписей в заявке Вход (DOCX/PDF)"""
+        return self._detect_signatures_for_document('zayavka_start', self.zayavka_start_attachments, 'zayavka_start_signature_state')
+
+    def action_detect_signatures_zayavka_end(self):
+        """Определить позиции подписей в заявке Выход (DOCX/PDF)"""
+        return self._detect_signatures_for_document('zayavka_end', self.zayavka_end_attachments, 'zayavka_end_signature_state')
+    
+    def action_detect_signatures_assignment_start(self):
+        """Определить позиции подписей в поручении Вход (DOCX/PDF)"""
+        return self._detect_signatures_for_document('assignment_start', self.assignment_start_attachments, 'assignment_start_signature_state')
+
+    def action_detect_signatures_assignment_end(self):
+        """Определить позиции подписей в поручении Выход (DOCX/PDF)"""
+        return self._detect_signatures_for_document('assignment_end', self.assignment_end_attachments, 'assignment_end_signature_state')
+
+    def action_detect_signatures_screen_sber(self):
+        """Определить позиции подписей в скрине сбер (DOCX/PDF)"""
+        return self._detect_signatures_for_document('screen_sber', self.screen_sber_attachments, 'screen_sber_signature_state')
 
     # Методы для подписания каждого типа документа (DOCX→PDF с подписями)
     def action_sign_zayavka(self):
@@ -281,6 +441,26 @@ class AmanatZayavkaDocuments(models.Model):
         """Подписать акт-отчет"""
         return self._sign_document('report', self.report_attachments, 'signed_report_attachments', 'report_signature_state')
 
+    def action_sign_zayavka_start(self):
+        """Подписать заявку Вход"""
+        return self._sign_document('zayavka_start', self.zayavka_start_attachments, 'signed_zayavka_start_attachments', 'zayavka_start_signature_state')
+
+    def action_sign_zayavka_end(self):
+        """Подписать заявку Выход"""
+        return self._sign_document('zayavka_end', self.zayavka_end_attachments, 'signed_zayavka_end_attachments', 'zayavka_end_signature_state')
+
+    def action_sign_assignment_start(self):
+        """Подписать поручение Вход"""
+        return self._sign_document('assignment_start', self.assignment_start_attachments, 'signed_assignment_start_attachments', 'assignment_start_signature_state')
+
+    def action_sign_assignment_end(self):
+        """Подписать поручение Выход"""
+        return self._sign_document('assignment_end', self.assignment_end_attachments, 'signed_assignment_end_attachments', 'assignment_end_signature_state')
+
+    def action_sign_screen_sber(self):
+        """Подписать скрин сбер"""
+        return self._sign_document('screen_sber', self.screen_sber_attachments, 'signed_screen_sber_attachments', 'screen_sber_signature_state')
+
     # Методы сброса документов
     def action_reset_zayavka_document(self):
         """Сбросить все данные заявки"""
@@ -309,6 +489,26 @@ class AmanatZayavkaDocuments(models.Model):
     def action_reset_report_document(self):
         """Сбросить все данные акт-отчета"""
         return self._reset_document('report', 'report_attachments', 'signed_report_attachments', 'report_signature_state')
+
+    def action_reset_zayavka_start_document(self):
+        """Сбросить все данные заявки Вход"""
+        return self._reset_document('zayavka_start', 'zayavka_start_attachments', 'signed_zayavka_start_attachments', 'zayavka_start_signature_state')
+
+    def action_reset_zayavka_end_document(self):
+        """Сбросить все данные заявки Выход"""
+        return self._reset_document('zayavka_end', 'zayavka_end_attachments', 'signed_zayavka_end_attachments', 'zayavka_end_signature_state')
+
+    def action_reset_assignment_start_document(self):
+        """Сбросить все данные поручения Вход"""
+        return self._reset_document('assignment_start', 'assignment_start_attachments', 'signed_assignment_start_attachments', 'assignment_start_signature_state')
+
+    def action_reset_assignment_end_document(self):
+        """Сбросить все данные поручения Выход"""
+        return self._reset_document('assignment_end', 'assignment_end_attachments', 'signed_assignment_end_attachments', 'assignment_end_signature_state')
+
+    def action_reset_screen_sber_document(self):
+        """Сбросить все данные скрина сбер"""
+        return self._reset_document('screen_sber', 'screen_sber_attachments', 'signed_screen_sber_attachments', 'screen_sber_signature_state')
 
     def _detect_signatures_for_document(self, document_type, attachments, state_field):
         """Универсальный метод для определения подписей в документе (поддерживает DOCX и PDF)"""

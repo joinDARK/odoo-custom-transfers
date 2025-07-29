@@ -48,13 +48,16 @@ export class AnalyticsDashboard extends Component {
     }
     
     async willStart() {
+        // 🚀 ОПТИМИЗИРОВАННАЯ ЗАГРУЗКА: сначала только критически важные данные
+        console.log('🚀 Starting optimized dashboard loading...');
+        
         await Promise.all([
             this.loadDashboardData(),
-            this.loadCurrencyRates(), // При загрузке страницы - только кэш или fallback данные
-            this.loadTotalBalanceSummary(),
-            this.loadContragentsBalance(),
-            this.loadContragentsComparison()
+            this.loadCurrencyRates(), // Загружаем курсы валют сразу
         ]);
+        
+        // Остальные данные загружаем лениво после монтирования компонента
+        console.log('✅ Critical data loaded, defer loading heavy data');
     }
     
     async mounted() {
@@ -66,6 +69,16 @@ export class AnalyticsDashboard extends Component {
             contragentsComparison: this.state.contragentsComparison?.length || 0
         });
         
+        // 🚀 ЛЕНИВАЯ ЗАГРУЗКА: загружаем тяжелые данные после монтирования с небольшой задержкой
+        setTimeout(async () => {
+            console.log('🔄 Loading heavy dashboard data lazily...');
+            await Promise.all([
+                this.loadTotalBalanceSummaryOptimized(),
+                this.loadContragentsBalanceOptimized(),
+                this.loadContragentsComparison()
+            ]);
+            console.log('✅ All dashboard data loaded');
+        }, 100); // Небольшая задержка для отрисовки UI
     }
     
     /**
@@ -190,7 +203,7 @@ export class AnalyticsDashboard extends Component {
     }
     
     /**
-     * Загрузка балансов контрагентов
+     * Загрузка балансов контрагентов (ОРИГИНАЛЬНЫЙ МЕТОД)
      */
     async loadContragentsBalance() {
         try {
@@ -224,8 +237,45 @@ export class AnalyticsDashboard extends Component {
         }
     }
     
+    /**
+     * 🚀 ОПТИМИЗИРОВАННАЯ загрузка балансов контрагентов
+     */
+    async loadContragentsBalanceOptimized() {
+        try {
+            // Подготавливаем параметры - не передаем пустые даты
+            const params = {};
+            if (this.state.dateFrom && this.state.dateFrom.trim()) {
+                params.date_from = this.state.dateFrom;
+            }
+            if (this.state.dateTo && this.state.dateTo.trim()) {
+                params.date_to = this.state.dateTo;
+            }
+            
+            console.log('🚀 Loading optimized contragents balance...');
+            
+            const result = await this.orm.call(
+                'amanat.analytics_dashboard',
+                'get_contragents_balance_optimized',
+                [],
+                params
+            );
+            
+            if (result.success && result.data) {
+                this.state.contragentsBalance = result.data;
+                console.log('✅ Optimized contragents balance loaded:', this.state.contragentsBalance.length, 'records');
+            } else {
+                console.warn('No optimized contragents balance data received');
+            }
+        } catch (error) {
+            console.error('Error loading optimized contragents balance:', error);
+            this.notificationService.add("Ошибка загрузки балансов контрагентов", {
+                type: "warning",
+            });
+        }
+    }
+    
              /**
-     * Загрузка общей суммы эквивалентов всех контрагентов
+     * Загрузка общей суммы эквивалентов всех контрагентов (ОРИГИНАЛЬНЫЙ МЕТОД)
      */
     async loadTotalBalanceSummary() {
         this.state.loadingTotalSummary = true;
@@ -254,6 +304,46 @@ export class AnalyticsDashboard extends Component {
             }
         } catch (error) {
             console.error('Error loading total balance summary:', error);
+            this.notificationService.add("Ошибка загрузки общей суммы", {
+                type: "warning",
+            });
+        } finally {
+            this.state.loadingTotalSummary = false;
+        }
+    }
+    
+    /**
+     * 🚀 ОПТИМИЗИРОВАННАЯ загрузка общей суммы эквивалентов всех контрагентов
+     */
+    async loadTotalBalanceSummaryOptimized() {
+        this.state.loadingTotalSummary = true;
+        try {
+            // Подготавливаем параметры - не передаем пустые даты
+            const params = {};
+            if (this.state.dateFrom && this.state.dateFrom.trim()) {
+                params.date_from = this.state.dateFrom;
+            }
+            if (this.state.dateTo && this.state.dateTo.trim()) {
+                params.date_to = this.state.dateTo;
+            }
+            
+            console.log('🚀 Loading optimized total balance summary...');
+            
+            const result = await this.orm.call(
+                'amanat.analytics_dashboard',
+                'get_total_balance_summary_optimized',
+                [],
+                params
+            );
+            
+            if (result.success) {
+                this.state.totalBalanceSummary = result;
+                console.log('✅ Optimized total balance summary loaded:', result);
+            } else {
+                console.warn('No optimized total balance summary data received');
+            }
+        } catch (error) {
+            console.error('Error loading optimized total balance summary:', error);
             this.notificationService.add("Ошибка загрузки общей суммы", {
                 type: "warning",
             });
@@ -311,11 +401,12 @@ export class AnalyticsDashboard extends Component {
      * Обработка изменения даты начала
      */
     async onDateFromChange(ev) {
-        console.log('Date from changed:', this.state.dateFrom);
+        console.log('🔄 Date from changed:', this.state.dateFrom);
+        console.log('⚡ Using optimized loading methods...');
         await Promise.all([
             this.loadDashboardData(),
-            this.loadTotalBalanceSummary(),
-            this.loadContragentsBalance(),
+            this.loadTotalBalanceSummaryOptimized(),
+            this.loadContragentsBalanceOptimized(),
             this.loadContragentsComparison()
         ]);
     }
@@ -324,11 +415,12 @@ export class AnalyticsDashboard extends Component {
      * Обработка изменения даты конца
      */
     async onDateToChange(ev) {
-        console.log('Date to changed:', this.state.dateTo);
+        console.log('🔄 Date to changed:', this.state.dateTo);
+        console.log('⚡ Using optimized loading methods...');
         await Promise.all([
             this.loadDashboardData(),
-            this.loadTotalBalanceSummary(),
-            this.loadContragentsBalance(),
+            this.loadTotalBalanceSummaryOptimized(),
+            this.loadContragentsBalanceOptimized(),
             this.loadContragentsComparison()
         ]);
     }
@@ -409,11 +501,11 @@ export class AnalyticsDashboard extends Component {
         
         console.log(`Period set: ${period}, from: ${dateFrom}, to: ${dateTo}`);
         
-        // Перезагружаем данные с новым диапазоном
+        // 🚀 Перезагружаем данные с новым диапазоном используя оптимизированные методы
         await Promise.all([
             this.loadDashboardData(),
-            this.loadTotalBalanceSummary(),
-            this.loadContragentsBalance(),
+            this.loadTotalBalanceSummaryOptimized(),
+            this.loadContragentsBalanceOptimized(),
             this.loadContragentsComparison()
         ]);
     }
@@ -629,10 +721,10 @@ export class AnalyticsDashboard extends Component {
         // Сначала сбрасываем пользовательские курсы к автоматическим
         await this.resetToApiRates();
         
-        // Перезагружаем балансы с обновленными курсами
+        // 🚀 Перезагружаем балансы с обновленными курсами используя оптимизированные методы
         await Promise.all([
-            this.loadTotalBalanceSummary(),
-            this.loadContragentsBalance(),
+            this.loadTotalBalanceSummaryOptimized(),
+            this.loadContragentsBalanceOptimized(),
             this.loadContragentsComparison()
         ]);
         
@@ -771,10 +863,10 @@ export class AnalyticsDashboard extends Component {
             );
             
             if (result.success) {
-                // Перезагружаем балансы с новыми курсами
+                // 🚀 Перезагружаем балансы с новыми курсами используя оптимизированные методы
                 await Promise.all([
-                    this.loadTotalBalanceSummary(),
-                    this.loadContragentsBalance(),
+                    this.loadTotalBalanceSummaryOptimized(),
+                    this.loadContragentsBalanceOptimized(),
                     this.loadContragentsComparison()
                 ]);
                 

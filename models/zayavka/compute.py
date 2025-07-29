@@ -106,6 +106,19 @@ class ZayavkaComputes(models.Model):
                         rates[2] = -9999999
                     record.best_rate = max(rates)
 
+    @api.depends('best_rate', 'rate_field')
+    def _compute_effective_rate(self):
+        """
+        Вычисляет эффективный курс: берет лучший курс если он больше 0, иначе курс из поля
+        """
+        for record in self:
+            if record.best_rate and record.best_rate > 0:
+                record.effective_rate = record.best_rate
+            elif record.rate_field and record.rate_field > 0:
+                record.effective_rate = record.rate_field
+            else:
+                record.effective_rate = 0
+
     @api.depends('reward_percent', 'rate_field', 'amount')
     def _compute_client_reward(self):
         for rec in self:

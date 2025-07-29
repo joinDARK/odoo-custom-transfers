@@ -362,7 +362,7 @@
                         </div>
                         <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Количество заявок под каждого субагента</h6>
+                                <h6 class="chart-title clickable-title">Количество заявок под каждого субагента</h6>
                                 <div class="chart-container-large">
                                     <canvas id="subagents-by-zayavki-chart"></canvas>
                                 </div>
