@@ -824,7 +824,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     deal_type = fields.Selection(
-        [('import', 'Импорт'), ('export', 'Экспорт')],
+        [('import', 'Импорт'), ('export', 'Экспорт'), ('import_export', 'Импорт-экспорт'), ('export_import', 'Экспорт-импорт')],
         string='Вид сделки',
         tracking=True,
     )

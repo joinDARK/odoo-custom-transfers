@@ -1199,7 +1199,7 @@
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="zayavka_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                        <field name="zayavka_attachments" widget="many2many_binary_dragdrop" options="{'no_create': False, 'no_open': True}"/>
                       </group>
                       <group>
                         <field name="signed_zayavka_attachments" invisible="zayavka_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>

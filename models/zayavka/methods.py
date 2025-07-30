@@ -24,10 +24,10 @@ class ZayavkaMethods(models.Model):
 
         res = super().write(vals)  # <-- Исправлено!
 
-        if vals.get('status', False) == '6':
-            for rec in self:
-                _logger.info("Изменился на нужный статус")
-                rec.run_all_fix_course_automations()
+        # if vals.get('status', False) == '6':
+        #     for rec in self:
+        #         _logger.info("Изменился на нужный статус")
+        #         rec.run_all_fix_course_automations()
 
         if 'extract_delivery_ids' in vals:
             _logger.info(f"Обнаружено изменение extract_delivery_ids в vals: {vals.get('extract_delivery_ids')}")
@@ -120,9 +120,9 @@ class ZayavkaMethods(models.Model):
         send_to_reconciliation = vals.get('send_to_reconciliation', False)
         res = super().create(vals)
 
-        if vals.get('status', False) == '6':
-            _logger.info("Изменился на нужный статус")
-            res.run_all_fix_course_automations()
+        # if vals.get('status', False) == '6':
+        #     _logger.info("Изменился на нужный статус")
+        #     res.run_all_fix_course_automations()
 
         if trigger:
             # Запуск основной логики (вместо print потом будут скрипты)

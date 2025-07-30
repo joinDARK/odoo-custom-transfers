@@ -12,6 +12,8 @@
                 <field name="invoice_amount"/>
                 <field name="usd_platform" optional="hide"/>
                 <field name="usd_rate" optional="hide"/>
+                <field name="yuan_platform" optional="hide"/>
+                <field name="yuan_rate" optional="hide"/>
                 <field name="amount_to_pay_rub"/>
                 <field name="payment_amount" optional="hide"/>
                 <field name="usd_50_amount" optional="hide"/>
@@ -41,37 +43,42 @@
                             <field name="date"/>
                             <field name="currency"/>
                             <field name="invoice_amount"/>
+                            <field name="is_cross_rate" invisible="currency != 'cny'"/>
+                            <field name="is_xe" invisible="currency != 'eur'"/>
                         </group>
                         <group>
-                            <field name="usd_platform"/>
-                            <label for="usd_rate" string="Курс $ Инвестинг" invisible="usd_platform != 'investing'"/>
-                            <label for="usd_rate" string="Курс $ ЦБ" invisible="usd_platform != 'cb'"/>
-                            <field name="usd_rate" nolabel="1"/>
+                            <field name="usd_platform" string="Платформа Курса $"/>
+                            <field name="usd_rate" string="Курс $"/>
+                            <field name="yuan_platform" string="Платформа Курса ¥" invisible="currency != 'cny'"/>
+                            <field name="yuan_rate" string="Курс ¥" invisible="currency != 'cny'"/>
+                            <field name="yuan_platform" string="Платформа Курса €" invisible="currency != 'eur'"/>
+                            <field name="yuan_rate" string="Курс €" invisible="currency != 'eur'"/>
                             <field name="agent_fee_percent"/>
+                            <field name="total_payment_rate" readonly="1"/>
                         </group>
                     </group>
                     
                     <!-- Поля для юаня -->
                     <group string="Параметры для юаня" invisible="currency != 'cny'">
-                        <group>
+                        <group invisible="not is_cross_rate">
                             <field name="yuan_cross_rate"/>
-                            <field name="di_percent"/>
+                            <field name="yuan_client_cross_rate" readonly="1"/>
                         </group>
                         <group>
+                            <field name="di_percent"/>
                             <field name="di_amount" readonly="1"/>
-                            <field name="yuan_client_cross_rate" readonly="1"/>
                         </group>
                     </group>
                     
                     <!-- Поля для евро -->
                     <group string="Параметры для евро" invisible="currency != 'eur'">
-                        <group>
+                        <group invisible="not is_xe">
                             <field name="eur_xe_rate"/>
-                            <field name="di_percent"/>
+                            <field name="eur_client_cross_rate" readonly="1"/>
                         </group>
                         <group>
+                            <field name="di_percent"/>
                             <field name="di_amount" readonly="1"/>
-                            <field name="eur_client_cross_rate" readonly="1"/>
                         </group>
                     </group>
                     
@@ -86,7 +93,6 @@
                         </group>
                     </group>
                     
-                    <separator string="Результаты расчета"/>
                     <group string="Суммы к оплате">
                         <group>
                             <field name="amount_to_pay_rub" readonly="1"/>

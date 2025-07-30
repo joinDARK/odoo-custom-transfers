@@ -25,6 +25,21 @@ class Calculator50UsdWizard(models.Model):
 
     # Поля для юаня
     yuan_cross_rate = fields.Float(string='Кросскурс юань', digits=(16, 4))
+    
+    # Новые поля для курса юаня
+    yuan_platform = fields.Selection([
+        ('investing', 'Инвестинг'),
+        ('cb', 'ЦБ'),
+    ], string='Платформа курса ¥', default='investing', required=True)
+    
+    yuan_rate = fields.Float(string='Курс ¥', required=True, digits=(16, 4))
+    
+    yuan_rate_label = fields.Char(
+        string='Название курса юаня',
+        compute='_compute_yuan_rate_label',
+        store=True
+    )
+    
     yuan_client_cross_rate = fields.Float(
         string='Кросскурс Юань к доллару для клиента', 
         compute='_compute_client_cross_rates', 
@@ -78,11 +93,13 @@ class Calculator50UsdWizard(models.Model):
         compute='_compute_usd_rate_label',
         store=True
     )
+
+    
     
     # Поля для долларовых операций
     total_payment_rate = fields.Float(
         string='Итоговый курс для суммы платежа',
-        compute='_compute_usd_fields',
+        compute='_compute_total_payment_rate',
         store=True,
         digits=(16, 4)
     )
@@ -136,6 +153,10 @@ class Calculator50UsdWizard(models.Model):
         digits=(16, 4)
     )
 
+    # Флаги для отображения кросскурса и XE
+    is_cross_rate = fields.Boolean(string='Кросскурс')
+    is_xe = fields.Boolean(string='XE')
+
     @api.depends('usd_platform')
     def _compute_usd_rate_label(self):
         for record in self:
@@ -145,6 +166,37 @@ class Calculator50UsdWizard(models.Model):
                 record.usd_rate_label = 'Курс $ ЦБ'
             else:
                 record.usd_rate_label = 'Курс $'
+
+    @api.depends('yuan_platform')
+    def _compute_yuan_rate_label(self):
+        for record in self:
+            if record.yuan_platform == 'investing':
+                record.yuan_rate_label = 'Курс ¥ Инвестинг'
+            elif record.yuan_platform == 'cb':
+                record.yuan_rate_label = 'Курс ¥ ЦБ'
+            else:
+                record.yuan_rate_label = 'Курс ¥'
+
+    @api.depends('usd_rate', 'yuan_rate', 'agent_fee_percent', 'currency')
+    def _compute_total_payment_rate(self):
+        for record in self:
+            if record.currency == 'usd' and record.usd_rate:
+                if record.agent_fee_percent:
+                    record.total_payment_rate = record.usd_rate * (1 + record.agent_fee_percent / 100)
+                else:
+                    record.total_payment_rate = record.usd_rate
+            elif record.currency == 'cny' and record.yuan_rate:
+                if record.agent_fee_percent:
+                    record.total_payment_rate = record.yuan_rate * (1 + record.agent_fee_percent / 100)
+                else:
+                    record.total_payment_rate = record.yuan_rate
+            elif record.currency == 'eur' and record.eur_xe_rate:
+                if record.agent_fee_percent:
+                    record.total_payment_rate = record.eur_xe_rate * (1 + record.agent_fee_percent / 100)
+                else:
+                    record.total_payment_rate = record.eur_xe_rate
+            else:
+                record.total_payment_rate = 0
 
     @api.depends('date', 'currency', 'invoice_amount')
     def _compute_name(self):
@@ -156,46 +208,23 @@ class Calculator50UsdWizard(models.Model):
             else:
                 record.name = 'Расчет 50 USD'
 
-    @api.depends('yuan_cross_rate', 'eur_xe_rate', 'di_percent', 'currency')
-    def _compute_di_amount(self):
-        for record in self:
-            if record.currency == 'cny' and record.yuan_cross_rate:
-                record.di_amount = record.yuan_cross_rate * (record.di_percent / 100)
-            elif record.currency == 'eur' and record.eur_xe_rate:
-                record.di_amount = record.eur_xe_rate * (record.di_percent / 100)
-            else:
-                record.di_amount = 0
-
-    @api.depends('yuan_cross_rate', 'eur_xe_rate', 'di_amount', 'currency')
-    def _compute_client_cross_rates(self):
-        for record in self:
-            if record.currency == 'cny':
-                record.yuan_client_cross_rate = record.yuan_cross_rate + record.di_amount
-                record.eur_client_cross_rate = 0
-            elif record.currency == 'eur':
-                record.eur_client_cross_rate = record.eur_xe_rate + record.di_amount
-                record.yuan_client_cross_rate = 0
-            else:
-                record.yuan_client_cross_rate = 0
-                record.eur_client_cross_rate = 0
-
     @api.depends('invoice_amount', 'yuan_client_cross_rate', 'eur_client_cross_rate', 
-                 'usd_rate', 'agent_fee_percent', 'currency')
+                 'usd_rate', 'yuan_rate', 'agent_fee_percent', 'currency')
     def _compute_amounts(self):
         for record in self:
-            # Определяем кросскурс в зависимости от валюты
-            if record.currency == 'cny' and record.yuan_client_cross_rate:
-                cross_rate = record.yuan_client_cross_rate
-            elif record.currency == 'eur' and record.eur_client_cross_rate:
-                cross_rate = record.eur_client_cross_rate
-            elif record.currency == 'usd':
-                cross_rate = 1.0  # Для USD кросскурс = 1
-            else:
-                cross_rate = 1.0
-
             # Сумма к оплате в рублях
-            if record.invoice_amount and record.usd_rate and cross_rate:
-                record.amount_to_pay_rub = (record.invoice_amount / cross_rate) * record.usd_rate
+            if record.invoice_amount:
+                if record.currency == 'cny' and record.yuan_rate:
+                    # Для CNY: сумма к оплате = сумма инвойса * курс юаня
+                    record.amount_to_pay_rub = record.invoice_amount * record.yuan_rate
+                elif record.currency == 'eur' and record.eur_client_cross_rate and record.usd_rate:
+                    # Для EUR: сумма к оплате = (сумма инвойса / кросскурс) * курс доллара
+                    record.amount_to_pay_rub = (record.invoice_amount / record.eur_client_cross_rate) * record.usd_rate
+                elif record.currency == 'usd' and record.usd_rate:
+                    # Для USD: сумма к оплате = сумма инвойса * курс доллара
+                    record.amount_to_pay_rub = record.invoice_amount * record.usd_rate
+                else:
+                    record.amount_to_pay_rub = 0
             else:
                 record.amount_to_pay_rub = 0
 
@@ -208,11 +237,14 @@ class Calculator50UsdWizard(models.Model):
             # Общая сумма к оплате
             record.total_amount_to_pay = record.amount_to_pay_rub + record.agent_fee_amount
 
-    @api.depends('amount_to_pay_rub', 'invoice_amount', 'currency')
+    @api.depends('amount_to_pay_rub', 'invoice_amount', 'currency', 'yuan_rate')
     def _compute_currency_to_rub_rates(self):
         for record in self:
-            if record.currency == 'cny' and record.invoice_amount and record.amount_to_pay_rub:
-                record.yuan_to_rub_rate = record.amount_to_pay_rub / record.invoice_amount
+            if record.currency == 'cny':
+                if record.yuan_rate:
+                    record.yuan_to_rub_rate = record.yuan_rate
+                else:
+                    record.yuan_to_rub_rate = 0
                 record.eur_to_rub_rate = 0
             elif record.currency == 'eur' and record.invoice_amount and record.amount_to_pay_rub:
                 record.eur_to_rub_rate = record.amount_to_pay_rub / record.invoice_amount
@@ -221,19 +253,33 @@ class Calculator50UsdWizard(models.Model):
                 record.yuan_to_rub_rate = 0
                 record.eur_to_rub_rate = 0
 
-    @api.depends('usd_rate', 'amount_to_pay_rub', 'currency', 'usd_platform', 'agent_fee_percent', 'invoice_amount')
+    @api.depends('yuan_rate', 'eur_xe_rate', 'di_percent', 'currency')
+    def _compute_di_amount(self):
+        for record in self:
+            if record.currency == 'cny' and record.yuan_rate:
+                record.di_amount = record.yuan_rate * (record.di_percent / 100)
+            elif record.currency == 'eur' and record.eur_xe_rate:
+                record.di_amount = record.eur_xe_rate * (record.di_percent / 100)
+            else:
+                record.di_amount = 0
+
+    @api.depends('yuan_rate', 'eur_xe_rate', 'di_amount', 'currency')
+    def _compute_client_cross_rates(self):
+        for record in self:
+            if record.currency == 'cny':
+                record.yuan_client_cross_rate = record.yuan_rate + record.di_amount
+                record.eur_client_cross_rate = 0
+            elif record.currency == 'eur':
+                record.eur_client_cross_rate = record.eur_xe_rate + record.di_amount
+                record.yuan_client_cross_rate = 0
+            else:
+                record.yuan_client_cross_rate = 0
+                record.eur_client_cross_rate = 0
+
+    @api.depends('usd_rate', 'amount_to_pay_rub', 'currency', 'usd_platform', 'agent_fee_percent', 'invoice_amount', 'total_payment_rate')
     def _compute_usd_fields(self):
         for record in self:
             if record.currency == 'usd':
-                # Итоговый курс для суммы платежа = курс * (1 + % агентского вознаграждения)
-                if record.usd_rate:
-                    if record.agent_fee_percent:
-                        record.total_payment_rate = record.usd_rate * (1 + record.agent_fee_percent / 100)
-                    else:
-                        record.total_payment_rate = record.usd_rate
-                else:
-                    record.total_payment_rate = 0
-                
                 # Сумма платежа = "Итоговый курс для суммы платежа" * "Сумма инвойса"
                 if record.total_payment_rate and record.invoice_amount:
                     record.payment_amount = record.total_payment_rate * record.invoice_amount
@@ -249,7 +295,6 @@ class Calculator50UsdWizard(models.Model):
                 # Итого в рублях = "Сумма платежа" + "50$"
                 record.total_rub_amount = record.payment_amount + record.usd_50_amount
             else:
-                record.total_payment_rate = 0
                 record.payment_amount = 0
                 record.usd_50_amount = 0
                 record.total_rub_amount = 0
