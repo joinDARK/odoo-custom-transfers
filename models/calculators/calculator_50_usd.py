@@ -20,7 +20,6 @@ class Calculator50UsdWizard(models.Model):
         ('usd', 'USD'),
         ('eur', 'EUR'), 
         ('cny', 'CNY (Юань)'),
-        ('rub', 'RUB'),
     ], string='Валюта', required=True, default='usd')
 
     # Поля для юаня
