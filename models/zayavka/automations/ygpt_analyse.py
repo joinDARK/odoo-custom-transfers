@@ -2,11 +2,12 @@ import requests
 import logging
 import base64
 import json
+import os
 from odoo import models, api
 
 _logger = logging.getLogger(__name__)
 
-API_KEY = '***REMOVED***'
+API_KEY = os.environ.get('YANDEX_API_KEY', '')
 FOLDER_ID = 'b1gutoi9c7ngrfbtd6cl'
 URL = 'https://llm.api.cloud.yandex.net/foundationModels/v1/completion'
 OCR_URL = 'https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText'
