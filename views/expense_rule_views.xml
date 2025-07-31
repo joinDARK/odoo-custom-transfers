@@ -10,9 +10,10 @@
                 <field name="percent" widget="percentage"/>
                 <field name="date_start"/>
                 <field name="date_end"/>
-                <field name="zayavka_ids" widget="one2many_list" string="Заявки"/>
+                <field name="is_tezer_percent"/>
                 <field name="min_application_amount"/>
                 <field name="max_application_amount"/>
+                <field name="zayavka_ids" widget="one2many_list" string="Заявки"/>
             </list>
         </field>
     </record>
@@ -27,9 +28,10 @@
                         <field name="percent" widget="percentage"/>
                         <field name="date_start"/>
                         <field name="date_end"/>
-                        <field name="zayavka_ids"/>
                         <field name="min_application_amount"/>
                         <field name="max_application_amount"/>
+                        <field name="is_tezer_percent"/>
+                        <field name="zayavka_ids"/>
                     </group>
                 </sheet>
             </form>

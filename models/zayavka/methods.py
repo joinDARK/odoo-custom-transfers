@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-from odoo import models, api
+from odoo import models, api, fields
 
 _logger = logging.getLogger(__name__)
 
@@ -71,7 +71,22 @@ class ZayavkaMethods(models.Model):
         if 'rate_fixation_date' in vals:
             for rec in self:
                 _logger.info(f"Изменена дата фиксации курса для заявки {rec.id}, запускаем автоматизацию привязки прайс-листов")
+                rec.status = '3'
                 rec.run_price_list_automation()
+
+        if 'zayavka_attachments' in vals:
+            for rec in self:
+                rec._analyze_and_log_document_text()
+
+        if 'screen_sber_attachments' in vals:
+            for rec in self:
+                rec.analyze_screen_sber_images_with_yandex_gpt()
+
+        if 'invoice_attachments' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'invoice_attachments' для заявки {rec.id}")
+                rec.invoice_date = fields.Date.today()
+                rec.status = '2'
 
         # ... (остальная логика по датам)
         #         # Получаем все даты из extract_delivery_ids
@@ -142,6 +157,7 @@ class ZayavkaMethods(models.Model):
         # Триггер для автоматизации привязки прайс-листов при создании с датой фиксации курса
         if vals.get('rate_fixation_date'):
             _logger.info(f"Создана заявка {res.id} с датой фиксации курса, запускаем автоматизацию привязки прайс-листов")
+            res.status = '3'
             res.run_price_list_automation()
 
         # ... (остальная логика по period_id и т.п.)
@@ -155,7 +171,16 @@ class ZayavkaMethods(models.Model):
                     'date_2': '2025-03-21',
                 })
             res.period_id = period.id
-        
+
+        if vals.get('zayavka_attachments'):
+            res._analyze_and_log_document_text()
+
+        if vals.get('screen_sber_attachments'):
+            res.analyze_screen_sber_images_with_yandex_gpt()
+
+        if 'invoice_attachments' in vals:
+            res.invoice_date = fields.Date.today()
+            res.status = '2'
 
         return res
 
@@ -289,5 +314,5 @@ class ZayavkaMethods(models.Model):
             'res_model': 'amanat.zayavka',
             'view_mode': 'form',
             'target': 'current',
-            'context': dict(self.env.context, default_status='1_no_chat')
+            'context': dict(self.env.context, default_status='1')
         }

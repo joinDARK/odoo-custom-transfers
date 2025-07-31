@@ -55,7 +55,7 @@
     <field name="arch" type="xml">
       <form string="Заявки" create="false">
         <header>
-          <h1><field name="zayavka_id" readonly="1"/></h1>
+          <!-- <h1><field name="zayavka_id" readonly="1"/></h1> -->
         </header>
         <sheet>
           <notebook>
@@ -111,7 +111,7 @@
                     <field name="country_id"/>
                   </group>
                   <group>
-                    <field name="contragent_id"/>
+                    <field name="contragent_id" options="{'search_limit': 20}"/>
                     <field name="agent_id" groups="!amanat.group_amanat_limited_access"/>
                     <field name="client_id"/>
                     <!-- Полностью скрываем ИНН для ограниченного доступа -->
@@ -403,6 +403,16 @@
               </group>
               <notebook>
                 <page string="Фин. менеджер Совком Управленка" invisible="not is_sovcombank_contragent" groups="!amanat.group_amanat_manager">
+                  <group>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="for_khalida_temp"/>
+                      </group>
+                      <group>
+                        <field name="fin_entry_check"/>
+                      </group>
+                    </div>
+                  </group>
                   <group string="Правило платежка">
                     <field name="payment_order_rule_id"/>
                     <field name="percent_from_payment_order_rule" widget="percentage"/>
@@ -607,6 +617,16 @@
                   </group>
                 </page>
                 <page string="Фин менеджер Сбер управленка" invisible="not is_sberbank_contragent" groups="!amanat.group_amanat_manager">
+                  <group>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="for_khalida_temp"/>
+                      </group>
+                      <group>
+                        <field name="fin_entry_check"/>
+                      </group>
+                    </div>
+                  </group>
                   <group string="Правило платежка">
                     <field name="payment_order_rule_id"/>
                     <field name="percent_from_payment_order_rule" widget="percentage"/>
@@ -824,6 +844,16 @@
                   </group>
                 </page>
                 <page string="Фин менеджер Клиент управленка" invisible="is_sovcombank_contragent or is_sberbank_contragent" groups="!amanat.group_amanat_manager">
+                  <group>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="for_khalida_temp"/>
+                      </group>
+                      <group>
+                        <field name="fin_entry_check"/>
+                      </group>
+                    </div>
+                  </group>
                   <group string="Правило платежка">
                     <field name="payment_order_rule_id"/>
                     <field name="percent_from_payment_order_rule" widget="percentage"/>
@@ -1199,7 +1229,7 @@
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="zayavka_attachments" widget="many2many_binary_dragdrop" options="{'no_create': False, 'no_open': True}"/>
+                        <field name="zayavka_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
                       </group>
                       <group>
                         <field name="signed_zayavka_attachments" invisible="zayavka_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
@@ -1835,9 +1865,41 @@
                     icon="fa-money"/>
         </header>
         <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-        <field name="zayavka_id"/>
+        <!-- <field name="zayavka_id"/> -->
+        <field width="200" name="date_placement"/>
         <field width="200" name="zayavka_num"/>
         <field width="200" name="status"/>
+        <field width="200" name="contragent_id"/>
+        <field width="200" name="agent_id"/>
+        <field width="200" name="client_id"/>
+        <field width="200" name="payment_conditions"/>
+        <field width="200" name="usd_equivalent"/>
+        <field width="200" name="xe_rate"/>
+        <field width="200" name="currency"/>
+        <field width="200" name="rate_field"/>
+        <field width="200" name="reward_percent"/>
+        <field width="200" name="rate_fixation_date"/>
+        <field width="200" name="application_amount_rub_contract"/>
+        <field width="200" name="agent_reward"/>
+        <field width="200" name="total_amount"/>
+        <field width="200" name="deal_type"/>
+        
+
+        <field width="200" name="cross_rate"/>
+        <field width="200" name="equivalent_amount_usd"/>
+        
+
+        <field width="200" name="hidden_hadge"/>
+        
+        
+        
+        
+
+
+
+
+
+
         <!-- <field width="200" name="date_placement"/> -->
         <!-- Ограниченный доступ: скрываем конфиденциальные поля -->
         <!-- <field width="200" name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/> -->

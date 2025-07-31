@@ -47,8 +47,28 @@ class ZayavkaRuleForManagement(models.Model):
             _logger.info(f"[find_matching_rule] {rule}: min_application_amount = {rule.min_application_amount}, max_application_amount = {rule.max_application_amount} zayavka_amount = {equivalent_sum}")
             return rule
 
+        def find_matching_rule_tezer(model, date_field_start, date_field_end):
+            domain = [
+                (date_field_start, '<=', deal_closed_date),
+                (date_field_end, '>=', deal_closed_date)
+            ]
+            
+            # Добавляем условия по сумме заявки: min < equivalent_sum И max > equivalent_sum
+            domain += [
+                ('min_application_amount', '<=', equivalent_sum),
+                ('max_application_amount', '>=', equivalent_sum),
+                ('is_tezer_percent', '=', True),
+            ]
+
+            rule = self.env[model].search(domain, limit=1)
+            _logger.info(f"[find_matching_rule_tezer] найдена запись {rule.name} для заявки {self.id}")
+            return rule
+
         payment_rule = find_matching_rule('amanat.payment_order_rule', 'date_start', 'date_end')
-        expense_rule = find_matching_rule('amanat.expense_rule', 'date_start', 'date_end')
+        if (self.agent_id and self.agent_id.name == 'Тезер') or self.currency == 'usdt':
+            expense_rule = find_matching_rule_tezer('amanat.expense_rule', 'date_start', 'date_end')
+        else:
+            expense_rule = find_matching_rule('amanat.expense_rule', 'date_start', 'date_end')
         cost_rule    = find_matching_rule('amanat.money_cost_rule', 'date_start', 'date_end')
 
         # 6. Обновляем заявку

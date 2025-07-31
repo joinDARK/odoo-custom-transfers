@@ -125,3 +125,5 @@ class ZayavkaPriceListAutomation(models.Model):
                         f"(дата фиксации курса: {rate_fixation_date})")
 
         return matched_record 
+
+    

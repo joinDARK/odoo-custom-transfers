@@ -18,8 +18,11 @@
                 <field width="200" name="type_binding"/>
                 <field width="200" name="accrual_percentage" widget="percentage"/>
                 <field width="200" name="fixed_deal_fee"/>
+                <field width="200" name="contragent_zayavka_id"/>
                 <field width="200" name="min_application_amount"/>
                 <field width="200" name="max_application_amount"/>
+                <field width="200" name="min_percent_accrual" widget="percentage"/>
+                <field width="200" name="max_percent_accrual" widget="percentage"/>
                 <field width="200" name="bind_field"/>
                 <field width="200" name="zayavka_ids"/>
                 <field width="200" name="zayavka_ids_2"/>
@@ -60,19 +63,23 @@
                             <group>
                                 <field name="date_end"/>
                                 <field name="fixed_deal_fee"/>
+                                <field name="bind_field"/>
                                 <field name="zayavka_ids" widget="many2many_tags"/>
                             </group>
                         </div>
-                        <!-- <field name="accrual_type"/> -->
-                        <!-- <field name="today_date"/>
-                        <field name="period_days"/> -->
-                        <!-- <field name="currency_type"/>
-                        <field name="type_binding"/> -->
-                        <!-- <field name="bind_field"/> -->
-                        <!-- <field name="zayavka_ids_2"/>
-                        <field name="zayavka_ids_3"/>
-                        <field name="zayavka_ids_4"/>
-                        <field name="zayavka_ids_5"/> -->
+                    </group>
+                    <group>
+                        <field name="contragent_zayavka_id"/>
+                    </group>
+                    <group>
+                        <div class="o-form-group-2">
+                            <group>
+                                <field name="min_percent_accrual" widget="percentage"/>
+                            </group>
+                            <group>
+                                <field name="max_percent_accrual" widget="percentage"/>
+                            </group>
+                        </div>
                     </group>
                 </sheet>
             </form>

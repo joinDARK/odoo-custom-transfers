@@ -18,3 +18,4 @@ class ExpenseRule(models.Model, AmanatBaseModel):
 
     min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)
     max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True)
+    is_tezer_percent = fields.Boolean(string="Тезерный процент", tracking=True, default=False)

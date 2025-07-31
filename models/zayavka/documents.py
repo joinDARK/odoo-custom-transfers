@@ -1,6 +1,7 @@
 from odoo import api, fields, models
 import base64
 import io
+import json
 import logging
 import subprocess
 import tempfile
@@ -523,7 +524,9 @@ class AmanatZayavkaDocuments(models.Model):
             raise UserError(f'Нет вложений для анализа в {document_type}')
         
         # Определяем тип файла
+        _logger.info(f"Определяем тип файла для {document_type}, имя файла: {attachment.name}, размер: {len(attachment.datas) if attachment.datas else 'None'}")
         file_type = self._detect_file_type(attachment.datas)
+        _logger.info(f"Определенный тип файла для {document_type}: {file_type}")
         
         if file_type == 'docx':
             # Конвертируем DOCX в PDF для анализа (не изменяем исходное вложение)
@@ -568,22 +571,49 @@ class AmanatZayavkaDocuments(models.Model):
     def _detect_file_type(self, file_data):
         """Определить тип файла по заголовку"""
         if not file_data:
+            _logger.warning("_detect_file_type: file_data пустой")
             return None
             
         try:
-            # Декодируем первые байты для определения типа
-            decoded_data = base64.b64decode(file_data)
-            
-            # DOCX файлы начинаются с PK (ZIP архив)
-            if decoded_data[:2] == b'PK':
-                # Дополнительная проверка на DOCX
-                if b'word/' in decoded_data[:1000] or b'[Content_Types].xml' in decoded_data[:1000]:
-                    return 'docx'
+            # Если данные в base64, декодируем их
+            _logger.info(f"_detect_file_type: тип данных: {type(file_data)}")
+            if isinstance(file_data, str):
+                decoded_data = base64.b64decode(file_data)
+                _logger.info(f"_detect_file_type: декодировали base64, размер: {len(decoded_data)}, первые 10 байт: {decoded_data[:10]}")
+            else:
+                # Если уже байты, используем как есть
+                decoded_data = file_data
+                _logger.info(f"_detect_file_type: получили байты, размер: {len(decoded_data)}, первые 10 байт: {decoded_data[:10]}")
             
             # PDF файлы начинаются с %PDF
             if decoded_data[:4] == b'%PDF':
+                _logger.info("_detect_file_type: определен как PDF")
                 return 'pdf'
+            
+            # DOCX файлы начинаются с PK (ZIP архив)
+            if decoded_data[:2] == b'PK':
+                _logger.info("_detect_file_type: найден ZIP архив, проверяем на DOCX")
+                # Дополнительная проверка на DOCX
+                if b'word/' in decoded_data[:2000] or b'[Content_Types].xml' in decoded_data[:2000]:
+                    _logger.info("_detect_file_type: определен как DOCX")
+                    return 'docx'
+                else:
+                    _logger.info("_detect_file_type: найден ZIP, но не DOCX")
+            
+            # Проверяем, может быть это base64-кодированные данные, которые нужно декодировать еще раз
+            if decoded_data.startswith(b'UEs'):
+                _logger.info("_detect_file_type: возможно, это base64-кодированный ZIP, пробуем декодировать")
+                try:
+                    # Пробуем декодировать как base64
+                    double_decoded = base64.b64decode(decoded_data)
+                    if double_decoded[:2] == b'PK':
+                        if b'word/' in double_decoded[:2000] or b'[Content_Types].xml' in double_decoded[:2000]:
+                            _logger.info("_detect_file_type: после двойного декодирования определен как DOCX")
+                            return 'docx'
+                except:
+                    pass
                 
+            _logger.warning(f"_detect_file_type: неизвестный тип файла, первые 10 байт: {decoded_data[:10]}")
             return 'unknown'
             
         except Exception as e:
@@ -594,6 +624,8 @@ class AmanatZayavkaDocuments(models.Model):
         """Конвертировать DOCX в PDF используя LibreOffice"""
         if not docx_data:
             raise ValueError("Отсутствуют данные DOCX файла")
+        
+        _logger.info(f"Начинаем конвертацию DOCX в PDF, размер входных данных: {len(docx_data)}")
             
         try:
             # Создаем временные файлы
@@ -614,7 +646,14 @@ class AmanatZayavkaDocuments(models.Model):
                     docx_temp_path
                 ]
                 
+                _logger.info(f"Запускаем LibreOffice: {' '.join(cmd)}")
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                
+                _logger.info(f"LibreOffice завершился с кодом: {result.returncode}")
+                if result.stdout:
+                    _logger.info(f"LibreOffice stdout: {result.stdout}")
+                if result.stderr:
+                    _logger.info(f"LibreOffice stderr: {result.stderr}")
                 
                 if result.returncode != 0:
                     raise RuntimeError(f"LibreOffice завершился с ошибкой: {result.stderr}")
@@ -623,12 +662,18 @@ class AmanatZayavkaDocuments(models.Model):
                 pdf_filename = os.path.splitext(os.path.basename(docx_temp_path))[0] + '.pdf'
                 pdf_path = os.path.join(temp_dir, pdf_filename)
                 
+                _logger.info(f"Ищем созданный PDF файл: {pdf_path}")
+                
                 if not os.path.exists(pdf_path):
+                    # Проверим, какие файлы создались в директории
+                    files_in_dir = os.listdir(temp_dir)
+                    _logger.error(f"PDF файл не был создан. Файлы в директории: {files_in_dir}")
                     raise FileNotFoundError("PDF файл не был создан")
                 
                 # Читаем PDF и кодируем в base64
                 with open(pdf_path, 'rb') as pdf_file:
                     pdf_data = pdf_file.read()
+                    _logger.info(f"PDF файл успешно создан, размер: {len(pdf_data)} байт")
                     return base64.b64encode(pdf_data)
                     
             finally:
@@ -821,7 +866,9 @@ class AmanatZayavkaDocuments(models.Model):
             
         try:
             # Определяем тип исходного файла
+            _logger.info(f"Определяем тип файла для {document_type}, размер данных: {len(source_file) if source_file else 'None'}")
             file_type = self._detect_file_type(source_file)
+            _logger.info(f"Определенный тип файла для {document_type}: {file_type}")
             
             if file_type == 'docx':
                 # Конвертируем DOCX в PDF
@@ -945,3 +992,130 @@ class AmanatZayavkaDocuments(models.Model):
                 'sticky': False,
             }
         }
+
+    def _analyze_and_log_document_text(self):
+        """
+        Извлекает ВЕСЬ текст из документов, формирует JSON и выводит в логер
+        """
+        if not PYMUPDF_AVAILABLE:
+            _logger.warning("PyMuPDF не установлен. Невозможно анализировать документы.")
+            return
+        
+        analysis_results = []
+        
+        # Анализируем файлы из zayavka_attachments
+        for attachment in self.zayavka_attachments:
+            try:
+                pages_text = self._extract_all_text_from_attachment(attachment)
+                if pages_text:
+                    analysis_results.append({
+                        'attachment_name': attachment.name,
+                        'extracted_text': pages_text
+                    })
+            except Exception as e:
+                _logger.error(f"Ошибка при анализе файла {attachment.name}: {str(e)}")
+        
+        # Формируем и выводим JSON в логгер
+        if analysis_results:
+            self._format_and_log_json(analysis_results)
+
+    def _extract_all_text_from_attachment(self, attachment):
+        """
+        Извлекает ВЕСЬ текст из вложения
+        """
+        if not attachment.datas:
+            _logger.warning(f"Файл {attachment.name} не содержит данных")
+            return None
+        
+        file_data = base64.b64decode(attachment.datas)
+        file_type = self._detect_file_type(file_data)
+        
+        _logger.info(f"Анализируем файл {attachment.name}, определенный тип: {file_type}, размер: {len(file_data)} байт")
+        
+        # Конвертируем DOCX в PDF если необходимо
+        if file_type == 'docx':
+            try:
+                pdf_data_b64 = self._convert_docx_to_pdf(attachment.datas)  # Передаем base64 строку
+                if not pdf_data_b64:
+                    _logger.warning(f"Файл {attachment.name} не содержит текста после конвертации")
+                    return None
+                # Декодируем base64 в байты для анализа
+                pdf_data = base64.b64decode(pdf_data_b64)
+                _logger.info(f"DOCX файл {attachment.name} успешно конвертирован в PDF, размер: {len(pdf_data)} байт")
+            except Exception as e:
+                _logger.warning(f"Не удалось обработать DOCX файл {attachment.name}: {str(e)}. Возможно, файл поврежден или пустой")
+                return None
+        elif file_type == 'pdf':
+            pdf_data = file_data
+        else:
+            _logger.warning(f"Неподдерживаемый тип файла {attachment.name}: {file_type}")
+            return None
+        
+        # Извлекаем весь текст из PDF
+        try:
+            extracted_text = self._extract_all_text_from_pdf(pdf_data)
+            if not extracted_text:
+                _logger.warning(f"Файл {attachment.name} не содержит извлекаемого текста")
+                return None
+            return extracted_text
+        except Exception as e:
+            _logger.warning(f"Не удалось извлечь текст из файла {attachment.name}: {str(e)}. Возможно, файл поврежден или содержит только изображения")
+            return None
+
+    def _extract_all_text_from_pdf(self, pdf_data):
+        """
+        Извлекает ВЕСЬ текст из PDF, возвращает словарь по страницам
+        """
+        if not PYMUPDF_AVAILABLE:
+            raise ImportError("PyMuPDF не доступен")
+        
+        if not pdf_data:
+            return None
+            
+        try:
+            doc = pymupdf.open(stream=pdf_data, filetype="pdf")  # type: ignore
+        except Exception as e:
+            raise Exception(f"Не удалось открыть PDF: {str(e)}")
+            
+        pages_text = {}
+        
+        try:
+            if len(doc) == 0:
+                return None
+                
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                # Получаем весь текст со страницы
+                page_text = page.get_text()  # type: ignore
+                if page_text and page_text.strip():
+                    pages_text[f"page{page_num + 1}"] = page_text.strip()
+        finally:
+            doc.close()
+        
+        return pages_text if pages_text else None
+
+    def _format_and_log_json(self, analysis_results):
+        """
+        Форматирует результаты анализа в JSON и выводит в логгер
+        Затем отправляет JSON на анализ в YandexGPT
+        """
+        # Создаем простую структуру {text: {page1: ..., page2: ...}}
+        for result in analysis_results:
+            if result.get('extracted_text'):
+                json_result = {
+                    'text': result['extracted_text']
+                }
+                
+                # Форматируем JSON с отступами для читаемости
+                formatted_json = json.dumps(json_result, ensure_ascii=False, indent=2)
+                
+                # Выводим JSON в логгер для каждого файла
+                _logger.info(f"АНАЛИЗ ДОКУМЕНТА {result['attachment_name']} - JSON РЕЗУЛЬТАТ:\n{formatted_json}")
+                
+                # Отправляем JSON на анализ в YandexGPT
+                try:
+                    self.analyze_document_with_yandex_gpt(formatted_json)
+                except Exception as e:
+                    _logger.error(f"Ошибка при отправке документа {result['attachment_name']} на анализ YandexGPT: {str(e)}")
+        
+        return True

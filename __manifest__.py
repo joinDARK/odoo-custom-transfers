@@ -180,9 +180,9 @@
             "amanat/static/src/xml/attachment_preview.xml",
             "amanat/static/src/css/calculator_background.css",
             # "amanat/static/src/js/calculator_background.js",
-            "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.js",
-            "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.xml",
-            "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.scss",
+            # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.js",
+            # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.xml",
+            # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.scss",
         ],
     },
     "external_dependencies": {

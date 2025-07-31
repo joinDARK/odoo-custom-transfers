@@ -7,8 +7,8 @@ class Price_list_partners(models.Model, AmanatBaseModel):
     _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'Прайс лист партнеры'
 
-    name = fields.Char(string="Наименование")
-    payer_partner = fields.Many2one('amanat.payer', string="Партнеры плательщики")
+    name = fields.Char(string="Наименование", tracking=True)
+    payer_partner = fields.Many2one('amanat.payer', string="Партнеры плательщики", tracking=True)
     contragents_ids = fields.Many2many(
         'amanat.contragent',
         related='payer_partner.contragents_ids',
@@ -25,9 +25,9 @@ class Price_list_partners(models.Model, AmanatBaseModel):
         string='Тип начисления',
         tracking=True
     )
-    date_start = fields.Date(string="Дата начало")
-    date_end = fields.Date(string="Дата конец")
-    today_date = fields.Date(string="TODAY", default=fields.Date.context_today)
+    date_start = fields.Date(string="Дата начало", tracking=True)
+    date_end = fields.Date(string="Дата конец", tracking=True)
+    today_date = fields.Date(string="TODAY", default=fields.Date.context_today, tracking=True)
     period_days = fields.Integer(string="Период дней", compute="_compute_period_days", store=True, readonly=False, tracking=True)
     currency_type = fields.Selection(
         [
@@ -40,11 +40,17 @@ class Price_list_partners(models.Model, AmanatBaseModel):
     type_binding = fields.Selection([
         ('auto', 'Авто'),
         ('manual', 'Ручками')
-    ], string="Тип подвязки")
-    accrual_percentage = fields.Float(string="% Начисления")
-    fixed_deal_fee = fields.Float(string="Фикс за сделку $")
-    min_application_amount = fields.Float(string="Минимальная сумма заявки $")
-    bind_field = fields.Boolean(string="Привязать")
+    ], string="Тип подвязки", tracking=True)
+    accrual_percentage = fields.Float(string="% Начисления", tracking=True)
+    fixed_deal_fee = fields.Float(string="Фикс за сделку $", tracking=True)
+    min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)
+    bind_field = fields.Boolean(string="Привязать", tracking=True)
+    min_percent_accrual = fields.Float(string="Мин %", tracking=True)
+    max_percent_accrual = fields.Float(string="Макс %", tracking=True)
+    contragent_zayavka_id = fields.Many2one(
+        'amanat.contragent',
+        string='Контрагент заявки'
+    )
 
     zayavka_ids = fields.One2many(
         'amanat.zayavka',

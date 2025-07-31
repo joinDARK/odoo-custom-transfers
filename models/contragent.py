@@ -5,7 +5,7 @@ from .base_model import AmanatBaseModel
 class Contragent(models.Model, AmanatBaseModel):
     _name = 'amanat.contragent'
     _description = 'Контрагент'
-    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]  
+    _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
 
     name = fields.Char(string='Имя', required=True, tracking=True)
     recon_Balance_0 = fields.Float(string='Баланс RUB сверка', tracking=True)
@@ -63,4 +63,52 @@ class Contragent(models.Model, AmanatBaseModel):
             # Фильтруем связанные записи, чтобы исключить несуществующие или пустые ИНН
             valid_payers = record.payer_ids.filtered(lambda r: r.exists() and r.inn)
             record.payer_inn = ", ".join(valid_payers.mapped('inn')) if valid_payers else ''
+    
+    @api.model
+    def name_search(self, name='', args=None, operator='ilike', limit=100):
+        """Поиск с приоритетом точного совпадения и коротких названий"""
+        args = args or []
+        
+        if name:
+            # Ищем все записи по обычному поиску
+            search_domain = [('name', operator, name)] + args
+            all_records = self.search(search_domain, limit=limit * 3)  # Берем больше для сортировки
+            
+            # Разделяем записи по приоритетам
+            exact_match = []          # Точное совпадение
+            short_starts_with = []    # Короткие названия (до 5 символов), начинающиеся с поиска
+            other_starts_with = []    # Остальные, начинающиеся с поиска  
+            contains = []             # Содержащие поисковый запрос
+            
+            search_lower = name.lower().strip()
+            
+            for record in all_records:
+                record_name_lower = record.name.lower() if record.name else ''
+                
+                # Точное совпадение
+                if record_name_lower == search_lower:
+                    exact_match.append(record)
+                # Короткие названия, начинающиеся с поиска
+                elif record_name_lower.startswith(search_lower) and len(record.name) <= 5:
+                    short_starts_with.append(record)
+                # Остальные, начинающиеся с поиска
+                elif record_name_lower.startswith(search_lower):
+                    other_starts_with.append(record)
+                # Содержащие поисковый запрос
+                else:
+                    contains.append(record)
+            
+            # Сортируем каждую группу по длине названия
+            short_starts_with.sort(key=lambda r: len(r.name))
+            other_starts_with.sort(key=lambda r: len(r.name))
+            contains.sort(key=lambda r: len(r.name))
+            
+            # Объединяем в нужном порядке
+            final_records = exact_match + short_starts_with + other_starts_with + contains
+            
+            return [(record.id, record.display_name) for record in final_records[:limit]]
+        else:
+            # Если нет поискового запроса, обычный поиск
+            records = self.search(args, limit=limit)
+            return [(record.id, record.display_name) for record in records]
     

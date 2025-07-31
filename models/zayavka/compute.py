@@ -228,13 +228,13 @@ class ZayavkaComputes(models.Model):
                 _logger.info(f'deal_type: {rec.deal_type}, rec.agent_id.name: {rec.agent_id.name}, total_client: {total_client}, real_post_rate: {real_post_rate}, correction: {correction}')
 
                 if total_client == 0 or real_post_rate == 0:
-                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export':
+                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
                         # ! Расход на операционную деятельность Клиент Реал = Процент (from Правило расход) * Сумма заявки
                         rec.client_real_operating_expenses = amount * percent_rule
                     else:
                         rec.client_real_operating_expenses = 0.0
                 else:
-                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export':
+                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
                         # ! Расход на операционную деятельность Клиент Реал = Процент (from Правило расход) * Сумма заявки
                         rec.client_real_operating_expenses = amount * percent_rule
                     else:
@@ -371,6 +371,7 @@ class ZayavkaComputes(models.Model):
         'agent_id',
         'hidden_commission',
         'currency',
+        'contragent_id',
     )
     def _compute_fin_res_client_real(self):
         for rec in self:
@@ -383,9 +384,13 @@ class ZayavkaComputes(models.Model):
 
                 rec.fin_res_client_real = (amount * reward_percent) - client_payment_cost - client_real_operating_expenses
             else:
-                if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export':
-                    # ! Фин рез Клиент реал = (Сумма заявки * % Вознаграждения) - Расход на операционную деятельность Клиент Реал - Расход платежа Клиент
-                    rec.fin_res_client_real = (rec.amount * rec.hidden_commission) - rec.client_real_operating_expenses - rec.client_payment_cost
+                if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
+                    if rec.contragent_id and rec.contragent_id.name == 'А7':
+                        # ! Фин рез Клиент реал = (Сумма заявки * % Вознаграждения) - Расход платежа Клиент - Расход на операционную деятельность Клиент Реал
+                        rec.fin_res_client_real = (rec.amount * rec.reward_percent) - rec.client_real_operating_expenses - rec.client_payment_cost
+                    else:
+                        # ! Фин рез Клиент реал = (Сумма заявки * % Вознаграждения) - Расход на операционную деятельность Клиент Реал - Расход платежа Клиент
+                        rec.fin_res_client_real = (rec.amount * rec.hidden_commission) - rec.client_real_operating_expenses - rec.client_payment_cost
                 else:
                     # ! Фин рез Клиент реал = Итого Клиент - Расход платежа Клиент - Себестоимость денег Клиент Реал - Скрытая комиссия Клиент Реал - Расход на операционную деятельность Клиент Реал - Сумма заявки - Финансовый результат клиента
                     rec.fin_res_client_real = (
@@ -497,13 +502,13 @@ class ZayavkaComputes(models.Model):
                 # ! Расход на операционную деятельность Сбер Реал = ((Процент (from Правило расход) - Корректировка) * Итого Сбер) / Курс после конвертации реал
                 if (rec.total_sber == 0 or
                     rec.real_post_conversion_rate == 0):
-                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export':
+                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
                         # ! Расход на операционную деятельность Сбер Реал = Сумма * Процент (from Правило расход (Правило Расход на операционную деятельность))
                         rec.sber_operating_expenses_real = amount * (rec.percent_from_expense_rule or 0.0)
                     else:
                         rec.sber_operating_expenses_real = 0.0
                 else:
-                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export':
+                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
                         # ! Расход на операционную деятельность Сбер Реал = Сумма * Процент (from Правило расход (Правило Расход на операционную деятельность))
                         rec.sber_operating_expenses_real = amount * (rec.percent_from_expense_rule or 0.0)
                     else:
@@ -647,6 +652,7 @@ class ZayavkaComputes(models.Model):
         'agent_id',
         'hidden_commission',
         'currency',
+        'contragent_id',
     )
     def _compute_fin_res_sber_real(self):
         for rec in self:
@@ -659,9 +665,13 @@ class ZayavkaComputes(models.Model):
                 # ! Фин рез Сбер реал = (Сумма заявки * % Вознаграждения) - Расход платежа Сбер - Расход на операционную деятельность Сбер реал
                 rec.fin_res_sber_real = (amount * reward_percent) - sber_payment_cost - sber_operating_expenses_real
             else:
-                if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export':
-                    # ! Фин рез Сбер реал = Фин рез Сбер реал = (Сумма * % Вознаграждения) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
-                    rec.fin_res_sber_real = (amount * rec.hidden_commission) - sber_operating_expenses_real - sber_payment_cost
+                if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
+                    if rec.contragent_id and rec.contragent_id.name == 'А7':
+                        # ! Фин рез Сбер реал = (Сумма * % Вознаграждения) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
+                        rec.fin_res_sber_real = (amount * rec.reward_percent) - sber_operating_expenses_real - sber_payment_cost
+                    else:
+                        # ! Фин рез Сбер реал = (Сумма * Скрытая комиссия) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
+                        rec.fin_res_sber_real = (amount * rec.hidden_commission) - sber_operating_expenses_real - sber_payment_cost
                 else:
                     # ! Фин рез Сбер реал = Итого Сбер - Расход платежа Сбер - Себестоимость денег Сбер Реал - Скрытая комиссия Сбер Реал - Расход на операционную деятельность Сбер Реал - Сумма заявки - Финансовый результат Сбер
                     rec.fin_res_sber_real = (
@@ -785,13 +795,13 @@ class ZayavkaComputes(models.Model):
                 real_rate = rec.real_post_conversion_rate or 0.0
 
                 if total_sovok == 0 or real_rate == 0:
-                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export':
+                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
                         # ! Расход на операционную деятельность Совок Реал = Сумма * Процент (from Правило расход (Правило Расход на операционную деятельность))
                         rec.operating_expenses_sovok_real = amount * percent
                     else:
                         rec.operating_expenses_sovok_real = 0.0
                 else:
-                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export':
+                    if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
                         # ! Расход на операционную деятельность Совок Реал = Сумма * Процент (from Правило расход (Правило Расход на операционную деятельность))
                         rec.operating_expenses_sovok_real = amount * percent
                     else:
@@ -939,6 +949,7 @@ class ZayavkaComputes(models.Model):
         'agent_id',
         'hidden_commission',
         'currency',
+        'contragent_id',
     )
     def _compute_fin_res_sovok_real(self):
         for rec in self:
@@ -951,9 +962,13 @@ class ZayavkaComputes(models.Model):
                 # ! Фин рез Совок реал = (Сумма заявки * % Вознаграждения) - Расход платежа Совок - Расход на операционную деятельность Совок реал          
                 rec.fin_res_sovok_real = (amount * reward_percent) - payment_cost_sovok - operating_expenses_sovok_real
             else:
-                if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export':
-                    # ! Фин рез Совок реал = (Сумма * % Вознаграждения) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
-                    rec.fin_res_sovok_real = (amount * rec.hidden_commission) - operating_expenses_sovok_real - payment_cost_sovok
+                if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
+                    if rec.contragent_id and rec.contragent_id.name == 'А7':
+                        # ! Фин рез Совок реал = (Сумма * % Вознаграждения) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
+                        rec.fin_res_sovok_real = (amount * rec.reward_percent) - operating_expenses_sovok_real - payment_cost_sovok
+                    else:
+                        # ! Фин рез Совок реал = (Сумма * Скрытая комиссия) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
+                        rec.fin_res_sovok_real = (amount * rec.hidden_commission) - operating_expenses_sovok_real - payment_cost_sovok
                 else:
                     # ! Фин рез Совок реал = Итого Совок - Расход платежа Совок - Себестоимость денег Совок Реал - Скрытая комиссия Совок Реал - Расход на операционную деятельность Совок Реал - Сумма заявки - Финансовый результат Совок
                     rec.fin_res_sovok_real = (
