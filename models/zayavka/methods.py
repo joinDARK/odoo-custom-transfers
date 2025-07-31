@@ -178,7 +178,7 @@ class ZayavkaMethods(models.Model):
         if vals.get('screen_sber_attachments'):
             res.analyze_screen_sber_images_with_yandex_gpt()
 
-        if 'invoice_attachments' in vals:
+        if vals.get('invoice_attachments'):
             res.invoice_date = fields.Date.today()
             res.status = '2'
 
