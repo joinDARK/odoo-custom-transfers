@@ -85,7 +85,7 @@
                         <field name="zayavka_ids_5"/> -->
                     </group>
                     <group>
-                        <field name="zayavka_ids" widget="many2many_tags"/>
+                        <field name="zayavka_ids"/>
                     </group>
                 </sheet>
             </form>
