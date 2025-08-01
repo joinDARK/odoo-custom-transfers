@@ -13,6 +13,12 @@
                 <field name="is_tezer_percent"/>
                 <field name="min_application_amount"/>
                 <field name="max_application_amount"/>
+                <field name="min_percent_accrual" widget="percentage"/>
+                <field name="max_percent_accrual" widget="percentage"/>
+                <field name="contragent_zayavka_id"/>
+                <field name="agent_zayavka_id"/>
+                <field name="client_zayavka_id"/>
+                <field name="currency_zayavka"/>
                 <field name="zayavka_ids" widget="one2many_list" string="Заявки"/>
             </list>
         </field>
@@ -26,11 +32,27 @@
                     <group>
                         <field name="name"/>
                         <field name="percent" widget="percentage"/>
-                        <field name="date_start"/>
-                        <field name="date_end"/>
-                        <field name="min_application_amount"/>
-                        <field name="max_application_amount"/>
                         <field name="is_tezer_percent"/>
+                    </group>
+                    <group>
+                        <div class="o-form-group-2">
+                            <group>
+                                <field name="date_start"/>
+                                <field name="min_application_amount"/>
+                                <field name="min_percent_accrual" widget="percentage"/>
+                                <field name="contragent_zayavka_id"/>
+                                <field name="agent_zayavka_id"/>
+                            </group>
+                            <group>
+                                <field name="date_end"/>
+                                <field name="max_application_amount"/>
+                                <field name="max_percent_accrual" widget="percentage"/>
+                                <field name="client_zayavka_id"/>
+                                <field name="currency_zayavka"/>
+                            </group>
+                        </div>
+                    </group>
+                    <group>
                         <field name="zayavka_ids"/>
                     </group>
                 </sheet>

@@ -37,6 +37,39 @@ class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
         string='Заявки'
     )
 
+    min_percent_accrual = fields.Float(string="Мин %", tracking=True)
+    max_percent_accrual = fields.Float(string="Макс %", tracking=True)
+    contragent_zayavka_id = fields.Many2one(
+        'amanat.contragent',
+        string='Контрагент заявки',
+        tracking=True
+    )
+    agent_zayavka_id = fields.Many2one(
+        'amanat.contragent',
+        string='Агент заявки',
+        tracking=True
+    )
+    client_zayavka_id = fields.Many2one(
+        'amanat.contragent',
+        string='Клиент заявки',
+        tracking=True
+    )
+    currency_zayavka = fields.Selection(
+        [
+            ('rub', 'RUB'), ('rub_cashe', 'RUB КЭШ'),
+            ('usd', 'USD'), ('usd_cashe', 'USD КЭШ'),
+            ('usdt', 'USDT'),
+            ('euro', 'EURO'), ('euro_cashe', 'EURO КЭШ'),
+            ('cny', 'CNY'), ('cny_cashe', 'CNY КЭШ'),
+            ('aed', 'AED'), ('aed_cashe', 'AED КЭШ'),
+            ('thb', 'THB'), ('thb_cashe', 'THB КЭШ'),
+            ('idr', 'IDR'), ('idr_cashe', 'IDR КЭШ'),
+            ('inr', 'INR'), ('inr_cashe', 'INR КЭШ'),
+        ],
+        string='Валюта заявки',
+        tracking=True
+    )
+
     @api.depends('date_start', 'date_end')
     def _compute_period_days(self):
         for record in self:

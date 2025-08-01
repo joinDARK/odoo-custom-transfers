@@ -194,6 +194,15 @@
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="hidden_hadge"/>
                     <field name="dollar_cross_rate"/>
+                  </group>
+                </div>
+              </group>
+              <group string="Курс Джесс">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="jess_rate_id"/>
+                  </group>
+                  <group>
                     <field name="jess_rate"/>
                   </group>
                 </div>

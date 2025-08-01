@@ -19,6 +19,10 @@ class ZayavkaRuleForManagement(models.Model):
         # 4. Получаем дату и сумму
         deal_closed_date = self.deal_closed_date
         equivalent_sum = self.equivalent_amount_usd
+        contragent = self.contragent_id
+        agent = self.agent_id
+        client = self.client_id
+        currency = self.currency
         
         if not deal_closed_date:
             _logger.error(f'Поле "сделка закрыта" пустое у заявки {self.id}.')
@@ -32,43 +36,35 @@ class ZayavkaRuleForManagement(models.Model):
         def find_matching_rule(model, date_field_start, date_field_end):
             domain = [
                 (date_field_start, '<=', deal_closed_date),
-                (date_field_end, '>=', deal_closed_date)
-            ]
-            
-            # Добавляем условия по сумме заявки: min < equivalent_sum И max > equivalent_sum
-            domain += [
+                (date_field_end, '>=', deal_closed_date),
                 ('min_application_amount', '<=', equivalent_sum),
                 ('max_application_amount', '>=', equivalent_sum),
+                ('contragent_zayavka_id', '=', contragent.id),
+                ('agent_zayavka_id', '=', agent.id),
+                ('client_zayavka_id', '=', client.id),
+                ('currency_zayavka', '=', currency),
             ]
 
-            rule = self.env[model].search(domain, limit=1)
-            _logger.info(f"[find_matching_rule] найдена запись {rule.name} для заявки {self.id}")
-            _logger.info(f"[find_matching_rule] {rule}: rule_date_start = {rule.date_start}, rule_date_end = {rule.date_end} zayavka_date = {deal_closed_date}")
-            _logger.info(f"[find_matching_rule] {rule}: min_application_amount = {rule.min_application_amount}, max_application_amount = {rule.max_application_amount} zayavka_amount = {equivalent_sum}")
-            return rule
-
-        def find_matching_rule_tezer(model, date_field_start, date_field_end):
-            domain = [
+            softDomain = [
                 (date_field_start, '<=', deal_closed_date),
-                (date_field_end, '>=', deal_closed_date)
-            ]
-            
-            # Добавляем условия по сумме заявки: min < equivalent_sum И max > equivalent_sum
-            domain += [
+                (date_field_end, '>=', deal_closed_date),
                 ('min_application_amount', '<=', equivalent_sum),
                 ('max_application_amount', '>=', equivalent_sum),
-                ('is_tezer_percent', '=', True),
             ]
 
             rule = self.env[model].search(domain, limit=1)
-            _logger.info(f"[find_matching_rule_tezer] найдена запись {rule.name} для заявки {self.id}")
+            if not rule:
+                _logger.info(f"[find_matching_rule] не найдена запись {model} для заявки {self.id}, ищем по общим условиям")
+                rule = self.env[model].search(softDomain, limit=1)
+                if not rule:
+                    _logger.info(f"[find_matching_rule] не найдена запись {model} для заявки {self.id}, ищем по общим условиям")
+                    return
+
+            _logger.info(f"[find_matching_rule] найдена запись {rule.name} для заявки {self.id}")
             return rule
 
         payment_rule = find_matching_rule('amanat.payment_order_rule', 'date_start', 'date_end')
-        if (self.agent_id and self.agent_id.name == 'Тезер') or self.currency == 'usdt':
-            expense_rule = find_matching_rule_tezer('amanat.expense_rule', 'date_start', 'date_end')
-        else:
-            expense_rule = find_matching_rule('amanat.expense_rule', 'date_start', 'date_end')
+        expense_rule = find_matching_rule('amanat.expense_rule', 'date_start', 'date_end')
         cost_rule    = find_matching_rule('amanat.money_cost_rule', 'date_start', 'date_end')
 
         # 6. Обновляем заявку

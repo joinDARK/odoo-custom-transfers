@@ -72,6 +72,7 @@ class ZayavkaMethods(models.Model):
             for rec in self:
                 _logger.info(f"Изменена дата фиксации курса для заявки {rec.id}, запускаем автоматизацию привязки прайс-листов")
                 rec.status = '3'
+                rec.run_link_jess_rate_automation()
                 rec.run_price_list_automation()
 
         if 'zayavka_attachments' in vals:
@@ -158,6 +159,7 @@ class ZayavkaMethods(models.Model):
         if vals.get('rate_fixation_date'):
             _logger.info(f"Создана заявка {res.id} с датой фиксации курса, запускаем автоматизацию привязки прайс-листов")
             res.status = '3'
+            res.run_link_jess_rate_automation()
             res.run_price_list_automation()
 
         # ... (остальная логика по period_id и т.п.)

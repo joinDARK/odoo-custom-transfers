@@ -34,8 +34,6 @@
                                 </div>
                             </div>
                             
-
-                            
                             <!-- Показываем если нет данных -->
                             <div t-if="!state.totalBalanceSummary and !state.loadingTotalSummary" class="no-summary">
                                 <p>Данные общей суммы не найдены</p>
@@ -48,26 +46,6 @@
                         </div>
 
                         <div class="date-range-card">
-                            <!-- Кнопки быстрого выбора периода -->
-                            <div class="quick-period-buttons">
-                                <button class="btn btn-outline-primary btn-sm period-btn" 
-                                        t-on-click="() => this.setQuickPeriod('week')">
-                                    За неделю
-                                </button>
-                                <button class="btn btn-outline-primary btn-sm period-btn" 
-                                        t-on-click="() => this.setQuickPeriod('month')">
-                                    За месяц
-                                </button>
-                                <button class="btn btn-outline-primary btn-sm period-btn" 
-                                        t-on-click="() => this.setQuickPeriod('3months')">
-                                    За 3 месяца
-                                </button>
-                                <button class="btn btn-outline-primary btn-sm period-btn" 
-                                        t-on-click="() => this.setQuickPeriod('all')">
-                                    За всё время
-                                </button>
-                            </div>
-                            
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -75,7 +53,7 @@
                                         <input type="date" id="date_from" class="form-control" 
                                                t-model="state.dateFrom" 
                                                t-on-change="onDateFromChange"/>
-            </div>
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -83,28 +61,27 @@
                                         <input type="date" id="date_to" class="form-control" 
                                                t-model="state.dateTo" 
                                                t-on-change="onDateToChange"/>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
+                        
                         <!-- Блок курсов валют -->
                         <div class="currency-rates-card">
-                                                <div class="rates-header">
-                        <div class="rates-title-container">
-                            <h3>Курс к доллару</h3>
-                            <div class="rates-buttons">
-                                <button class="btn btn-primary btn-sm refresh-rates-btn" 
-                                        t-on-click="onRefreshRatesClick"
-                                        t-att-disabled="state.loadingRates">
-                                    <i class="fa fa-refresh" t-att-class="{'fa-spin': state.loadingRates}"></i>
-                                    Обновить
-                                </button>
+                            <div class="rates-header">
+                                <div class="rates-title-container">
+                                    <h3>Курс к доллару</h3>
+                                    <div class="rates-buttons">
+                                        <button class="btn btn-primary btn-sm refresh-rates-btn" 
+                                                t-on-click="onRefreshRatesClick"
+                                                t-att-disabled="state.loadingRates">
+                                            <i class="fa fa-refresh" t-att-class="{'fa-spin': state.loadingRates}"></i>
+                                            Обновить
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <!-- <p class="rates-description">Add a description</p> -->
-                    </div>
-                    
+                            
                             <div class="rates-table-wrapper">
                                 <table class="rates-table" t-if="state.currencyRates">
                                     <thead>
@@ -169,22 +146,21 @@
                                 <!-- Показываем если данные загружаются -->
                                 <div t-if="state.loading" class="loading-rates">
                                     <p>Загрузка курсов...</p>
-                    </div>
-                    
+                                </div>
+                                
                                 <!-- Показываем если нет данных -->
                                 <div t-if="!state.currencyRates and !state.loading" class="no-rates">
                                     <p>Курсы валют не найдены</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
                         <!-- Блок балансов контрагентов -->
                         <div class="contragents-balance-card">
                             <div class="balance-header">
                                 <h3>Баланс Контрагентов в рамках диапазона</h3>
-                                <!-- <p class="balance-description">Add a description</p> -->
-                    </div>
-                    
+                            </div>
+                            
                             <!-- Поле поиска -->
                             <div class="search-field">
                                 <input type="text" 
@@ -192,12 +168,12 @@
                                        placeholder="Поиск по наименованию..."
                                        t-model="state.balanceSearchQuery"
                                        t-on-input="onBalanceSearchChange"/>
-                </div>
+                            </div>
 
                             <div class="balance-table-wrapper">
                                 <table class="balance-table" t-if="state.contragentsBalance">
-                                        <thead>
-                                            <tr>
+                                    <thead>
+                                        <tr>
                                             <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('name')">
                                                 Наименование <span class="sort-icon" t-esc="getBalanceSortIcon('name')"></span>
                                             </th>
@@ -243,9 +219,9 @@
                                             <th class="sortable" t-on-click="() => this.onBalanceHeaderClick('balance_usdt')">
                                                 Баланс USDT сверка <span class="sort-icon" t-esc="getBalanceSortIcon('balance_usdt')"></span>
                                             </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                                         <tr t-foreach="filteredContragentsBalance" t-as="contragent" t-key="contragent.id">
                                             <td class="contragent-name"><t t-esc="contragent.name"/></td>
                                             <td class="balance-amount"><t t-esc="contragent.balance_usd"/></td>
@@ -262,9 +238,9 @@
                                             <td class="balance-amount"><t t-esc="contragent.balance_usd"/></td>
                                             <td class="balance-amount"><t t-esc="contragent.balance_usd_cash"/></td>
                                             <td class="balance-amount"><t t-esc="contragent.balance_usdt"/></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                        </tr>
+                                    </tbody>
+                                </table>
                                 
                                 <div t-if="state.loading" class="loading-balance">
                                     <p>Загрузка балансов контрагентов...</p>
@@ -284,9 +260,8 @@
                         <div class="contragents-comparison-card">
                             <div class="comparison-header">
                                 <h3>Баланс Контрагентов Сравнение</h3>
-                                <!-- <p class="comparison-description">Add a description</p> -->
-                    </div>
-                    
+                            </div>
+                            
                             <!-- Блок настройки периодов сравнения -->
                             <div class="comparison-date-ranges">
                                 <div class="row">
@@ -295,34 +270,10 @@
                                         <div class="comparison-period-card">
                                             <h4>Период 1</h4>
                                             
-                                            <!-- Кнопки быстрого выбора для первого периода -->
-                                            <div class="quick-period-buttons">
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod1('week')">
-                                                    За неделю
-                                                </button>
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod1('month')">
-                                                    За месяц
-                                                </button>
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod1('3months')">
-                                                    За 3 месяца
-                                                </button>
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod1('year')">
-                                                    За год
-                                                </button>
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod1('all')">
-                                                    За всё время
-                                                </button>
-                                            </div>
-                                            
                                             <div class="row">
                                                 <div class="col-12">
                                                     <div class="form-group">
-                                                        <label for="comparison_date_to_1">Дата конца (начало всегда с 01.01.1970)</label>
+                                                        <label for="comparison_date_to_1">Дата конца</label>
                                                         <input type="date" id="comparison_date_to_1" class="form-control" 
                                                                t-model="state.comparisonDateTo1" 
                                                                t-on-change="onComparisonDateTo1Change"/>
@@ -337,34 +288,10 @@
                                         <div class="comparison-period-card">
                                             <h4>Период 2</h4>
                                             
-                                            <!-- Кнопки быстрого выбора для второго периода -->
-                                            <div class="quick-period-buttons">
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod2('week')">
-                                                    За неделю
-                                                </button>
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod2('month')">
-                                                    За месяц
-                                                </button>
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod2('3months')">
-                                                    За 3 месяца
-                                                </button>
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod2('year')">
-                                                    За год
-                                                </button>
-                                                <button class="btn btn-outline-secondary btn-sm period-btn" 
-                                                        t-on-click="() => this.setComparisonQuickPeriod2('all')">
-                                                    За всё время
-                                                </button>
-                                            </div>
-                                            
                                             <div class="row">
                                                 <div class="col-12">
                                                     <div class="form-group">
-                                                        <label for="comparison_date_to_2">Дата конца (начало всегда с 01.01.1970)</label>
+                                                        <label for="comparison_date_to_2">Дата конца</label>
                                                         <input type="date" id="comparison_date_to_2" class="form-control" 
                                                                t-model="state.comparisonDateTo2" 
                                                                t-on-change="onComparisonDateTo2Change"/>
@@ -375,7 +302,7 @@
                                     </div>
                                 </div>
                             </div>
-                    
+                            
                             <!-- Поле поиска -->
                             <div class="search-field">
                                 <input type="text" 
@@ -387,8 +314,8 @@
                             
                             <div class="comparison-table-wrapper">
                                 <table class="comparison-table" t-if="state.contragentsComparison">
-                                        <thead>
-                                            <tr>
+                                    <thead>
+                                        <tr>
                                             <th class="sortable" t-on-click="() => this.onComparisonHeaderClick('name')">
                                                 Наименование <span class="sort-icon" t-esc="getComparisonSortIcon('name')"></span>
                                             </th>
@@ -398,16 +325,16 @@
                                             <th class="sortable" t-on-click="() => this.onComparisonHeaderClick('balance_comparison_2')">
                                                 Баланс Эквивалент $ сравнение 2 <span class="sort-icon" t-esc="getComparisonSortIcon('balance_comparison_2')"></span>
                                             </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                                         <tr t-foreach="filteredContragentsComparison" t-as="comparison" t-key="comparison.id">
                                             <td class="contragent-name"><t t-esc="comparison.name"/></td>
                                             <td class="balance-amount"><t t-esc="comparison.balance_comparison_1"/></td>
                                             <td class="balance-amount"><t t-esc="comparison.balance_comparison_2"/></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                        </tr>
+                                    </tbody>
+                                </table>
                                 
                                 <div t-if="state.loading" class="loading-comparison">
                                     <p>Загрузка данных сравнения...</p>
@@ -415,7 +342,7 @@
                                 
                                 <div t-if="!state.contragentsComparison and !state.loading" class="no-comparison">
                                     <p>Данные для сравнения не найдены</p>
-                </div>
+                                </div>
 
                                 <div t-if="state.contragentsComparison and filteredContragentsComparison.length === 0 and state.comparisonSearchQuery.trim()" class="no-search-results">
                                     <p>По запросу "<t t-esc="state.comparisonSearchQuery"/>" ничего не найдено</p>

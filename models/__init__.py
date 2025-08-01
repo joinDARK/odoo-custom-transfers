@@ -15,6 +15,7 @@ from . import order
 from . import money
 from . import ranges
 from . import rate
+from . import jess_rate
 from . import writeoff
 from . import сonversion
 from . import extract_delivery

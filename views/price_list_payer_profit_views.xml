@@ -16,6 +16,12 @@
                 <field width="200" name="min_zayavka_amount"/>
                 <field width="200" name="max_zayavka_amount"/>
                 <field width="200" name="is_bound"/>
+                <field width="200" name="min_percent_accrual" widget="percentage"/>
+                <field width="200" name="max_percent_accrual" widget="percentage"/>
+                <field width="200" name="contragent_zayavka_id"/>
+                <field width="200" name="agent_zayavka_id"/>
+                <field width="200" name="client_zayavka_id"/>
+                <field width="200" name="currency_zayavka"/>
             </list>
         </field>
     </record>
@@ -46,11 +52,17 @@
                                 <field name="date_start"/>
                                 <field name="percent_accrual" widget="percentage"/>
                                 <field name="min_zayavka_amount"/>
+                                <field name="min_percent_accrual" widget="percentage"/>
+                                <field name="contragent_zayavka_id"/>
+                                <field name="agent_zayavka_id"/>
                             </group>
                             <group>  
                                 <field name="date_end"/>
                                 <field name="fixed_fee"/>
                                 <field name="max_zayavka_amount"/>
+                                <field name="max_percent_accrual" widget="percentage"/>
+                                <field name="client_zayavka_id"/>
+                                <field name="currency_zayavka"/>
                             </group>
                         </div>
                     </group>

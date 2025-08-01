@@ -151,31 +151,62 @@ export class AmanatDashboard extends Component {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         
+        // Проверяем, является ли это модальным окном
+        const isModalChart = canvasId === 'fullChart';
+        
         // Вычисляем адаптивную высоту на основе типа графика и количества данных
         let adaptiveHeight = height;
         
         if (chartType === 'horizontalBar' && dataLength > 0) {
-            // Для горизонтальных столбчатых диаграмм
-            const baseHeight = 180; // Базовая высота
-            const itemHeight = 25;   // Высота на каждый элемент
-            const minHeight = 120;   // Минимальная высота
-            const maxHeight = 600;   // Максимальная высота
-            
-            if (dataLength <= 3) {
-                adaptiveHeight = `${baseHeight}px`;
+            if (isModalChart) {
+                // Для модальных окон - увеличенные размеры для лучшей читаемости
+                const baseHeight = 500; // Увеличенная базовая высота для модального окна
+                const itemHeight = 35;   // УВЕЛИЧЕННАЯ высота на элемент для хорошего зазора
+                const minHeight = 400;   // Увеличенная минимальная высота
+                const maxHeight = 1200;  // УВЕЛИЧЕННАЯ максимальная высота - БЕЗ СКРОЛЛА
+                
+                if (dataLength <= 5) {
+                    adaptiveHeight = `${baseHeight}px`;
+                } else {
+                    // НЕ ограничиваем количество элементов - просто рассчитываем нужную высоту
+                    const calculatedHeight = baseHeight + ((dataLength - 5) * itemHeight);
+                    adaptiveHeight = `${Math.max(minHeight, Math.min(maxHeight, calculatedHeight))}px`;
+                }
             } else {
-                const calculatedHeight = baseHeight + ((dataLength - 3) * itemHeight);
-                adaptiveHeight = `${Math.max(minHeight, Math.min(maxHeight, calculatedHeight))}px`;
+                // Для обычных графиков на дашборде
+                const baseHeight = 180; // Базовая высота
+                const itemHeight = 25;   // Высота на каждый элемент
+                const minHeight = 120;   // Минимальная высота
+                const maxHeight = 600;   // Максимальная высота
+                
+                if (dataLength <= 3) {
+                    adaptiveHeight = `${baseHeight}px`;
+                } else {
+                    const calculatedHeight = baseHeight + ((dataLength - 3) * itemHeight);
+                    adaptiveHeight = `${Math.max(minHeight, Math.min(maxHeight, calculatedHeight))}px`;
+                }
             }
         } else if ((chartType === 'bar' || chartType === 'line') && dataLength > 8) {
-            // Для обычных столбчатых и линейных графиков с большим количеством данных
-            const baseHeight = parseInt(height) || 180;
-            const extraHeight = Math.min(120, (dataLength - 8) * 8); // Увеличиваем высоту для лучшей читаемости
-            adaptiveHeight = `${baseHeight + extraHeight}px`;
+            if (isModalChart) {
+                // Для модальных окон - ограниченное увеличение
+                const baseHeight = parseInt(height) || 400;
+                const extraHeight = Math.min(100, (dataLength - 8) * 5); // Меньшее увеличение
+                adaptiveHeight = `${Math.min(500, baseHeight + extraHeight)}px`; // Строгое ограничение
+            } else {
+                // Для обычных столбчатых и линейных графиков с большим количеством данных
+                const baseHeight = parseInt(height) || 180;
+                const extraHeight = Math.min(120, (dataLength - 8) * 8); // Увеличиваем высоту для лучшей читаемости
+                adaptiveHeight = `${baseHeight + extraHeight}px`;
+            }
         } else if (chartType === 'pie' || chartType === 'doughnut') {
-            // Для круговых диаграмм поддерживаем квадратную форму
-            const baseSize = Math.max(200, Math.min(300, 160 + (dataLength * 6)));
-            adaptiveHeight = `${baseSize}px`;
+            if (isModalChart) {
+                // Для модальных круговых диаграмм - фиксированный размер
+                adaptiveHeight = '400px';
+            } else {
+                // Для круговых диаграмм поддерживаем квадратную форму
+                const baseSize = Math.max(200, Math.min(300, 160 + (dataLength * 6)));
+                adaptiveHeight = `${baseSize}px`;
+            }
         }
         
         // Принудительно устанавливаем размеры canvas с важным приоритетом
@@ -192,8 +223,8 @@ export class AmanatDashboard extends Component {
             container.style.setProperty('min-height', adaptiveHeight, 'important');
         }
         
-        // Если это график количества заявок или большой график - добавляем специальный класс
-        if (adaptiveHeight === '440px' || parseInt(adaptiveHeight) > 300) {
+        // Если это график количества заявок или большой график - добавляем специальный класс (только для дашборда)
+        if (!isModalChart && (adaptiveHeight === '440px' || parseInt(adaptiveHeight) > 300)) {
             if (container) {
                 container.classList.add('count-chart-container');
             }
@@ -461,7 +492,7 @@ export class AmanatDashboard extends Component {
                     labels: this.state.zayavki.contragentsByZayavki.map(c => c.name),
                     data: this.state.zayavki.contragentsByZayavki.map(c => c.count),
                     title: 'Количество заявок под каждого контрагента',
-                    showFullData: true, // Показываем все данные, не ограничиваем до ТОП-3
+                    showFullData: false, // На дашборде показываем ТОП-3, полные данные будут загружены для модального окна
                     clickable: true,
                     onClick: (event, elements) => {
                         if (elements.length > 0) {
@@ -750,16 +781,17 @@ export class AmanatDashboard extends Component {
                 if (allContragents.length > 0) {
                     this.renderComparisonHorizontalBarChart('contragent-reward-percent-chart', {
                         labels: allContragents,
-                        period1Data: allContragents.map(name => {
-                            const item = period1Data.find(c => c.name === name);
-                            return item ? item.avg_reward_percent : 0;
-                        }),
-                        period2Data: allContragents.map(name => {
-                            const item = period2Data.find(c => c.name === name);
-                            return item ? item.avg_reward_percent : 0;
+                                            period1Data: allContragents.map(name => {
+                        const item = period1Data.find(c => c.name === name);
+                        return item ? (item.avg_reward_percent * 100) : 0;
+                    }),
+                    period2Data: allContragents.map(name => {
+                        const item = period2Data.find(c => c.name === name);
+                        return item ? (item.avg_reward_percent * 100) : 0;
                         }),
                         period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
                         period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        isPercentage: true,
                         clickable: true,
                         onClick: (event, elements) => {
                             if (elements.length > 0) {
@@ -776,8 +808,9 @@ export class AmanatDashboard extends Component {
                 // Обычный режим - один период
                 this.renderHorizontalBarChart('contragent-reward-percent-chart', {
                     labels: this.state.zayavki.contragentRewardPercent.map(c => c.name),
-                    data: this.state.zayavki.contragentRewardPercent.map(c => c.avg_reward_percent),
+                    data: this.state.zayavki.contragentRewardPercent.map(c => c.avg_reward_percent * 100),
                     title: 'Вознаграждение средний процент',
+                    isPercentage: true,
                     clickable: true,
                     onClick: (event, elements) => {
                         if (elements.length > 0) {
@@ -1157,7 +1190,7 @@ export class AmanatDashboard extends Component {
                 ])];
                 
                 if (allContragents.length > 0) {
-                    this.renderComparisonHorizontalBarChart('zayavka-status-chart', {
+                    this.renderComparisonHorizontalBarChart('contragent-avg-check-chart', {
                         labels: allContragents,
                         period1Data: allContragents.map(name => {
                             const item = period1Data.find(c => c.name === name);
@@ -1169,6 +1202,7 @@ export class AmanatDashboard extends Component {
                         }),
                         period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
                         period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        title: 'Средний чек у Контрагента',
                     clickable: true,
                     onClick: (event, elements) => {
                         if (elements.length > 0) {
@@ -1619,7 +1653,7 @@ export class AmanatDashboard extends Component {
             data: config.data,
             backgroundColor: config.backgroundColor,
             borderColor: config.borderColor
-        }, { type: 'horizontalBar', title: config.title });
+        }, { type: 'horizontalBar', title: config.title, isPercentage: config.isPercentage || false });
         
         // Проверяем, нужно ли применять ограничение ТОП-3
         const shouldLimitData = config.labels && config.labels.length > 3 && !config.showFullData;
@@ -1690,8 +1724,11 @@ export class AmanatDashboard extends Component {
                     borderWidth: 0,
                     borderRadius: 8,        // Закругленные края как на скриншоте
                     borderSkipped: false,   // Закругляем все углы
-                    barThickness: 18,       // Толщина полосок (тонкие)
-                    maxBarThickness: 22,    // Максимальная толщина (тонкие)
+                    // НАСТРОЙКИ ТОЛЩИНЫ ПОЛОСОК: тоньше для модальных окон, обычные для дашборда
+                    barThickness: canvasId === 'fullChart' ? 14 : 18,      // Еще тоньше для модальных окон
+                    maxBarThickness: canvasId === 'fullChart' ? 16 : 22,   // Меньше максимальная толщина для модальных окон
+                    categoryPercentage: canvasId === 'fullChart' ? 0.6 : 0.8,  // МЕНЬШЕ процент занимаемого места = БОЛЬШЕ зазоры
+                    barPercentage: canvasId === 'fullChart' ? 0.6 : 0.8        // МЕНЬШЕ процент полоски = БОЛЬШЕ зазоры
                 }]
             },
             options: {
@@ -1699,7 +1736,14 @@ export class AmanatDashboard extends Component {
                 responsive: true,
                 maintainAspectRatio: false,
                 layout: {
-                    padding: {
+                    padding: canvasId === 'fullChart' ? {
+                        // УВЕЛИЧЕННЫЕ отступы для модальных окон
+                        left: 20,
+                        right: 30,
+                        top: 20,
+                        bottom: 20
+                    } : {
+                        // Обычные отступы для дашборда
                         left: 10,
                         right: 20,
                         top: 10,
@@ -1735,8 +1779,13 @@ export class AmanatDashboard extends Component {
                             title: function(context) {
                                 return context[0].label;
                             },
-                            label: (context) => {
-                                return `Количество: ${this.formatNumber(context.parsed.x)}`;
+                            label: function(context) {
+                                // Проверяем, нужно ли отображать проценты
+                                if (config.isPercentage) {
+                                    return `${context.parsed.x.toLocaleString('ru-RU', {maximumFractionDigits: 1})} %`;
+                                } else {
+                                    return `Количество: ${context.parsed.x.toLocaleString('ru-RU')}`;
+                                }
                             },
                             afterLabel: shouldLimitData ? () => {
                                 return ''; // Убираем сообщение
@@ -1759,7 +1808,14 @@ export class AmanatDashboard extends Component {
                                 size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             },
-                            padding: 8
+                            padding: 8,
+                            // Добавляем формат для процентов
+                            callback: function(value) {
+                                if (config.isPercentage) {
+                                    return value + '%';
+                                }
+                                return value;
+                            }
                         },
                         border: {
                             display: false
@@ -3924,7 +3980,7 @@ export class AmanatDashboard extends Component {
             period2Label: config.period2Label,
             isComparison: true,
             originalConfig: config
-        }, { type: 'comparisonHorizontalBar', title: config.title });
+        }, { type: 'comparisonHorizontalBar', title: config.title, isPercentage: config.isPercentage || false });
         
         // Проверяем, нужно ли применять ограничение ТОП-3
         const shouldLimitData = config.labels && config.labels.length > 3 && !config.showFullData;
@@ -4080,8 +4136,15 @@ export class AmanatDashboard extends Component {
                             title: function(context) {
                                 return context[0].label;
                             },
-                            label: (context) => {
-                                return `Количество: ${this.formatNumber(context.parsed.x)}`;
+                            label: function(context) {
+                                const datasetLabel = context.dataset.label;
+                                const value = context.parsed.x;
+                                // Проверяем, нужно ли отображать проценты
+                                if (config.isPercentage) {
+                                    return `${datasetLabel}: ${value.toLocaleString('ru-RU', {maximumFractionDigits: 1})} %`;
+                                } else {
+                                    return `${datasetLabel}: ${value.toLocaleString('ru-RU')}`;
+                                }
                             },
                             afterLabel: shouldLimitData ? () => {
                                 return ''; // Убираем сообщение
@@ -4104,7 +4167,14 @@ export class AmanatDashboard extends Component {
                                 size: 9,
                                 family: 'Inter, system-ui, sans-serif'
                             },
-                            padding: 8
+                            padding: 8,
+                            // Добавляем формат для процентов
+                            callback: function(value) {
+                                if (config.isPercentage) {
+                                    return value + '%';
+                                }
+                                return value;
+                            }
                         },
                         border: {
                             display: false
@@ -4439,24 +4509,49 @@ export class AmanatDashboard extends Component {
         // Определяем, показывать ли подсказку о кликах
         const showClickHint = this.shouldEnableClicksInModal(chartType);
         
+        // Определяем, является ли это сравнительным графиком
+        const isComparisonMode = fullData && fullData.isComparison;
+        const modalTitle = isComparisonMode 
+            ? `📊 ${chartTitle} - Сравнение периодов` 
+            : `📊 ${chartTitle} - Полные данные`;
+        
+        const infoText = isComparisonMode
+            ? `Показано сравнение данных за два периода. Всего уникальных записей: <strong>${dataCount}</strong>`
+            : `Показаны все данные за выбранный период. Всего записей: <strong>${dataCount}</strong>`;
+        
         modal.innerHTML = `
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">📊 ${chartTitle} - Полные данные</h5>
+                        <h5 class="modal-title">${modalTitle}</h5>
                         <button type="button" class="btn-close" id="closeFullChartModal" aria-label="Close">
                             <i class="fa fa-times"></i>
                         </button>
                     </div>
                     <div class="modal-body">
+                        ${isComparisonMode ? `
+                            <div class="comparison-periods-info mb-3">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="alert alert-info">
+                                            <strong>🔵 ${fullData.period1Label}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="alert alert-warning">
+                                            <strong>🟠 ${fullData.period2Label}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
                         <div class="full-chart-container">
                             <canvas id="fullChart"></canvas>
                         </div>
                         <div class="full-chart-info">
                             <p class="text-muted mb-0">
                                 <i class="fa fa-info-circle me-2"></i>
-                                Показаны все данные без фильтров по датам. 
-                                Всего записей: <strong>${dataCount}</strong>
+                                ${infoText}
                             </p>
                             ${showClickHint ? `
                             <p class="text-info mb-0 mt-2">
@@ -4547,23 +4642,26 @@ export class AmanatDashboard extends Component {
                     dataLength = Object.keys(fullData).length;
                 }
                 
-                // Расчет адаптивной высоты для модальных окон (более компактные значения)
-                const baseHeight = 300;           // Базовая высота (уменьшено с 500)
-                const itemHeight = 25;            // Высота на один элемент (уменьшено с 30)
-                const minHeight = 250;            // Минимальная высота (уменьшено с 400)
-                const maxHeight = 700;            // Максимальная высота (уменьшено с 1000)
+                // Расчет адаптивной высоты для модальных окон (увеличенная высота для лучшей читаемости)
+                const baseHeight = 500;           // Увеличенная базовая высота для модальных окон
+                const itemHeight = 35;            // УВЕЛИЧЕННАЯ высота на один элемент для лучшего отображения
+                const minHeight = 400;            // Увеличенная минимальная высота
+                const maxHeight = 1200;           // УВЕЛИЧЕННАЯ максимальная высота - БЕЗ СКРОЛЛА
                 
                 let adaptiveHeight = baseHeight;
                 
-                // Увеличиваем высоту для горизонтальных графиков в зависимости от количества данных
-                if (renderType === 'horizontalBar' && dataLength > 5) {
-                    adaptiveHeight = baseHeight + ((dataLength - 5) * itemHeight);
-                } else if (dataLength > 10) {
-                    // Для других типов графиков тоже немного увеличиваем высоту при большом количестве данных
-                    adaptiveHeight = baseHeight + ((dataLength - 10) * 12);
+                // Увеличиваем высоту для горизонтальных графиков в зависимости от количества данных, но с ограничением
+                if (renderType === 'horizontalBar' && dataLength > 8) {
+                    // Для больших графиков постепенно увеличиваем, но с меньшим шагом
+                    const extraItems = Math.min(dataLength - 8, 20); // Ограничиваем до 20 дополнительных элементов
+                    adaptiveHeight = baseHeight + (extraItems * itemHeight);
+                } else if (dataLength > 15) {
+                    // Для других типов графиков минимальное увеличение
+                    const extraItems = Math.min(dataLength - 15, 10);
+                    adaptiveHeight = baseHeight + (extraItems * 8);
                 }
                 
-                // Применяем ограничения по высоте
+                // Применяем строгие ограничения по высоте - НЕ БОЛЕЕ 500px!
                 adaptiveHeight = Math.max(minHeight, Math.min(maxHeight, adaptiveHeight));
                 
                 // Устанавливаем высоту canvas с использованием стандартной функции
@@ -4585,22 +4683,124 @@ export class AmanatDashboard extends Component {
                 
                 // Проверяем, является ли это сравнительным графиком
                 if (fullData.isComparison) {
-                    // Рендерим сравнительный график
-                    switch (renderType) {
-                        case 'horizontalBar':
-                            this.renderComparisonHorizontalBarChart('fullChart', {
-                                ...fullData.originalConfig,
-                                labels: fullData.labels,
-                                period1Data: fullData.period1Data,
-                                period2Data: fullData.period2Data,
-                                period1Label: fullData.period1Label,
-                                period2Label: fullData.period2Label,
-                                title: chartTitle,
-                                showFullData: true, // Отключаем ограничение TOP-3
-                                clickable: fullData.originalConfig.clickable || false
-                            });
-                            break;
-                        // Можно добавить другие типы сравнительных графиков
+                    console.log('🔄 Рендерим СРАВНИТЕЛЬНЫЙ график в модальном окне:', {
+                        renderType,
+                        chartTitle,
+                        labels: fullData.labels,
+                        period1DataLength: fullData.period1Data?.length,
+                        period2DataLength: fullData.period2Data?.length,
+                        originalConfig: fullData.originalConfig
+                    });
+                    
+                    try {
+                        // Проверяем наличие всех необходимых данных
+                        if (!fullData.labels || !Array.isArray(fullData.labels) || fullData.labels.length === 0) {
+                            throw new Error('Отсутствуют labels для сравнительного графика');
+                        }
+                        if (!fullData.period1Data || !Array.isArray(fullData.period1Data)) {
+                            throw new Error('Отсутствуют данные period1Data для сравнительного графика');
+                        }
+                        if (!fullData.period2Data || !Array.isArray(fullData.period2Data)) {
+                            throw new Error('Отсутствуют данные period2Data для сравнительного графика');
+                        }
+                        
+                        // Рендерим сравнительный график
+                        switch (renderType) {
+                            case 'horizontalBar':
+                                console.log('🎯 Вызываем renderComparisonHorizontalBarChart с данными:', {
+                                    labels: fullData.labels,
+                                    period1Data: fullData.period1Data,
+                                    period2Data: fullData.period2Data,
+                                    period1Label: fullData.period1Label,
+                                    period2Label: fullData.period2Label
+                                });
+                                
+                                this.renderComparisonHorizontalBarChart('fullChart', {
+                                    labels: fullData.labels,
+                                    period1Data: fullData.period1Data,
+                                    period2Data: fullData.period2Data,
+                                    period1Label: fullData.period1Label || 'Период 1',
+                                    period2Label: fullData.period2Label || 'Период 2',
+                                    title: chartTitle,
+                                    showFullData: true, // Отключаем ограничение TOP-3
+                                    clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
+                                    backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                                    borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
+                                });
+                                break;
+                            case 'line':
+                            case 'smoothLine':
+                            case 'comparisonSmoothLine':
+                                // Для линейных графиков используем сравнительный линейный график
+                                this.renderComparisonSmoothLineChart('fullChart', {
+                                    labels: fullData.labels,
+                                    period1Data: fullData.period1Data,
+                                    period2Data: fullData.period2Data,
+                                    period1Label: fullData.period1Label || 'Период 1',
+                                    period2Label: fullData.period2Label || 'Период 2',
+                                    title: chartTitle,
+                                    showFullData: true,
+                                    clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
+                                    tension: 0.3,
+                                    pointStyle: 'circle'
+                                });
+                                break;
+                            case 'bar':
+                                // Для столбчатых графиков тоже можем использовать сравнительный горизонтальный
+                                this.renderComparisonHorizontalBarChart('fullChart', {
+                                    labels: fullData.labels,
+                                    period1Data: fullData.period1Data,
+                                    period2Data: fullData.period2Data,
+                                    period1Label: fullData.period1Label || 'Период 1',
+                                    period2Label: fullData.period2Label || 'Период 2',
+                                    title: chartTitle,
+                                    showFullData: true,
+                                    isPercentage: (fullData.originalConfig && fullData.originalConfig.isPercentage) || false,
+                                    clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
+                                    backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                                    borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
+                                });
+                                break;
+                            default:
+                                console.warn(`⚠️ Неподдерживаемый тип сравнительного графика: ${renderType}`);
+                                // Fallback - используем горизонтальный столбчатый
+                                this.renderComparisonHorizontalBarChart('fullChart', {
+                                    labels: fullData.labels,
+                                    period1Data: fullData.period1Data,
+                                    period2Data: fullData.period2Data,
+                                    period1Label: fullData.period1Label || 'Период 1',
+                                    period2Label: fullData.period2Label || 'Период 2',
+                                    title: chartTitle,
+                                    showFullData: true,
+                                    isPercentage: (fullData.originalConfig && fullData.originalConfig.isPercentage) || false,
+                                    clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
+                                    backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                                    borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
+                                });
+                                break;
+                        }
+                        
+                        console.log('✅ Сравнительный график успешно отрендерен в модальном окне');
+                        
+                    } catch (error) {
+                        console.error('❌ Ошибка при рендеринге сравнительного графика в модальном окне:', error);
+                        console.error('📊 Данные которые вызвали ошибку:', fullData);
+                        
+                        // Показываем сообщение об ошибке вместо графика
+                        const canvas = document.getElementById('fullChart');
+                        if (canvas) {
+                            const parent = canvas.parentElement;
+                            parent.innerHTML = `
+                                <div class="d-flex justify-content-center align-items-center" style="height: 400px;">
+                                    <div class="text-center">
+                                        <i class="fa fa-exclamation-triangle fa-5x text-warning mb-4"></i>
+                                        <h3 class="text-warning">Ошибка при отображении графика</h3>
+                                        <p class="text-muted">Не удалось отобразить сравнительный график: ${error.message}</p>
+                                        <p class="text-muted small">Проверьте консоль разработчика для подробностей.</p>
+                                    </div>
+                                </div>
+                            `;
+                        }
                     }
                 } else {
                     // Рендерим обычный график в зависимости от визуального типа
@@ -4613,6 +4813,7 @@ export class AmanatDashboard extends Component {
                                 data: fullData.data,
                                 title: chartTitle,
                                 showFullData: true, // Отключаем ограничение TOP-3
+                                isPercentage: config.isPercentage || false, // Передаем флаг процентов
                                 clickable: this.shouldEnableClicksInModal(chartType) // Включаем клики для интерактивных графиков
                             };
                             
@@ -4828,8 +5029,8 @@ export class AmanatDashboard extends Component {
                 // Для среднего чека контрагентов тоже используем avg_amount
                 data = serverData.map(item => item.avg_amount || 0);
             } else if (chartType === 'contragent_reward_percent') {
-                // Для процента вознаграждения используем avg_reward_percent
-                data = serverData.map(item => item.avg_reward_percent || 0);
+                // Для процента вознаграждения используем avg_reward_percent и умножаем на 100
+                data = serverData.map(item => (item.avg_reward_percent || 0) * 100);
             } else if (chartType === 'managers_efficiency') {
                 // Для эффективности менеджеров используем efficiency
                 data = serverData.map(item => item.efficiency || 0);
@@ -4909,20 +5110,55 @@ export class AmanatDashboard extends Component {
     async _loadChartDataSafely(chartType) {
         /**
          * Упрощенный метод для безопасной загрузки данных графика
-         * Заменяет сложную многоуровневую обработку ошибок
+         * Поддерживает режим сравнения периодов
          */
         try {
-            console.log(`Загружаем данные для ${chartType} через get_full_chart_data`);
-            return await this.orm.call(
-                'amanat.dashboard',
-                'get_full_chart_data',
-                [],
-                {
-                    chart_type: chartType,
-                    date_from: null,
-                    date_to: null
-                }
-            );
+            console.log(`Загружаем данные для ${chartType}`);
+            
+            // Проверяем режим сравнения периодов
+            const dateFrom1 = this.state.dateRange1.start || null;
+            const dateTo1 = this.state.dateRange1.end || null;
+            const dateFrom2 = this.state.dateRange2.start || null;
+            const dateTo2 = this.state.dateRange2.end || null;
+            
+            // Если указаны оба периода - загружаем сравнительные данные
+            if (dateFrom1 && dateTo1 && dateFrom2 && dateTo2) {
+                console.log(`📊 Загружаем СРАВНИТЕЛЬНЫЕ данные для ${chartType}:`);
+                console.log(`  Период 1: ${dateFrom1} - ${dateTo1}`);
+                console.log(`  Период 2: ${dateFrom2} - ${dateTo2}`);
+                
+                const comparisonData = await this.orm.call(
+                    'amanat.dashboard',
+                    'get_comparison_chart_data',
+                    [],
+                    {
+                        date_from1: dateFrom1,
+                        date_to1: dateTo1,
+                        date_from2: dateFrom2,
+                        date_to2: dateTo2
+                    }
+                );
+                
+                console.log('🔄 Получены сравнительные данные:', comparisonData);
+                
+                // Формируем сравнительные данные в правильном формате
+                return this.formatComparisonDataForChart(comparisonData, chartType, dateFrom1, dateTo1, dateFrom2, dateTo2);
+                
+            } else {
+                // Обычный режим - один период
+                console.log(`📅 Загружаем данные для одного периода: ${dateFrom1} - ${dateTo1}`);
+                
+                return await this.orm.call(
+                    'amanat.dashboard',
+                    'get_full_chart_data',
+                    [],
+                    {
+                        chart_type: chartType,
+                        date_from: dateFrom1,
+                        date_to: dateTo1
+                    }
+                );
+            }
         } catch (error) {
             console.warn(`Не удалось загрузить данные через get_full_chart_data: ${error.message}`);
             
@@ -4933,7 +5169,7 @@ export class AmanatDashboard extends Component {
                     'amanat.dashboard',
                     'get_dashboard_data',
                     [],
-                    { date_from: null, date_to: null }
+                    { date_from: dateFrom1, date_to: dateTo1 }
                 );
                 
                 // Извлекаем нужные данные
@@ -4943,6 +5179,140 @@ export class AmanatDashboard extends Component {
                 this.showErrorMessage(`Не удалось загрузить данные для графика`);
                 return [];
             }
+        }
+    }
+
+    formatComparisonDataForChart(comparisonData, chartType, dateFrom1, dateTo1, dateFrom2, dateTo2) {
+        /**
+         * Форматирует сравнительные данные для модальных окон
+         */
+        console.log('🔄 formatComparisonDataForChart:', { comparisonData, chartType });
+        
+        if (!comparisonData || !comparisonData.period1 || !comparisonData.period2) {
+            console.warn('⚠️ Неполные сравнительные данные');
+            return { labels: [], data: [] };
+        }
+        
+        // Маппинг типов графиков к полям данных в сравнительных данных
+        const chartFieldMapping = {
+            'contragents_by_zayavki': 'contragents_by_zayavki',
+            'contragent_avg_check': 'contragent_avg_check',
+            'contragent_reward_percent': 'contragent_reward_percent',
+            'agents_by_zayavki': 'agents_by_zayavki',
+            'agent_avg_amount': 'agent_avg_amount',
+            'clients_by_zayavki': 'clients_by_zayavki',
+            'client_avg_amount': 'client_avg_amount',
+            'subagents_by_zayavki': 'subagents_by_zayavki',
+            'payers_by_zayavki': 'payers_by_zayavki',
+            'managers_by_zayavki': 'managers_by_zayavki',
+            'managers_closed_zayavki': 'managers_closed_zayavki',
+            'managers_efficiency': 'managers_efficiency',
+            'zayavka_status_data': 'zayavka_status_data',
+            'deal_cycles': 'deal_cycles',
+            'deal_types': 'deal_types'
+        };
+        
+        const dataField = chartFieldMapping[chartType];
+        if (!dataField) {
+            console.warn(`⚠️ Неизвестный тип графика для сравнения: ${chartType}`);
+            return { labels: [], data: [] };
+        }
+        
+        const period1Data = comparisonData.period1[dataField] || [];
+        const period2Data = comparisonData.period2[dataField] || [];
+        
+        console.log('📊 Данные периодов:', { period1Data, period2Data });
+        
+        // Получаем все уникальные метки из обоих периодов
+        let allLabels = [];
+        
+        if (chartType === 'deal_cycles') {
+            // Специальная обработка для циклов сделок - сортируем по дням
+            const allCycleDays = [...new Set([
+                ...period1Data.map(item => item.cycle_days || 0),
+                ...period2Data.map(item => item.cycle_days || 0)
+            ])].sort((a, b) => a - b);
+            
+            allLabels = allCycleDays.map(days => days.toString());
+            
+        } else if (Array.isArray(period1Data) && Array.isArray(period2Data)) {
+            // Для данных в формате массива объектов
+            allLabels = [...new Set([
+                ...period1Data.map(item => item.name || item.label || 'Без названия'),
+                ...period2Data.map(item => item.name || item.label || 'Без названия')
+            ])];
+        } else if (typeof period1Data === 'object' && typeof period2Data === 'object') {
+            // Для данных в формате объекта (например, deal_types)
+            allLabels = [...new Set([
+                ...Object.keys(period1Data || {}),
+                ...Object.keys(period2Data || {})
+            ])];
+        }
+        
+        // Формируем данные для каждого периода
+        const period1Values = allLabels.map(label => {
+            if (chartType === 'deal_cycles') {
+                // Для циклов ищем по cycle_days
+                const cycleDays = parseInt(label);
+                const item = period1Data.find(d => d.cycle_days === cycleDays);
+                return item ? item.count : 0;
+            } else if (Array.isArray(period1Data)) {
+                const item = period1Data.find(d => (d.name || d.label) === label);
+                return this.getValueFromItem(item, chartType);
+            } else {
+                return period1Data[label] || 0;
+            }
+        });
+        
+        const period2Values = allLabels.map(label => {
+            if (chartType === 'deal_cycles') {
+                // Для циклов ищем по cycle_days
+                const cycleDays = parseInt(label);
+                const item = period2Data.find(d => d.cycle_days === cycleDays);
+                return item ? item.count : 0;
+            } else if (Array.isArray(period2Data)) {
+                const item = period2Data.find(d => (d.name || d.label) === label);
+                return this.getValueFromItem(item, chartType);
+            } else {
+                return period2Data[label] || 0;
+            }
+        });
+        
+        // Возвращаем сравнительные данные в специальном формате
+        return {
+            labels: allLabels,
+            period1Data: period1Values,
+            period2Data: period2Values,
+            period1Label: `Период 1 (${dateFrom1} - ${dateTo1})`,
+            period2Label: `Период 2 (${dateFrom2} - ${dateTo2})`,
+            isComparison: true,
+            originalConfig: {
+                clickable: true
+            }
+        };
+    }
+    
+    getValueFromItem(item, chartType) {
+        /**
+         * Извлекает нужное значение из элемента данных в зависимости от типа графика
+         */
+        if (!item) return 0;
+        
+        // Определяем какое поле использовать для каждого типа графика
+        switch (chartType) {
+            case 'agent_avg_amount':
+            case 'client_avg_amount':
+            case 'contragent_avg_check':
+                return item.avg_amount || 0;
+            case 'contragent_reward_percent':
+                return (item.avg_reward_percent || 0) * 100;
+            case 'managers_efficiency':
+                return item.efficiency || 0;
+            case 'deal_cycles':
+                return item.cycle_days || 0;
+            default:
+                // Для большинства графиков используем count
+                return item.count || 0;
         }
     }
 
@@ -4965,7 +5335,8 @@ export class AmanatDashboard extends Component {
             'contragent-reward-percent-chart': {
                 type: 'contragent_reward_percent',
                 title: 'Вознаграждение средний процент',
-                chartType: 'horizontalBar'
+                chartType: 'horizontalBar',
+                isPercentage: true
             },
             'agents-by-zayavki-chart': {
                 type: 'agents_by_zayavki',
@@ -5043,7 +5414,7 @@ export class AmanatDashboard extends Component {
             'deal-cycles-line': {
                 type: 'deal_cycles',
                 title: 'Циклы сделок',
-                chartType: 'line'
+                chartType: 'smoothLine'  // Изменено на smoothLine для лучшего отображения
             },
             'import-export-chart': {
                 type: 'import_export_by_month',
@@ -5084,6 +5455,13 @@ export class AmanatDashboard extends Component {
                 type: 'orders_by_status',
                 title: 'Ордера по статусам',
                 chartType: 'bar'
+            },
+            
+            // Добавляем запись для графика Соотношение ИМПОРТ/ЭКСПОРТ
+            'import-export-line-comparison': {
+                type: 'deal_types',
+                title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
+                chartType: 'horizontalBar'
             }
         };
     }
@@ -5177,12 +5555,26 @@ export class AmanatDashboard extends Component {
                         });
                     }
                     
+                    // 🔑 ИСПРАВЛЕНИЕ: Для графиков с ограниченными данными загружаем полные данные с сервера
+                    const shouldLoadFromServer = (
+                        chartId === 'contragents-by-zayavki-chart' || 
+                        chartId === 'agents-by-zayavki-chart' ||
+                        chartId === 'clients-by-zayavki-chart' ||
+                        chartId === 'subagents-by-zayavki-chart' ||
+                        chartId === 'payers-by-zayavki-chart' ||
+                        chartId === 'managers-by-zayavki-pie' ||
+                        chartId === 'managers-closed-zayavki-pie'
+                    ) && savedData && savedData.labels && savedData.labels.length <= 3;
+                    
                     await this.openFullChart(
                         chartId, 
                         mapping.title, 
                         mapping.type, // Это правильный тип для сервера
-                        savedData, // 🎯 Передаем СОХРАНЕННЫЕ данные вместо null
-                        savedConfig || { type: mapping.chartType } // Используем сохраненную конфигурацию
+                        shouldLoadFromServer ? null : savedData, // Загружаем с сервера если данные ограничены
+                        savedConfig || { 
+                            type: mapping.chartType, 
+                            isPercentage: mapping.isPercentage || false 
+                        } // Используем сохраненную конфигурацию или создаем с нужными параметрами
                     );
                 };
                 

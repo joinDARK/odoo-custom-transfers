@@ -49,12 +49,12 @@ class ForKhalidaAutomations(models.Model):
 
         # 4. Поиск подходящей записи в "Прайс лист проведение"
         matched_carrying_out = self._find_matching_carrying_out_record(
-            subagent_payers, rate_fixation_date, equivalent_sum
+            subagent_payers, rate_fixation_date, equivalent_sum, reward_percent
         )
 
         # 5. Поиск подходящей записи в "Прайс лист Плательщика Прибыль"
         matched_profit = self._find_matching_profit_record(
-            subagent_payers, rate_fixation_date, equivalent_sum
+            subagent_payers, rate_fixation_date, equivalent_sum, reward_percent
         )
 
         # 6. Поиск подходящей записи в "Прайс лист Партнеры"
@@ -79,7 +79,7 @@ class ForKhalidaAutomations(models.Model):
                     f"Прайс лист Плательщика Прибыль -> {matched_profit.id if matched_profit else 'нет'}, "
                     f"Прайс лист Партнеры -> {matched_partners.id if matched_partners else 'нет'}")
     
-    def _find_matching_carrying_out_record(self, subagent_payers, rate_fixation_date, equivalent_sum):
+    def _find_matching_carrying_out_record(self, subagent_payers, rate_fixation_date, equivalent_sum, reward_percent):
         """
         Поиск подходящей записи в модели amanat.price_list_payer_carrying_out
         """
@@ -90,25 +90,42 @@ class ForKhalidaAutomations(models.Model):
             ('payer_partners', 'in', subagent_payers.ids),
             ('date_start', '<=', rate_fixation_date),
             ('date_end', '>=', rate_fixation_date),
-        ]
-
-        # Добавляем условия по сумме заявки
-        domain += [
             ('min_application_amount', '<=', equivalent_sum),
             ('max_application_amount', '>=', equivalent_sum),
+            ('contragent_zayavka_id', '=', self.contragent_id.id),
+            ('agent_zayavka_id', '=', self.agent_id.id),
+            ('client_zayavka_id', '=', self.client_id.id),
+            ('currency_zayavka', '=', self.currency),
+            ('min_percent_accrual', '<=', reward_percent),
+            ('max_percent_accrual', '>=', reward_percent),
+        ]
+
+        softDomain = [
+            ('payer_partners', 'in', subagent_payers.ids),
+            ('date_start', '<=', rate_fixation_date),
+            ('date_end', '>=', rate_fixation_date),
+            ('min_application_amount', '<=', equivalent_sum),
+            ('max_application_amount', '>=', equivalent_sum),
+            ('min_percent_accrual', '<=', reward_percent),
+            ('max_percent_accrual', '>=', reward_percent),
         ]
 
         # Ищем первую подходящую запись
         matched_record = PriceListCarryingOut.search(domain, limit=1)
         
-        if matched_record:
-            _logger.info(f"[PriceList] Найден прайс-лист проведение: {matched_record.id}")
-        else:
-            _logger.info(f"[PriceList] Не найден подходящий прайс-лист проведение для заявки {self.id}")
+        if not matched_record:
+            _logger.info(f"[PriceList] Не найден подходящий прайс-лист за проведение для заявки {self.id}, ищем по общим условиям")
+            matched_record = PriceListCarryingOut.search(softDomain, limit=1)
+            
+            if not matched_record:
+                _logger.info(f"[PriceList] Не найден подходящий общий прайс-лист за проведение для заявки {self.id}")
+                return
+        
+        _logger.info(f"[PriceList] Найден прайс-лист за проведение: {matched_record.id}")
 
-        return matched_record
+        return matched_record 
 
-    def _find_matching_profit_record(self, subagent_payers, rate_fixation_date, equivalent_sum):
+    def _find_matching_profit_record(self, subagent_payers, rate_fixation_date, equivalent_sum, reward_percent):
         """
         Поиск подходящей записи в модели amanat.price_list_payer_profit
         """
@@ -119,21 +136,38 @@ class ForKhalidaAutomations(models.Model):
             ('payer_subagent_ids', 'in', subagent_payers.ids),
             ('date_start', '<=', rate_fixation_date),
             ('date_end', '>=', rate_fixation_date),
-        ]
-
-        # Добавляем условия по сумме заявки
-        domain += [
             ('min_zayavka_amount', '<=', equivalent_sum),
             ('max_zayavka_amount', '>=', equivalent_sum),
+            ('contragent_zayavka_id', '=', self.contragent_id.id),
+            ('agent_zayavka_id', '=', self.agent_id.id),
+            ('client_zayavka_id', '=', self.client_id.id),
+            ('currency_zayavka', '=', self.currency),
+            ('min_percent_accrual', '<=', reward_percent),
+            ('max_percent_accrual', '>=', reward_percent),
+        ]
+
+        softDomain = [
+            ('payer_subagent_ids', 'in', subagent_payers.ids),
+            ('date_start', '<=', rate_fixation_date),
+            ('date_end', '>=', rate_fixation_date),
+            ('min_zayavka_amount', '<=', equivalent_sum),
+            ('max_zayavka_amount', '>=', equivalent_sum),
+            ('min_percent_accrual', '<=', reward_percent),
+            ('max_percent_accrual', '>=', reward_percent),
         ]
 
         # Ищем первую подходящую запись
         matched_record = PriceListProfit.search(domain, limit=1)
         
-        if matched_record:
-            _logger.info(f"[PriceList] Найден прайс-лист прибыль: {matched_record.id}")
-        else:
-            _logger.info(f"[PriceList] Не найден подходящий прайс-лист прибыль для заявки {self.id}")
+        if not matched_record:
+            _logger.info(f"[PriceList] Не найден подходящий прайс-лист плательщика прибыль для заявки {self.id}, ищем по общим условиям")
+            matched_record = PriceListProfit.search(softDomain, limit=1)
+            
+            if not matched_record:
+                _logger.info(f"[PriceList] Не найден подходящий общий прайс-лист плательщика прибыль для заявки {self.id}")
+                return
+        
+        _logger.info(f"[PriceList] Найден прайс-лист прибыль: {matched_record.id}")
 
         return matched_record 
 
@@ -144,11 +178,14 @@ class ForKhalidaAutomations(models.Model):
         PriceListPartners = self.env['amanat.price_list_partners']
         
         # Строим домен для поиска
-        domainWithContragent = [
+        domain = [
             ('payer_partner', 'in', subagent_payers.ids),
             ('date_start', '<=', rate_fixation_date),
             ('date_end', '>=', rate_fixation_date),
             ('contragent_zayavka_id', '=', self.contragent_id.id),
+            ('agent_zayavka_id', '=', self.agent_id.id),
+            ('client_zayavka_id', '=', self.client_id.id),
+            ('currency_zayavka', '=', self.currency),
             ('min_application_amount', '<=', equivalent_sum),
             ('max_application_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
@@ -156,7 +193,7 @@ class ForKhalidaAutomations(models.Model):
         ]
 
         # Добавляем условия по сумме заявки
-        domain = [
+        softDomain = [
             ('payer_partner', 'in', subagent_payers.ids),
             ('date_start', '<=', rate_fixation_date),
             ('date_end', '>=', rate_fixation_date),
@@ -167,15 +204,18 @@ class ForKhalidaAutomations(models.Model):
         ]
 
         # Ищем первую подходящую запись
-        matched_record = PriceListPartners.search(domainWithContragent, limit=1)
+        matched_record = PriceListPartners.search(domain, limit=1)
         
         if not matched_record:
-            _logger.info(f"[PriceList] Не найден подходящий прайс-лист проведение для заявки {self.id}, ищем общий прайс-лист")
-            matched_record = PriceListPartners.search(domain, limit=1)
+            _logger.info(f"[PriceList] Не найден подходящий прайс-лист партнера для заявки {self.id}, ищем по общим условиям")
+            matched_record = PriceListPartners.search(softDomain, limit=1)
             
-            if matched_record:
-                _logger.info(f"[PriceList] Найден общий прайс-лист проведение: {matched_record.id}")
-            else:
-                _logger.info(f"[PriceList] Не найден подходящий общий прайс-лист проведение для заявки {self.id}")
+            if not matched_record:
+                _logger.info(f"[PriceList] Не найден подходящий общий прайс-лист партнера для заявки {self.id}")
+                return
+        
+        _logger.info(f"[PriceList] Найден прайс-лист партнера: {matched_record.id}")
+        _logger.info(f"[PriceList zayavka] {subagent_payers.ids} {rate_fixation_date} {equivalent_sum} {reward_percent} {self.contragent_id.id} {self.agent_id.id} {self.client_id.id} {self.currency}")
+        _logger.info(f"[PriceList price_list] {matched_record.payer_partner} {matched_record.date_start} {matched_record.date_end} {matched_record.contragent_zayavka_id} {matched_record.agent_zayavka_id} {matched_record.client_zayavka_id} {matched_record.currency_zayavka} {matched_record.min_application_amount} {matched_record.max_application_amount} {matched_record.min_percent_accrual} {matched_record.max_percent_accrual}")
 
         return matched_record

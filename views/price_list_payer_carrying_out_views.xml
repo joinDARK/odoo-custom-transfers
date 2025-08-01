@@ -17,6 +17,12 @@
                 <field width="200" name="fixed_deal_fee"/>
                 <field width="200" name="min_application_amount"/>
                 <field width="200" name="max_application_amount"/>
+                <field width="200" name="min_percent_accrual" widget="percentage"/>
+                <field width="200" name="max_percent_accrual" widget="percentage"/>
+                <field width="200" name="contragent_zayavka_id"/>
+                <field width="200" name="agent_zayavka_id"/>
+                <field width="200" name="client_zayavka_id"/>
+                <field width="200" name="currency_zayavka"/>
                 <field width="200" name="bind_field"/>
                 <field width="200" name="zayavka_ids"/>
             </list>
@@ -83,6 +89,20 @@
                         <field name="zayavka_ids_3"/>
                         <field name="zayavka_ids_4"/>
                         <field name="zayavka_ids_5"/> -->
+                    </group>
+                    <group>
+                        <div class="o-form-group-2">
+                            <group>
+                                <field name="min_percent_accrual" widget="percentage"/>
+                                <field name="contragent_zayavka_id"/>
+                                <field name="agent_zayavka_id"/>
+                            </group>
+                            <group>
+                                <field name="max_percent_accrual" widget="percentage"/>
+                                <field name="client_zayavka_id"/>
+                                <field name="currency_zayavka"/>
+                            </group>
+                        </div>
                     </group>
                     <group>
                         <field name="zayavka_ids"/>

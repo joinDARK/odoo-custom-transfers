@@ -841,7 +841,14 @@ class Zayavka(models.Model, AmanatBaseModel):
         tracking=True
     )
 
-    jess_rate = fields.Float(string='Курс Джесс', tracking=True, digits=(16, 7))
+    jess_rate_id = fields.Many2one(
+        'amanat.jess_rate', 
+        string='Курс Джесс', 
+        tracking=True,
+        domain="[('currency', '=', currency)]"
+    )
+
+    jess_rate = fields.Float(string='Курс Джесс', related='jess_rate_id.rate', tracking=True, digits=(16, 6))
 
     currency = fields.Selection(
         [
@@ -1885,7 +1892,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     for_khalida_temp = fields.Boolean(
-        string="Для Халиды ( потом удалить )",
+        string="Обновить список правил",
         tracking=True,
         default=False,
     )

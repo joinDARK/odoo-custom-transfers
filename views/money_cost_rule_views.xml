@@ -7,15 +7,37 @@
             <form string="Правило Себестоимость денег">
                 <sheet>
                     <group>
-                        <field name="name"/>
-                        <field name="credit_rate" widget="percentage"/>
-                        <field name="credit_period"/>
-                        <field name="extra_days"/>
-                        <field name="date_start"/>
-                        <field name="date_end"/>
+                        <div class="o-form-group-2">
+                            <group>
+                                <field name="name"/>
+                                <field name="extra_days"/>
+                            </group>
+                            <group>
+                                <field name="credit_period"/>
+                                <field name="credit_rate" widget="percentage"/>
+                            </group>
+                        </div>
+                    </group>
+                    <group>
+                        <div class="o-form-group-2">
+                            <group>
+                                <field name="date_start"/>
+                                <field name="min_application_amount"/>
+                                <field name="min_percent_accrual" widget="percentage"/>
+                                <field name="contragent_zayavka_id"/>
+                                <field name="agent_zayavka_id"/>
+                            </group>
+                            <group>
+                                <field name="date_end"/>
+                                <field name="max_application_amount"/>
+                                <field name="max_percent_accrual" widget="percentage"/>
+                                <field name="client_zayavka_id"/>
+                                <field name="currency_zayavka"/>
+                            </group>
+                        </div>
+                    </group>
+                    <group>
                         <field name="zayavka_ids"/>
-                        <field name="min_application_amount"/>
-                        <field name="max_application_amount"/>
                     </group>
                 </sheet>
             </form>

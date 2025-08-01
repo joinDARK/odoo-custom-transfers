@@ -8,4 +8,5 @@ from . import price_list_automation
 from . import rule_for_management
 from . import change_data
 from . import ygpt_analyse
+from . import link_jess_rate
 # from . import modal_error

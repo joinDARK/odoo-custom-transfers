@@ -256,7 +256,7 @@
                     <div class="row g-3 mb-2">
                         <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">📊 Эффективность менеджеров</h6>
+                                <h6 class="chart-title clickable-title">📊 Эффективность менеджеров</h6>
                                 <div class="chart-container-large">
                                     <canvas id="managers-efficiency-chart"></canvas>
                                 </div>
@@ -283,7 +283,7 @@
                     <div class="row g-3 mb-2">
                         <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Количество заявок под каждого контрагента</h6>
+                                <h6 class="chart-title clickable-title">Количество заявок под каждого контрагента</h6>
                                 <div class="chart-container-large">
                                     <canvas id="contragents-by-zayavki-chart"></canvas>
                                 </div>
@@ -291,7 +291,7 @@
                         </div>
                         <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Средний чек у Контрагента</h6>
+                                <h6 class="chart-title clickable-title">Средний чек у Контрагента</h6>
                                 <div class="chart-container-large">
                                     <canvas id="contragent-avg-check-chart"></canvas>
                                 </div>
@@ -299,7 +299,7 @@
                         </div>
                         <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Вознаграждение средний процент</h6>
+                                <h6 class="chart-title clickable-title">Вознаграждение средний процент</h6>
                                 <div class="chart-container-large">
                                     <canvas id="contragent-reward-percent-chart"></canvas>
                                 </div>
@@ -307,7 +307,7 @@
                         </div>
                         <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">
+                                <h6 class="chart-title clickable-title">
                                     <t t-if="state.comparisonData and state.comparisonData.range2">
                                         Сравнение ИМПОРТ/ЭКСПОРТ по периодам
                                     </t>
@@ -326,7 +326,7 @@
                     <div class="row g-3 mb-2">
                         <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Средняя сумма заявок по клиентам</h6>
+                                <h6 class="chart-title clickable-title">Средняя сумма заявок по клиентам</h6>
                                 <div class="chart-container-large">
                                     <canvas id="client-avg-amount-chart"></canvas>
                                 </div>
@@ -334,7 +334,7 @@
                         </div>
                         <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Средняя сумма заявок под каждого агента</h6>
+                                <h6 class="chart-title clickable-title">Средняя сумма заявок под каждого агента</h6>
                                 <div class="chart-container-large">
                                     <canvas id="agent-avg-amount-chart"></canvas>
                                 </div>
@@ -346,7 +346,7 @@
                     <div class="row g-3 mb-2">
                         <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Количество заявок под каждого клиента</h6>
+                                <h6 class="chart-title clickable-title">Количество заявок под каждого клиента</h6>
                                 <div class="chart-container-large">
                                     <canvas id="clients-by-zayavki-chart"></canvas>
                                 </div>
@@ -354,7 +354,7 @@
                         </div>
                         <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Количество заявок под каждого плательщика субагента</h6>
+                                <h6 class="chart-title clickable-title">Количество заявок под каждого плательщика субагента</h6>
                                 <div class="chart-container-large">
                                     <canvas id="payers-by-zayavki-chart"></canvas>
                                 </div>
@@ -370,7 +370,7 @@
                         </div>
                         <div class="col-lg-3 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">Количество заявок под каждого агента</h6>
+                                <h6 class="chart-title clickable-title">Количество заявок под каждого агента</h6>
                                 <div class="chart-container-large">
                                     <canvas id="agents-by-zayavki-chart"></canvas>
                                 </div>
@@ -382,7 +382,7 @@
                     <div class="row g-3 mb-2">
                         <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">
+                                <h6 class="chart-title clickable-title">
                                     <t t-if="state.comparisonData and state.comparisonData.range2">
                                         Сравнение: Заявок закреплено за менеджером
                                     </t>
@@ -397,7 +397,7 @@
                         </div>
                         <div class="col-lg-6 col-md-6 col-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">
+                                <h6 class="chart-title clickable-title">
                                     <t t-if="state.comparisonData and state.comparisonData.range2">
                                         Сравнение: Заявок закрыто менеджером
                                     </t>
@@ -418,32 +418,18 @@
                     </div>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
                     <!-- Седьмой ряд - Циклы сделок -->
                     <div class="row g-3 mb-2">
                         <!-- Циклы сделок (линейный график) -->
                         <div class="col-lg-12">
                             <div class="chart-card">
-                                <h6 class="chart-title">📈 Циклы сделок</h6>
+                                <h6 class="chart-title clickable-title">📈 Циклы сделок</h6>
                                 <div class="chart-container-large">
                                     <canvas id="deal-cycles-line"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
-
 
                 </t>
             </div>

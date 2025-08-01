@@ -1912,34 +1912,34 @@ class Dashboard(models.Model):
             # Возвращаем данные для разных типов графиков
             # Для модального окна возвращаем ВСЕ данные без ограничений
             chart_data_mapping = {
-                # Заявки по контрагентам - ВСЕ данные для модального окна
-                'contragents_by_zayavki': self._get_full_contragents_by_zayavki(),
-                'contragent_avg_check': self._get_full_contragent_avg_check(),
-                'contragent_reward_percent': self._get_full_contragent_reward_percent(),
+                # Заявки по контрагентам - с учетом фильтров дат если они переданы
+                'contragents_by_zayavki': self._get_safe_contragents_by_zayavki(date_from, date_to) if date_from or date_to else self._get_full_contragents_by_zayavki(),
+                'contragent_avg_check': self._get_safe_contragent_avg_check(date_from, date_to) if date_from or date_to else self._get_full_contragent_avg_check(),
+                'contragent_reward_percent': self._get_safe_contragent_reward_percent(date_from, date_to) if date_from or date_to else self._get_full_contragent_reward_percent(),
                 
                 # Заявки по агентам - ВСЕ данные для модального окна
-                'agents_by_zayavki': self._get_full_agents_by_zayavki(),
-                'agent_avg_amount': self._get_full_agent_avg_amount(),
+                'agents_by_zayavki': self._get_safe_agents_by_zayavki(date_from, date_to) if date_from or date_to else self._get_full_agents_by_zayavki(),
+                'agent_avg_amount': self._get_safe_agent_avg_amount(date_from, date_to) if date_from or date_to else self._get_full_agent_avg_amount(),
                 
-                # Заявки по клиентам - ВСЕ данные для модального окна
-                'clients_by_zayavki': self._get_full_clients_by_zayavki(),
-                'client_avg_amount': self._get_full_client_avg_amount(),
+                # Заявки по клиентам - с учетом фильтров дат если они переданы
+                'clients_by_zayavki': self._get_safe_clients_by_zayavki(date_from, date_to) if date_from or date_to else self._get_full_clients_by_zayavki(),
+                'client_avg_amount': self._get_safe_client_avg_amount(date_from, date_to) if date_from or date_to else self._get_full_client_avg_amount(),
                 
-                # Заявки по субагентам и платежщикам - ВСЕ данные для модального окна
-                'subagents_by_zayavki': self._get_full_subagents_by_zayavki(),
-                'payers_by_zayavki': self._get_full_payers_by_zayavki(),
+                # Заявки по субагентам и платежщикам - с учетом фильтров дат если они переданы
+                'subagents_by_zayavki': self._get_safe_subagents_by_zayavki(date_from, date_to) if date_from or date_to else self._get_full_subagents_by_zayavki(),
+                'payers_by_zayavki': self._get_safe_payers_by_zayavki(date_from, date_to) if date_from or date_to else self._get_full_payers_by_zayavki(),
                 
-                # Данные по менеджерам - ВСЕ данные для модального окна
-                'managers_by_zayavki': self._get_full_managers_by_zayavki(),
-                'managers_closed_zayavki': self._get_full_managers_closed_zayavki(),
-                'managers_efficiency': self._get_full_managers_efficiency(),
+                # Данные по менеджерам - с учетом фильтров дат если они переданы
+                'managers_by_zayavki': self._get_safe_managers_by_zayavki(date_from, date_to) if date_from or date_to else self._get_full_managers_by_zayavki(),
+                'managers_closed_zayavki': self._get_safe_managers_closed_zayavki(date_from, date_to) if date_from or date_to else self._get_full_managers_closed_zayavki(),
+                'managers_efficiency': self._get_safe_managers_efficiency(date_from, date_to) if date_from or date_to else self._get_full_managers_efficiency(),
                 
-                # Статусы и циклы - ВСЕ данные для модального окна
-                'zayavka_status_data': self._get_full_zayavki_status_distribution(),
-                'deal_cycles': self._get_full_deal_cycles(),
+                # Статусы и циклы - с учетом фильтров дат если они переданы
+                'zayavka_status_data': self._get_safe_zayavka_status_data(date_from, date_to) if date_from or date_to else self._get_full_zayavki_status_distribution(),
+                'deal_cycles': self._get_safe_deal_cycles(date_from, date_to) if date_from or date_to else self._get_full_deal_cycles(),
                 
-                # Данные по типам сделок - ВСЕ данные для модального окна
-                'deal_types': self._get_full_deal_types(),
+                # ИСПРАВЛЕНИЕ: Данные по типам сделок - с учетом фильтров дат если они переданы
+                'deal_types': self._get_safe_deal_types(date_from, date_to) if date_from or date_to else self._get_full_deal_types(),
                 'import_export_by_month': self._get_full_import_export_by_month(),
                 
                 # Переводы и ордера - ВСЕ данные для модального окна  
@@ -2913,3 +2913,727 @@ class Dashboard(models.Model):
         except Exception as e:
             _logger.warning(f'Ошибка при получении ордеров по статусам: {e}')
             return {}
+
+    # ==================== ОПТИМИЗИРОВАННЫЕ МЕТОДЫ ДЛЯ БОЛЬШИХ ДАННЫХ ====================
+    
+    @api.model 
+    def get_dashboard_data_optimized(self, date_from=None, date_to=None, date_from_2=None, date_to_2=None, chunk_size=50):
+        """
+        Оптимизированный метод получения данных дашборда с поддержкой больших объемов данных
+        
+        :param date_from: Начальная дата первого периода
+        :param date_to: Конечная дата первого периода
+        :param date_from_2: Начальная дата второго периода (для сравнения)
+        :param date_to_2: Конечная дата второго периода (для сравнения)
+        :param chunk_size: Размер чанка для пагинации
+        :return: Словарь с оптимизированными данными
+        """
+        
+        # Используем кеширование на уровне метода
+        cache_key = f"dashboard_data_{date_from}_{date_to}_{date_from_2}_{date_to_2}"
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data:
+            return cached_data
+        
+        # Инициализация результата
+        result = {
+            'has_more_data': False,
+            'total_count': 0,
+            'chunk_size': chunk_size
+        }
+        
+        # Получаем данные для первого периода
+        period1_data = self._get_period_data_optimized(date_from, date_to, chunk_size)
+        result.update(period1_data)
+        
+        # Если указан второй период, получаем данные для сравнения
+        if date_from_2 or date_to_2:
+            period2_data = self._get_period_data_optimized(date_from_2, date_to_2, chunk_size)
+            
+            # Данные для сравнения
+            result['comparison_data'] = {
+                'range1': {
+                    'zayavki_count': period1_data.get('zayavki_data', {}).get('total', 0),
+                    'zayavki_closed': period1_data.get('zayavki_data', {}).get('closed', 0),
+                    'zayavki_closed_amount': period1_data.get('zayavki_data', {}).get('closed_amount', 0),
+                    'zayavki_usd_equivalent': period1_data.get('zayavki_data', {}).get('usd_equivalent', 0)
+                },
+                'range2': {
+                    'zayavki_count': period2_data.get('zayavki_data', {}).get('total', 0),
+                    'zayavki_closed': period2_data.get('zayavki_data', {}).get('closed', 0),
+                    'zayavki_closed_amount': period2_data.get('zayavki_data', {}).get('closed_amount', 0),
+                    'zayavki_usd_equivalent': period2_data.get('zayavki_data', {}).get('usd_equivalent', 0)
+                }
+            }
+            
+            # Данные для сравнения графиков
+            result['chart_comparison_data'] = {
+                'period1': self._extract_chart_data(period1_data),
+                'period2': self._extract_chart_data(period2_data)
+            }
+        
+        # Кешируем результат
+        self._set_cached_data(cache_key, result, ttl=300)  # 5 минут
+        
+        return result
+    
+    @api.model
+    def _get_period_data_optimized(self, date_from, date_to, chunk_size):
+        """Получить оптимизированные данные для одного периода"""
+        
+        # Формируем домены для фильтрации
+        transfer_domain = self._build_domain(date_from, date_to, 'create_date')
+        zayavka_domain = self._build_domain(date_from, date_to, 'date_placement')
+        order_domain = self._build_domain(date_from, date_to, 'create_date')
+        
+        # Используем read_group для агрегации данных вместо загрузки всех записей
+        result = {}
+        
+        # Переводы - оптимизированная загрузка
+        result['transfers_data'] = self._get_transfers_data_optimized(transfer_domain, chunk_size)
+        
+        # Ордера - оптимизированная загрузка
+        result['orders_data'] = self._get_orders_data_optimized(order_domain, chunk_size)
+        
+        # Заявки - оптимизированная загрузка с пагинацией
+        result['zayavki_data'] = self._get_zayavki_data_optimized(zayavka_domain, chunk_size)
+        
+        # Денежные контейнеры - агрегированные данные
+        result['money_data'] = self._get_money_data_optimized(transfer_domain)
+        
+        # Валюты - агрегированные данные
+        result['currencies_data'] = self._get_currencies_data_optimized(transfer_domain)
+        
+        # Эффективность менеджеров
+        result['managers_efficiency_data'] = self._get_managers_efficiency_optimized(zayavka_domain)
+        
+        return result
+    
+    @api.model
+    def _get_transfers_data_optimized(self, domain, chunk_size):
+        """Оптимизированное получение данных по переводам"""
+        
+        Transfer = self.env['amanat.transfer']
+        
+        # Используем search_count для быстрого подсчета
+        total = Transfer.search_count(domain)
+        active = Transfer.search_count(domain + [('state', '=', 'open')])
+        closed = Transfer.search_count(domain + [('state', '=', 'close')])
+        
+        # Агрегация по статусам через read_group
+        status_data = Transfer.read_group(
+            domain,
+            ['state'],
+            ['state'],
+            lazy=False
+        )
+        by_status = {item['state']: item['__count'] for item in status_data}
+        
+        # Агрегация по валютам с суммами
+        currency_data = Transfer.read_group(
+            domain,
+            ['currency', 'amount:sum'],
+            ['currency'],
+            lazy=False
+        )
+        by_currency = {item['currency']: item['amount'] for item in currency_data if item['currency']}
+        
+        # Агрегация по месяцам через SQL для производительности
+        by_month = self._get_monthly_aggregation('amanat_transfer', domain, 'create_date')
+        
+        # Агрегация по типам
+        by_type = {
+            'Простые': Transfer.search_count(domain + [('is_complex', '=', False)]),
+            'Сложные': Transfer.search_count(domain + [('is_complex', '=', True)])
+        }
+        
+        return {
+            'total': total,
+            'active': active,
+            'closed': closed,
+            'amount': sum(by_currency.values()),
+            'by_status': by_status,
+            'by_currency': by_currency,
+            'by_month': by_month,
+            'by_type': by_type
+        }
+    
+    @api.model
+    def _get_zayavki_data_optimized(self, domain, chunk_size):
+        """Оптимизированное получение данных по заявкам с пагинацией"""
+        
+        Zayavka = self.env['amanat.zayavka']
+        
+        # Базовые подсчеты
+        total = Zayavka.search_count(domain)
+        closed = Zayavka.search_count(domain + [('status', '=', '21'), ('hide_in_dashboard', '=', False)])
+        
+        # Сумма закрытых заявок через read_group
+        closed_amount_data = Zayavka.read_group(
+            domain + [('status', '=', '21'), ('hide_in_dashboard', '=', False)],
+            ['amount:sum'],
+            [],
+            lazy=False
+        )
+        closed_amount = closed_amount_data[0]['amount'] if closed_amount_data else 0
+        
+        # USD эквивалент (используем текущий курс)
+        usd_rate = self._get_current_usd_rate()
+        usd_equivalent = closed_amount / usd_rate if usd_rate else 0
+        
+        # Агрегация по статусам с ограничением
+        status_data = Zayavka.read_group(
+            domain,
+            ['status'],
+            ['status'],
+            lazy=False,
+            limit=20  # Ограничение для производительности
+        )
+        
+        # Маппинг статусов к понятным названиям
+        status_names = {
+            '1': '1. В работе',
+            '2': '2. Выставлен инвойс',
+            '3': '3. Зафиксирован курс',
+            '4': '4. Подписано поручение',
+            '5': '5. Готовим на оплату',
+            '6': '6. Передано на оплату',
+            '7': '7. Получили ПП',
+            '8': '8. Получили Swift',
+            '9': '9. Подписан Акт-отчет',
+            '10': '10. Ждем рубли',
+            '11': '11. Получили рубли',
+            '12': '12. Ждем поступление валюты',
+            '13': '13. Валюта у получателя',
+            '14': '14. Запрошен Swift 103',
+            '15': '15. Получен Swift 103',
+            '16': '16. Запрошен Swift 199',
+            '17': '17. Получен Swift 199',
+            '18': '18. Ожидаем возврат',
+            '19': '19. Оплачено повторно',
+            '20': '20. Возврат',
+            '21': '21. Заявка закрыта',
+            '22': '22. Отменено клиентом',
+            '23': '23. Согласован получатель (экспорт)',
+            '24': '24. Получили валюту (экспорт)',
+            '25': '25. Оплатили рубли (экспорт)',
+        }
+        
+        status_distribution = [
+            {
+                'name': status_names.get(item['status'], item['status']), 
+                'code': item['status'],
+                'count': item['__count']
+            }
+            for item in status_data
+        ]
+        
+        # Топ контрагентов с ограничением
+        contragents_data = self._get_top_entities_optimized(
+            'amanat.zayavka', 
+            domain, 
+            'contragent_id',
+            limit=chunk_size
+        )
+        
+        # Топ агентов с ограничением
+        agents_data = self._get_top_entities_optimized(
+            'amanat.zayavka',
+            domain,
+            'agent_id', 
+            limit=chunk_size
+        )
+        
+        # Топ клиентов с ограничением
+        clients_data = self._get_top_entities_optimized(
+            'amanat.zayavka',
+            domain,
+            'client_id',
+            limit=chunk_size
+        )
+        
+        # Менеджеры - оптимизированная загрузка
+        managers_data = self._get_managers_data_optimized(domain, chunk_size)
+        
+        # Циклы сделок - агрегация через SQL
+        deal_cycles = self._get_deal_cycles_optimized(domain)
+        
+        return {
+            'total': total,
+            'closed': closed,
+            'closed_amount': closed_amount,
+            'usd_equivalent': usd_equivalent,
+            'status_distribution': status_distribution,
+            'contragents_by_zayavki': contragents_data['by_count'],
+            'contragent_avg_check': contragents_data['by_avg'],
+            'contragent_reward_percent': self._get_reward_percent_optimized(domain, chunk_size),
+            'agents_by_zayavki': agents_data['by_count'],
+            'agent_avg_amount': agents_data['by_avg'],
+            'clients_by_zayavki': clients_data['by_count'],
+            'client_avg_amount': clients_data['by_avg'],
+            'subagents_by_zayavki': self._get_subagents_data_optimized(domain, chunk_size),
+            'payers_by_zayavki': self._get_payers_data_optimized(domain, chunk_size),
+            'managers_by_zayavki': managers_data['by_count'],
+            'managers_closed_zayavki': managers_data['by_closed'],
+            'deal_cycles': deal_cycles,
+            'by_deal_type': self._get_deal_types_optimized(domain)
+        }
+    
+    @api.model
+    def _get_top_entities_optimized(self, model_name, domain, field_name, limit=100):
+        """Универсальный метод для получения топ сущностей с оптимизацией"""
+        
+        Model = self.env[model_name]
+        
+        # Подсчет количества через SQL для производительности
+        query = f"""
+            SELECT 
+                {field_name},
+                res_partner.name,
+                COUNT(*) as count,
+                AVG(amount) as avg_amount
+            FROM {model_name.replace('.', '_')}
+            LEFT JOIN res_partner ON {model_name.replace('.', '_')}.{field_name} = res_partner.id
+            WHERE {model_name.replace('.', '_')}.id IN (
+                SELECT id FROM {model_name.replace('.', '_')}
+                WHERE {self._domain_to_sql(domain)}
+            )
+            AND {field_name} IS NOT NULL
+            GROUP BY {field_name}, res_partner.name
+            ORDER BY count DESC
+            LIMIT %s
+        """
+        
+        self.env.cr.execute(query, (limit,))
+        results = self.env.cr.dictfetchall()
+        
+        return {
+            'by_count': [{'name': r['name'], 'count': r['count']} for r in results],
+            'by_avg': [{'name': r['name'], 'avg_amount': r['avg_amount'] or 0} for r in results]
+        }
+    
+    @api.model
+    def _get_monthly_aggregation(self, table_name, domain, date_field):
+        """Агрегация по месяцам через SQL"""
+        
+        query = f"""
+            SELECT 
+                TO_CHAR({date_field}, 'YYYY-MM') as month,
+                COUNT(*) as count
+            FROM {table_name}
+            WHERE {self._domain_to_sql(domain)}
+            GROUP BY month
+            ORDER BY month DESC
+            LIMIT 12
+        """
+        
+        self.env.cr.execute(query)
+        return [{'month': row[0], 'count': row[1]} for row in self.env.cr.fetchall()]
+    
+    @api.model
+    def _get_managers_efficiency_optimized(self, domain):
+        """Оптимизированный расчет эффективности менеджеров"""
+        
+        query = """
+            SELECT 
+                m.name,
+                COUNT(DISTINCT z.id) as total_count,
+                COUNT(DISTINCT CASE WHEN z.status = '21' THEN z.id END) as closed_count,
+                AVG(EXTRACT(epoch FROM (z.deal_closed_date - z.date_placement))/86400) as avg_cycle_days
+            FROM amanat_zayavka z
+            JOIN amanat_zayavka_manager_rel zmr ON z.id = zmr.zayavka_id
+            JOIN amanat_manager m ON zmr.manager_id = m.id
+            WHERE z.id IN (
+                SELECT id FROM amanat_zayavka
+                WHERE %s
+            )
+            GROUP BY m.name
+            ORDER BY closed_count DESC
+        """
+        
+        self.env.cr.execute(query, (self._domain_to_sql(domain),))
+        results = self.env.cr.dictfetchall()
+        
+        return [
+            {
+                'name': r['name'],
+                'efficiency': (r['closed_count'] / r['total_count'] * 100) if r['total_count'] > 0 else 0,
+                'total': r['total_count'],
+                'closed': r['closed_count'],
+                'avg_cycle': r['avg_cycle_days'] or 0
+            }
+            for r in results
+        ]
+    
+    @api.model
+    def get_dashboard_data_chunk(self, offset=0, limit=100, **kwargs):
+        """Получить чанк данных для дашборда"""
+        
+        # Извлекаем параметры
+        date_from = kwargs.get('date_from')
+        date_to = kwargs.get('date_to')
+        data_type = kwargs.get('data_type', 'all')
+        
+        domain = self._build_domain(date_from, date_to, 'date_placement')
+        
+        if data_type == 'contragents':
+            return self._get_contragents_chunk(domain, offset, limit)
+        elif data_type == 'agents':
+            return self._get_agents_chunk(domain, offset, limit)
+        elif data_type == 'clients':
+            return self._get_clients_chunk(domain, offset, limit)
+        else:
+            return {'error': 'Unknown data type'}
+    
+    @api.model
+    def get_chart_data(self, chart_type, **kwargs):
+        """Получить данные для конкретного графика с ленивой загрузкой"""
+        
+        cache_key = f"chart_{chart_type}_{kwargs}"
+        cached_data = self._get_cached_data(cache_key)
+        if cached_data:
+            return cached_data
+        
+        # Маппинг типов графиков на методы
+        chart_methods = {
+            'managers-efficiency': self._get_managers_efficiency_chart_data,
+            'status-distribution': self._get_status_distribution_chart_data,
+            'contragents-by-zayavki': self._get_contragents_chart_data,
+            'deal-cycles': self._get_deal_cycles_chart_data,
+            # ... другие графики
+        }
+        
+        method = chart_methods.get(chart_type)
+        if method:
+            data = method(**kwargs)
+            self._set_cached_data(cache_key, data, ttl=180)  # 3 минуты
+            return data
+        
+        return {'error': 'Unknown chart type'}
+    
+    # ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
+    
+    @api.model
+    def _build_domain(self, date_from, date_to, date_field):
+        """Построить домен для фильтрации по датам"""
+        domain = []
+        if date_from:
+            domain.append((date_field, '>=', date_from))
+        if date_to:
+            domain.append((date_field, '<=', date_to))
+        return domain
+    
+    @api.model
+    def _domain_to_sql(self, domain):
+        """Преобразовать Odoo домен в SQL условие"""
+        if not domain:
+            return '1=1'
+        
+        conditions = []
+        for condition in domain:
+            if len(condition) == 3:
+                field, operator, value = condition
+                if operator == '=':
+                    conditions.append(f"{field} = '{value}'")
+                elif operator == '>=':
+                    conditions.append(f"{field} >= '{value}'")
+                elif operator == '<=':
+                    conditions.append(f"{field} <= '{value}'")
+                # ... другие операторы
+        
+        return ' AND '.join(conditions) if conditions else '1=1'
+    
+    @api.model
+    def _get_cached_data(self, key):
+        """Получить данные из кеша"""
+        # Простая реализация кеша в памяти
+        # В продакшене лучше использовать Redis или Memcached
+        cache = self.env.context.get('dashboard_cache', {})
+        cached = cache.get(key)
+        if cached and cached['expires'] > datetime.now():
+            return cached['data']
+        return None
+    
+    @api.model
+    def _set_cached_data(self, key, data, ttl=300):
+        """Сохранить данные в кеш"""
+        cache = self.env.context.get('dashboard_cache', {})
+        cache[key] = {
+            'data': data,
+            'expires': datetime.now() + timedelta(seconds=ttl)
+        }
+        self.env.context = dict(self.env.context, dashboard_cache=cache)
+    
+    @api.model
+    def _get_current_usd_rate(self):
+        """Получить текущий курс USD"""
+        # Здесь должна быть логика получения актуального курса
+        # Для примера возвращаем фиксированное значение
+        return 100.0
+    
+    @api.model
+    def _extract_chart_data(self, period_data):
+        """Извлечь данные для графиков из данных периода"""
+        zayavki_data = period_data.get('zayavki_data', {})
+        
+        return {
+            'status_distribution': zayavki_data.get('status_distribution', []),
+            'contragents_by_zayavki': zayavki_data.get('contragents_by_zayavki', []),
+            'contragent_avg_check': zayavki_data.get('contragent_avg_check', []),
+            'contragent_reward_percent': zayavki_data.get('contragent_reward_percent', []),
+            'agents_by_zayavki': zayavki_data.get('agents_by_zayavki', []),
+            'agent_avg_amount': zayavki_data.get('agent_avg_amount', []),
+            'clients_by_zayavki': zayavki_data.get('clients_by_zayavki', []),
+            'client_avg_amount': zayavki_data.get('client_avg_amount', []),
+            'subagents_by_zayavki': zayavki_data.get('subagents_by_zayavki', []),
+            'payers_by_zayavki': zayavki_data.get('payers_by_zayavki', []),
+            'managers_by_zayavki': zayavki_data.get('managers_by_zayavki', []),
+            'managers_closed_zayavki': zayavki_data.get('managers_closed_zayavki', []),
+            'deal_cycles': zayavki_data.get('deal_cycles', []),
+            'deal_types': zayavki_data.get('by_deal_type', {})
+        }
+    
+    @api.model
+    def _get_orders_data_optimized(self, domain, chunk_size):
+        """Оптимизированное получение данных по ордерам"""
+        
+        Order = self.env['amanat.order']
+        
+        # Базовые подсчеты
+        total = Order.search_count(domain)
+        draft = Order.search_count(domain + [('status', '=', 'draft')])
+        done = Order.search_count(domain + [('status', '=', 'done')])
+        
+        # Агрегация по статусам
+        status_data = Order.read_group(
+            domain,
+            ['status'],
+            ['status'],
+            lazy=False
+        )
+        by_status = {item['status']: item['__count'] for item in status_data}
+        
+        # Агрегация по месяцам
+        by_month = self._get_monthly_aggregation('amanat_order', domain, 'create_date')
+        
+        return {
+            'total': total,
+            'draft': draft,
+            'done': done,
+            'by_status': by_status,
+            'by_month': by_month
+        }
+    
+    @api.model
+    def _get_money_data_optimized(self, domain):
+        """Оптимизированное получение данных по денежным контейнерам"""
+        
+        Money = self.env['amanat.money']
+        
+        total = Money.search_count(domain)
+        positive = Money.search_count(domain + [('amount', '>', 0)])
+        debt = Money.search_count(domain + [('amount', '<', 0)])
+        
+        return {
+            'total': total,
+            'positive': positive,
+            'debt': debt
+        }
+    
+    @api.model
+    def _get_currencies_data_optimized(self, domain):
+        """Оптимизированное получение данных по валютам"""
+        
+        Money = self.env['amanat.money']
+        
+        # Агрегация сумм по валютам через read_group
+        currency_data = Money.read_group(
+            domain,
+            ['currency', 'amount:sum'],
+            ['currency'],
+            lazy=False
+        )
+        
+        result = {}
+        for item in currency_data:
+            if item['currency']:
+                result[item['currency']] = item['amount'] or 0
+        
+        return result
+    
+    @api.model
+    def _get_managers_data_optimized(self, domain, chunk_size):
+        """Оптимизированное получение данных по менеджерам через SQL"""
+        
+        # Прямой SQL запрос для избежания загрузки всех данных в память
+        query_all = """
+            SELECT 
+                m.name as manager_name,
+                COUNT(z.id) as count
+            FROM amanat_zayavka z
+            JOIN amanat_zayavka_manager_rel zmr ON z.id = zmr.zayavka_id
+            JOIN amanat_manager m ON zmr.manager_id = m.id
+            WHERE z.id IS NOT NULL
+            GROUP BY m.name
+            ORDER BY count DESC
+            LIMIT %s
+        """
+        
+        query_closed = """
+            SELECT 
+                m.name as manager_name,
+                COUNT(z.id) as count
+            FROM amanat_zayavka z
+            JOIN amanat_zayavka_manager_rel zmr ON z.id = zmr.zayavka_id
+            JOIN amanat_manager m ON zmr.manager_id = m.id
+            WHERE z.status = '21'
+            GROUP BY m.name
+            ORDER BY count DESC
+            LIMIT %s
+        """
+        
+        # Выполняем запросы
+        self.env.cr.execute(query_all, (chunk_size,))
+        by_count = [{'name': row[0], 'count': row[1]} for row in self.env.cr.fetchall()]
+        
+        self.env.cr.execute(query_closed, (chunk_size,))
+        by_closed = [{'name': row[0], 'count': row[1]} for row in self.env.cr.fetchall()]
+        
+        return {
+            'by_count': by_count,
+            'by_closed': by_closed
+        }
+    
+    @api.model
+    def _get_reward_percent_optimized(self, domain, chunk_size):
+        """Оптимизированное получение процента вознаграждения"""
+        
+        query = """
+            SELECT 
+                rp.name,
+                AVG(z.reward_percent) as avg_reward_percent
+            FROM amanat_zayavka z
+            LEFT JOIN res_partner rp ON z.contragent_id = rp.id
+            WHERE z.id IN (
+                SELECT id FROM amanat_zayavka
+                WHERE %s
+            )
+            AND z.contragent_id IS NOT NULL
+            AND z.reward_percent > 0
+            GROUP BY rp.name
+            ORDER BY avg_reward_percent DESC
+            LIMIT %s
+        """
+        
+        self.env.cr.execute(query, (self._domain_to_sql(domain), chunk_size))
+        results = self.env.cr.dictfetchall()
+        
+        return [
+            {'name': r['name'], 'avg_reward_percent': r['avg_reward_percent'] or 0}
+            for r in results
+        ]
+    
+    @api.model
+    def _get_subagents_data_optimized(self, domain, chunk_size):
+        """Оптимизированное получение данных по субагентам с ограниченной загрузкой"""
+        
+        Zayavka = self.env['amanat.zayavka']
+        
+        # Загружаем только небольшой батч заявок, а не все сразу
+        batch_size = min(200, chunk_size * 5)  # Более консервативное ограничение батча
+        zayavki_with_subagents = Zayavka.search(domain + [('subagent_ids', '!=', False)], limit=batch_size)
+        
+        subagent_counts = {}
+        for zayavka in zayavki_with_subagents:
+            # Загружаем только имена, не все данные
+            subagent_names = zayavka.subagent_ids.mapped('name')
+            for subagent_name in subagent_names:
+                if subagent_name:
+                    subagent_counts[subagent_name] = subagent_counts.get(subagent_name, 0) + 1
+        
+        result = [
+            {'name': name, 'count': count}
+            for name, count in subagent_counts.items()
+        ]
+        
+        return sorted(result, key=lambda x: x['count'], reverse=True)[:chunk_size]
+    
+    @api.model
+    def _get_payers_data_optimized(self, domain, chunk_size):
+        """Оптимизированное получение данных по плательщикам с ограниченной загрузкой"""
+        
+        Zayavka = self.env['amanat.zayavka']
+        
+        # Загружаем только небольшой батч заявок, а не все сразу
+        batch_size = min(200, chunk_size * 5)  # Более консервативное ограничение батча
+        zayavki_with_payers = Zayavka.search(domain + [('subagent_payer_ids', '!=', False)], limit=batch_size)
+        
+        payer_counts = {}
+        for zayavka in zayavki_with_payers:
+            # Загружаем только имена, не все данные
+            payer_names = zayavka.subagent_payer_ids.mapped('name')
+            for payer_name in payer_names:
+                if payer_name:
+                    payer_counts[payer_name] = payer_counts.get(payer_name, 0) + 1
+        
+        result = [
+            {'name': name, 'count': count}
+            for name, count in payer_counts.items()
+        ]
+        
+        return sorted(result, key=lambda x: x['count'], reverse=True)[:chunk_size]
+    
+    @api.model
+    def _get_deal_cycles_optimized(self, domain):
+        """Оптимизированное получение данных по циклам сделок"""
+        
+        query = """
+            SELECT 
+                EXTRACT(day FROM (deal_closed_date::date - date_placement::date)) as cycle_days,
+                COUNT(*) as count
+            FROM amanat_zayavka
+            WHERE id IN (
+                SELECT id FROM amanat_zayavka
+                WHERE %s
+            )
+            AND deal_closed_date IS NOT NULL 
+            AND date_placement IS NOT NULL
+            GROUP BY cycle_days
+            ORDER BY cycle_days
+        """
+        
+        self.env.cr.execute(query, (self._domain_to_sql(domain),))
+        results = self.env.cr.dictfetchall()
+        
+        return [
+            {'cycle_days': int(r['cycle_days']), 'count': r['count']}
+            for r in results
+            if r['cycle_days'] is not None and r['cycle_days'] >= 0
+        ]
+    
+    @api.model
+    def _get_deal_types_optimized(self, domain):
+        """Оптимизированное получение типов сделок"""
+        
+        Zayavka = self.env['amanat.zayavka']
+        
+        deal_types_data = Zayavka.read_group(
+            domain,
+            ['deal_type'],
+            ['deal_type'],
+            lazy=False
+        )
+        
+        result = {}
+        for item in deal_types_data:
+            if item['deal_type']:
+                # Преобразуем технические названия в человекочитаемые
+                deal_type_map = {
+                    'import': 'Импорт',
+                    'export': 'Экспорт',
+                    'other': 'Другое'
+                }
+                display_name = deal_type_map.get(item['deal_type'], item['deal_type'])
+                result[display_name] = item['deal_type_count']
+        
+        return result
