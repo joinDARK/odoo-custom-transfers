@@ -190,7 +190,7 @@
                     <field name="deal_type"/>
                     <field name="instruction_signed_date"/>
                     <field name="amount"/>
-                    <field name="best_rate"/>
+                    <field name="best_rate" string="Скрытый курс"/>
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="hidden_hadge"/>
                     <field name="dollar_cross_rate"/>
@@ -263,7 +263,7 @@
                     <field name="deal_type"/>
                     <field name="instruction_signed_date"/>
                     <field name="amount"/>
-                    <field name="best_rate"/>
+                    <field name="best_rate" string="Скрытый курс"/>
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="hidden_hadge"/>
                     <field name="dollar_cross_rate"/>
@@ -337,7 +337,7 @@
                     <field name="deal_type"/>
                     <field name="instruction_signed_date"/>
                     <field name="amount"/>
-                    <field name="best_rate"/>
+                    <field name="best_rate" string="Скрытый курс"/>
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="hidden_hadge"/>
                     <field name="dollar_cross_rate"/>
