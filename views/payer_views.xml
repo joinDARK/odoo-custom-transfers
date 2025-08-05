@@ -8,10 +8,12 @@
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Скачать файлы" type="object" name="action_download_files" icon="fa-download"/>
                 <field width="200" name="name"/>
                 <field width="200" name="contragents_ids" widget="many2many_tags"/>
                 <field name="inn"/>
                 <field name="applications"/>
+                <field name="partner_card_ids"/>
                 <!-- <field name="order_ids" widget="many2many_tags"/>
                 <field name="reconciliation" widget="many2many_tags"/>
                 <field name="transfer"/>
@@ -57,6 +59,7 @@
                         <field name="applications"/>
                         <field name="price_list_profit_ids"/>
                         <field name="pricelist_partners"/>
+                        <field name="partner_card_ids"/>
                     </group>
                 </sheet>
                 <!-- Виджет трекинга -->

@@ -89,6 +89,8 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     comment = fields.Text(string='Комментарии по заявке', tracking=True)
 
+    comment_hedge = fields.Text(string='Комментарии по Хэджу', tracking=True)
+
     # GROUP: Сравнение курса
     investing_rate = fields.Float(
         string='Курс Инвестинг',
@@ -332,6 +334,13 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         digits=(16, 2),
         tracking=True,
+        help="""Если вид сделки "Экспорт": Фин рез = (Сумма заявки × % Вознаграждения) - Расход платежа Клиент - Расход на операционную деятельность Клиент Реал
+        
+        Если Агент "Тезер" ИЛИ Валюта "USDT" ИЛИ Вид сделки "Импорт-экспорт/Экспорт-импорт":
+        • Если Контрагент "А7": Фин рез = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Клиент Реал - Расход платежа Клиент
+        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Клиент Реал - Расход платежа Клиент
+
+        Обычный расчет: Фин рез = Купили валюту Клиент реал - Расход платежа Клиент - Себестоимость денег Клиент Реал - Скрытая комиссия Партнера Реал - Расход на операционную деятельность Клиент Реал - Сумма заявки - Прибыль плательщика по валюте заявки"""
     )
 
     fin_res_client_real_usd = fields.Float(
@@ -341,6 +350,9 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         digits=(16, 2),
         tracking=True,
+        help="""
+        Фин рез Клиент реал $ = Фин рез Клиент реал × Кросс-курс Плательщика $ авто
+        """
     )
 
     fin_res_client_real_rub = fields.Float(
@@ -350,6 +362,9 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         digits=(16, 2),
         tracking=True,
+        help="""
+        Фин рез Клиент реал ₽ = Фин рез Клиент реал $ × Кросс-курс Плательщика ₽
+        """
     )
 
     # GROUP: Сбер
@@ -577,6 +592,14 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         digits=(16, 2),
         tracking=True,
+        help="""
+        Если вид сделки "Экспорт": Фин рез Сбер реал = (Сумма заявки × % Вознаграждения) - Расход платежа Сбер - Расход на операционную деятельность Сбер реал
+        
+        Если Агент "Тезер" ИЛИ Валюта "USDT" ИЛИ Вид сделки "Импорт-экспорт/Экспорт-импорт":
+        • Если Контрагент "А7": Фин рез Сбер реал = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
+        • Иначе: Фин рез Сбер реал = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
+
+        Обычный расчет: Фин рез Сбер реал = Купили валюту Сбер реал - Расход платежа Сбер - Себестоимость денег Сбер Реал - Скрытая комиссия Партнера Реал - Расход на операционную деятельность Сбер Реал - Сумма заявки - Прибыль плательщика по валюте заявки"""
     )
 
     fin_res_sber_real_usd = fields.Float(
@@ -586,6 +609,9 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         digits=(16, 2),
         tracking=True,
+        help="""
+        Фин рез Сбер реал $ = Фин рез Сбер реал × Кросс-курс Плательщика $ авто
+        """
     )
 
     fin_res_sber_real_rub = fields.Float(
@@ -595,6 +621,9 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         digits=(16, 2),
         tracking=True,
+        help="""
+        Фин рез Сбер реал ₽ = Фин рез Сбер реал $ × Кросс-курс Плательщика ₽
+        """
     )
 
     # GROUP: Совок
@@ -791,6 +820,13 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         digits=(16, 2),
         tracking=True,
+        help="""Если вид сделки "Экспорт": Фин рез Совок реал = (Сумма заявки × % Вознаграждения) - Расход платежа Совок - Расход на операционную деятельность Совок реал
+        
+        Если Агент "Тезер" ИЛИ Валюта "USDT" ИЛИ Вид сделки "Импорт-экспорт/Экспорт-импорт":
+        • Если Контрагент "А7": Фин рез Совок реал = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
+        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
+
+        Обычный расчет: Фин рез Совок реал = Купили валюту Совок Реал - Расход платежа Совок - Себестоимость денег Совок Реал - Скрытая комиссия Партнера Реал - Расход на операционную деятельность Совок Реал - Сумма заявки - Прибыль плательщика по валюте заявки"""
     )
 
     fin_res_sovok_real_usd = fields.Float(
@@ -800,6 +836,9 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         digits=(16, 2),
         tracking=True,
+        help="""
+        Фин рез Совок реал $ = Фин рез Совок реал × Кросс-курс Плательщика $ авто
+        """
     )
 
     fin_res_sovok_real_rub = fields.Float(
@@ -809,6 +848,9 @@ class Zayavka(models.Model, AmanatBaseModel):
         store=True,
         digits=(16, 2),
         tracking=True,
+        help="""
+        Фин рез Совок реал ₽ = Фин рез Совок реал $ × Кросс-курс Плательщика ₽
+        """
     )
 
     # GROUP: Не сгрупперованное
@@ -1291,7 +1333,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         'zayavka_attachment_rel', 
         'zayavka_id', 
         'attachment_id', 
-        string='Заявка'
+        string='Заявка Вход'
     )
 
     zayavka_link = fields.Char(string='Заявка ссылка', tracking=True)
@@ -1356,6 +1398,7 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     report_link = fields.Char(string='Акт-отчет ссылка', tracking=True)
 
+    # TODO: Удалить Заявку Вход
     zayavka_start_attachments = fields.Many2many(
         'ir.attachment', 
         'zayavka_start_attachment_rel', 
@@ -2126,6 +2169,17 @@ class Zayavka(models.Model, AmanatBaseModel):
     return_amount_to_reward = fields.Float(
         string='Сумма вознаграждения на возврат',
         digits=(16, 2),
+        tracking=True,
+    )
+
+    return_amount_main = fields.Float(
+        string='Основная сумма на возврат',
+        digits=(16, 2),
+        tracking=True,
+    )
+
+    payment_order_date_to_return = fields.Date(
+        string='Дата возврата на расчетный счет клиента',
         tracking=True,
     )
 

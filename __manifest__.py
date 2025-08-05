@@ -129,6 +129,7 @@
             "amanat/static/src/js/list_view_numbering.js",
             "amanat/static/src/js/chatter_toggle.js",
             "amanat/static/src/js/swift_commands.js",
+            "amanat/static/src/js/refresh_rates_button.js",
             "amanat/static/src/js/amanat_dashboard.js",
             "amanat/static/src/js/analytics_dashboard.js",
             "amanat/static/src/js/zayavka_fiks_dashboard.js",

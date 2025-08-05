@@ -5,7 +5,7 @@ import { Component, useState, onMounted, onWillUnmount } from "@odoo/owl";
 
 class ChatterToggleService {
     constructor() {
-        this.chatterVisible = true;
+        this.chatterVisible = false; // Изменено: по умолчанию логи скрыты
         this.toggleButton = null;
         this.checkTimeout = null;
         this.lastUrl = location.href;
@@ -29,9 +29,15 @@ class ChatterToggleService {
         
         this.toggleButton = document.createElement('button');
         this.toggleButton.className = 'chatter-toggle-btn';
-        this.toggleButton.innerHTML = '<i class="fa fa-eye-slash"></i>';
+        // Устанавливаем иконку и заголовок в зависимости от текущего состояния
+        if (this.chatterVisible) {
+            this.toggleButton.innerHTML = '<i class="fa fa-eye-slash"></i>';
+            this.toggleButton.title = 'Скрыть логи';
+        } else {
+            this.toggleButton.innerHTML = '<i class="fa fa-eye"></i>';
+            this.toggleButton.title = 'Показать логи';
+        }
         this.toggleButton.type = 'button';
-        this.toggleButton.title = 'Скрыть логи';
         
         this.toggleButton.style.cssText = `
             background: none !important;
@@ -64,6 +70,9 @@ class ChatterToggleService {
             this.toggleButton.style.backgroundColor = 'transparent';
         });
         
+        // Устанавливаем правильный цвет при создании кнопки
+        this.toggleButton.style.color = this.chatterVisible ? '#dc3545' : '#6c757d';
+        
         navbar.insertBefore(this.toggleButton, navbar.firstChild);
         console.log('Chatter Toggle: кнопка создана и добавлена в navbar');
     }
@@ -74,6 +83,14 @@ class ChatterToggleService {
             this.toggleButton = null;
             console.log('Chatter Toggle: кнопка удалена');
         }
+    }
+
+    hideChatterElements() {
+        const chatters = document.querySelectorAll('.o-mail-Chatter, .o-mail-ChatterContainer, .o-mail-Form-chatter');
+        console.log('Chatter Toggle: скрываем чэттеры при инициализации:', chatters.length);
+        chatters.forEach(chatter => {
+            chatter.style.display = 'none';
+        });
     }
 
     toggleChatter() {
@@ -124,6 +141,10 @@ class ChatterToggleService {
         if (this.checkIfFormWithChatter()) {
             console.log('Chatter Toggle: форма с чэттером найдена');
             this.createToggleButton();
+            // Автоматически скрываем чаттеры при инициализации, если они должны быть скрыты
+            if (!this.chatterVisible) {
+                this.hideChatterElements();
+            }
         } else {
             console.log('Chatter Toggle: форма с чэттером не найдена');
             this.removeToggleButton();
@@ -135,6 +156,10 @@ class ChatterToggleService {
         this.checkTimeout = setTimeout(() => {
             if (this.checkIfFormWithChatter() && !this.toggleButton) {
                 this.createToggleButton();
+                // Скрываем чаттеры при создании кнопки, если они должны быть скрыты
+                if (!this.chatterVisible) {
+                    this.hideChatterElements();
+                }
             } else if (!this.checkIfFormWithChatter() && this.toggleButton) {
                 this.removeToggleButton();
             }

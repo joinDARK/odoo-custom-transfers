@@ -67,11 +67,11 @@ class Transfer(models.Model, AmanatBaseModel):
 
     # Royalti
     royalti_Transfer = fields.Boolean(string='Провести роялти', default=False, tracking=True)
-    royalty_percent_1 = fields.Float(string="Процент роялти 1", digits=(16, 2), tracking=True)
-    royalty_percent_2 = fields.Float(string="Процент роялти 2", digits=(16, 2), tracking=True)
-    royalty_percent_3 = fields.Float(string="Процент роялти 3", digits=(16, 2), tracking=True)
-    royalty_percent_4 = fields.Float(string="Процент роялти 4", digits=(16, 2), tracking=True)
-    royalty_percent_5 = fields.Float(string="Процент роялти 5", digits=(16, 2), tracking=True)
+    royalty_percent_1 = fields.Float(string="Процент роялти 1", digits=(16, 8), tracking=True)
+    royalty_percent_2 = fields.Float(string="Процент роялти 2", digits=(16, 8), tracking=True)
+    royalty_percent_3 = fields.Float(string="Процент роялти 3", digits=(16, 8), tracking=True)
+    royalty_percent_4 = fields.Float(string="Процент роялти 4", digits=(16, 8), tracking=True)
+    royalty_percent_5 = fields.Float(string="Процент роялти 5", digits=(16, 8), tracking=True)
 
     royalty_recipient_1 = fields.Many2one('amanat.contragent', string="Получатель роялти 1", tracking=True)
     royalty_recipient_2 = fields.Many2one('amanat.contragent', string="Получатель роялти 2", tracking=True)

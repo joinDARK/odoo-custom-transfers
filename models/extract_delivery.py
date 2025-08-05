@@ -276,7 +276,10 @@ class Extract_delivery(models.Model, AmanatBaseModel):
             zayavka_sums = [
                 getattr(zayavka, 'application_amount_rub_contract', None),  # Заявка по курсу в рублях по договору
                 getattr(zayavka, 'total_fact', None),                      # Итого факт
-                getattr(zayavka, 'contract_reward', None)                  # Вознаграждение по договору
+                getattr(zayavka, 'contract_reward', None),                 # Вознаграждение по договору
+                getattr(zayavka, 'total_client', None),                    # Итого Клиент
+                getattr(zayavka, 'total_sber', None),                      # Итого Сбербанк
+                getattr(zayavka, 'total_sovok', None)                      # Итого Совкомбанк
             ]
             
             # Находим первую непустую сумму
@@ -481,7 +484,10 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         fields_to_check = [
             'application_amount_rub_contract',  # Заявка по курсу в рублях по договору
             'contract_reward',                  # Вознаграждение по договору
-            'total_fact'                       # Итого факт
+            'total_fact',                      # Итого факт
+            'total_client',                    # Итого Клиент
+            'total_sber',                      # Итого Сбербанк
+            'total_sovok'                      # Итого Совкомбанк
         ]
         
         # Получаем все заявки с заполненной датой "Взята в работу"
@@ -643,7 +649,10 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 zayavka_sums = [
                     getattr(zayavka, 'application_amount_rub_contract', None),  # Заявка по курсу в рублях по договору
                     getattr(zayavka, 'total_fact', None),                # Итого факт
-                    getattr(zayavka, 'contract_reward', None)            # Вознаграждение по договору
+                    getattr(zayavka, 'contract_reward', None),           # Вознаграждение по договору
+                    getattr(zayavka, 'total_client', None),              # Итого Клиент
+                    getattr(zayavka, 'total_sber', None),                # Итого Сбербанк
+                    getattr(zayavka, 'total_sovok', None)                # Итого Совкомбанк
                 ]
                 
                 # Находим первую непустую сумму
@@ -692,7 +701,129 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 _logger.info(f"Выписка ID={extract.id} связана с {len(zayavki)} заявками: {[z.zayavka_id for z in zayavki]}")
         
         _logger.info(f"Процесс сопоставления завершен. Обработано выписок: {len(extract_to_zayavki)}, создано связей: {total_links}")
+        
+        # Дополнительно ищем комбинации выписок для частичного покрытия
+        self._run_partial_matching_automation()
+        
         return True
+    
+    @api.model
+    def _run_partial_matching_automation(self):
+        """
+        Ищет комбинации выписок, которые в сумме покрывают заявку.
+        Вызывается после основного сопоставления для обработки оставшихся случаев.
+        """
+        _logger.info("Запуск автоматического сопоставления с частичным покрытием")
+        TOLERANCE = 1.0
+
+        # Получаем заявки, которые еще не полностью покрыты выписками
+        all_zayavki = self.env['amanat.zayavka'].search([('taken_in_work_date', '!=', False)])
+        
+        # Получаем все выписки без связанных заявок
+        candidate_extracts = self.env['amanat.extract_delivery'].search([
+            ('applications', '=', False)
+        ])
+        
+        partial_matches = 0
+        
+        for zayavka in all_zayavki:
+            # Определяем целевую сумму для заявки (используем ту же логику, что в get_payment_request)
+            if zayavka.is_sovcombank_contragent and not zayavka.is_sberbank_contragent:
+                target_sum = getattr(zayavka, 'total_sovok', None)
+            elif zayavka.is_sberbank_contragent and not zayavka.is_sovcombank_contragent:
+                target_sum = getattr(zayavka, 'total_sber', None)
+            else:
+                target_sum = getattr(zayavka, 'total_client', None)
+            
+            if not target_sum:
+                continue
+            
+            # Получаем уже связанные выписки и их общую сумму
+            current_extracts_sum = sum(e.amount or 0 for e in zayavka.extract_delivery_ids)
+            remaining_sum = target_sum - current_extracts_sum
+            
+            if remaining_sum <= TOLERANCE:
+                continue  # Заявка уже покрыта
+            
+            # Собираем плательщиков заявки
+            candidate_payers = []
+            if zayavka.agent_id and zayavka.agent_id.payer_ids:
+                candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
+            if zayavka.client_id and zayavka.client_id.payer_ids:
+                candidate_payers.extend(zayavka.client_id.payer_ids.ids)
+            
+            if not candidate_payers:
+                continue
+            
+            # Ищем подходящие выписки для этой заявки
+            suitable_extracts = []
+            for extract in candidate_extracts:
+                # Проверяем, что нет других сделок
+                if (extract.currency_reserve or extract.transfer_ids or 
+                    extract.conversion or extract.investment or extract.gold_deal):
+                    continue
+                
+                # Проверяем плательщиков
+                extract_payers = []
+                if extract.payer:
+                    extract_payers.append(extract.payer.id)
+                if extract.recipient:
+                    extract_payers.append(extract.recipient.id)
+                
+                if not extract_payers:
+                    continue
+                
+                # Проверяем совпадение плательщиков
+                if all(payer_id in candidate_payers for payer_id in extract_payers):
+                    suitable_extracts.append(extract)
+            
+            # Ищем комбинацию выписок, которая покрывает remaining_sum
+            matching_combination = self._find_extract_combination(suitable_extracts, remaining_sum, TOLERANCE)
+            
+            if matching_combination:
+                # Связываем найденные выписки с заявкой
+                for extract in matching_combination:
+                    extract.write({'direction_choice': 'applications'})
+                    zayavka.write({'extract_delivery_ids': [(4, extract.id)]})
+                    _logger.info(f"Частичное покрытие: связана выписка {extract.id} с заявкой {zayavka.zayavka_id}")
+                
+                partial_matches += 1
+                total_matched_sum = sum(e.amount or 0 for e in matching_combination)
+                _logger.info(f"Найдено частичное покрытие для заявки {zayavka.zayavka_id}: {len(matching_combination)} выписок на сумму {total_matched_sum}")
+        
+        _logger.info(f"Частичное сопоставление завершено. Найдено совпадений: {partial_matches}")
+        return True
+    
+    def _find_extract_combination(self, extracts, target_sum, tolerance):
+        """
+        Находит комбинацию выписок, которая в сумме близка к целевой сумме.
+        Простой алгоритм: ищет наилучшее приближение.
+        """
+        if not extracts:
+            return []
+        
+        # Сортируем выписки по сумме (по убыванию)
+        sorted_extracts = sorted(extracts, key=lambda x: x.amount or 0, reverse=True)
+        
+        # Простой жадный алгоритм: берем самые большие выписки
+        selected = []
+        current_sum = 0
+        
+        for extract in sorted_extracts:
+            extract_amount = extract.amount or 0
+            if current_sum + extract_amount <= target_sum + tolerance:
+                selected.append(extract)
+                current_sum += extract_amount
+                
+                # Если достигли цели с допуском, останавливаемся
+                if abs(current_sum - target_sum) <= tolerance:
+                    break
+        
+        # Проверяем, что комбинация подходит
+        if selected and abs(current_sum - target_sum) <= tolerance:
+            return selected
+        
+        return []
     
     @api.model
     def _run_stellar_tdk_logic(self):
@@ -833,7 +964,10 @@ class Extract_delivery(models.Model, AmanatBaseModel):
             zayavka_sums = [
                 ('application_amount_rub_contract', getattr(zayavka, 'application_amount_rub_contract', None)),
                 ('total_fact', getattr(zayavka, 'total_fact', None)),
-                ('contract_reward', getattr(zayavka, 'contract_reward', None))
+                ('contract_reward', getattr(zayavka, 'contract_reward', None)),
+                ('total_client', getattr(zayavka, 'total_client', None)),
+                ('total_sber', getattr(zayavka, 'total_sber', None)),
+                ('total_sovok', getattr(zayavka, 'total_sovok', None))
             ]
             
             match_info['available_sums'] = {name: val for name, val in zayavka_sums if val is not None}

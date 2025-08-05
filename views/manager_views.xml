@@ -10,6 +10,7 @@
                 <field width="200" name="name"/>
                 <field width="200" name="phone"/>
                 <field width="200" name="date"/>
+                <field name="user_id"/>
                 <!-- <field width="200" name="applications"/>
                 <field width="200" name="checking"/>
                 <field width="200" name="task_manager"/>
@@ -40,7 +41,7 @@
                     <group>
                         <field name="total_applications"/>
                         <field name="wrong_applications"/>
-                        <field name="efficiency" readonly="1"/>
+                        <field name="efficiency" widget="percentage" readonly="1"/>
                     </group>
                     <group>
                         <field name="user_id"/>

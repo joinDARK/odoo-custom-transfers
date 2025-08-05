@@ -80,20 +80,12 @@ class Investment(models.Model, AmanatBaseModel):
     royalty_recipient_3 = fields.Many2one('amanat.contragent', string='Получатель роялти 3', tracking=True)
     royalty_recipient_4 = fields.Many2one('amanat.contragent', string='Получатель роялти 4', tracking=True)
     royalty_recipient_5 = fields.Many2one('amanat.contragent', string='Получатель роялти 5', tracking=True)
-    royalty_recipient_6 = fields.Many2one('amanat.contragent', string='Получтель роялти 6', tracking=True)
-    royalty_recipient_7 = fields.Many2one('amanat.contragent', string='Получатель роялти 7', tracking=True)
-    royalty_recipient_8 = fields.Many2one('amanat.contragent', string='Получатель роялти 8', tracking=True)
-    royalty_recipient_9 = fields.Many2one('amanat.contragent', string='Получатель роялти 9', tracking=True)
 
-    percent_1 = fields.Float(string='% первого', tracking=True)
-    percent_2 = fields.Float(string='% второго', tracking=True)
-    percent_3 = fields.Float(string='% третьего', tracking=True)
-    percent_4 = fields.Float(string='% четвертого', tracking=True)
-    percent_5 = fields.Float(string='% пятого', tracking=True)
-    percent_6 = fields.Float(string='% шестого', tracking=True)
-    percent_7 = fields.Float(string='% седьмого', tracking=True)
-    percent_8 = fields.Float(string='% восьмого', tracking=True)
-    percent_9 = fields.Float(string='% девятого', tracking=True)
+    percent_1 = fields.Float(string='Процент роялти 1', tracking=True, digits=(16, 8))
+    percent_2 = fields.Float(string='Процент роялти 2', tracking=True, digits=(16, 8))
+    percent_3 = fields.Float(string='Процент роялти 3', tracking=True, digits=(16, 8))
+    percent_4 = fields.Float(string='Процент роялти 4', tracking=True, digits=(16, 8))
+    percent_5 = fields.Float(string='Процент роялти 5', tracking=True, digits=(16, 8))
 
     # Отношения
     orders = fields.Many2many('amanat.order', 'amanat_order_investment_rel', 'investment_id', 'order_id', string='Ордеры', tracking=True)
@@ -145,15 +137,11 @@ class Investment(models.Model, AmanatBaseModel):
     rollup_amount = fields.Float(string='Сумма роллап списания', tracking=True)
     rollup_amount_total = fields.Float(string='Сумма RollUp (from Погасить)', tracking=True)
 
-    royalty_amount_1 = fields.Float(string='Сумма роялти 1', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
-    royalty_amount_2 = fields.Float(string='Сумма роялти 2', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
-    royalty_amount_3 = fields.Float(string='Сумма роялти 3', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
-    royalty_amount_4 = fields.Float(string='Сумма роялти 4', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
-    royalty_amount_5 = fields.Float(string='Сумма роялти 5', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
-    royalty_amount_6 = fields.Float(string='Сумма роялти 6', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
-    royalty_amount_7 = fields.Float(string='Сумма роялти 7', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
-    royalty_amount_8 = fields.Float(string='Сумма роялти 8', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
-    royalty_amount_9 = fields.Float(string='Сумма роялти 9', compute='_compute_royalty_amounts', store=True, tracking=True, readonly=False)
+    royalty_amount_1 = fields.Float(string='Сумма роялти 1', compute='_compute_royalty_amounts', digits=(16, 6), store=True, tracking=True, readonly=False)
+    royalty_amount_2 = fields.Float(string='Сумма роялти 2', compute='_compute_royalty_amounts', digits=(16, 6), store=True, tracking=True, readonly=False)
+    royalty_amount_3 = fields.Float(string='Сумма роялти 3', compute='_compute_royalty_amounts', digits=(16, 6), store=True, tracking=True, readonly=False)
+    royalty_amount_4 = fields.Float(string='Сумма роялти 4', compute='_compute_royalty_amounts', digits=(16, 6), store=True, tracking=True, readonly=False)
+    royalty_amount_5 = fields.Float(string='Сумма роялти 5', compute='_compute_royalty_amounts', digits=(16, 6), store=True, tracking=True, readonly=False)
 
     @api.onchange('sender')
     def _onchange_sender(self):
@@ -253,7 +241,7 @@ class Investment(models.Model, AmanatBaseModel):
                 float(o.rollup_write_off or 0.0) for o in rec.orders
             )
 
-    @api.depends('amount', 'percent_1', 'percent_2', 'percent_3', 'percent_4', 'percent_5', 'percent_6', 'percent_7', 'percent_8', 'percent_9')
+    @api.depends('amount', 'percent_1', 'percent_2', 'percent_3', 'percent_4', 'percent_5')
     def _compute_royalty_amounts(self):
         for rec in self:
             # Суммы роялти считаем как процент от суммы (делим на 100)
@@ -262,10 +250,6 @@ class Investment(models.Model, AmanatBaseModel):
             rec.royalty_amount_3 = (rec.amount or 0.0) * (rec.percent_3 or 0.0) / 100.0
             rec.royalty_amount_4 = (rec.amount or 0.0) * (rec.percent_4 or 0.0) / 100.0
             rec.royalty_amount_5 = (rec.amount or 0.0) * (rec.percent_5 or 0.0) / 100.0
-            rec.royalty_amount_6 = (rec.amount or 0.0) * (rec.percent_6 or 0.0) / 100.0
-            rec.royalty_amount_7 = (rec.amount or 0.0) * (rec.percent_7 or 0.0) / 100.0
-            rec.royalty_amount_8 = (rec.amount or 0.0) * (rec.percent_8 or 0.0) / 100.0
-            rec.royalty_amount_9 = (rec.amount or 0.0) * (rec.percent_9 or 0.0) / 100.0
 
     def action_create_writeoffs(self):
         """

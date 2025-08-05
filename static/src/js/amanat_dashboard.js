@@ -114,6 +114,9 @@ export class AmanatDashboard extends Component {
                 if (chart) chart.destroy();
             });
         });
+        
+        // Делаем дашборд доступным из консоли для отладки
+        window.amanatDashboard = this;
     }
 
     async initializeDashboard() {
@@ -398,6 +401,7 @@ export class AmanatDashboard extends Component {
                         period2Data: dealTypeLabels.map(label => period2DealTypes[label] || 0),
                         period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
                         period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        title: 'Сравнение: Соотношение ИМПОРТ/ЭКСПОРТ',
                         clickable: true,
                         onClick: (event, elements) => {
                             if (elements.length > 0) {
@@ -408,6 +412,16 @@ export class AmanatDashboard extends Component {
                             }
                         }
                     });
+                    
+                    // Сохраняем сравнительные данные для модального окна
+                    this.saveFullChartData('import-export-line-comparison', {
+                        labels: dealTypeLabels,
+                        period1Data: dealTypeLabels.map(label => period1DealTypes[label] || 0),
+                        period2Data: dealTypeLabels.map(label => period2DealTypes[label] || 0),
+                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
+                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        isComparison: true
+                    }, { type: 'horizontalBar', title: 'Соотношение ИМПОРТ/ЭКСПОРТ', isComparison: true });
                 } else {
                     this.showNoDataMessage('import-export-line-comparison', 'Соотношение ИМПОРТ/ЭКСПОРТ');
                 }
@@ -443,6 +457,25 @@ export class AmanatDashboard extends Component {
                                 console.log(`Clicked on ${dealType}`);
                             }
                         }
+                    });
+                    
+                    // Сохраняем данные для модального окна
+                    this.saveFullChartData('import-export-line-comparison', {
+                        labels: labels,
+                        data: data
+                    }, { 
+                        type: 'horizontalBar', 
+                        title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
+                        backgroundColor: labels.map(label => {
+                            if (label === 'Импорт') return '#5DADE2';
+                            if (label === 'Экспорт') return '#F7DC6F';
+                            return '#95A5A6';
+                        }),
+                        borderColor: labels.map(label => {
+                            if (label === 'Импорт') return '#3498DB';
+                            if (label === 'Экспорт') return '#F39C12';
+                            return '#7F8C8D';
+                        })
                     });
                 } else {
                     this.showNoDataMessage('import-export-line-comparison', 'Соотношение ИМПОРТ/ЭКСПОРТ');
@@ -517,27 +550,93 @@ export class AmanatDashboard extends Component {
                 isComparisonMode: !!this.state.chartComparisonData
             });
                 
+            // 🔑 ПРОВЕРКА СРАВНИТЕЛЬНОГО РЕЖИМА ДЛЯ СТАТУСОВ ЗАЯВОК
+            const isComparisonModeStatus = this.state.dateRange2.start && this.state.dateRange2.end;
+            const hasComparisonDataStatus = this.state.chartComparisonData && 
+                                      this.state.chartComparisonData.period1 && 
+                                      this.state.chartComparisonData.period2;
+                                      
+            if (isComparisonModeStatus && hasComparisonDataStatus) {
+                // Сравнительный режим - рендерим сравнительный график
+                const period1Data = this.state.chartComparisonData.period1.zayavka_status_data || [];
+                const period2Data = this.state.chartComparisonData.period2.zayavka_status_data || [];
+                
+                if (period1Data.length > 0 || period2Data.length > 0) {
+                    // Получаем все уникальные названия статусов
+                    const allStatusNames = [...new Set([
+                        ...period1Data.map(s => s.name),
+                        ...period2Data.map(s => s.name)
+                    ])];
+                    
+                    // Формируем данные для сравнения
+                    const period1Values = allStatusNames.map(name => {
+                        const status = period1Data.find(s => s.name === name);
+                        return status ? status.count : 0;
+                    });
+                    
+                    const period2Values = allStatusNames.map(name => {
+                        const status = period2Data.find(s => s.name === name);
+                        return status ? status.count : 0;
+                    });
+                    
+                    this.renderComparisonHorizontalBarChart('zayavka-status-chart', {
+                        labels: allStatusNames,
+                        period1Data: period1Values,
+                        period2Data: period2Values,
+                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
+                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        title: 'Сравнение: Статусы заявок',
+                        showFullData: false,
+                        backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                        borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
+                    });
+                    
+                    // Сохраняем сравнительные данные для модального окна
+                    this.saveFullChartData('zayavka-status-chart', {
+                        labels: allStatusNames,
+                        period1Data: period1Values,
+                        period2Data: period2Values,
+                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
+                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        isComparison: true,
+                        originalData: period1Data // Сохраняем оригинальные данные для кликов
+                    }, { type: 'horizontalBar', title: 'Статусы заявок', isComparison: true });
+                } else {
+                    this.showNoDataMessage('zayavka-status-chart', 'Статусы заявок');
+                }
+            } else {
+                // Обычный режим
             // Всегда рендерим статусы заявок как горизонтальную столбчатую диаграмму
             // Проверяем данные с более детальной отладкой
             let statusDistributionData = this.state.zayavki.statusDistribution;
             
-            console.log('🔍 Используемые данные для рендеринга:', statusDistributionData);
+            console.log('🔍 ДЕТАЛЬНАЯ ОТЛАДКА statusDistributionData:', {
+                statusDistributionData: statusDistributionData,
+                isArray: Array.isArray(statusDistributionData),
+                length: statusDistributionData ? statusDistributionData.length : 'NULL',
+                hasChartData: this.hasChartData(statusDistributionData),
+                fullState: this.state.zayavki,
+                statusDistFromState: this.state.zayavki.statusDistribution
+            });
             
             if (this.hasChartData(statusDistributionData)) {
-                const statusColors = [
-                    '#2563EB',  // Синий - заявка закрыта
-                    '#16A34A',  // Зеленый - в обработке
-                    '#DC2626',  // Красный - отменено клиентом
-                    '#EA580C',  // Оранжевый - на рассмотрении
-                    '#7C3AED',  // Фиолетовый - черновик
-                    '#0891B2',  // Циан - одобрено
-                    '#BE185D',  // Розовый - отклонено
-                    '#65A30D'   // Лайм - возврат
-                ];
+                // ИСПРАВЛЕНИЕ: Сортируем данные по count от большего к меньшему
+                const sortedStatusData = [...statusDistributionData].sort((a, b) => (b.count || 0) - (a.count || 0));
+                
+                console.log('📊 Сортировка статусов по убыванию count:', {
+                    original: statusDistributionData,
+                    sorted: sortedStatusData
+                });
 
-                // Создаем labels и data с проверкой
-                const labels = statusDistributionData.map(s => s.name);
-                const data = statusDistributionData.map(s => s.count);
+                // ИСПРАВЛЕНИЕ: Используем один цвет для всех статусов
+                const singleColor = '#2563EB'; // Синий цвет
+                
+                // Создаем labels и data с проверкой из отсортированных данных
+                const labels = sortedStatusData.map(s => s.name);
+                const data = sortedStatusData.map(s => s.count);
+                
+                // Создаем массив одинакового цвета для всех элементов
+                const statusColors = new Array(labels.length).fill(singleColor);
                 
                 console.log('🔍 Подготовленные данные для рендеринга:', {
                     labels: labels,
@@ -566,36 +665,30 @@ export class AmanatDashboard extends Component {
 
                 // Сохраняем полные данные для модального окна
                 console.log('💾 Сохраняем данные для модального окна zayavka-status-chart:', statusDistributionData);
-                this.saveFullChartData('zayavka-status-chart', statusDistributionData, {
+                
+                // ИСПРАВЛЕНИЕ: Конвертируем данные в правильный формат для модального окна (с сортировкой)
+                const chartFormatData = {
+                    labels: sortedStatusData.map(item => item.name),
+                    data: sortedStatusData.map(item => item.count),
+                    originalData: sortedStatusData // Сохраняем отсортированные данные для кликов
+                };
+                
+                console.log('🔧 Конвертированные данные для модального окна:', chartFormatData);
+                
+                this.saveFullChartData('zayavka-status-chart', chartFormatData, {
                     type: 'horizontalBar',
                     title: 'Статусы заявок (полные данные)',
-                    backgroundColor: statusColors,
+                    backgroundColor: statusColors, // Используем тот же одноцветный массив
                     borderColor: statusColors
                 });
                 
                 // Проверяем, что данные сохранились правильно
                 const savedData = this.getFullChartData('zayavka-status-chart');
                 console.log('✅ Проверка сохраненных данных для zayavka-status-chart:', savedData);
-
-                // Рендерим второй график с теми же данными
-                this.renderHorizontalBarChart('zayavka-status-chart', {
-                    labels: statusDistributionData.map(item => item.name),
-                    data: statusDistributionData.map(item => item.count),
-                    title: 'Статусы заявок',
-                    backgroundColor: statusColors,
-                    borderColor: statusColors,
-                    clickable: true,
-                    onClick: (event, elements) => {
-                        if (elements.length > 0) {
-                            const index = elements[0].index;
-                            const statusName = statusDistributionData[index].name;
-                            this.openZayavkiByStatus(statusName);
-                        }
-                    }
-                });
             } else {
                 console.log('❌ Нет данных для статусов заявок');
                 this.showNoDataMessage('zayavka-status-chart', 'Статусы заявок');
+                }
             }
 
             // 22. Количество заявок под каждого агента (горизонтальная столбчатая)
@@ -1150,11 +1243,68 @@ export class AmanatDashboard extends Component {
             // 31. Эффективность менеджеров (вертикальная столбчатая диаграмма)
             console.log('Данные эффективности менеджеров:', this.state.zayavki.managersEfficiency);
             console.log('Проверка данных через hasChartData:', this.hasChartData(this.state.zayavki.managersEfficiency));
-            if (this.hasChartData(this.state.zayavki.managersEfficiency)) {
+            
+            // 🔑 ПРОВЕРКА СРАВНИТЕЛЬНОГО РЕЖИМА
+            const isComparisonModeEfficiency = this.state.dateRange2.start && this.state.dateRange2.end;
+            const hasComparisonDataEfficiency = this.state.chartComparisonData && 
+                                      this.state.chartComparisonData.period1 && 
+                                      this.state.chartComparisonData.period2;
+                                      
+            if (isComparisonModeEfficiency && hasComparisonDataEfficiency) {
+                // Сравнительный режим - рендерим сравнительный график
+                const period1Data = this.state.chartComparisonData.period1.managers_efficiency || [];
+                const period2Data = this.state.chartComparisonData.period2.managers_efficiency || [];
+                
+                if (period1Data.length > 0 || period2Data.length > 0) {
+                    // Получаем все уникальные имена менеджеров
+                    const allManagerNames = [...new Set([
+                        ...period1Data.map(m => m.name),
+                        ...period2Data.map(m => m.name)
+                    ])];
+                    
+                    // Формируем данные для сравнения
+                    const period1Values = allManagerNames.map(name => {
+                        const manager = period1Data.find(m => m.name === name);
+                        return manager ? manager.efficiency : 0;
+                    });
+                    
+                    const period2Values = allManagerNames.map(name => {
+                        const manager = period2Data.find(m => m.name === name);
+                        return manager ? manager.efficiency : 0;
+                    });
+                    
+                    this.renderComparisonHorizontalBarChart('managers-efficiency-chart', {
+                        labels: allManagerNames,
+                        period1Data: period1Values,
+                        period2Data: period2Values,
+                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
+                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        title: 'Сравнение: Эффективность менеджеров',
+                        isPercentage: true,
+                        showFullData: false,
+                        backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                        borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
+                    });
+                    
+                    // Сохраняем сравнительные данные для модального окна
+                    this.saveFullChartData('managers-efficiency-chart', {
+                        labels: allManagerNames,
+                        period1Data: period1Values,
+                        period2Data: period2Values,
+                        period1Label: `Период 1 (${this.state.dateRange1.start} - ${this.state.dateRange1.end})`,
+                        period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
+                        isComparison: true
+                    }, { type: 'horizontalBar', title: 'Эффективность менеджеров', isPercentage: true, isComparison: true });
+                } else {
+                    this.showNoDataMessage('managers-efficiency-chart', 'Эффективность менеджеров');
+                }
+            } else if (this.hasChartData(this.state.zayavki.managersEfficiency)) {
+                // Обычный режим
                 this.renderBarChart('managers-efficiency-chart', {
                     labels: this.state.zayavki.managersEfficiency.map(m => m.name),
                     data: this.state.zayavki.managersEfficiency.map(m => m.efficiency),
                     title: 'Эффективность менеджеров',
+                    isPercentage: true,
                     clickable: true,
                     onClick: (event, elements) => {
                         console.log('График эффективности менеджеров: клик зарегистрирован', elements);
@@ -1171,7 +1321,7 @@ export class AmanatDashboard extends Component {
                 this.saveFullChartData('managers-efficiency-chart', {
                     labels: this.state.zayavki.managersEfficiency.map(m => m.name),
                     data: this.state.zayavki.managersEfficiency.map(m => m.efficiency)
-                }, { type: 'horizontalBar', title: 'Эффективность менеджеров' });
+                }, { type: 'horizontalBar', title: 'Эффективность менеджеров', isPercentage: true });
             } else {
                 console.log('Нет данных для графика эффективности менеджеров');
                 this.showNoDataMessage('managers-efficiency-chart', 'Эффективность менеджеров');
@@ -1300,10 +1450,50 @@ export class AmanatDashboard extends Component {
                 });
             } else {
                 this.showNoDataMessage('deal-cycles-line', 'Циклы сделок');
-            }
+                }
 
-            
+    // Тестовая функция для диагностики проблем
+    testChartClicks() {
+        console.log('🧪 Тестирование функциональности кликов по графикам');
+        
+        // Проверяем состояние дашборда
+        console.log('📊 Состояние дашборда:', {
+            dateRange1: this.state.dateRange1,
+            dateRange2: this.state.dateRange2,
+            hasComparisonData: !!this.state.comparisonData,
+            hasChartComparisonData: !!this.state.chartComparisonData
+        });
+        
+        // Проверяем наличие модального окна
+        const modalExists = document.querySelector('.full-chart-modal');
+        console.log('🔍 Модальное окно:', { exists: !!modalExists, element: modalExists });
+        
+        // Проверяем наличие графиков
+        const charts = ['deal-cycles-line', 'import-export-line-comparison', 'managers-efficiency-chart'];
+        charts.forEach(chartId => {
+            const canvas = document.getElementById(chartId);
+            const chart = this.charts[chartId];
+            console.log(`📈 График ${chartId}:`, { 
+                canvasExists: !!canvas, 
+                chartExists: !!chart,
+                hasClickHandler: chart && chart.config && chart.config.options && !!chart.config.options.onClick
+            });
+        });
+        
+        // Тестируем прямой вызов handleModalChartClick
+        console.log('🎯 Тестируем прямой вызов handleModalChartClick...');
+        const testPeriodInfo = {
+            period: 'period1',
+            dateRange: { start: '2024-01-01', end: '2024-01-31' }
+        };
+        
+        try {
+            this.handleModalChartClick('deal_cycles', '30', 0, null, testPeriodInfo);
+            console.log('✅ Прямой вызов handleModalChartClick успешен');
         } catch (error) {
+            console.error('❌ Ошибка в handleModalChartClick:', error);
+        }
+    } catch (error) {
             console.error('Error initializing charts:', error);
         }
         
@@ -1381,6 +1571,34 @@ export class AmanatDashboard extends Component {
             };
         }
         
+        // Добавляем обработчик кликов для модальных окон
+        if (this.isInModalWindow()) {
+            chartConfig.options.onClick = (event, elements) => {
+                console.log('🎯 Клик по линейному графику:', { event, elements, canvasId });
+                
+                if (elements.length > 0) {
+                    const element = elements[0];
+                    const index = element.index;
+                    const clickedLabel = config.labels[index];
+                    
+                    console.log('📊 Детали клика по линейному графику:', {
+                        clickedLabel,
+                        index,
+                        chartType: config.chartType || this.getChartTypeFromCanvasId(canvasId)
+                    });
+                    
+                    // Определяем диапазон дат для не-сравнительного режима
+                    const periodInfo = {
+                        period: 'period1',
+                        dateRange: { start: this.state.dateRange1.start, end: this.state.dateRange1.end }
+                    };
+                    
+                    const chartType = config.chartType || this.getChartTypeFromCanvasId(canvasId);
+                    this.handleModalChartClick(chartType, clickedLabel, index, null, periodInfo);
+                }
+            };
+        }
+        
         this.charts[canvasId] = new Chart(canvas, chartConfig);
     }
 
@@ -1409,7 +1627,7 @@ export class AmanatDashboard extends Component {
                 data: config.data,
                 backgroundColor: config.backgroundColor,
                 borderColor: config.borderColor
-            }, { type: 'bar', title: config.title });
+            }, { type: 'bar', title: config.title, isPercentage: config.isPercentage });
         }
         
         // Проверяем, нужно ли применять ограничение ТОП-3
@@ -1507,7 +1725,12 @@ export class AmanatDashboard extends Component {
                         displayColors: false,
                         callbacks: {
                             label: (context) => {
-                                return `${context.dataset.label}: ${this.formatNumber(context.parsed.y)}`;
+                                // Проверяем, нужно ли отображать проценты
+                                if (config.isPercentage) {
+                                    return `${context.parsed.y.toLocaleString('ru-RU', {maximumFractionDigits: 1})} %`;
+                                } else {
+                                    return `${context.dataset.label}: ${this.formatNumber(context.parsed.y)}`;
+                                }
                             }
                         }
                     }
@@ -1636,6 +1859,18 @@ export class AmanatDashboard extends Component {
             dataLength: config.data ? config.data.length : 0
         });
         
+        // Специальная отладка для статусов заявок
+        if (canvasId === 'zayavka-status-chart' || canvasId === 'fullChart') {
+            console.log('🎯 СПЕЦИАЛЬНАЯ ОТЛАДКА ДЛЯ СТАТУСОВ ЗАЯВОК:', {
+                canvasId,
+                hasLabels: !!config.labels,
+                hasData: !!config.data,
+                labelsContent: config.labels,
+                dataContent: config.data,
+                configFull: config
+            });
+        }
+        
         const canvas = document.getElementById(canvasId);
         console.log('🎯 Canvas найден:', {
             canvasId,
@@ -1648,12 +1883,30 @@ export class AmanatDashboard extends Component {
         }
         
         // 🔑 ИСПРАВЛЕНИЕ: Всегда сохраняем полные данные для модальных окон
-        this.saveFullChartData(canvasId, {
+        const fullDataToSave = {
             labels: config.labels,
             data: config.data,
             backgroundColor: config.backgroundColor,
             borderColor: config.borderColor
-        }, { type: 'horizontalBar', title: config.title, isPercentage: config.isPercentage || false });
+        };
+        
+        // Добавляем оригинальные данные если они есть
+        if (config.originalData) {
+            fullDataToSave.originalData = config.originalData;
+            console.log('💾 Сохраняем оригинальные данные для графика:', canvasId);
+            console.log('📋 Детали сохраняемых данных:', {
+                labels: config.labels,
+                originalData: config.originalData.map((item, idx) => `${idx}: ${item.name} (count: ${item.count})`),
+                labelsLength: config.labels?.length,
+                originalDataLength: config.originalData?.length
+            });
+        }
+        
+        this.saveFullChartData(canvasId, fullDataToSave, { 
+            type: 'horizontalBar', 
+            title: config.title, 
+            isPercentage: config.isPercentage || false 
+        });
         
         // Проверяем, нужно ли применять ограничение ТОП-3
         const shouldLimitData = config.labels && config.labels.length > 3 && !config.showFullData;
@@ -1728,7 +1981,9 @@ export class AmanatDashboard extends Component {
                     barThickness: canvasId === 'fullChart' ? 14 : 18,      // Еще тоньше для модальных окон
                     maxBarThickness: canvasId === 'fullChart' ? 16 : 22,   // Меньше максимальная толщина для модальных окон
                     categoryPercentage: canvasId === 'fullChart' ? 0.6 : 0.8,  // МЕНЬШЕ процент занимаемого места = БОЛЬШЕ зазоры
-                    barPercentage: canvasId === 'fullChart' ? 0.6 : 0.8        // МЕНЬШЕ процент полоски = БОЛЬШЕ зазоры
+                    barPercentage: canvasId === 'fullChart' ? 0.6 : 0.8,       // МЕНЬШЕ процент полоски = БОЛЬШЕ зазоры
+                    // Сохраняем оригинальные данные для кликов
+                    originalData: config.originalData
                 }]
             },
             options: {
@@ -3276,9 +3531,66 @@ export class AmanatDashboard extends Component {
             }
         };
         
-        // Добавляем обработчик кликов если он указан
-        if (config.clickable && config.onClick) {
-            chartConfig.options.onClick = config.onClick;
+        // Добавляем обработчик кликов для навигации к заявкам в модальных окнах
+        const isInModal = this.isInModalWindow();
+        console.log('🔍 Проверка условий для обработчика кликов:', {
+            configClickable: config.clickable,
+            isInModal,
+            shouldAddHandler: config.clickable || isInModal
+        });
+        
+        if (config.clickable || isInModal) {
+            chartConfig.options.onClick = (event, elements) => {
+                console.log('🎯 Клик по сравнительному линейному графику:', { event, elements, canvasId });
+                
+                if (elements.length > 0) {
+                    const element = elements[0];
+                    const datasetIndex = element.datasetIndex; // 0 для периода 1, 1 для периода 2
+                    const index = element.index; // индекс точки данных
+                    const clickedLabel = config.labels[index]; // получаем метку
+                    
+                    // Определяем какой период был выбран
+                    const isPeriod1 = datasetIndex === 0;
+                    const periodInfo = {
+                        period: isPeriod1 ? 'period1' : 'period2',
+                        dateRange: isPeriod1 ? 
+                            { start: this.state.dateRange1.start, end: this.state.dateRange1.end } :
+                            { start: this.state.dateRange2.start, end: this.state.dateRange2.end }
+                    };
+                    
+                    console.log('📊 Детали клика:', {
+                        clickedLabel,
+                        datasetIndex,
+                        index,
+                        periodInfo,
+                        chartType: config.chartType || this.getChartTypeFromCanvasId(canvasId)
+                    });
+                    
+                    // Вызываем обработчик с информацией о периоде
+                    const chartType = config.chartType || this.getChartTypeFromCanvasId(canvasId);
+                    console.log('🔧 Отладка клика по сравнительному линейному графику:', {
+                        canvasId,
+                        configChartType: config.chartType,
+                        detectedChartType: chartType,
+                        clickedLabel,
+                        periodInfo
+                    });
+                    this.handleModalChartClick(chartType, clickedLabel, index, null, periodInfo);
+                }
+            };
+        }
+        
+        // Добавляем дополнительный обработчик если он указан в конфигурации
+        if (config.onClick) {
+            const originalOnClick = chartConfig.options.onClick;
+            chartConfig.options.onClick = (event, elements) => {
+                // Сначала вызываем наш обработчик
+                if (originalOnClick) {
+                    originalOnClick(event, elements);
+                }
+                // Затем пользовательский
+                config.onClick(event, elements);
+            };
         }
         
         // Исправляем tooltips для форматирования чисел
@@ -3697,9 +4009,52 @@ export class AmanatDashboard extends Component {
             }
         };
         
-        // Добавляем обработчик кликов если он указан
-        if (config.clickable && config.onClick) {
-            chartConfig.options.onClick = config.onClick;
+        // Добавляем обработчик кликов для навигации к заявкам в модальных окнах
+        if (config.clickable || this.isInModalWindow()) {
+            chartConfig.options.onClick = (event, elements) => {
+                console.log('🎯 Клик по сравнительному гладкому линейному графику:', { event, elements, canvasId });
+                
+                if (elements.length > 0) {
+                    const element = elements[0];
+                    const datasetIndex = element.datasetIndex; // 0 для периода 1, 1 для периода 2
+                    const index = element.index; // индекс точки данных
+                    const clickedLabel = config.labels[index]; // получаем метку
+                    
+                    // Определяем какой период был выбран
+                    const isPeriod1 = datasetIndex === 0;
+                    const periodInfo = {
+                        period: isPeriod1 ? 'period1' : 'period2',
+                        dateRange: isPeriod1 ? 
+                            { start: this.state.dateRange1.start, end: this.state.dateRange1.end } :
+                            { start: this.state.dateRange2.start, end: this.state.dateRange2.end }
+                    };
+                    
+                    console.log('📊 Детали клика по гладкому графику:', {
+                        clickedLabel,
+                        datasetIndex,
+                        index,
+                        periodInfo,
+                        chartType: config.chartType || this.getChartTypeFromCanvasId(canvasId)
+                    });
+                    
+                    // Вызываем обработчик с информацией о периоде
+                    const chartType = config.chartType || this.getChartTypeFromCanvasId(canvasId);
+                    this.handleModalChartClick(chartType, clickedLabel, index, null, periodInfo);
+                }
+            };
+        }
+        
+        // Добавляем дополнительный обработчик если он указан в конфигурации
+        if (config.onClick) {
+            const originalOnClick = chartConfig.options.onClick;
+            chartConfig.options.onClick = (event, elements) => {
+                // Сначала вызываем наш обработчик
+                if (originalOnClick) {
+                    originalOnClick(event, elements);
+                }
+                // Затем пользовательский
+                config.onClick(event, elements);
+            };
         }
         
         // Отключаем datalabels для линейных сравнительных графиков
@@ -3837,43 +4192,138 @@ export class AmanatDashboard extends Component {
     }
 
     async openZayavkiByStatus(statusName) {
+        console.log('🎯 openZayavkiByStatus вызван с параметром:', statusName);
+        console.log('🔍 Точное значение:', JSON.stringify(statusName));
+        console.log('🔍 Тип параметра:', typeof statusName);
+        console.log('🔍 Длина строки:', statusName?.length);
+        
         // Открываем заявки с фильтром по статусу
         let statusValue = statusName;
         
-        // Мапим отображаемые имена обратно в значения базы данных
-        if (statusName === 'заявка закрыта') {
-            statusValue = 'close';
-        } else if (statusName === 'отменено клиентом') {
-            statusValue = 'cancel';
-        } else if (statusName === '15. возврат') {
-            statusValue = 'return';
+        // Мапим отображаемые имена обратно в значения базы данных (точно соответствует модели zayavka.py)
+        const statusMapping = {
+            // Основные статусы заявок из модели zayavka.py (строки 18-43)
+            '1. В работе': '1',
+            '2. Выставлен инвойс': '2',
+            '3. Зафиксирован курс': '3',
+            '4. Подписано поручение': '4',
+            '5. Готовим на оплату': '5',
+            '6. Передано на оплату': '6',
+            '7. Получили ПП': '7',
+            '8. Получили Swift': '8',
+            '9. Подписан Акт-отчет': '9',
+            '10. Ждем рубли': '10',
+            '11. Получили рубли': '11',
+            '12. Ждем поступление валюты': '12',
+            '13. Валюта у получателя': '13',
+            '14. Запрошен Swift 103': '14',
+            '15. Получен Swift 103': '15',
+            '16. Запрошен Swift 199': '16',
+            '17. Получен Swift 199': '17',
+            '18. Ожидаем возврат': '18',
+            '19. Оплачено повторно': '19',
+            '20. Возврат': '20',
+            '21. Заявка закрыта': '21',
+            '22. Отменено клиентом': '22',
+            '23. Согласован получатель (экспорт)': '23',
+            '24. Получили валюту (экспорт)': '24',
+            '25. Оплатили рубли (экспорт)': '25',
+            
+            // Устаревшие статусы для обратной совместимости (могут быть в старых данных)
+            'заявка закрыта': '21',
+            'отменено клиентом': '22',
+            'возврат': '20',
+            'Черновик': 'draft',
+            'В работе': '1',
+            'На рассмотрении': 'review',
+            'Одобрена': 'approved',
+            'Отклонена': 'rejected',
+            'Открыта': 'open',
+            'Выполнена': 'done',
+            'Подтверждена': 'confirmed'
+        };
+        
+        // Получаем значение статуса для базы данных
+        statusValue = statusMapping[statusName] || statusName;
+        
+        console.log('🔧 После маппинга:', {
+            'исходное название': statusName,
+            'замапленное значение': statusValue,
+            'найдено в маппинге': statusMapping.hasOwnProperty(statusName),
+            'результат маппинга': statusMapping[statusName]
+        });
+        
+        // Специальная обработка для статусов, генерируемых dashboard.py
+        if (statusName === 'Без статуса') {
+            statusValue = false;  // Ищем заявки с пустым статусом
+        } else if (statusName.startsWith('Неопознанный статус: ')) {
+            // Извлекаем оригинальный статус из строки "Неопознанный статус: X"
+            statusValue = statusName.replace('Неопознанный статус: ', '');
         }
         
+        console.log('🎯 Финальное значение для поиска:', statusValue);
+        
+        console.log('🔍 openZayavkiByStatus:', {
+            statusName: statusName,
+            statusValue: statusValue,
+            hasMapping: !!statusMapping[statusName]
+        });
+        
+        // Создаем базовый домен в зависимости от типа статуса
+        let baseDomain;
+        if (statusValue === false) {
+            // Для заявок без статуса (пустой статус)
+            baseDomain = [
+                '|',
+                ['status', '=', false],
+                ['status', '=', '']
+            ];
+        } else {
+            // Для заявок с конкретным статусом
+            baseDomain = [
+                ['status', '=', statusValue]
+            ];
+        }
+        
+        // Используем стандартное действие заявок из меню с указанием представления
         const action = {
             type: "ir.actions.act_window",
             name: `Заявки со статусом: ${statusName}`,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
+            view_type: "list",
             views: [[false, "list"], [false, "form"]],
-            target: "current",
-            domain: [
-                '&',
-                ['status', '=', statusValue],
-                ['hide_in_dashboard', '!=', true]
-            ]
+            target: "main",
+            domain: baseDomain,
+            context: {
+                'default_status': statusValue || '1',
+                'active_test': false  // Показать все записи, включая архивированные
+            }
         };
         
         // Добавляем фильтр по дате если установлен диапазон
         if (this.state.dateRange1.start && this.state.dateRange1.end) {
+            if (statusValue === false) {
+                // Для заявок без статуса с фильтром по датам
             action.domain = [
                 '&',
-                ['status', '=', statusValue],
-                '&',
-                ['hide_in_dashboard', '!=', true],
+                    '|',
+                    ['status', '=', false],
+                    ['status', '=', ''],
+                    '&',
+                    ['date_placement', '>=', this.state.dateRange1.start],
+                    ['date_placement', '<=', this.state.dateRange1.end]
+                ];
+            } else {
+                // Для заявок с конкретным статусом с фильтром по датам
+                action.domain = [
+                    '&',
+                    ['status', '=', statusValue],
                 '&',
                 ['date_placement', '>=', this.state.dateRange1.start],
                 ['date_placement', '<=', this.state.dateRange1.end]
             ];
+            }
         }
         
         this.actionService.doAction(action);
@@ -4026,17 +4476,43 @@ export class AmanatDashboard extends Component {
         // Создаем градиенты для обоих периодов
         const ctx = canvas.getContext('2d');
         
-        // Градиент для периода 1 (синий)
-        const gradient1 = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        gradient1.addColorStop(0, '#2b77cb');    // Темно-синий
-        gradient1.addColorStop(0.5, '#4299e1');  // Средний синий  
-        gradient1.addColorStop(1, '#63b3ed');    // Светло-синий
+        let period1Color, period2Color;
         
-        // Градиент для периода 2 (темно-синий)
-        const gradient2 = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        gradient2.addColorStop(0, '#dc2626');    // Темно-синий
-        gradient2.addColorStop(0.5, '#ef4444');  // Средний синий
-        gradient2.addColorStop(1, '#f87171');    // Светло-синий
+        // ИСПРАВЛЕНИЕ: Для статусов заявок используем единые цвета вместо градиентов
+        const isZayavkaStatusChart = canvasId === 'zayavka-status-chart' || 
+                                   (config.title && config.title.includes('Статусы заявок')) ||
+                                   (config.chartType === 'zayavka_status_data') ||
+                                   (canvasId === 'fullChart' && config.title && config.title.includes('Статусы заявок'));
+        
+        if (isZayavkaStatusChart) {
+            // Единые цвета для статусов заявок (игнорируем переданные цвета)
+            period1Color = '#2563EB'; // Синий для периода 1
+            period2Color = '#DC2626'; // Красный для периода 2
+            
+            console.log('🎨 Используем единые цвета для сравнительного графика статусов заявок:', {
+                period1Color,
+                period2Color,
+                canvasId,
+                title: config.title,
+                ignoringPassedColors: !!(config.backgroundColor || config.borderColor)
+            });
+        } else {
+            // Градиенты для остальных графиков
+            // Градиент для периода 1 (синий)
+            const gradient1 = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient1.addColorStop(0, '#2b77cb');    // Темно-синий
+            gradient1.addColorStop(0.5, '#4299e1');  // Средний синий  
+            gradient1.addColorStop(1, '#63b3ed');    // Светло-синий
+            
+            // Градиент для периода 2 (красный)
+            const gradient2 = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient2.addColorStop(0, '#dc2626');    // Темно-красный
+            gradient2.addColorStop(0.5, '#ef4444');  // Средний красный
+            gradient2.addColorStop(1, '#f87171');    // Светло-красный
+            
+            period1Color = gradient1;
+            period2Color = gradient2;
+        }
         
         const chartConfig = {
             type: 'bar',
@@ -4046,7 +4522,7 @@ export class AmanatDashboard extends Component {
                     {
                 label: config.period1Label || 'Период 1',
                         data: displayPeriod1Data,
-                backgroundColor: gradient1,
+                backgroundColor: period1Color,
                 borderColor: 'transparent',
                 borderWidth: 0,
                 borderRadius: 6,
@@ -4060,7 +4536,7 @@ export class AmanatDashboard extends Component {
                     {
                 label: config.period2Label || 'Период 2',
                         data: displayPeriod2Data,
-                backgroundColor: gradient2,
+                backgroundColor: period2Color,
                 borderColor: 'transparent',
                 borderWidth: 0,
                 borderRadius: 6,
@@ -4416,6 +4892,14 @@ export class AmanatDashboard extends Component {
                 // Проверяем что данные не пустые после конвертации
                 if (!fullData.labels || !Array.isArray(fullData.labels) || fullData.labels.length === 0) {
                     console.warn('❌ Нет данных после конвертации для графика:', chartType);
+                    console.warn('📊 Детали проблемы:', {
+                        chartType,
+                        originalResponse: response,
+                        convertedData: fullData,
+                        dateRange1: this.state.dateRange1,
+                        dateRange2: this.state.dateRange2,
+                        isComparisonMode: !!(this.state.dateRange2.start && this.state.dateRange2.end)
+                    });
                     
                     // Создаем модальное окно с сообщением о том, что нет данных
                     const modal = document.createElement('div');
@@ -4423,6 +4907,16 @@ export class AmanatDashboard extends Component {
                     modal.id = 'fullChartModal';
                     modal.style.display = 'block';
                     modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                    
+                    let periodInfo;
+                    if (this.state.dateRange1.start && this.state.dateRange1.end) {
+                        periodInfo = `за период ${this.state.dateRange1.start} - ${this.state.dateRange1.end}`;
+                    } else if (this.state.dateRange1.start || this.state.dateRange1.end) {
+                        periodInfo = 'по выбранному диапазону';
+                    } else {
+                        periodInfo = 'для отображения';
+                        console.warn('⚠️ Нет данных даже без фильтров по датам!');
+                    }
                     
                     modal.innerHTML = `
                         <div class="modal-dialog modal-lg">
@@ -4437,8 +4931,9 @@ export class AmanatDashboard extends Component {
                                     <div class="d-flex justify-content-center align-items-center" style="height: 400px;">
                                         <div class="text-center">
                                             <i class="fa fa-chart-bar fa-5x text-muted mb-4"></i>
-                                            <h3 class="text-muted">Нет данных для отображения</h3>
+                                            <h3 class="text-muted">Нет данных ${periodInfo}</h3>
                                             <p class="text-muted">Попробуйте выбрать другой период или проверьте наличие данных в системе.</p>
+                                            <small class="text-muted">График: ${chartType}</small>
                                         </div>
                                     </div>
                                 </div>
@@ -4556,7 +5051,7 @@ export class AmanatDashboard extends Component {
                             ${showClickHint ? `
                             <p class="text-info mb-0 mt-2">
                                 <i class="fa fa-mouse-pointer me-2"></i>
-                                <strong>Подсказка:</strong> Кликните на столбец, чтобы перейти к соответствующим заявкам
+                                <strong>Подсказка:</strong> Кликните на столбец или точку на линии, чтобы перейти к соответствующим заявкам${isComparisonMode ? ' для выбранного периода' : ''}
                             </p>
                             ` : ''}
                         </div>
@@ -4739,6 +5234,7 @@ export class AmanatDashboard extends Component {
                                     period1Label: fullData.period1Label || 'Период 1',
                                     period2Label: fullData.period2Label || 'Период 2',
                                     title: chartTitle,
+                                    chartType: chartType, // Передаем тип графика для обработки кликов
                                     showFullData: true,
                                     clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
                                     tension: 0.3,
@@ -4754,6 +5250,7 @@ export class AmanatDashboard extends Component {
                                     period1Label: fullData.period1Label || 'Период 1',
                                     period2Label: fullData.period2Label || 'Период 2',
                                     title: chartTitle,
+                                    chartType: chartType, // Передаем тип графика для правильного определения цветов
                                     showFullData: true,
                                     isPercentage: (fullData.originalConfig && fullData.originalConfig.isPercentage) || false,
                                     clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
@@ -4807,6 +5304,20 @@ export class AmanatDashboard extends Component {
                     switch (renderType) {
                         case 'horizontalBar':
                             // Специальные цвета для статусов заявок
+                            
+                            // Отладка для статусов заявок
+                            if (chartType === 'zayavka_status_data') {
+                                console.log('🛠️ ФОРМИРОВАНИЕ chartConfig для zayavka_status_data:', {
+                                    chartType: chartType,
+                                    fullData: fullData,
+                                    hasLabels: !!fullData.labels,
+                                    hasData: !!fullData.data,
+                                    labelsContent: fullData.labels,
+                                    dataContent: fullData.data,
+                                    fullDataKeys: Object.keys(fullData || {})
+                                });
+                            }
+                            
                             let chartConfig = {
                                 ...config,
                                 labels: fullData.labels,
@@ -4814,16 +5325,59 @@ export class AmanatDashboard extends Component {
                                 title: chartTitle,
                                 showFullData: true, // Отключаем ограничение TOP-3
                                 isPercentage: config.isPercentage || false, // Передаем флаг процентов
-                                clickable: this.shouldEnableClicksInModal(chartType) // Включаем клики для интерактивных графиков
+                                clickable: this.shouldEnableClicksInModal(chartType), // Включаем клики для интерактивных графиков
+                                originalData: fullData.originalData // Передаем оригинальные данные для кликов
                             };
+                            
+                            // ИСПРАВЛЕНИЕ: Для статусов заявок устанавливаем один цвет
+                            if (chartType === 'zayavka_status_data' && fullData.labels) {
+                                const singleColor = '#2563EB'; // Синий цвет
+                                chartConfig.backgroundColor = new Array(fullData.labels.length).fill(singleColor);
+                                chartConfig.borderColor = new Array(fullData.labels.length).fill(singleColor);
+                                
+                                console.log('🎨 Установлены одинаковые цвета для модального окна статусов:', {
+                                    color: singleColor,
+                                    elementsCount: fullData.labels.length
+                                });
+                            }
+                            
+                            console.log('🔧 Конфигурация для модального окна:', {
+                                chartType,
+                                hasOriginalData: !!fullData.originalData,
+                                originalDataLength: fullData.originalData ? fullData.originalData.length : 0
+                            });
                             
                             // Добавляем обработчик кликов для различных типов графиков
                             if (this.shouldEnableClicksInModal(chartType)) {
                                 chartConfig.onClick = (event, elements) => {
                                     if (elements.length > 0) {
                                         const index = elements[0].index;
-                                        const clickedValue = fullData.labels[index];
-                                        console.log('🎯 Клик в модальном окне:', { chartType, clickedValue, index });
+                                        let clickedValue = fullData.labels[index];
+                                        
+                                        // Дополнительная отладочная информация
+                                        console.log('🎯 Клик в модальном окне:', { 
+                                            chartType, 
+                                            clickedValue, 
+                                            index, 
+                                            allLabels: fullData.labels,
+                                            dataPoint: fullData.datasets?.[0]?.data?.[index]
+                                        });
+                                        
+                                        // Для статусов заявок используем данные из dataset если они есть
+                                        if (chartType === 'zayavka_status_data' && fullData.datasets?.[0]?.originalData) {
+                                            const originalItem = fullData.datasets[0].originalData[index];
+                                            if (originalItem && originalItem.name) {
+                                                clickedValue = originalItem.name;
+                                                console.log('🔄 Используем оригинальное название статуса:', clickedValue);
+                                                console.log('📊 Детали клика:', {
+                                                    index: index,
+                                                    clickedLabel: fullData.labels[index],
+                                                    originalItemName: originalItem.name,
+                                                    allLabels: fullData.labels,
+                                                    allOriginalData: fullData.datasets[0].originalData.map(item => item.name)
+                                                });
+                                            }
+                                        }
                                         
                                         // Закрываем модальное окно с правильной очисткой
                                         const modal = document.getElementById('fullChartModal');
@@ -5020,6 +5574,16 @@ export class AmanatDashboard extends Component {
         if (Array.isArray(serverData)) {
             const labels = serverData.map(item => item.name || item.label || 'Без названия');
             
+            // Специальная отладка для zayavka_status_data
+            if (chartType === 'zayavka_status_data') {
+                console.log('🏷️ ОТЛАДКА labels для zayavka_status_data:', {
+                    labels: labels,
+                    labelsLength: labels.length,
+                    firstLabel: labels[0],
+                    allLabels: labels
+                });
+            }
+            
             // 🔑 ИСПРАВЛЕНИЕ: Выбираем правильное поле данных в зависимости от типа графика
             let data;
             if (chartType === 'agent_avg_amount' || chartType === 'client_avg_amount') {
@@ -5039,7 +5603,18 @@ export class AmanatDashboard extends Component {
                 data = serverData.map(item => item.cycle_days || 0);
             } else if (chartType === 'zayavka_status_data') {
                 // Для статусов заявок используем count
-                data = serverData.map(item => item.count || 0);
+                console.log('🎯 ОТЛАДКА zayavka_status_data в convertServerDataToChartData:', {
+                    serverData: serverData,
+                    isArray: Array.isArray(serverData),
+                    length: serverData.length,
+                    firstItem: serverData[0],
+                    allItems: serverData
+                });
+                data = serverData.map(item => {
+                    const count = item.count || 0;
+                    console.log('📊 Маппинг элемента:', {item, count});
+                    return count;
+                });
             } else {
                 // Для остальных графиков (количественных) используем count
                 data = serverData.map(item => item.count || 0);
@@ -5055,7 +5630,46 @@ export class AmanatDashboard extends Component {
                 firstFewData: data.slice(0, 5),
                 chartType: chartType
             });
-            return { labels, data };
+            
+            // Специальная отладка для zayavka_status_data
+            if (chartType === 'zayavka_status_data') {
+                console.log('🎯 ФИНАЛЬНЫЙ РЕЗУЛЬТАТ convertServerDataToChartData для zayavka_status_data:', {
+                    returnValue: { labels, data },
+                    labelsValid: Array.isArray(labels) && labels.length > 0,
+                    dataValid: Array.isArray(data) && data.length > 0,
+                    labelsContent: labels,
+                    dataContent: data
+                });
+            }
+            
+            // ИСПРАВЛЕНИЕ: Для статусов заявок добавляем сортировку по убыванию count
+            if (chartType === 'zayavka_status_data') {
+                // Сортируем исходные данные по count от большего к меньшему
+                const sortedServerData = [...serverData].sort((a, b) => (b.count || 0) - (a.count || 0));
+                
+                console.log('📊 Сортировка serverData для zayavka_status_data:', {
+                    original: serverData,
+                    sorted: sortedServerData
+                });
+                
+                // Пересоздаем labels и data из отсортированных данных
+                const sortedLabels = sortedServerData.map(item => item.name || item.label || 'Без названия');
+                const sortedData = sortedServerData.map(item => item.count || 0);
+                
+                const result = { 
+                    labels: sortedLabels, 
+                    data: sortedData,
+                    originalData: sortedServerData
+                };
+                
+                console.log('✅ Финальный результат с сортировкой для zayavka_status_data:', result);
+                return result;
+            }
+            
+            // Для других типов графиков - без изменений
+            const result = { labels, data };
+            
+            return result;
         }
         
         // Для объектов (например, deal_types, currency_amounts)
@@ -5121,6 +5735,13 @@ export class AmanatDashboard extends Component {
             const dateFrom2 = this.state.dateRange2.start || null;
             const dateTo2 = this.state.dateRange2.end || null;
             
+            console.log(`📅 Проверка дат для ${chartType}:`, {
+                dateFrom1, dateTo1, dateFrom2, dateTo2,
+                hasRange1: !!(dateFrom1 && dateTo1),
+                hasRange2: !!(dateFrom2 && dateTo2),
+                noDatesAtAll: !dateFrom1 && !dateTo1 && !dateFrom2 && !dateTo2
+            });
+            
             // Если указаны оба периода - загружаем сравнительные данные
             if (dateFrom1 && dateTo1 && dateFrom2 && dateTo2) {
                 console.log(`📊 Загружаем СРАВНИТЕЛЬНЫЕ данные для ${chartType}:`);
@@ -5146,17 +5767,27 @@ export class AmanatDashboard extends Component {
                 
             } else {
                 // Обычный режим - один период
-                console.log(`📅 Загружаем данные для одного периода: ${dateFrom1} - ${dateTo1}`);
+                if (!dateFrom1 && !dateTo1) {
+                    console.log(`📅 РЕЖИМ БЕЗ ДАТ: Загружаем ВСЕ данные для ${chartType}`);
+                } else {
+                    console.log(`📅 Загружаем данные для одного периода: ${dateFrom1} - ${dateTo1}`);
+                }
+                
+                const params = {
+                    chart_type: chartType
+                };
+                
+                // Добавляем даты только если они указаны
+                if (dateFrom1) params.date_from = dateFrom1;
+                if (dateTo1) params.date_to = dateTo1;
+                
+                console.log(`📞 Параметры запроса к серверу:`, params);
                 
                 return await this.orm.call(
                     'amanat.dashboard',
                     'get_full_chart_data',
                     [],
-                    {
-                        chart_type: chartType,
-                        date_from: dateFrom1,
-                        date_to: dateTo1
-                    }
+                    params
                 );
             }
         } catch (error) {
@@ -5221,7 +5852,14 @@ export class AmanatDashboard extends Component {
         const period1Data = comparisonData.period1[dataField] || [];
         const period2Data = comparisonData.period2[dataField] || [];
         
-        console.log('📊 Данные периодов:', { period1Data, period2Data });
+        console.log('📊 Данные периодов:', { 
+            chartType, 
+            dataField, 
+            period1Data, 
+            period2Data,
+            period1Length: Array.isArray(period1Data) ? period1Data.length : (typeof period1Data === 'object' ? Object.keys(period1Data).length : 'not array/object'),
+            period2Length: Array.isArray(period2Data) ? period2Data.length : (typeof period2Data === 'object' ? Object.keys(period2Data).length : 'not array/object')
+        });
         
         // Получаем все уникальные метки из обоих периодов
         let allLabels = [];
@@ -5278,8 +5916,45 @@ export class AmanatDashboard extends Component {
             }
         });
         
+        // Проверяем, есть ли данные для отображения
+        if (allLabels.length === 0) {
+            console.warn(`⚠️ Нет данных для сравнительного графика ${chartType}`);
+            return { labels: [], data: [], isComparison: true };
+        }
+        
+        // ИСПРАВЛЕНИЕ: Для статусов заявок добавляем сортировку по убыванию максимального значения
+        if (chartType === 'zayavka_status_data') {
+            // Создаем массив объектов для сортировки
+            const sortingData = allLabels.map((label, index) => ({
+                label: label,
+                period1Value: period1Values[index],
+                period2Value: period2Values[index],
+                maxValue: Math.max(period1Values[index] || 0, period2Values[index] || 0)
+            }));
+            
+            // Сортируем по максимальному значению от большего к меньшему
+            sortingData.sort((a, b) => b.maxValue - a.maxValue);
+            
+            console.log('📊 Сортировка сравнительных данных для zayavka_status_data:', {
+                originalOrder: allLabels,
+                sortedOrder: sortingData.map(item => item.label),
+                sortingCriteria: sortingData.map(item => ({ label: item.label, maxValue: item.maxValue }))
+            });
+            
+            // Переупорядочиваем данные согласно сортировке
+            allLabels = sortingData.map(item => item.label);
+            const sortedPeriod1Values = sortingData.map(item => item.period1Value);
+            const sortedPeriod2Values = sortingData.map(item => item.period2Value);
+            
+            // Обновляем значения
+            period1Values.length = 0;
+            period1Values.push(...sortedPeriod1Values);
+            period2Values.length = 0;
+            period2Values.push(...sortedPeriod2Values);
+        }
+        
         // Возвращаем сравнительные данные в специальном формате
-        return {
+        const result = {
             labels: allLabels,
             period1Data: period1Values,
             period2Data: period2Values,
@@ -5290,6 +5965,15 @@ export class AmanatDashboard extends Component {
                 clickable: true
             }
         };
+        
+        console.log(`✅ Сформированы сравнительные данные для ${chartType}:`, {
+            labelsCount: result.labels.length,
+            period1DataCount: result.period1Data.length,
+            period2DataCount: result.period2Data.length,
+            firstLabels: result.labels.slice(0, 3)
+        });
+        
+        return result;
     }
     
     getValueFromItem(item, chartType) {
@@ -5536,7 +6220,61 @@ export class AmanatDashboard extends Component {
                     const mapping = chartMappings[chartId];
                     console.log(`🗺️ Маппинг для ${chartId}:`, mapping);
                     
-                    // 🔑 ИСПРАВЛЕНИЕ: Получаем сохраненные данные графика
+                    // 🔑 ПРОВЕРЯЕМ СРАВНИТЕЛЬНЫЙ РЕЖИМ
+                    const isComparisonMode = this.state.dateRange2.start && this.state.dateRange2.end;
+                    console.log(`🔍 Проверка сравнительного режима для ${chartId}:`, {
+                        isComparisonMode,
+                        dateRange1: this.state.dateRange1,
+                        dateRange2: this.state.dateRange2,
+                        hasComparisonData: !!this.state.chartComparisonData
+                    });
+                    
+                    if (isComparisonMode && this.state.chartComparisonData) {
+                        // Сравнительный режим - создаем данные для сравнения
+                        const comparisonData = this.formatComparisonDataForChart(
+                            this.state.chartComparisonData, 
+                            mapping.type, 
+                            this.state.dateRange1.start, 
+                            this.state.dateRange1.end,
+                            this.state.dateRange2.start, 
+                            this.state.dateRange2.end
+                        );
+                        
+                        console.log(`📊 Сравнительные данные для ${chartId}:`, comparisonData);
+                        
+                        // Проверяем, есть ли данные для отображения
+                        const hasData = comparisonData && 
+                                       comparisonData.labels && 
+                                       comparisonData.labels.length > 0;
+                        
+                        if (hasData) {
+                            await this.openFullChart(
+                                chartId, 
+                                mapping.title, 
+                                mapping.type,
+                                comparisonData, // Передаем сравнительные данные
+                                { 
+                                    type: mapping.chartType, 
+                                    isPercentage: mapping.isPercentage || false,
+                                    isComparison: true 
+                                }
+                            );
+                        } else {
+                            // Fallback: загружаем данные с сервера для первого периода
+                            console.warn(`⚠️ Нет сравнительных данных для ${chartId}, загружаем данные с сервера`);
+                            await this.openFullChart(
+                                chartId, 
+                                mapping.title, 
+                                mapping.type,
+                                null, // Загружаем с сервера
+                                { 
+                                    type: mapping.chartType, 
+                                    isPercentage: mapping.isPercentage || false 
+                                }
+                            );
+                        }
+                    } else {
+                        // Обычный режим
                     const savedData = this.getFullChartData(chartId);
                     const savedConfig = this.getFullChartConfig(chartId);
                     
@@ -5576,6 +6314,7 @@ export class AmanatDashboard extends Component {
                             isPercentage: mapping.isPercentage || false 
                         } // Используем сохраненную конфигурацию или создаем с нужными параметрами
                     );
+                    }
                 };
                 
                 titleElement._fullChartHandler = handler;
@@ -5647,11 +6386,54 @@ export class AmanatDashboard extends Component {
         return clickableChartTypes.includes(chartType);
     }
     
-    handleModalChartClick(chartType, clickedValue, index, fullData) {
+    isInModalWindow() {
+        /**
+         * Проверяет, находимся ли мы в модальном окне
+         */
+        const modalExists = document.querySelector('.full-chart-modal') !== null;
+        console.log('🔍 isInModalWindow:', { modalExists });
+        return modalExists;
+    }
+
+    getChartTypeFromCanvasId(canvasId) {
+        /**
+         * Определяет тип графика по ID canvas
+         */
+        const chartMapping = {
+            'deal-cycles-line': 'deal_cycles',
+            'import-export-line-comparison': 'import_export_by_month',
+            'managers-efficiency-chart': 'managers_efficiency',
+            'zayavka-status-chart': 'zayavka_status_data',
+            'contragents-by-zayavki-chart': 'contragents_by_zayavki',
+            'agents-by-zayavki-chart': 'agents_by_zayavki',
+            'clients-by-zayavki-chart': 'clients_by_zayavki',
+            'subagents-by-zayavki-chart': 'subagents_by_zayavki',
+            'payers-by-zayavki-chart': 'payers_by_zayavki',
+            'managers-by-zayavki-pie': 'managers_by_zayavki',
+            'managers-closed-zayavki-pie': 'managers_closed_zayavki'
+        };
+        return chartMapping[canvasId] || canvasId;
+    }
+
+    handleModalChartClick(chartType, clickedValue, index, fullData, periodInfo = null) {
         /**
          * Обрабатывает клики в модальном окне в зависимости от типа графика
+         * @param {string} chartType - тип графика
+         * @param {string} clickedValue - значение на которое кликнули
+         * @param {number} index - индекс элемента
+         * @param {object} fullData - полные данные графика
+         * @param {object} periodInfo - информация о выбранном периоде {period: 'period1'|'period2', dateRange: {start, end}}
          */
-        console.log('🎯 Обработка клика в модальном окне:', { chartType, clickedValue, index });
+        console.log('🎯 Обработка клика в модальном окне:', { chartType, clickedValue, index, periodInfo });
+        console.log('🔍 Детальная отладка handleModalChartClick:', {
+            chartType,
+            clickedValue,
+            index,
+            periodInfo,
+            hasDateRange: !!(periodInfo && periodInfo.dateRange),
+            dateRangeStart: periodInfo?.dateRange?.start,
+            dateRangeEnd: periodInfo?.dateRange?.end
+        });
         
         try {
             switch (chartType) {
@@ -5691,12 +6473,197 @@ export class AmanatDashboard extends Component {
                     this.openZayavkiByManagerClosed(clickedValue);
                     break;
                     
+                case 'deal_cycles':
+                    // Клик по графику циклов сделок
+                    const cycleDays = parseInt(clickedValue);
+                    if (periodInfo) {
+                        this.openZayavkiByDealCycleAndPeriod(cycleDays, periodInfo);
+                    } else {
+                        this.openZayavkiByCycle(cycleDays);
+                    }
+                    break;
+                    
+                case 'import_export_by_month':
+                    // Клик по графику импорт/экспорт по месяцам
+                    if (periodInfo) {
+                        this.openZayavkiByMonthAndPeriod(clickedValue, periodInfo);
+                    } else {
+                        this.openZayavkiByMonth(clickedValue);
+                    }
+                    break;
+                    
                 default:
                     console.warn('⚠️ Неизвестный тип графика для обработки кликов:', chartType);
                     break;
             }
         } catch (error) {
             console.error('❌ Ошибка при обработке клика в модальном окне:', error);
+        }
+    }
+
+    async openZayavkiByDealCycleAndPeriod(cycleDays, periodInfo) {
+        /**
+         * Открывает заявки с фильтром по циклу сделки и периоду
+         */
+        console.log('🎯 openZayavkiByDealCycleAndPeriod:', { cycleDays, periodInfo });
+        
+        const action = {
+            type: "ir.actions.act_window",
+            name: `Заявки с циклом ${cycleDays} дней (${periodInfo.period === 'period1' ? 'Период 1' : 'Период 2'})`,
+            res_model: "amanat.zayavka",
+            view_mode: "list,form",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: []
+        };
+        
+        // Добавляем фильтр по дате согласно выбранному периоду
+        if (periodInfo.dateRange.start && periodInfo.dateRange.end) {
+            action.domain = [
+                '&',
+                ['date_placement', '>=', periodInfo.dateRange.start],
+                ['date_placement', '<=', periodInfo.dateRange.end]
+            ];
+        }
+        
+        // Добавляем фильтр по циклу сделки (разница между датой закрытия и датой размещения)
+        // Пока открываем все заявки в выбранном периоде, точный расчет циклов требует серверной логики
+        // action.context = {
+        //     'search_default_cycle_days': cycleDays
+        // };
+        
+        console.log('📄 Финальный action для заявок по циклу:', action);
+        this.actionService.doAction(action);
+    }
+
+    async openZayavkiByMonthAndPeriod(monthLabel, periodInfo) {
+        /**
+         * Открывает заявки с фильтром по месяцу и периоду
+         */
+        console.log('🎯 openZayavkiByMonthAndPeriod:', { monthLabel, periodInfo });
+        console.log('📅 Детали парсинга месяца:', { monthLabel, includesDash: monthLabel.includes('-') });
+        
+        // Парсим месяц из метки (например "2024-01" или "Январь 2024")
+        let year, month;
+        if (monthLabel.includes('-')) {
+            [year, month] = monthLabel.split('-');
+        } else {
+            // Для более сложных форматов можно добавить дополнительную логику
+            const date = new Date(monthLabel);
+            year = date.getFullYear();
+            month = date.getMonth() + 1;
+        }
+        
+        const action = {
+            type: "ir.actions.act_window",
+            name: `Заявки за ${monthLabel} (${periodInfo.period === 'period1' ? 'Период 1' : 'Период 2'})`,
+            res_model: "amanat.zayavka",
+            view_mode: "list,form",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: []
+        };
+        
+        // Добавляем фильтр по месяцу и году в рамках выбранного периода
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0); // последний день месяца
+        
+        // Учитываем ограничения периода
+        const periodStart = new Date(periodInfo.dateRange.start);
+        const periodEnd = new Date(periodInfo.dateRange.end);
+        
+        const filterStart = startDate > periodStart ? startDate : periodStart;
+        const filterEnd = endDate < periodEnd ? endDate : periodEnd;
+        
+        action.domain = [
+            '&',
+            ['date_placement', '>=', filterStart.toISOString().split('T')[0]],
+            ['date_placement', '<=', filterEnd.toISOString().split('T')[0]]
+        ];
+        
+        console.log('📄 Финальный action для заявок по месяцу и периоду:', action);
+        this.actionService.doAction(action);
+    }
+
+    async openZayavkiByMonth(monthLabel) {
+        /**
+         * Открывает заявки с фильтром по месяцу (без учета периода)
+         */
+        console.log('🎯 openZayavkiByMonth:', { monthLabel });
+        
+        // Парсим месяц из метки
+        let year, month;
+        if (monthLabel.includes('-')) {
+            [year, month] = monthLabel.split('-');
+        } else {
+            const date = new Date(monthLabel);
+            year = date.getFullYear();
+            month = date.getMonth() + 1;
+        }
+        
+        const action = {
+            type: "ir.actions.act_window",
+            name: `Заявки за ${monthLabel}`,
+            res_model: "amanat.zayavka",
+            view_mode: "list,form",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: []
+        };
+        
+        // Добавляем фильтр по месяцу
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0);
+        
+        action.domain = [
+            '&',
+            ['date_placement', '>=', startDate.toISOString().split('T')[0]],
+            ['date_placement', '<=', endDate.toISOString().split('T')[0]]
+        ];
+        
+        this.actionService.doAction(action);
+    }
+
+    // Тестовая функция для диагностики проблем
+    testChartClicks() {
+        console.log('🧪 Тестирование функциональности кликов по графикам');
+        
+        // Проверяем состояние дашборда
+        console.log('📊 Состояние дашборда:', {
+            dateRange1: this.state.dateRange1,
+            dateRange2: this.state.dateRange2,
+            hasComparisonData: !!this.state.comparisonData,
+            hasChartComparisonData: !!this.state.chartComparisonData
+        });
+        
+        // Проверяем наличие модального окна
+        const modalExists = document.querySelector('.full-chart-modal');
+        console.log('🔍 Модальное окно:', { exists: !!modalExists, element: modalExists });
+        
+        // Проверяем наличие графиков
+        const charts = ['deal-cycles-line', 'import-export-line-comparison', 'managers-efficiency-chart'];
+        charts.forEach(chartId => {
+            const canvas = document.getElementById(chartId);
+            const chart = this.charts[chartId];
+            console.log(`📈 График ${chartId}:`, { 
+                canvasExists: !!canvas, 
+                chartExists: !!chart,
+                hasClickHandler: chart && chart.config && chart.config.options && !!chart.config.options.onClick
+            });
+        });
+        
+        // Тестируем прямой вызов handleModalChartClick
+        console.log('🎯 Тестируем прямой вызов handleModalChartClick...');
+        const testPeriodInfo = {
+            period: 'period1',
+            dateRange: { start: '2024-01-01', end: '2024-01-31' }
+        };
+        
+        try {
+            this.handleModalChartClick('deal_cycles', '30', 0, null, testPeriodInfo);
+            console.log('✅ Прямой вызов handleModalChartClick успешен');
+        } catch (error) {
+            console.error('❌ Ошибка в handleModalChartClick:', error);
         }
     }
 

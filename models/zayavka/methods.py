@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import requests
 from odoo import models, api, fields
 
 _logger = logging.getLogger(__name__)
@@ -48,7 +49,27 @@ class ZayavkaMethods(models.Model):
                 _logger.info(f"Старое Правило платежки: {old_payment_rule.name}")
                 _logger.info(f"Старое Правило расхода: {old_expense_rule.name}")
                 _logger.info(f"Старое Правило себестоимости: {old_money_cost_rule.name}")
+                rec.status = '21'
                 rec.apply_rules_by_deal_closed_date()
+        
+        if 'report_link' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'report_link' для заявки {rec.id}")
+                if not vals.get('deal_closed_date'):
+                    rec.deal_closed_date = fields.Date.today()
+                rec.status = '21'
+        
+        if 'swift_received_date' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'swift_received_date' для заявки {rec.id}")
+                rec.status = '12'
+        
+        if 'swift_attachments' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'swift_attachments' для заявки {rec.id}")
+                if not vals.get('swift_received_date'):
+                    rec.swift_received_date = fields.Date.today()
+                rec.status = '12'
 
         if trigger:
             for rec in self:
@@ -88,6 +109,47 @@ class ZayavkaMethods(models.Model):
                 _logger.info(f"Изменено поле 'invoice_attachments' для заявки {rec.id}")
                 rec.invoice_date = fields.Date.today()
                 rec.status = '2'
+            
+        if 'payment_order_date_to_client_account' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'payment_order_date_to_client_account' для заявки {rec.id}")
+                rec.run_return_with_main_amount()
+
+        if 'payment_order_date_to_client_account_return_all' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'payment_order_date_to_client_account_return_all' для заявки {rec.id}")
+                rec.run_return_with_all_amount_method()
+        
+        if 'payment_order_date_to_return' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'payment_order_date_to_return' для заявки {rec.id}")
+                rec.run_return_with_partial_payment_of_remuneration_method()
+
+        if 'supplier_currency_paid_date_again_1' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_1' для заявки {rec.id}")
+                rec.run_return_with_subsequent_payment_method()
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
+        
+        if 'supplier_currency_paid_date_again_2' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_2' для заявки {rec.id}")
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
+        
+        if 'supplier_currency_paid_date_again_3' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_3' для заявки {rec.id}")
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
+
+        if 'supplier_currency_paid_date_again_4' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_4' для заявки {rec.id}")
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
+
+        if 'supplier_currency_paid_date_again_5' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_5' для заявки {rec.id}")
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
 
         # ... (остальная логика по датам)
         #         # Получаем все даты из extract_delivery_ids
@@ -174,6 +236,22 @@ class ZayavkaMethods(models.Model):
                 })
             res.period_id = period.id
 
+        if vals.get('swift_received_date'):
+            res.status = '12'
+
+        if vals.get('swift_attachments'):
+            if not vals.get('swift_received_date'):
+                res.swift_received_date = fields.Date.today()
+            res.status = '12'
+
+        if vals.get('deal_closed_date'):
+            res.status = '21'
+
+        if vals.get('report_link'):
+            if not vals.get('deal_closed_date'):
+                res.deal_closed_date = fields.Date.today()
+            res.status = '21'
+
         if vals.get('zayavka_attachments'):
             res._analyze_and_log_document_text()
 
@@ -183,6 +261,39 @@ class ZayavkaMethods(models.Model):
         if vals.get('invoice_attachments'):
             res.invoice_date = fields.Date.today()
             res.status = '2'
+        
+        if vals.get('payment_order_date_to_client_account'):
+            _logger.info("Возврат основной суммы")
+            res.run_return_with_main_amount()
+        
+        if vals.get('payment_order_date_to_client_account_return_all'):
+            _logger.info("Возврат всей суммы")
+            res.run_return_with_all_amount_method()
+
+        if vals.get('payment_order_date_to_return'):
+            _logger.info("Возврат частичной суммы")
+            res.run_return_with_partial_payment_of_remuneration_method()
+        
+        if vals.get('supplier_currency_paid_date_again_1'):
+            _logger.info("Возврат частичной суммы")
+            res.run_return_with_subsequent_payment_method()
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
+        
+        if vals.get('supplier_currency_paid_date_again_2'):
+            _logger.info("Возврат частичной суммы")
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
+
+        if vals.get('supplier_currency_paid_date_again_3'):
+            _logger.info("Возврат частичной суммы")
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
+
+        if vals.get('supplier_currency_paid_date_again_4'):
+            _logger.info("Возврат частичной суммы")
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
+
+        if vals.get('supplier_currency_paid_date_again_5'):
+            _logger.info("Возврат частичной суммы")
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
 
         return res
 
@@ -222,6 +333,7 @@ class ZayavkaMethods(models.Model):
             _logger.info("Старых ордеров не обнаружено.")
 
     def _create_order(self, vals):
+        vals['status'] = ''
         order = self.env['amanat.order'].create(vals)
         _logger.info(f"Создан ордер: {order.name}, сумма={order.amount}, валюта={order.currency}")
         return order
@@ -317,4 +429,179 @@ class ZayavkaMethods(models.Model):
             'view_mode': 'form',
             'target': 'current',
             'context': dict(self.env.context, default_status='1')
+        }
+
+    def refresh_rates(self):
+        """Обновляет курсы инвестинг и ЦБ через API в зависимости от выбранной валюты"""
+        console_messages = []
+        updated_rates = {}
+        
+        for record in self:
+            currency = record.currency
+            console_messages.append(f"🔄 Обновление курсов для заявки {record.zayavka_num or record.id}")
+            console_messages.append(f"💱 Выбранная валюта: {currency}")
+            
+            if not currency:
+                console_messages.append("❌ Валюта не выбрана, пропускаем")
+                continue
+                
+            # Маппинг валют для API запросов согласно документации
+            currency_map = {
+                'usd': ('USD', 'USD/RUB'),
+                'euro': ('EUR', 'EUR/RUB'), 
+                'cny': ('CNY', 'CNY/RUB'),
+                'aed': ('AED', 'AED/RUB'),
+                'thb': ('THB', 'THB/RUB'),
+                'idr': ('IDR', 'IDR/RUB'),
+                'inr': ('INR', 'INR/RUB'),
+            }
+            
+            # Убираем _cashe суффикс если есть
+            clean_currency = currency.replace('_cashe', '')
+            console_messages.append(f"🧹 Очищенная валюта: {clean_currency}")
+            
+            if clean_currency not in currency_map:
+                console_messages.append(f"⚠️ Валюта {currency} не поддерживается для обновления курсов")
+                _logger.warning(f"Валюта {currency} не поддерживается для обновления курсов")
+                continue
+                
+            cbr_currency, investing_pair = currency_map[clean_currency]
+            console_messages.append(f"📊 Запрашиваем курсы: ЦБ({cbr_currency}) и Investing({investing_pair})")
+            
+            # Получаем курс ЦБ
+            cbr_rate = None
+            cbr_success = False
+            try:
+                cbr_url = f"http://localhost:8081/api/currency/rate/cbr/{cbr_currency}"
+                console_messages.append(f"🌐 Запрос к ЦБ: {cbr_url}")
+                
+                cbr_response = requests.get(cbr_url, timeout=30, headers={'Accept': 'application/json'})
+                cbr_data = cbr_response.json()
+                
+                console_messages.append(f"📥 Ответ ЦБ: {cbr_data}")
+                
+                if cbr_data.get('success') and cbr_data.get('rate'):
+                    old_rate = record.cb_rate
+                    # Заменяем запятую на точку для правильного парсинга float
+                    rate_str = str(cbr_data['rate']).replace(',', '.')
+                    cbr_rate = float(rate_str)
+                    record.cb_rate = cbr_rate
+                    console_messages.append(f"✅ Курс ЦБ обновлен: {old_rate} → {cbr_rate}")
+                    _logger.info(f"Обновлен курс ЦБ для {cbr_currency}: {cbr_rate}")
+                    cbr_success = True
+                else:
+                    console_messages.append(f"❌ Ошибка получения курса ЦБ: {cbr_data.get('error', 'Неизвестная ошибка')}")
+                    _logger.error(f"Ошибка получения курса ЦБ для {cbr_currency}: {cbr_data}")
+                    
+            except requests.exceptions.RequestException as e:
+                console_messages.append(f"🔌 Ошибка запроса к API ЦБ: {str(e)}")
+                _logger.error(f"Ошибка запроса к API ЦБ: {e}")
+            except (ValueError, KeyError, TypeError) as e:
+                console_messages.append(f"🔧 Ошибка обработки ответа ЦБ: {str(e)}")
+                _logger.error(f"Ошибка обработки ответа ЦБ: {e}")
+                
+            # Получаем курс Investing.com
+            investing_rate = None
+            investing_success = False
+            try:
+                # URL кодируем пару валют согласно документации
+                investing_pair_encoded = investing_pair.replace('/', '%2F')
+                investing_url = f"http://localhost:8081/api/currency/rate/investing/{investing_pair_encoded}"
+                console_messages.append(f"🌐 Запрос к Investing: {investing_url}")
+                
+                investing_response = requests.get(investing_url, timeout=30, headers={'Accept': 'application/json'})
+                investing_data = investing_response.json()
+                
+                console_messages.append(f"📥 Ответ Investing: {investing_data}")
+                
+                if investing_data.get('success') and investing_data.get('rate'):
+                    old_rate = record.investing_rate
+                    # Заменяем запятую на точку для правильного парсинга float
+                    rate_str = str(investing_data['rate']).replace(',', '.')
+                    investing_rate = float(rate_str)
+                    record.investing_rate = investing_rate
+                    console_messages.append(f"✅ Курс Investing обновлен: {old_rate} → {investing_rate}")
+                    _logger.info(f"Обновлен курс Investing для {investing_pair}: {investing_rate}")
+                    investing_success = True
+                else:
+                    console_messages.append(f"❌ Ошибка получения курса Investing: {investing_data.get('error', 'Неизвестная ошибка')}")
+                    _logger.error(f"Ошибка получения курса Investing для {investing_pair}: {investing_data}")
+                    
+            except requests.exceptions.RequestException as e:
+                console_messages.append(f"🔌 Ошибка запроса к API Investing: {str(e)}")
+                _logger.error(f"Ошибка запроса к API Investing: {e}")
+            except (ValueError, KeyError, TypeError) as e:
+                console_messages.append(f"🔧 Ошибка обработки ответа Investing: {str(e)}")
+                _logger.error(f"Ошибка обработки ответа Investing: {e}")
+            
+            # Принудительно пересчитываем зависимые поля после обновления курсов
+            if cbr_success or investing_success:
+                old_best_rate_name = record.best_rate_name
+                record._compute_best_rate_name()
+                console_messages.append(f"BEST_RATE_NAME: {old_best_rate_name} -> {record.best_rate_name}")
+                record._compute_best_rate()
+                record._compute_effective_rate()
+                record._compute_our_client_reward()
+                record._compute_client_reward()
+                record._compute_non_our_client_reward()
+                record._compute_total_client()
+                record._compute_partner_post_conversion_rate()
+                console_messages.append(f"Пересчитаны зависимые поля для заявки {record.id}")
+            
+            # Сохраняем обновленные курсы И пересчитанные поля для передачи в JavaScript
+            updated_rates[record.id] = {
+                'cb_rate': cbr_rate if cbr_success else None,
+                'investing_rate': investing_rate if investing_success else None,
+                'cbr_success': cbr_success,
+                'investing_success': investing_success,
+                # Добавляем пересчитанные поля
+                'best_rate_name': record.best_rate_name,
+                'best_rate': record.best_rate,
+                'effective_rate': record.effective_rate,
+                'our_client_reward': record.our_client_reward,
+                'client_reward': record.client_reward,
+                'non_our_client_reward': record.non_our_client_reward,
+                'total_client': record.total_client,
+                'partner_post_conversion_rate': record.partner_post_conversion_rate,
+            }
+            
+            # Итоговое сообщение для этой заявки
+            if cbr_success and investing_success:
+                console_messages.append(f"🎉 Все курсы успешно обновлены для заявки {record.zayavka_num}")
+            elif cbr_success or investing_success:
+                console_messages.append(f"⚠️ Частично обновлены курсы для заявки {record.zayavka_num}")
+            else:
+                console_messages.append(f"💥 Не удалось обновить курсы для заявки {record.zayavka_num}")
+                
+            console_messages.append("=" * 50)
+                
+        # Выводим все сообщения в лог Odoo
+        for msg in console_messages:
+            _logger.info(msg)
+            
+        # Создаем сводное уведомление для пользователя
+        success_count = len([msg for msg in console_messages if '🎉' in msg or '✅' in msg])
+        error_count = len([msg for msg in console_messages if '❌' in msg or '💥' in msg])
+        
+        if error_count == 0:
+            notification_message = "✅ Курсы успешно обновлены!"
+            notification_type = 'success'
+        elif success_count > 0:
+            notification_message = f"⚠️ Частично обновлено. Успешно: {success_count}, Ошибок: {error_count}."
+            notification_type = 'warning'
+        else:
+            notification_message = "❌ Не удалось обновить курсы. Проверьте логи сервера."
+            notification_type = 'danger'
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'refresh_rates_action',
+            'params': {
+                'title': 'Обновление курсов',
+                'message': notification_message,
+                'type': notification_type,
+                'sticky': False,
+                'console_messages': console_messages,
+                'updated_rates': updated_rates  # Передаем обновленные курсы в JavaScript
+            }
         }

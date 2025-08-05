@@ -1,6 +1,5 @@
-from odoo import api, fields, models
+from odoo import fields, models
 import base64
-import io
 import json
 import logging
 import subprocess
@@ -24,7 +23,7 @@ class AmanatZayavkaDocuments(models.Model):
         'signed_zayavka_attachment_rel', 
         'zayavka_id', 
         'attachment_id', 
-        string='Подписанная заявка',
+        string='Подписанная заявка вход',
         readonly=True
     )
     
@@ -82,6 +81,7 @@ class AmanatZayavkaDocuments(models.Model):
         readonly=True
     )
 
+    # TODO: Удалить Заявку Вход
     signed_zayavka_start_attachments = fields.Many2many(
         'ir.attachment', 
         'signed_zayavka_start_attachment_rel', 
@@ -127,7 +127,7 @@ class AmanatZayavkaDocuments(models.Model):
         ('draft', 'Загружен PDF'),
         ('ready', 'Готов к подписанию'),
         ('signed', 'Подписан'),
-    ], string='Статус подписания заявки', default='draft')
+    ], string='Статус подписания заявки вход', default='draft')
     
     invoice_signature_state = fields.Selection([
         ('draft', 'Загружен PDF'),
@@ -165,6 +165,7 @@ class AmanatZayavkaDocuments(models.Model):
         ('signed', 'Подписан'),
     ], string='Статус подписания акт-отчета', default='draft')
 
+    # TODO: Удалить Заявку Вход
     zayavka_start_signature_state = fields.Selection([
         ('draft', 'Загружен PDF'),
         ('ready', 'Готов к подписанию'),
@@ -199,7 +200,7 @@ class AmanatZayavkaDocuments(models.Model):
     zayavka_signature_position_ids = fields.One2many(
         'amanat.zayavka.signature.position', 
         'zayavka_id', 
-        string='Позиции подписей заявки',
+        string='Позиции подписей заявки вход',
         domain=[('document_type', '=', 'zayavka')]
     )
     
@@ -293,7 +294,7 @@ class AmanatZayavkaDocuments(models.Model):
         string='Назначенные подписи акт-отчета',
         domain=[('document_type', '=', 'report')]
     )
-
+    # TODO: Удалить Заявку Вход
     zayavka_start_signature_position_ids = fields.One2many(
         'amanat.zayavka.signature.position', 
         'zayavka_id', 
@@ -393,6 +394,7 @@ class AmanatZayavkaDocuments(models.Model):
         """Определить позиции подписей в акт-отчете (DOCX/PDF)"""
         return self._detect_signatures_for_document('report', self.report_attachments, 'report_signature_state')
 
+    # TODO: Удалить Заявку Вход
     def action_detect_signatures_zayavka_start(self):
         """Определить позиции подписей в заявке Вход (DOCX/PDF)"""
         return self._detect_signatures_for_document('zayavka_start', self.zayavka_start_attachments, 'zayavka_start_signature_state')
@@ -442,6 +444,7 @@ class AmanatZayavkaDocuments(models.Model):
         """Подписать акт-отчет"""
         return self._sign_document('report', self.report_attachments, 'signed_report_attachments', 'report_signature_state')
 
+    # TODO: Удалить Заявку Вход
     def action_sign_zayavka_start(self):
         """Подписать заявку Вход"""
         return self._sign_document('zayavka_start', self.zayavka_start_attachments, 'signed_zayavka_start_attachments', 'zayavka_start_signature_state')
@@ -491,6 +494,7 @@ class AmanatZayavkaDocuments(models.Model):
         """Сбросить все данные акт-отчета"""
         return self._reset_document('report', 'report_attachments', 'signed_report_attachments', 'report_signature_state')
 
+    # TODO: Удалить Заявку Вход
     def action_reset_zayavka_start_document(self):
         """Сбросить все данные заявки Вход"""
         return self._reset_document('zayavka_start', 'zayavka_start_attachments', 'signed_zayavka_start_attachments', 'zayavka_start_signature_state')
@@ -581,7 +585,6 @@ class AmanatZayavkaDocuments(models.Model):
                 decoded_data = base64.b64decode(file_data)
                 _logger.info(f"_detect_file_type: декодировали base64, размер: {len(decoded_data)}, первые 10 байт: {decoded_data[:10]}")
             else:
-                # Если уже байты, используем как есть
                 decoded_data = file_data
                 _logger.info(f"_detect_file_type: получили байты, размер: {len(decoded_data)}, первые 10 байт: {decoded_data[:10]}")
             
@@ -599,6 +602,18 @@ class AmanatZayavkaDocuments(models.Model):
                     return 'docx'
                 else:
                     _logger.info("_detect_file_type: найден ZIP, но не DOCX")
+            
+            # Проверяем, может быть это base64-кодированный PDF
+            if decoded_data.startswith(b'JVBERi'):
+                _logger.info("_detect_file_type: возможно, это base64-кодированный PDF, пробуем декодировать")
+                try:
+                    # Пробуем декодировать как base64
+                    double_decoded = base64.b64decode(decoded_data)
+                    if double_decoded[:4] == b'%PDF':
+                        _logger.info("_detect_file_type: после двойного декодирования определен как PDF")
+                        return 'pdf'
+                except:
+                    pass
             
             # Проверяем, может быть это base64-кодированные данные, которые нужно декодировать еще раз
             if decoded_data.startswith(b'UEs'):

@@ -65,8 +65,8 @@
                                 <h2>Ордеры</h2>
                             </header>
                             <group>
-                                <field name="order_ids" widget="many2many_tags"/>
-                                <field name="comment"/>
+                                <field name="order_ids"/>
+                                <field name="input_comment"/>
                             </group>
                         </page>
                         <page string="Роялти">
@@ -79,17 +79,28 @@
                               <field name="make_royalti"/>
                             </group>
                             <group>
-                                <div class="o-form-group-2">
+                                <div class="o-form-group">
                                     <group>        
                                     <!-- Прячем поля роялти, если галка has_royalti не стоит -->
                                         <field name="royalty_recipient_1"/>
-                                        <field name="royalty_percent_1" widget="percentage" options="{'rounding': 2}"/>
-                                        <field name="royalty_amount_1"/>
+                                        <field name="royalty_recipient_2"/>
+                                        <field name="royalty_recipient_3"/>
+                                        <field name="royalty_recipient_4"/>
+                                        <field name="royalty_recipient_5"/>
                                     </group>
                                     <group>
-                                        <field name="royalty_recipient_2"/>
-                                        <field name="royalty_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                                        <field name="royalty_percent_1" widget="percentage"/>
+                                        <field name="royalty_percent_2" widget="percentage"/>
+                                        <field name="royalty_percent_3" widget="percentage"/>
+                                        <field name="royalty_percent_4" widget="percentage"/>
+                                        <field name="royalty_percent_5" widget="percentage"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_amount_1"/>
                                         <field name="royalty_amount_2"/>
+                                        <field name="royalty_amount_3"/>
+                                        <field name="royalty_amount_4"/>
+                                        <field name="royalty_amount_5"/>
                                     </group>
                                 </div>
                             </group>
@@ -132,7 +143,7 @@
                 <field name="order_ids" widget="many2many_tags"/>
                 <field name="create_reserve" width="100"/>
                 <field name="delete_reserve" width="100"/>
-                <field name="comment"/>
+                <field name="input_comment"/>
             </list>
         </field>
     </record>

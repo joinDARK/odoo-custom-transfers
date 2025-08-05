@@ -560,6 +560,7 @@ export class AnalyticsDashboard extends Component {
         console.log('Data reloaded with fresh API currency rates');
     }
     
+
     /**
      * Сброс к API курсам (удаляет пользовательские курсы)
      */

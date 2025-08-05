@@ -91,13 +91,15 @@ class Manager(models.Model, AmanatBaseModel):
     @api.depends('applications', 'applications.status', 'applications.hide_in_dashboard')
     def _compute_applications_stats(self):
         for rec in self:
-            # Считаем только заявки, которые не скрыты в дашборде
-            visible_applications = rec.applications.filtered(lambda z: not z.hide_in_dashboard)
-            rec.total_applications = len(visible_applications)
+            # Количество заявок за менеджером - простое rollup поле (все заявки)
+            rec.total_applications = len(rec.applications)
             
-            # Ошибочные заявки - это заявки со статусом 'cancel' (отменено клиентом)
-            wrong_applications = visible_applications.filtered(lambda z: z.status == 'cancel')
-            rec.wrong_applications = len(wrong_applications)
+            # Ошибочные заявки:
+            # 1. Все заявки с галочкой "Не отображать в дашборде"
+            # 2. Заявки со статусом '22' (отменено клиентом), но БЕЗ галочки скрытия
+            hidden_applications = rec.applications.filtered(lambda z: z.hide_in_dashboard)
+            visible_wrong_applications = rec.applications.filtered(lambda z: not z.hide_in_dashboard and z.status == '22')
+            rec.wrong_applications = len(hidden_applications) + len(visible_wrong_applications)
 
     @api.depends('total_applications', 'wrong_applications')
     def _compute_efficiency(self):

@@ -48,25 +48,45 @@ class Reserve(models.Model, AmanatBaseModel):
     has_royalti = fields.Boolean(string='Есть роялти', default=False, tracking=True)
     make_royalti = fields.Boolean(string='Провести роялти', default=False, tracking=True)
     royalty_recipient_1 = fields.Many2one('amanat.contragent', string="Получатель роялти", tracking=True)
-    royalty_percent_1 = fields.Float(string="% первого", tracking=True)
+    royalty_percent_1 = fields.Float(string="% первого", tracking=True, digits=(16, 6))
     royalty_amount_1 = fields.Float(
-        string="Сумма роялти 1", compute="_compute_royalty_amount_1", store=True, tracking=True, readonly=False
+        string="Сумма роялти 1", compute="_compute_royalty_amount_1", store=True, tracking=True, readonly=False, digits=(16, 6)
     )
     royalty_recipient_2 = fields.Many2one('amanat.contragent', string="Получатель роялти 2", tracking=True)
-    royalty_percent_2 = fields.Float(string="% второго", tracking=True)
+    royalty_percent_2 = fields.Float(string="% второго", tracking=True, digits=(16, 6))
     royalty_amount_2 = fields.Float(
-        string="Сумма роялти 2", compute="_compute_royalty_amount_2", store=True, tracking=True, readonly=False
+        string="Сумма роялти 2", compute="_compute_royalty_amount_2", store=True, tracking=True, readonly=False, digits=(16, 6)
+    )
+    royalty_recipient_3 = fields.Many2one('amanat.contragent', string="Получатель роялти 3", tracking=True)
+    royalty_percent_3 = fields.Float(string="% третьего", tracking=True, digits=(16, 6))
+    royalty_amount_3 = fields.Float(
+        string="Сумма роялти 3", compute="_compute_royalty_amount_3", store=True, tracking=True, readonly=False, digits=(16, 6)
+    )
+
+    royalty_recipient_4 = fields.Many2one('amanat.contragent', string="Получатель роялти 4", tracking=True)
+    royalty_percent_4 = fields.Float(string="% четвертого", tracking=True, digits=(16, 6))
+    royalty_amount_4 = fields.Float(
+        string="Сумма роялти 4", compute="_compute_royalty_amount_4", store=True, tracking=True, readonly=False, digits=(16, 6)
+    )
+
+    royalty_recipient_5 = fields.Many2one('amanat.contragent', string="Получатель роялти 5", tracking=True)
+    royalty_percent_5 = fields.Float(string="% пятого", tracking=True, digits=(16, 6))
+    royalty_amount_5 = fields.Float(
+        string="Сумма роялти 5", compute="_compute_royalty_amount_5", store=True, tracking=True, readonly=False, digits=(16, 6)
     )
 
     order_ids = fields.Many2many(
         'amanat.order', 'amanat_order_reserve_rel', 'reserve_id', 'order_id',
-        string="Ордеры", tracking=True
+        string="Ордеры", tracking=True, ondelete='cascade'
     )
 
     create_reserve = fields.Boolean(string='Создать', default=False, tracking=True)
     update_reserve = fields.Boolean(string='Изменить', default=False, tracking=True)
     delete_reserve = fields.Boolean(string='Удалить', default=False, tracking=True)
     complete_reserve = fields.Boolean(string='Провести', default=False, tracking=True)
+
+    # Пользовательские комментарии
+    input_comment = fields.Text(string='Комментарии', tracking=True)
 
     # Комментарий
     comment = fields.Text(
@@ -108,6 +128,21 @@ class Reserve(models.Model, AmanatBaseModel):
     def _compute_royalty_amount_2(self):
         for rec in self:
             rec.royalty_amount_2 = rec.amount * rec.royalty_percent_2
+
+    @api.depends('amount', 'royalty_percent_3')
+    def _compute_royalty_amount_3(self):
+        for rec in self:
+            rec.royalty_amount_3 = rec.amount * rec.royalty_percent_3
+
+    @api.depends('amount', 'royalty_percent_4')
+    def _compute_royalty_amount_4(self):
+        for rec in self:
+            rec.royalty_amount_4 = rec.amount * rec.royalty_percent_4
+
+    @api.depends('amount', 'royalty_percent_5')
+    def _compute_royalty_amount_5(self):
+        for rec in self:
+            rec.royalty_amount_5 = rec.amount * rec.royalty_percent_5
 
     def write(self, vals):
         if self.env.context.get('skip_automation'):
@@ -156,7 +191,7 @@ class Reserve(models.Model, AmanatBaseModel):
             'operation_percent': self.commision_percent_1,
             'our_percent': self.commision_percent_2,
             'reserve_ids': [(6, 0, [self.id])],
-            'comment': self.comment,
+            'comment': self.input_comment,
         })
         # Рассчитываем чистое списание и чистое зачисление
         amount_out, amount_in = self._calculate_amounts(
@@ -271,7 +306,7 @@ class Reserve(models.Model, AmanatBaseModel):
         old_orders.mapped('sverka_ids').unlink()
         old_orders.unlink()
 
-        for i in (1, 2):
+        for i in (1, 2, 3, 4, 5):
             recipient = getattr(self, f'royalty_recipient_{i}')
             percent   = getattr(self, f'royalty_percent_{i}')
             if recipient and percent and self.amount:
@@ -291,7 +326,7 @@ class Reserve(models.Model, AmanatBaseModel):
                     'currency': self.currency,
                     'amount': royalty_sum,
                     'reserve_ids': [(6, 0, [self.id])],
-                    'comment': self.comment,
+                    'comment': self.input_comment,
                 })
                 fields = self._get_currency_fields(self.currency, royalty_sum)
                 self.env['amanat.money'].create({

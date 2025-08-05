@@ -8,7 +8,7 @@
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-                <button width="30" title="Превью Excel" type="object" name="preview_excel_files" icon="fa-eye" class="btn-success"/>
+                <!-- <button width="30" title="Превью Excel" type="object" name="preview_excel_files" icon="fa-eye" class="btn-success"/> -->
                 <button width="30" title="Скачать Excel" type="object" name="download_excel_file" icon="fa-download" class="btn-primary"/>
                 <field name="name"/>
                 <field name="kassa_type"/>
@@ -27,7 +27,7 @@
             <form string="Касса файлы">
                 <header>
                     <button type="object" name="download_excel_file" string="Скачать Excel" class="btn-primary" icon="fa-download"/>
-                    <button type="object" name="preview_excel_files" string="Превью Excel" class="btn-success" icon="fa-eye"/>
+                    <!-- <button type="object" name="pm" string="Превью Excel" class="btn-success" icon="fa-eye"/> -->
                     <field name="status" widget="statusbar"/>
                 </header>
                 <sheet>

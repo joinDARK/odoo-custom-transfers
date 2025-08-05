@@ -41,28 +41,16 @@
                 <field name="royalty_recipient_3" width="200"/>
                 <field name="royalty_recipient_4" width="200"/>
                 <field name="royalty_recipient_5" width="200"/>
-                <field name="royalty_recipient_6" width="200"/>
-                <field name="royalty_recipient_7" width="200"/>
-                <field name="royalty_recipient_8" width="200"/>
-                <field name="royalty_recipient_9" width="200"/>
                 <field name="percent_1" width="90"/>
                 <field name="percent_2" width="90"/>
                 <field name="percent_3" width="90"/>
                 <field name="percent_4" width="90"/>
                 <field name="percent_5" width="90"/>
-                <field name="percent_6" width="90"/>
-                <field name="percent_7" width="90"/>
-                <field name="percent_8" width="90"/>
-                <field name="percent_9" width="90"/>
                 <field name="royalty_amount_1" width="120"/>
                 <field name="royalty_amount_2" width="120"/>
                 <field name="royalty_amount_3" width="120"/>
                 <field name="royalty_amount_4" width="120"/>
                 <field name="royalty_amount_5" width="120"/>
-                <field name="royalty_amount_6" width="120"/>
-                <field name="royalty_amount_7" width="120"/>
-                <field name="royalty_amount_8" width="120"/>
-                <field name="royalty_amount_9" width="120"/>
                 <field name="rollup_amount_total" width="150"/>
                 <field name="comment" width="180"/>
             </list>
@@ -185,98 +173,32 @@
                                 </group> -->
                                 <field name="royalty_post"/>
                             </group>
-                            <header>
-                                <h2>Получатели роялти (1-3)</h2>
-                            </header>
                             <group>
-                                <div class="o-form-group-3">
+                                <div class="o-form-group">
                                     <group>
                                         <field name="royalty_recipient_1"/>
-                                        <field name="percent_1"/>
-                                        <field name="royalty_amount_1"/>
-                                    </group>
-                                    <group>
                                         <field name="royalty_recipient_2"/>
-                                        <field name="percent_2"/>
-                                        <field name="royalty_amount_2"/>
-                                    </group>
-                                    <group>
                                         <field name="royalty_recipient_3"/>
-                                        <field name="percent_3"/>
-                                        <field name="royalty_amount_3"/>
-                                    </group>
-                                </div>
-                            </group>
-                            <header>
-                                <h2>Получатели роялти (4-6)</h2>
-                            </header>
-                            <group>
-                                <div class="o-form-group-3">
-                                    <group>
                                         <field name="royalty_recipient_4"/>
-                                        <field name="percent_4"/>
-                                        <field name="royalty_amount_4"/>
+                                        <field name="royalty_recipient_5"/>
                                     </group>
                                     <group>
-                                        <field name="royalty_recipient_5"/>
+                                        <field name="percent_1"/>
+                                        <field name="percent_2"/>
+                                        <field name="percent_3"/>
+                                        <field name="percent_4"/>
                                         <field name="percent_5"/>
+                                    </group>
+                                    <group>
+                                        <field name="royalty_amount_1"/>
+                                        <field name="royalty_amount_2"/>
+                                        <field name="royalty_amount_3"/>
+                                        <field name="royalty_amount_4"/>
                                         <field name="royalty_amount_5"/>
                                     </group>
-                                    <group>
-                                        <field name="royalty_recipient_6"/>
-                                        <field name="percent_6"/>
-                                        <field name="royalty_amount_6"/>
-                                    </group>
-                                </div>
-                            </group>
-                            <header>
-                                <h2>Получатели роялти (7-9)</h2>
-                            </header>
-                            <group>
-                                <div class="o-form-group-3">
-                                    <group>
-                                        <field name="royalty_recipient_7"/>
-                                        <field name="percent_7"/>
-                                        <field name="royalty_amount_7"/>
-                                    </group>
-                                    <group>
-                                        <field name="royalty_recipient_8"/>
-                                        <field name="percent_8"/>
-                                        <field name="royalty_amount_8"/>
-                                    </group>
-                                    <group>
-                                        <field name="royalty_recipient_9"/>
-                                        <field name="percent_9"/>
-                                        <field name="royalty_amount_9"/>
-                                    </group>
                                 </div>
                             </group>
                         </page>
-                        <page string="Комментарий">
-                            <header>
-                                <h2>Комментарий</h2>
-                            </header>
-                            <group>
-                                <field name="comment"/>
-                            </group>
-                        </page>
-                        <!-- <page string="Действия и управление">
-                            <header>
-                                <h2>Действия с инвестицией</h2>
-                            </header>
-                            <group>
-                                <div class="o-form-group-2">
-                                    <group>
-                                        <field name="create_action"/>
-                                        <field name="post"/>
-                                    </group>
-                                    <group>
-                                        <field name="close_investment"/>
-                                        <field name="to_delete"/>
-                                    </group>
-                                </div>
-                            </group>
-                        </page> -->
                     </notebook>
                 </sheet>
                 <chatter>

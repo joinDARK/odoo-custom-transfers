@@ -372,9 +372,16 @@ class ZayavkaComputes(models.Model):
         'hidden_commission',
         'currency',
         'contragent_id',
+        'cross_return_conversion_amount',
     )
     def _compute_fin_res_client_real(self):
         for rec in self:
+            # Дельта для возврата по кроссу
+            if rec.cross_return_conversion_amount:
+                cross_return_delta = (rec.amount or 0.0) - (rec.cross_return_conversion_amount or 0.0)
+            else:
+                cross_return_delta = 0.0
+            
             if rec.deal_type == 'export':
                 # ! Фин рез Клиент реал = (Сумма заявки * % Вознаграждения) - Расход платежа Клиент - Расход на операционную деятельность Клиент Реал
                 amount = rec.amount or 0.0
@@ -382,15 +389,15 @@ class ZayavkaComputes(models.Model):
                 client_payment_cost = rec.client_payment_cost or 0.0
                 client_real_operating_expenses = rec.client_real_operating_expenses or 0.0
 
-                rec.fin_res_client_real = (amount * reward_percent) - client_payment_cost - client_real_operating_expenses
+                rec.fin_res_client_real = (amount * reward_percent) - client_payment_cost - client_real_operating_expenses - cross_return_delta
             else:
                 if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
                     if rec.contragent_id and rec.contragent_id.name == 'А7':
                         # ! Фин рез Клиент реал = (Сумма заявки * % Вознаграждения) - Расход платежа Клиент - Расход на операционную деятельность Клиент Реал
-                        rec.fin_res_client_real = (rec.amount * rec.reward_percent) - rec.client_real_operating_expenses - rec.client_payment_cost
+                        rec.fin_res_client_real = (rec.amount * rec.reward_percent) - rec.client_real_operating_expenses - rec.client_payment_cost - cross_return_delta
                     else:
                         # ! Фин рез Клиент реал = (Сумма заявки * % Вознаграждения) - Расход на операционную деятельность Клиент Реал - Расход платежа Клиент
-                        rec.fin_res_client_real = (rec.amount * rec.hidden_commission) - rec.client_real_operating_expenses - rec.client_payment_cost
+                        rec.fin_res_client_real = (rec.amount * rec.hidden_commission) - rec.client_real_operating_expenses - rec.client_payment_cost - cross_return_delta
                 else:
                     # ! Фин рез Клиент реал = Итого Клиент - Расход платежа Клиент - Себестоимость денег Клиент Реал - Скрытая комиссия Клиент Реал - Расход на операционную деятельность Клиент Реал - Сумма заявки - Финансовый результат клиента
                     rec.fin_res_client_real = (
@@ -400,8 +407,10 @@ class ZayavkaComputes(models.Model):
                         (rec.hidden_partner_commission_real or 0.0) -
                         (rec.client_real_operating_expenses or 0.0) -
                         (rec.amount or 0.0) -
-                        (rec.payer_profit_currency or 0.0)
+                        (rec.payer_profit_currency or 0.0) -
+                        cross_return_delta
                     )
+                    _logger.info(f"[_compute_fin_res_client_real] {rec.client_currency_bought_real} - {rec.client_payment_cost} - {rec.cost_of_money_client_real} - {rec.hidden_partner_commission_real} - {rec.client_real_operating_expenses} - {rec.amount} - {rec.payer_profit_currency} - {cross_return_delta} = {rec.fin_res_client_real}")
 
     @api.depends('fin_res_client_real', 'payer_cross_rate_usd_auto')
     def _compute_fin_res_client_real_usd(self):
@@ -478,13 +487,13 @@ class ZayavkaComputes(models.Model):
             total_sber = rec.total_sber or 0.0
             partner_rate = rec.partner_post_conversion_rate or 0.0
 
-            if partner_rate == 0.0:
+            if partner_rate == 0.0:  
                 rec.sber_operating_expenses = 0.0
                 continue
 
             if usd_equivalent >= 200000:
                 rec.sber_operating_expenses = (0.001 * total_sber) / partner_rate
-            else:
+            else:            
                 if total_sber == 0:
                     rec.sber_operating_expenses = 0.0
                 else:
@@ -653,9 +662,16 @@ class ZayavkaComputes(models.Model):
         'hidden_commission',
         'currency',
         'contragent_id',
+        'cross_return_conversion_amount',
     )
     def _compute_fin_res_sber_real(self):
         for rec in self:
+            # Дельта для возврата по кроссу
+            if rec.cross_return_conversion_amount:
+                cross_return_delta = (rec.amount or 0.0) - (rec.cross_return_conversion_amount or 0.0)
+            else:
+                cross_return_delta = 0.0
+            
             amount = rec.amount or 0.0
             reward_percent = rec.reward_percent or 0.0
             sber_payment_cost = rec.sber_payment_cost or 0.0
@@ -663,15 +679,15 @@ class ZayavkaComputes(models.Model):
 
             if rec.deal_type == 'export':
                 # ! Фин рез Сбер реал = (Сумма заявки * % Вознаграждения) - Расход платежа Сбер - Расход на операционную деятельность Сбер реал
-                rec.fin_res_sber_real = (amount * reward_percent) - sber_payment_cost - sber_operating_expenses_real
+                rec.fin_res_sber_real = (amount * reward_percent) - sber_payment_cost - sber_operating_expenses_real - cross_return_delta
             else:
                 if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
                     if rec.contragent_id and rec.contragent_id.name == 'А7':
                         # ! Фин рез Сбер реал = (Сумма * % Вознаграждения) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
-                        rec.fin_res_sber_real = (amount * rec.reward_percent) - sber_operating_expenses_real - sber_payment_cost
+                        rec.fin_res_sber_real = (amount * rec.reward_percent) - sber_operating_expenses_real - sber_payment_cost - cross_return_delta
                     else:
                         # ! Фин рез Сбер реал = (Сумма * Скрытая комиссия) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
-                        rec.fin_res_sber_real = (amount * rec.hidden_commission) - sber_operating_expenses_real - sber_payment_cost
+                        rec.fin_res_sber_real = (amount * rec.hidden_commission) - sber_operating_expenses_real - sber_payment_cost - cross_return_delta
                 else:
                     # ! Фин рез Сбер реал = Итого Сбер - Расход платежа Сбер - Себестоимость денег Сбер Реал - Скрытая комиссия Сбер Реал - Расход на операционную деятельность Сбер Реал - Сумма заявки - Финансовый результат Сбер
                     rec.fin_res_sber_real = (
@@ -681,7 +697,8 @@ class ZayavkaComputes(models.Model):
                         (rec.hidden_partner_commission_real or 0.0) -
                         (rec.sber_operating_expenses_real or 0.0) -
                         (rec.amount or 0.0) -
-                        (rec.payer_profit_currency or 0.0)
+                        (rec.payer_profit_currency or 0.0) -
+                        cross_return_delta
                     )
 
     @api.depends('fin_res_sber_real', 'payer_cross_rate_usd_auto')
@@ -950,9 +967,16 @@ class ZayavkaComputes(models.Model):
         'hidden_commission',
         'currency',
         'contragent_id',
+        'cross_return_conversion_amount',
     )
     def _compute_fin_res_sovok_real(self):
         for rec in self:
+            # Дельта для возврата по кроссу
+            if rec.cross_return_conversion_amount:
+                cross_return_delta = (rec.amount or 0.0) - (rec.cross_return_conversion_amount or 0.0)
+            else:
+                cross_return_delta = 0.0
+            
             amount = rec.amount or 0.0
             reward_percent = rec.reward_percent or 0.0
             payment_cost_sovok = rec.payment_cost_sovok or 0.0
@@ -960,15 +984,15 @@ class ZayavkaComputes(models.Model):
 
             if rec.deal_type == 'export':
                 # ! Фин рез Совок реал = (Сумма заявки * % Вознаграждения) - Расход платежа Совок - Расход на операционную деятельность Совок реал          
-                rec.fin_res_sovok_real = (amount * reward_percent) - payment_cost_sovok - operating_expenses_sovok_real
+                rec.fin_res_sovok_real = (amount * reward_percent) - payment_cost_sovok - operating_expenses_sovok_real - cross_return_delta
             else:
                 if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
                     if rec.contragent_id and rec.contragent_id.name == 'А7':
                         # ! Фин рез Совок реал = (Сумма * % Вознаграждения) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
-                        rec.fin_res_sovok_real = (amount * rec.reward_percent) - operating_expenses_sovok_real - payment_cost_sovok
+                        rec.fin_res_sovok_real = (amount * rec.reward_percent) - operating_expenses_sovok_real - payment_cost_sovok - cross_return_delta
                     else:
                         # ! Фин рез Совок реал = (Сумма * Скрытая комиссия) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
-                        rec.fin_res_sovok_real = (amount * rec.hidden_commission) - operating_expenses_sovok_real - payment_cost_sovok
+                        rec.fin_res_sovok_real = (amount * rec.hidden_commission) - operating_expenses_sovok_real - payment_cost_sovok - cross_return_delta
                 else:
                     # ! Фин рез Совок реал = Итого Совок - Расход платежа Совок - Себестоимость денег Совок Реал - Скрытая комиссия Совок Реал - Расход на операционную деятельность Совок Реал - Сумма заявки - Финансовый результат Совок
                     rec.fin_res_sovok_real = (
@@ -978,7 +1002,8 @@ class ZayavkaComputes(models.Model):
                         (rec.hidden_partner_commission_real or 0.0) -
                         (rec.operating_expenses_sovok_real or 0.0) -
                         (rec.amount or 0.0) -
-                        (rec.payer_profit_currency or 0.0)
+                        (rec.payer_profit_currency or 0.0) -
+                        cross_return_delta
                     )
 
 
@@ -1624,3 +1649,10 @@ class ZayavkaComputes(models.Model):
         """Автоматически заполняет return_commission при изменении reward_percent"""
         if self.reward_percent:
             self.return_commission = self.reward_percent
+
+    @api.onchange('subagent_ids')
+    def _onchange_subagent_ids(self):
+        if len(self.subagent_ids) == 1:
+            subagent = self.subagent_ids
+            if len(subagent.payer_ids) == 1:
+                self.subagent_payer_ids = subagent.payer_ids

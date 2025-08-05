@@ -47,11 +47,11 @@ class Conversion(models.Model, AmanatBaseModel):
         string='Дата', default=fields.Date.context_today, tracking=True
     )
     amount = fields.Float(
-        string='Сумма', digits=(16, 3), tracking=True
+        string='Сумма', digits=(16, 6), tracking=True
     )
 
     currency = fields.Selection(
-        CURRENCY_SELECTION, string='Валюта', default='rub', tracking=True
+        CURRENCY_SELECTION, string='Валюта', default='usd', tracking=True
     )
     conversion_currency = fields.Selection(
         CURRENCY_SELECTION, string='В какую валюту', default='rub', tracking=True
@@ -125,12 +125,13 @@ class Conversion(models.Model, AmanatBaseModel):
         'amanat.contragent', string='Получатель роялти 1', tracking=True
     )
     royalty_percent_1 = fields.Float(
-        string='% первого', widget='percentage', digits=(16, 2), tracking=True
+        string='% первого', digits=(16, 8), tracking=True
     )
     royalty_amount_1 = fields.Float(
         string='Сумма роялти 1', 
         compute='_compute_royalty_amount_1', 
-        store=True, 
+        store=True,
+        digits=(16, 6),
         tracking=True,
         readonly=False,
     )
@@ -138,12 +139,57 @@ class Conversion(models.Model, AmanatBaseModel):
         'amanat.contragent', string='Получатель роялти 2', tracking=True
     )
     royalty_percent_2 = fields.Float(
-        string='% второго', widget='percentage', digits=(16, 2), tracking=True
+        string='% второго', digits=(16, 8), tracking=True
     )
     royalty_amount_2 = fields.Float(
         string='Сумма роялти 2', 
         compute='_compute_royalty_amount_2', 
         store=True, 
+        digits=(16, 6),
+        tracking=True,
+        readonly=False,
+    )
+
+    royalty_recipient_3 = fields.Many2one(
+        'amanat.contragent', string='Получатель роялти 3', tracking=True
+    )
+    royalty_percent_3 = fields.Float(
+        string='% первого', digits=(16, 8), tracking=True
+    )
+    royalty_amount_3 = fields.Float(
+        string='Сумма роялти 3', 
+        compute='_compute_royalty_amount_3', 
+        store=True,
+        digits=(16, 6),
+        tracking=True,
+        readonly=False,
+    )
+    royalty_recipient_4 = fields.Many2one(
+        'amanat.contragent', string='Получатель роялти 4', tracking=True
+    )
+    royalty_percent_4 = fields.Float(
+        string='% второго', digits=(16, 8), tracking=True
+    )
+    royalty_amount_4 = fields.Float(
+        string='Сумма роялти 4', 
+        compute='_compute_royalty_amount_4', 
+        store=True, 
+        digits=(16, 6),
+        tracking=True,
+        readonly=False,
+    )
+
+    royalty_recipient_5 = fields.Many2one(
+        'amanat.contragent', string='Получатель роялти 5', tracking=True
+    )
+    royalty_percent_5 = fields.Float(
+        string='% первого', digits=(16, 8), tracking=True
+    )
+    royalty_amount_5 = fields.Float(
+        string='Сумма роялти 5', 
+        compute='_compute_royalty_amount_5', 
+        store=True,
+        digits=(16, 6),
         tracking=True,
         readonly=False,
     )
@@ -185,6 +231,30 @@ class Conversion(models.Model, AmanatBaseModel):
             # Для Airtable-подобного поведения просто умножаем исходную сумму на процент
             # (без конвертации валют)
             rec.royalty_amount_2 = rec.amount * rec.royalty_percent_2
+    
+    @api.depends('amount', 'royalty_percent_3')
+    def _compute_royalty_amount_3(self):
+        """Вычисляет сумму роялти в исходной валюте (как в Airtable)."""
+        for rec in self:
+            # Для Airtable-подобного поведения просто умножаем исходную сумму на процент
+            # (без конвертации валют)
+            rec.royalty_amount_3 = rec.amount * rec.royalty_percent_3
+
+    @api.depends('amount', 'royalty_percent_4')
+    def _compute_royalty_amount_4(self):
+        """Вычисляет сумму роялти в исходной валюте (как в Airtable)."""
+        for rec in self:
+            # Для Airtable-подобного поведения просто умножаем исходную сумму на процент
+            # (без конвертации валют)
+            rec.royalty_amount_4 = rec.amount * rec.royalty_percent_4
+
+    @api.depends('amount', 'royalty_percent_5')
+    def _compute_royalty_amount_5(self):
+        """Вычисляет сумму роялти в исходной валюте (как в Airtable)."""
+        for rec in self:
+            # Для Airtable-подобного поведения просто умножаем исходную сумму на процент
+            # (без конвертации валют)
+            rec.royalty_amount_5 = rec.amount * rec.royalty_percent_5
 
     @api.onchange('contragent_count', 'sender_id', 'sender_payer_id')
     def _onchange_contragent_count(self):
@@ -430,7 +500,7 @@ class Conversion(models.Model, AmanatBaseModel):
         # Сначала удаляем существующие записи роялти
         self._clear_royalty_entries()
 
-        print('do_royal automation');
+        print('do_royal automation')
 
         order = self.order_id and self.order_id[0]
         if not order:
@@ -484,7 +554,7 @@ class Conversion(models.Model, AmanatBaseModel):
 
             recon_vals = {
                 'date':       self.date,
-                'partner_id': payer1.id,  # Устанавливаем "Отправитель роялти" как контрагента
+                'partner_id': partner1,  # Используем ID контрагента, а не плательщика
                 'currency':   self.currency,  # Используем исходную валюту
                 'sum':        -amt1,
                 'wallet_id':  self.wallet_id.id,
@@ -524,7 +594,7 @@ class Conversion(models.Model, AmanatBaseModel):
 
             recon_vals = {
                 'date':       self.date,
-                'partner_id': payer2.id,  # Устанавливаем "Отправитель роялти" как контрагента
+                'partner_id': partner2,  # Используем ID контрагента, а не плательщика
                 'currency':   self.currency,  # Используем исходную валюту
                 'sum':        -amt2,
                 'wallet_id':  self.wallet_id.id,
@@ -534,6 +604,111 @@ class Conversion(models.Model, AmanatBaseModel):
                 'receiver_id': [(6, 0, [payer2.id])],  # Получатель роялти (плательщик)
                 # Удалено поле royalty, которого нет в модели
                 **{k: v for k, v in cf_map_2.items() if k.startswith('sum_')},
+            }
+            Recon.create(recon_vals)
+
+        # третий получатель
+        if self.royalty_recipient_3 and self.royalty_percent_3:
+            amt3 = self.royalty_amount_3
+            payer3 = self._find_or_create_payer(
+                self.royalty_recipient_3.name, self.royalty_recipient_3.id
+            )
+            partner3 = payer3.contragents_ids and payer3.contragents_ids[0].id or self.royalty_recipient_3.id
+
+            cf_map_3 = self._currency_field_map(self.currency, -amt3)
+            money_vals = {
+                'date':       self.date,
+                'partner_id': partner3,  # Получатель роялти (контрагент)
+                'currency':   self.currency,  # Используем исходную валюту
+                'amount':     -amt3,
+                'state':      'debt',
+                'wallet_id':  self.wallet_id.id,
+                'order_id':   order.id,
+                'royalty':    True,  # Помечаем запись как роялти
+                **{k: v for k, v in cf_map_3.items() if k.startswith('sum_')},
+            }
+            Money.create(money_vals)
+
+            recon_vals = {
+                'date':       self.date,
+                'partner_id': partner3,  # Используем ID контрагента, а не плательщика
+                'currency':   self.currency,  # Используем исходную валюту
+                'sum':        -amt3,
+                'wallet_id':  self.wallet_id.id,
+                'order_id':   [(6, 0, [order.id])],
+                'sender_id':   [(6, 0, [RoyaltySender.id])],  # Отправитель роялти (плательщик)
+                'receiver_id': [(6, 0, [payer3.id])],  # Получатель роялти (плательщик)
+                **{k: v for k, v in cf_map_3.items() if k.startswith('sum_')},
+            }
+            Recon.create(recon_vals)
+
+        # четвертый получатель
+        if self.royalty_recipient_4 and self.royalty_percent_4:
+            amt4 = self.royalty_amount_4
+            payer4 = self._find_or_create_payer(
+                self.royalty_recipient_4.name, self.royalty_recipient_4.id
+            )
+            partner4 = payer4.contragents_ids and payer4.contragents_ids[0].id or self.royalty_recipient_4.id
+
+            cf_map_4 = self._currency_field_map(self.currency, -amt4)
+            money_vals = {
+                'date':       self.date,
+                'partner_id': partner4,  # Получатель роялти (контрагент)
+                'currency':   self.currency,  # Используем исходную валюту
+                'amount':     -amt4,
+                'state':      'debt',
+                'wallet_id':  self.wallet_id.id,
+                'order_id':   order.id,
+                'royalty':    True,  # Помечаем запись как роялти
+                **{k: v for k, v in cf_map_4.items() if k.startswith('sum_')},
+            }
+            Money.create(money_vals)
+
+            recon_vals = {
+                'date':       self.date,
+                'partner_id': partner4,  # Используем ID контрагента, а не плательщика
+                'currency':   self.currency,  # Используем исходную валюту
+                'sum':        -amt4,
+                'wallet_id':  self.wallet_id.id,
+                'order_id':   [(6, 0, [order.id])],
+                'sender_id':   [(6, 0, [RoyaltySender.id])],  # Отправитель роялти (плательщик)
+                'receiver_id': [(6, 0, [payer4.id])],  # Получатель роялти (плательщик)
+                **{k: v for k, v in cf_map_4.items() if k.startswith('sum_')},
+            }
+            Recon.create(recon_vals)
+        
+        # пятый получатель
+        if self.royalty_recipient_5 and self.royalty_percent_5:
+            amt5 = self.royalty_amount_5
+            payer5 = self._find_or_create_payer(
+                self.royalty_recipient_5.name, self.royalty_recipient_5.id
+            )
+            partner5 = payer5.contragents_ids and payer5.contragents_ids[0].id or self.royalty_recipient_5.id
+
+            cf_map_5 = self._currency_field_map(self.currency, -amt5)
+            money_vals = {
+                'date':       self.date,
+                'partner_id': partner5,  # Получатель роялти (контрагент)
+                'currency':   self.currency,  # Используем исходную валюту
+                'amount':     -amt5,
+                'state':      'debt',
+                'wallet_id':  self.wallet_id.id,
+                'order_id':   order.id,
+                'royalty':    True,  # Помечаем запись как роялти
+                **{k: v for k, v in cf_map_5.items() if k.startswith('sum_')},
+            }
+            Money.create(money_vals)
+
+            recon_vals = {
+                'date':       self.date,
+                'partner_id': partner5,  # Используем ID контрагента, а не плательщика
+                'currency':   self.currency,  # Используем исходную валюту
+                'sum':        -amt5,
+                'wallet_id':  self.wallet_id.id,
+                'order_id':   [(6, 0, [order.id])],
+                'sender_id':   [(6, 0, [RoyaltySender.id])],  # Отправитель роялти (плательщик)
+                'receiver_id': [(6, 0, [payer5.id])],  # Получатель роялти (плательщик)
+                **{k: v for k, v in cf_map_5.items() if k.startswith('sum_')},
             }
             Recon.create(recon_vals)
 

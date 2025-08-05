@@ -7,7 +7,7 @@
     <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
     <field name="priority">20</field>
     <field name="arch" type="xml">
-      <form string="Заявки (Казначей)" create="false">
+      <form string="Заявки (Казначей)">
         <header>
           <h1><field name="zayavka_id" readonly="1"/></h1>
         </header>
@@ -125,7 +125,18 @@
                 <field name="comment"/>
               </group>
               <!-- Скрываем финансовые данные для ограниченного доступа -->
-              <group string="Сравнение курса" groups="!amanat.group_amanat_limited_access">
+              <group groups="!amanat.group_amanat_limited_access">
+                <div class="rates-section-header">
+                  <strong class="rates-section-title">Сравнение курса</strong>
+                  <!-- 🎯 Красивая компактная кнопка справа с анимацией -->
+                  <button class="btn refresh-rates-btn" 
+                          title="Обновить курсы валют из API (Инвестинг + ЦБ)" 
+                          type="object" 
+                          name="refresh_rates"
+                          style="border: 1px solid #000; border-radius: 5px; padding: 2px 5px;">
+                    <i class="fa fa-refresh"/> Обновить
+                  </button>
+                </div>
                 <div class="o-form-group">
                   <group>
                     <field name="investing_rate"/>
@@ -197,13 +208,13 @@
                   </group>
                 </div>
               </group>
-              <group string="Курс Джесс">
+              <group string="Курс Джесс" groups="!amanat.group_amanat_manager">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="jess_rate_id"/>
+                    <field name="jess_rate_id" groups="!amanat.group_amanat_manager"/>
                   </group>
                   <group>
-                    <field name="jess_rate"/>
+                    <field name="jess_rate" groups="!amanat.group_amanat_manager"/>
                   </group>
                 </div>
               </group>
@@ -276,7 +287,7 @@
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="hidden_hadge"/>
                     <field name="dollar_cross_rate"/>
-                    <field name="jess_rate"/>
+                    <field name="jess_rate" groups="!amanat.group_amanat_manager"/>
                   </group>
                 </div>
               </group>
@@ -350,7 +361,7 @@
                     <field name="hand_reward_percent" widget="percentage"/>
                     <field name="hidden_hadge"/>
                     <field name="dollar_cross_rate"/>
-                    <field name="jess_rate"/>
+                    <field name="jess_rate" groups="!amanat.group_amanat_manager"/>
                   </group>
                 </div>
               </group>
@@ -1228,26 +1239,69 @@
               </group>
             </page>
             <page string="Документы" groups="!amanat.group_amanat_limited_access">
-              <group string="Заявка">
+              <group>
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="zayavka_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                  </group>
+                  <group>
+                    <field name="screen_sber_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                  </group>
+                </div>
+              </group>
+
+              <group string="Поручение Вход">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_zayavka" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not zayavka_attachments"/>
-                    <button name="action_sign_zayavka" type="object" string="Подписать" class="btn-primary" invisible="zayavka_signature_state != 'ready'"/>
-                    <button name="action_reset_zayavka_document" type="object" string="Сбросить" class="btn-warning" invisible="not zayavka_attachments and not signed_zayavka_attachments" confirm="Вы уверены, что хотите сбросить все данные заявки? Это действие нельзя отменить."/>
+                    <button name="action_detect_signatures_assignment_start" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_start_attachments"/>
+                    <button name="action_sign_assignment_start" type="object" string="Подписать" class="btn-primary" invisible="assignment_start_signature_state != 'ready'"/>
+                    <button name="action_reset_assignment_start_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_start_attachments and not signed_assignment_start_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="zayavka_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                        <field name="assignment_start_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_zayavka_attachments" invisible="zayavka_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_assignment_start_attachments" readonly="1" invisible="assignment_start_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
-                    <field name="zayavka_signature_state"/>
+                    <field name="assignment_start_signature_state"/>
                   </group>
-                  <group string="Назначения подписей" invisible="zayavka_signature_state == 'draft'">
-                    <field name="zayavka_signature_assignment_ids" nolabel="1">
+                  <group string="Назначения подписей" invisible="assignment_start_signature_state == 'draft'">
+                    <field name="assignment_start_signature_assignment_ids" nolabel="1">
+                      <list editable="bottom">
+                        <field name="name"/>
+                        <field name="signature_type"/>
+                        <field name="page_number"/>
+                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
+                        <field name="required"/>
+                      </list>
+                    </field>
+                </group>
+                </div>
+              </group>
+
+              <group string="Заявка Выход">
+                <div class="o-form-group-3">
+                  <div class="o_inner_group d-flex">
+                    <button name="action_detect_signatures_zayavka_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not zayavka_end_attachments"/>
+                    <button name="action_sign_zayavka_end" type="object" string="Подписать" class="btn-primary" invisible="zayavka_end_signature_state != 'ready'"/>
+                    <button name="action_reset_zayavka_end_document" type="object" string="Сбросить" class="btn-warning" invisible="not zayavka_end_attachments and not signed_zayavka_end_attachments" confirm="Вы уверены, что хотите сбросить все данные заявки? Это действие нельзя отменить."/>
+                  </div>
+                  <group>
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="zayavka_end_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                      </group>
+                      <group>
+                        <field name="signed_zayavka_end_attachments" invisible="zayavka_end_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                      </group>
+                    </div>
+                    <field name="zayavka_end_signature_state"/>
+                  </group>
+                  <group string="Назначения подписей" invisible="zayavka_end_signature_state == 'draft'">
+                    <field name="zayavka_end_signature_assignment_ids" nolabel="1">
                       <list editable="bottom">
                         <field name="name"/>
                         <field name="signature_type"/>
@@ -1260,26 +1314,26 @@
                 </div>
               </group>
 
-              <group string="Сбер скрин">
+              <group string="Поручение Выход">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_screen_sber" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not screen_sber_attachments"/>
-                    <button name="action_sign_screen_sber" type="object" string="Подписать" class="btn-primary" invisible="screen_sber_signature_state != 'ready'"/>
-                    <button name="action_reset_screen_sber_document" type="object" string="Сбросить" class="btn-warning" invisible="not screen_sber_attachments and not signed_screen_sber_attachments" confirm="Вы уверены, что хотите сбросить все данные скрина сбер? Это действие нельзя отменить."/>
+                    <button name="action_detect_signatures_assignment_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_end_attachments"/>
+                    <button name="action_sign_assignment_end" type="object" string="Подписать" class="btn-primary" invisible="assignment_end_signature_state != 'ready'"/>
+                    <button name="action_reset_assignment_end_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_end_attachments and not signed_assignment_end_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="screen_sber_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                        <field name="assignment_end_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_screen_sber_attachments" invisible="screen_sber_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_assignment_end_attachments" readonly="1" invisible="assignment_end_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
-                    <field name="screen_sber_signature_state"/>
+                    <field name="assignment_end_signature_state"/>
                   </group>
-                  <group string="Назначения подписей" invisible="screen_sber_signature_state == 'draft'">
-                    <field name="screen_sber_signature_assignment_ids" nolabel="1">
+                  <group string="Назначения подписей" invisible="assignment_end_signature_state == 'draft'">
+                    <field name="assignment_end_signature_assignment_ids" nolabel="1">
                       <list editable="bottom">
                         <field name="name"/>
                         <field name="signature_type"/>
@@ -1288,7 +1342,7 @@
                         <field name="required"/>
                       </list>
                     </field>
-                  </group>
+                </group>
                 </div>
               </group>
               
@@ -1485,138 +1539,6 @@
               </group>
             </page>
 
-            <page string="Документы Вход" groups="!amanat.group_amanat_limited_access">
-              <group string="Заявка Вход">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_zayavka_start" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not zayavka_start_attachments"/>
-                    <button name="action_sign_zayavka_start" type="object" string="Подписать" class="btn-primary" invisible="zayavka_start_signature_state != 'ready'"/>
-                    <button name="action_reset_zayavka_start_document" type="object" string="Сбросить" class="btn-warning" invisible="not zayavka_start_attachments and not signed_zayavka_start_attachments" confirm="Вы уверены, что хотите сбросить все данные заявки? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="zayavka_start_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
-                      </group>
-                      <group>
-                        <field name="signed_zayavka_start_attachments" invisible="zayavka_start_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="zayavka_start_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="zayavka_start_signature_state == 'draft'">
-                    <field name="zayavka_start_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                  </group>
-                </div>
-              </group>
-
-              <group string="Поручение Вход">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_assignment_start" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_start_attachments"/>
-                    <button name="action_sign_assignment_start" type="object" string="Подписать" class="btn-primary" invisible="assignment_start_signature_state != 'ready'"/>
-                    <button name="action_reset_assignment_start_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_start_attachments and not signed_assignment_start_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="assignment_start_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_assignment_start_attachments" readonly="1" invisible="assignment_start_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="assignment_start_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="assignment_start_signature_state == 'draft'">
-                    <field name="assignment_start_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                </group>
-                </div>
-              </group>
-            </page>
-
-            <page string="Документы Выход" groups="!amanat.group_amanat_limited_access">
-              <group string="Заявка Выход">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_zayavka_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not zayavka_end_attachments"/>
-                    <button name="action_sign_zayavka_end" type="object" string="Подписать" class="btn-primary" invisible="zayavka_end_signature_state != 'ready'"/>
-                    <button name="action_reset_zayavka_end_document" type="object" string="Сбросить" class="btn-warning" invisible="not zayavka_end_attachments and not signed_zayavka_end_attachments" confirm="Вы уверены, что хотите сбросить все данные заявки? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="zayavka_end_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
-                      </group>
-                      <group>
-                        <field name="signed_zayavka_end_attachments" invisible="zayavka_end_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="zayavka_end_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="zayavka_end_signature_state == 'draft'">
-                    <field name="zayavka_end_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                  </group>
-                </div>
-              </group>
-
-              <group string="Поручение Выход">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_assignment_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_end_attachments"/>
-                    <button name="action_sign_assignment_end" type="object" string="Подписать" class="btn-primary" invisible="assignment_end_signature_state != 'ready'"/>
-                    <button name="action_reset_assignment_end_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_end_attachments and not signed_assignment_end_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="assignment_end_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_assignment_end_attachments" readonly="1" invisible="assignment_end_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="assignment_end_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="assignment_end_signature_state == 'draft'">
-                    <field name="assignment_end_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                </group>
-                </div>
-              </group>
-            </page>
-
             <page string="SWIFT" groups="!amanat.group_amanat_limited_access">
               <group>
                 <div class="o-form-group-2">
@@ -1795,12 +1717,15 @@
                 </div>
               </group>
               <group string="Возврат с частичной оплатой вознаграждения" invisible="problem_stage != '4'">
-                <div class="o-form-group-2">
+                <div class="o-form-group">
                   <group>
                     <field name="return_amount_to_reward"/>
                   </group>
                   <group>
-                    <field name="payment_order_date_to_client_account_return_all"/>
+                    <field name="return_amount_main"/>
+                  </group>
+                  <group>
+                    <field name="payment_order_date_to_return"/>
                   </group>
                 </div>
               </group>
@@ -1830,7 +1755,7 @@
     <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
     <field name="priority">20</field>
     <field name="arch" type="xml">
-      <list string="Заявки (Казначей)" create="false" delete="false">
+      <list string="Заявки (Казначей)" delete="false">
         <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
         <field name="zayavka_id"/>
         <field name="zayavka_num"/>
@@ -1893,29 +1818,23 @@
         <field width="200" name="total_amount"/>
         <field width="200" name="deal_type"/>
         
-
-        <field width="200" name="cross_rate"/>
-        <field width="200" name="equivalent_amount_usd"/>
         
 
+        <field width="200" name="xe_rate"/>
+        <field width="200" name="best_rate"/>
+        <field width="200" name="usd_equivalent"/>
+        <field width="200" name="comment_hedge"/>
+        <field width="200" name="best_rate_name"/>
         <field width="200" name="hidden_hadge"/>
         
         
-        
-        
-
-
-
-
 
 
         <!-- <field width="200" name="date_placement"/> -->
         <!-- Ограниченный доступ: скрываем конфиденциальные поля -->
         <!-- <field width="200" name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/> -->
         <!-- <field width="200" name="checker_ids" widget="many2many_tags"/> -->
-        <field width="200" name="contragent_id"/>
-        <field width="200" name="agent_id" groups="!amanat.group_amanat_limited_access"/>
-        <field width="200" name="client_id"/>
+
         <!-- <field width="200" name="inn" groups="!amanat.group_amanat_limited_access"/> -->
         <!-- <field width="200" name="client_inn"/> -->
       </list>

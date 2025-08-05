@@ -71,6 +71,49 @@ class Payer(models.Model, AmanatBaseModel):
         tracking=True
     ) # Исправить связь
 
+    partner_card_ids = fields.Many2many(
+        'ir.attachment',
+        'amanat_payer_attachment_rel',
+        'payer_id',
+        'attachment_id',
+        string='Карточки партнеров',
+        tracking=True
+    )
+
+
+    def action_download_files(self):
+        """Скачать файлы карточки партнера"""
+        files = self.partner_card_ids
+        if not files or len(files) == 0:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Нет файлов',
+                    'message': 'Файлы карточки партнера не найдены',
+                    'sticky': False,
+                    'type': 'warning',
+                }
+            }
+        
+        if len(files) == 1:
+            attachment = files[0]
+            return {
+                'type': 'ir.actions.act_url',
+                'url': attachment.url or f'/web/content/ir.attachment/{attachment.id}/datas',
+                'target': 'new',
+            }
+        
+        # Если файлов несколько, возвращаем список
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Файлы карточки партнера',
+            'res_model': 'ir.attachment',
+            'domain': [('id', 'in', [f.id for f in files])],
+            'view_mode': 'tree,form',
+            'target': 'new',
+        }
+
     def _compute_order_ids(self):
         for payer in self:
             payer.order_ids = self.env['amanat.order'].search([

@@ -63,6 +63,19 @@
     border-color: #bbb;
 }
 
+/* Кнопки в заголовке курсов валют */
+.analytics-dashboard .rates-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+
+
+.analytics-dashboard .rates-buttons .refresh-rates-btn {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
     .analytics-dashboard {
@@ -75,5 +88,10 @@
     
     .analytics-dashboard .dashboard-header h2 {
         font-size: 1.5rem;
+    }
+    
+    .analytics-dashboard .rates-buttons {
+        flex-direction: column;
+        gap: 5px;
     }
 }
