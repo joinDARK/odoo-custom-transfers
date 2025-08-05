@@ -114,9 +114,6 @@ export class AmanatDashboard extends Component {
                 if (chart) chart.destroy();
             });
         });
-        
-        // Делаем дашборд доступным из консоли для отладки
-        window.amanatDashboard = this;
     }
 
     async initializeDashboard() {
@@ -1450,50 +1447,10 @@ export class AmanatDashboard extends Component {
                 });
             } else {
                 this.showNoDataMessage('deal-cycles-line', 'Циклы сделок');
-                }
+            }
 
-    // Тестовая функция для диагностики проблем
-    testChartClicks() {
-        console.log('🧪 Тестирование функциональности кликов по графикам');
-        
-        // Проверяем состояние дашборда
-        console.log('📊 Состояние дашборда:', {
-            dateRange1: this.state.dateRange1,
-            dateRange2: this.state.dateRange2,
-            hasComparisonData: !!this.state.comparisonData,
-            hasChartComparisonData: !!this.state.chartComparisonData
-        });
-        
-        // Проверяем наличие модального окна
-        const modalExists = document.querySelector('.full-chart-modal');
-        console.log('🔍 Модальное окно:', { exists: !!modalExists, element: modalExists });
-        
-        // Проверяем наличие графиков
-        const charts = ['deal-cycles-line', 'import-export-line-comparison', 'managers-efficiency-chart'];
-        charts.forEach(chartId => {
-            const canvas = document.getElementById(chartId);
-            const chart = this.charts[chartId];
-            console.log(`📈 График ${chartId}:`, { 
-                canvasExists: !!canvas, 
-                chartExists: !!chart,
-                hasClickHandler: chart && chart.config && chart.config.options && !!chart.config.options.onClick
-            });
-        });
-        
-        // Тестируем прямой вызов handleModalChartClick
-        console.log('🎯 Тестируем прямой вызов handleModalChartClick...');
-        const testPeriodInfo = {
-            period: 'period1',
-            dateRange: { start: '2024-01-01', end: '2024-01-31' }
-        };
-        
-        try {
-            this.handleModalChartClick('deal_cycles', '30', 0, null, testPeriodInfo);
-            console.log('✅ Прямой вызов handleModalChartClick успешен');
+            
         } catch (error) {
-            console.error('❌ Ошибка в handleModalChartClick:', error);
-        }
-    } catch (error) {
             console.error('Error initializing charts:', error);
         }
         
@@ -1568,34 +1525,6 @@ export class AmanatDashboard extends Component {
         if (typeof ChartDataLabels !== 'undefined') {
             chartConfig.options.plugins.datalabels = {
                 display: false
-            };
-        }
-        
-        // Добавляем обработчик кликов для модальных окон
-        if (this.isInModalWindow()) {
-            chartConfig.options.onClick = (event, elements) => {
-                console.log('🎯 Клик по линейному графику:', { event, elements, canvasId });
-                
-                if (elements.length > 0) {
-                    const element = elements[0];
-                    const index = element.index;
-                    const clickedLabel = config.labels[index];
-                    
-                    console.log('📊 Детали клика по линейному графику:', {
-                        clickedLabel,
-                        index,
-                        chartType: config.chartType || this.getChartTypeFromCanvasId(canvasId)
-                    });
-                    
-                    // Определяем диапазон дат для не-сравнительного режима
-                    const periodInfo = {
-                        period: 'period1',
-                        dateRange: { start: this.state.dateRange1.start, end: this.state.dateRange1.end }
-                    };
-                    
-                    const chartType = config.chartType || this.getChartTypeFromCanvasId(canvasId);
-                    this.handleModalChartClick(chartType, clickedLabel, index, null, periodInfo);
-                }
             };
         }
         
@@ -3531,66 +3460,9 @@ export class AmanatDashboard extends Component {
             }
         };
         
-        // Добавляем обработчик кликов для навигации к заявкам в модальных окнах
-        const isInModal = this.isInModalWindow();
-        console.log('🔍 Проверка условий для обработчика кликов:', {
-            configClickable: config.clickable,
-            isInModal,
-            shouldAddHandler: config.clickable || isInModal
-        });
-        
-        if (config.clickable || isInModal) {
-            chartConfig.options.onClick = (event, elements) => {
-                console.log('🎯 Клик по сравнительному линейному графику:', { event, elements, canvasId });
-                
-                if (elements.length > 0) {
-                    const element = elements[0];
-                    const datasetIndex = element.datasetIndex; // 0 для периода 1, 1 для периода 2
-                    const index = element.index; // индекс точки данных
-                    const clickedLabel = config.labels[index]; // получаем метку
-                    
-                    // Определяем какой период был выбран
-                    const isPeriod1 = datasetIndex === 0;
-                    const periodInfo = {
-                        period: isPeriod1 ? 'period1' : 'period2',
-                        dateRange: isPeriod1 ? 
-                            { start: this.state.dateRange1.start, end: this.state.dateRange1.end } :
-                            { start: this.state.dateRange2.start, end: this.state.dateRange2.end }
-                    };
-                    
-                    console.log('📊 Детали клика:', {
-                        clickedLabel,
-                        datasetIndex,
-                        index,
-                        periodInfo,
-                        chartType: config.chartType || this.getChartTypeFromCanvasId(canvasId)
-                    });
-                    
-                    // Вызываем обработчик с информацией о периоде
-                    const chartType = config.chartType || this.getChartTypeFromCanvasId(canvasId);
-                    console.log('🔧 Отладка клика по сравнительному линейному графику:', {
-                        canvasId,
-                        configChartType: config.chartType,
-                        detectedChartType: chartType,
-                        clickedLabel,
-                        periodInfo
-                    });
-                    this.handleModalChartClick(chartType, clickedLabel, index, null, periodInfo);
-                }
-            };
-        }
-        
-        // Добавляем дополнительный обработчик если он указан в конфигурации
-        if (config.onClick) {
-            const originalOnClick = chartConfig.options.onClick;
-            chartConfig.options.onClick = (event, elements) => {
-                // Сначала вызываем наш обработчик
-                if (originalOnClick) {
-                    originalOnClick(event, elements);
-                }
-                // Затем пользовательский
-                config.onClick(event, elements);
-            };
+        // Добавляем обработчик кликов если он указан
+        if (config.clickable && config.onClick) {
+            chartConfig.options.onClick = config.onClick;
         }
         
         // Исправляем tooltips для форматирования чисел
@@ -4009,52 +3881,9 @@ export class AmanatDashboard extends Component {
             }
         };
         
-        // Добавляем обработчик кликов для навигации к заявкам в модальных окнах
-        if (config.clickable || this.isInModalWindow()) {
-            chartConfig.options.onClick = (event, elements) => {
-                console.log('🎯 Клик по сравнительному гладкому линейному графику:', { event, elements, canvasId });
-                
-                if (elements.length > 0) {
-                    const element = elements[0];
-                    const datasetIndex = element.datasetIndex; // 0 для периода 1, 1 для периода 2
-                    const index = element.index; // индекс точки данных
-                    const clickedLabel = config.labels[index]; // получаем метку
-                    
-                    // Определяем какой период был выбран
-                    const isPeriod1 = datasetIndex === 0;
-                    const periodInfo = {
-                        period: isPeriod1 ? 'period1' : 'period2',
-                        dateRange: isPeriod1 ? 
-                            { start: this.state.dateRange1.start, end: this.state.dateRange1.end } :
-                            { start: this.state.dateRange2.start, end: this.state.dateRange2.end }
-                    };
-                    
-                    console.log('📊 Детали клика по гладкому графику:', {
-                        clickedLabel,
-                        datasetIndex,
-                        index,
-                        periodInfo,
-                        chartType: config.chartType || this.getChartTypeFromCanvasId(canvasId)
-                    });
-                    
-                    // Вызываем обработчик с информацией о периоде
-                    const chartType = config.chartType || this.getChartTypeFromCanvasId(canvasId);
-                    this.handleModalChartClick(chartType, clickedLabel, index, null, periodInfo);
-                }
-            };
-        }
-        
-        // Добавляем дополнительный обработчик если он указан в конфигурации
-        if (config.onClick) {
-            const originalOnClick = chartConfig.options.onClick;
-            chartConfig.options.onClick = (event, elements) => {
-                // Сначала вызываем наш обработчик
-                if (originalOnClick) {
-                    originalOnClick(event, elements);
-                }
-                // Затем пользовательский
-                config.onClick(event, elements);
-            };
+        // Добавляем обработчик кликов если он указан
+        if (config.clickable && config.onClick) {
+            chartConfig.options.onClick = config.onClick;
         }
         
         // Отключаем datalabels для линейных сравнительных графиков
@@ -5051,7 +4880,7 @@ export class AmanatDashboard extends Component {
                             ${showClickHint ? `
                             <p class="text-info mb-0 mt-2">
                                 <i class="fa fa-mouse-pointer me-2"></i>
-                                <strong>Подсказка:</strong> Кликните на столбец или точку на линии, чтобы перейти к соответствующим заявкам${isComparisonMode ? ' для выбранного периода' : ''}
+                                <strong>Подсказка:</strong> Кликните на столбец, чтобы перейти к соответствующим заявкам
                             </p>
                             ` : ''}
                         </div>
@@ -5234,7 +5063,6 @@ export class AmanatDashboard extends Component {
                                     period1Label: fullData.period1Label || 'Период 1',
                                     period2Label: fullData.period2Label || 'Период 2',
                                     title: chartTitle,
-                                    chartType: chartType, // Передаем тип графика для обработки кликов
                                     showFullData: true,
                                     clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
                                     tension: 0.3,
@@ -6386,54 +6214,11 @@ export class AmanatDashboard extends Component {
         return clickableChartTypes.includes(chartType);
     }
     
-    isInModalWindow() {
-        /**
-         * Проверяет, находимся ли мы в модальном окне
-         */
-        const modalExists = document.querySelector('.full-chart-modal') !== null;
-        console.log('🔍 isInModalWindow:', { modalExists });
-        return modalExists;
-    }
-
-    getChartTypeFromCanvasId(canvasId) {
-        /**
-         * Определяет тип графика по ID canvas
-         */
-        const chartMapping = {
-            'deal-cycles-line': 'deal_cycles',
-            'import-export-line-comparison': 'import_export_by_month',
-            'managers-efficiency-chart': 'managers_efficiency',
-            'zayavka-status-chart': 'zayavka_status_data',
-            'contragents-by-zayavki-chart': 'contragents_by_zayavki',
-            'agents-by-zayavki-chart': 'agents_by_zayavki',
-            'clients-by-zayavki-chart': 'clients_by_zayavki',
-            'subagents-by-zayavki-chart': 'subagents_by_zayavki',
-            'payers-by-zayavki-chart': 'payers_by_zayavki',
-            'managers-by-zayavki-pie': 'managers_by_zayavki',
-            'managers-closed-zayavki-pie': 'managers_closed_zayavki'
-        };
-        return chartMapping[canvasId] || canvasId;
-    }
-
-    handleModalChartClick(chartType, clickedValue, index, fullData, periodInfo = null) {
+    handleModalChartClick(chartType, clickedValue, index, fullData) {
         /**
          * Обрабатывает клики в модальном окне в зависимости от типа графика
-         * @param {string} chartType - тип графика
-         * @param {string} clickedValue - значение на которое кликнули
-         * @param {number} index - индекс элемента
-         * @param {object} fullData - полные данные графика
-         * @param {object} periodInfo - информация о выбранном периоде {period: 'period1'|'period2', dateRange: {start, end}}
          */
-        console.log('🎯 Обработка клика в модальном окне:', { chartType, clickedValue, index, periodInfo });
-        console.log('🔍 Детальная отладка handleModalChartClick:', {
-            chartType,
-            clickedValue,
-            index,
-            periodInfo,
-            hasDateRange: !!(periodInfo && periodInfo.dateRange),
-            dateRangeStart: periodInfo?.dateRange?.start,
-            dateRangeEnd: periodInfo?.dateRange?.end
-        });
+        console.log('🎯 Обработка клика в модальном окне:', { chartType, clickedValue, index });
         
         try {
             switch (chartType) {
@@ -6473,197 +6258,12 @@ export class AmanatDashboard extends Component {
                     this.openZayavkiByManagerClosed(clickedValue);
                     break;
                     
-                case 'deal_cycles':
-                    // Клик по графику циклов сделок
-                    const cycleDays = parseInt(clickedValue);
-                    if (periodInfo) {
-                        this.openZayavkiByDealCycleAndPeriod(cycleDays, periodInfo);
-                    } else {
-                        this.openZayavkiByCycle(cycleDays);
-                    }
-                    break;
-                    
-                case 'import_export_by_month':
-                    // Клик по графику импорт/экспорт по месяцам
-                    if (periodInfo) {
-                        this.openZayavkiByMonthAndPeriod(clickedValue, periodInfo);
-                    } else {
-                        this.openZayavkiByMonth(clickedValue);
-                    }
-                    break;
-                    
                 default:
                     console.warn('⚠️ Неизвестный тип графика для обработки кликов:', chartType);
                     break;
             }
         } catch (error) {
             console.error('❌ Ошибка при обработке клика в модальном окне:', error);
-        }
-    }
-
-    async openZayavkiByDealCycleAndPeriod(cycleDays, periodInfo) {
-        /**
-         * Открывает заявки с фильтром по циклу сделки и периоду
-         */
-        console.log('🎯 openZayavkiByDealCycleAndPeriod:', { cycleDays, periodInfo });
-        
-        const action = {
-            type: "ir.actions.act_window",
-            name: `Заявки с циклом ${cycleDays} дней (${periodInfo.period === 'period1' ? 'Период 1' : 'Период 2'})`,
-            res_model: "amanat.zayavka",
-            view_mode: "list,form",
-            views: [[false, "list"], [false, "form"]],
-            target: "current",
-            domain: []
-        };
-        
-        // Добавляем фильтр по дате согласно выбранному периоду
-        if (periodInfo.dateRange.start && periodInfo.dateRange.end) {
-            action.domain = [
-                '&',
-                ['date_placement', '>=', periodInfo.dateRange.start],
-                ['date_placement', '<=', periodInfo.dateRange.end]
-            ];
-        }
-        
-        // Добавляем фильтр по циклу сделки (разница между датой закрытия и датой размещения)
-        // Пока открываем все заявки в выбранном периоде, точный расчет циклов требует серверной логики
-        // action.context = {
-        //     'search_default_cycle_days': cycleDays
-        // };
-        
-        console.log('📄 Финальный action для заявок по циклу:', action);
-        this.actionService.doAction(action);
-    }
-
-    async openZayavkiByMonthAndPeriod(monthLabel, periodInfo) {
-        /**
-         * Открывает заявки с фильтром по месяцу и периоду
-         */
-        console.log('🎯 openZayavkiByMonthAndPeriod:', { monthLabel, periodInfo });
-        console.log('📅 Детали парсинга месяца:', { monthLabel, includesDash: monthLabel.includes('-') });
-        
-        // Парсим месяц из метки (например "2024-01" или "Январь 2024")
-        let year, month;
-        if (monthLabel.includes('-')) {
-            [year, month] = monthLabel.split('-');
-        } else {
-            // Для более сложных форматов можно добавить дополнительную логику
-            const date = new Date(monthLabel);
-            year = date.getFullYear();
-            month = date.getMonth() + 1;
-        }
-        
-        const action = {
-            type: "ir.actions.act_window",
-            name: `Заявки за ${monthLabel} (${periodInfo.period === 'period1' ? 'Период 1' : 'Период 2'})`,
-            res_model: "amanat.zayavka",
-            view_mode: "list,form",
-            views: [[false, "list"], [false, "form"]],
-            target: "current",
-            domain: []
-        };
-        
-        // Добавляем фильтр по месяцу и году в рамках выбранного периода
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 0); // последний день месяца
-        
-        // Учитываем ограничения периода
-        const periodStart = new Date(periodInfo.dateRange.start);
-        const periodEnd = new Date(periodInfo.dateRange.end);
-        
-        const filterStart = startDate > periodStart ? startDate : periodStart;
-        const filterEnd = endDate < periodEnd ? endDate : periodEnd;
-        
-        action.domain = [
-            '&',
-            ['date_placement', '>=', filterStart.toISOString().split('T')[0]],
-            ['date_placement', '<=', filterEnd.toISOString().split('T')[0]]
-        ];
-        
-        console.log('📄 Финальный action для заявок по месяцу и периоду:', action);
-        this.actionService.doAction(action);
-    }
-
-    async openZayavkiByMonth(monthLabel) {
-        /**
-         * Открывает заявки с фильтром по месяцу (без учета периода)
-         */
-        console.log('🎯 openZayavkiByMonth:', { monthLabel });
-        
-        // Парсим месяц из метки
-        let year, month;
-        if (monthLabel.includes('-')) {
-            [year, month] = monthLabel.split('-');
-        } else {
-            const date = new Date(monthLabel);
-            year = date.getFullYear();
-            month = date.getMonth() + 1;
-        }
-        
-        const action = {
-            type: "ir.actions.act_window",
-            name: `Заявки за ${monthLabel}`,
-            res_model: "amanat.zayavka",
-            view_mode: "list,form",
-            views: [[false, "list"], [false, "form"]],
-            target: "current",
-            domain: []
-        };
-        
-        // Добавляем фильтр по месяцу
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 0);
-        
-        action.domain = [
-            '&',
-            ['date_placement', '>=', startDate.toISOString().split('T')[0]],
-            ['date_placement', '<=', endDate.toISOString().split('T')[0]]
-        ];
-        
-        this.actionService.doAction(action);
-    }
-
-    // Тестовая функция для диагностики проблем
-    testChartClicks() {
-        console.log('🧪 Тестирование функциональности кликов по графикам');
-        
-        // Проверяем состояние дашборда
-        console.log('📊 Состояние дашборда:', {
-            dateRange1: this.state.dateRange1,
-            dateRange2: this.state.dateRange2,
-            hasComparisonData: !!this.state.comparisonData,
-            hasChartComparisonData: !!this.state.chartComparisonData
-        });
-        
-        // Проверяем наличие модального окна
-        const modalExists = document.querySelector('.full-chart-modal');
-        console.log('🔍 Модальное окно:', { exists: !!modalExists, element: modalExists });
-        
-        // Проверяем наличие графиков
-        const charts = ['deal-cycles-line', 'import-export-line-comparison', 'managers-efficiency-chart'];
-        charts.forEach(chartId => {
-            const canvas = document.getElementById(chartId);
-            const chart = this.charts[chartId];
-            console.log(`📈 График ${chartId}:`, { 
-                canvasExists: !!canvas, 
-                chartExists: !!chart,
-                hasClickHandler: chart && chart.config && chart.config.options && !!chart.config.options.onClick
-            });
-        });
-        
-        // Тестируем прямой вызов handleModalChartClick
-        console.log('🎯 Тестируем прямой вызов handleModalChartClick...');
-        const testPeriodInfo = {
-            period: 'period1',
-            dateRange: { start: '2024-01-01', end: '2024-01-31' }
-        };
-        
-        try {
-            this.handleModalChartClick('deal_cycles', '30', 0, null, testPeriodInfo);
-            console.log('✅ Прямой вызов handleModalChartClick успешен');
-        } catch (error) {
-            console.error('❌ Ошибка в handleModalChartClick:', error);
         }
     }
 
