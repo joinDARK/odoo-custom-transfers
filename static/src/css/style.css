@@ -337,3 +337,9 @@
         margin: 0 4px !important;
     }
 }
+
+.o_notebook_headers {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
