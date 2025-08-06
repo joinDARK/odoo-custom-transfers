@@ -1,0 +1,55 @@
+// Минимальные стили для SearchableSelectionField
+.o_field_widget {
+    .o_select_menu {
+        // Убираем border и фон, чтобы использовать стили togglerClass
+        border: none;
+        background: none;
+        
+        .o_select_menu_toggler {
+            width: 100%;
+            justify-content: space-between;
+            text-align: left;
+            
+            // Убираем border radius чтобы выглядело как стандартный input
+            border-radius: var(--bs-border-radius);
+        }
+        
+        .o_select_menu_menu {
+            z-index: 1050;
+            max-height: 300px;
+            overflow-y: auto;
+            
+            .o_select_menu_search {
+                padding: 2px 4px;
+                border-bottom: 1px solid var(--bs-border-color);
+                
+                input {
+                    width: 100%;
+                    padding: 2px 4px;
+                    border: 1px solid var(--bs-border-color);
+                    border-radius: var(--bs-border-radius-sm);
+                    outline: none;
+                    
+                    &:focus {
+                        border-color: var(--bs-primary);
+                        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+                    }
+                }
+            }
+            
+            .o_select_menu_item {
+                padding: 2px 4px;
+                cursor: pointer;
+                
+                &:hover {
+                    background-color: var(--bs-secondary-bg);
+                }
+                
+                &.o_select_menu_item_selected {
+                    background-color: var(--bs-primary);
+                    color: white;
+                }
+            }
+        }
+    }
+}

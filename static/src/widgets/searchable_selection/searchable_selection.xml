@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="amanat.SearchableSelectionField" owl="1">
+        <div 
+            class="o_field_widget"
+            t-attf-class="{{props.className ? props.className : ''}}"
+        >
+            <!-- Editable mode with SelectMenu -->
+            <SelectMenu 
+                t-if="!props.readonly and selectMenuProps"
+                t-props="selectMenuProps"
+            >
+                <span t-esc="currentLabel"/>
+            </SelectMenu>
+            
+            <!-- Fallback for editable mode without SelectMenu -->
+            <select 
+                t-if="!props.readonly and !selectMenuProps"
+                class="o_input pe-3"
+                t-att-value="stringify(props.record.data[props.name])"
+                t-on-change="onChange"
+                t-on-click.stop="() => {}"
+                t-att-id="props.id"
+            >
+                <option
+                    t-att-selected="false === props.record.data[props.name]"
+                    t-att-value="stringify(false)"
+                    t-esc="props.placeholder || ''"
+                    t-attf-style="{{ props.required ? 'display:none' : '' }}"
+                />
+                <option 
+                    t-foreach="options || []" 
+                    t-as="option" 
+                    t-key="option[0]"
+                    t-att-selected="option[0] === props.record.data[props.name]"
+                    t-att-value="stringify(option[0])"
+                >
+                    <t t-esc="option[1]"/>
+                </option>
+            </select>
+            
+            <!-- Readonly mode -->
+            <span 
+                t-if="props.readonly"
+                class="o_field_char o_field_readonly"
+            >
+                <t t-esc="currentLabel"/>
+            </span>
+        </div>
+    </t>
+</templates>

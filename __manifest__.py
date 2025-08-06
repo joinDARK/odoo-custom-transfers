@@ -185,6 +185,9 @@
             # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.js",
             # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.xml",
             # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.scss",
+            "amanat/static/src/widgets/searchable_selection/searchable_selection.js",
+            "amanat/static/src/widgets/searchable_selection/searchable_selection.xml",
+            "amanat/static/src/widgets/searchable_selection/searchable_selection.scss",
         ],
     },
     "external_dependencies": {

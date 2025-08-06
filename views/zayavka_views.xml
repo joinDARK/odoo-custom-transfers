@@ -16,7 +16,7 @@
             <div class="o-form-group-2">
               <group>
                 <field name="zayavka_num"/>
-                <field name="status"/>
+                <field name="status" widget="searchable_selection"/>
                 <field name="date_placement"/>
               </group>
               <group>
@@ -65,7 +65,7 @@
                 <div class="o-form-group-2">
                   <group>
                     <field name="zayavka_num"/>
-                    <field name="status"/>
+                    <field name="status" widget="searchable_selection"/>
                     <field name="date_placement"/>
                   </group>
                   <group>
@@ -104,7 +104,7 @@
                     <field name="checker_ids" widget="many2many_tags" groups="!amanat.group_amanat_limited_access"/>
                   </group>
                   <group>
-                    <field name="status"/>
+                    <field name="status" widget="searchable_selection"/>
                     <field name="date_placement"/>
                     <!-- Скрываем для ограниченного доступа -->
                     <field name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/>
