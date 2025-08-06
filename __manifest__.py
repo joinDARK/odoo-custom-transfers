@@ -181,6 +181,7 @@
             "amanat/static/src/js/kassa_filter_handler.js",
             "amanat/static/src/xml/attachment_preview.xml",
             "amanat/static/src/css/calculator_background.css",
+            # "amanat/static/src/scss/form_fields.scss",
             # "amanat/static/src/js/calculator_background.js",
             # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.js",
             # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.xml",

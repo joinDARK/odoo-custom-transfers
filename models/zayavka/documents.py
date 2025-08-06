@@ -5,6 +5,8 @@ import logging
 import subprocess
 import tempfile
 import os
+import pandas as pd
+import io
 try:
     import pymupdf
     PYMUPDF_AVAILABLE = True
@@ -572,8 +574,8 @@ class AmanatZayavkaDocuments(models.Model):
             'tag': 'reload',
         }
 
-    def _detect_file_type(self, file_data):
-        """Определить тип файла по заголовку"""
+    def _detect_file_type(self, file_data, file_name=None):
+        """Определить тип файла по заголовку и имени файла"""
         if not file_data:
             _logger.warning("_detect_file_type: file_data пустой")
             return None
@@ -593,15 +595,40 @@ class AmanatZayavkaDocuments(models.Model):
                 _logger.info("_detect_file_type: определен как PDF")
                 return 'pdf'
             
-            # DOCX файлы начинаются с PK (ZIP архив)
+            # DOCX и Excel файлы начинаются с PK (ZIP архив)
             if decoded_data[:2] == b'PK':
-                _logger.info("_detect_file_type: найден ZIP архив, проверяем на DOCX")
-                # Дополнительная проверка на DOCX
-                if b'word/' in decoded_data[:2000] or b'[Content_Types].xml' in decoded_data[:2000]:
-                    _logger.info("_detect_file_type: определен как DOCX")
+                _logger.info("_detect_file_type: найден ZIP архив, проверяем на Excel или DOCX")
+                
+                # Проверяем расширение файла для более точного определения
+                file_extension = None
+                if file_name:
+                    file_extension = file_name.lower().split('.')[-1] if '.' in file_name else None
+                    _logger.info(f"_detect_file_type: расширение файла: {file_extension}")
+                
+                # Если расширение явно указывает на Excel - приоритет Excel
+                if file_extension in ['xlsx', 'xlsm', 'xls']:
+                    _logger.info("_detect_file_type: определен как Excel по расширению файла")
+                    return 'excel' if file_extension in ['xlsx', 'xlsm'] else 'excel_old'
+                
+                # Если расширение явно указывает на DOCX - приоритет DOCX  
+                if file_extension in ['docx']:
+                    _logger.info("_detect_file_type: определен как DOCX по расширению файла")
+                    return 'docx'
+                
+                # Проверяем содержимое ZIP архива
+                # Сначала проверяем на Excel (.xlsx, .xlsm) - более специфичные сигнатуры
+                if (b'xl/' in decoded_data[:2000] or 
+                    b'worksheets/' in decoded_data[:2000] or 
+                    b'sharedStrings.xml' in decoded_data[:2000] or
+                    b'xl/workbook.xml' in decoded_data[:2000]):
+                    _logger.info("_detect_file_type: определен как Excel по содержимому")
+                    return 'excel'
+                # Затем проверяем на DOCX
+                elif b'word/' in decoded_data[:2000] or (b'[Content_Types].xml' in decoded_data[:2000] and b'application/vnd.openxmlformats-officedocument.wordprocessingml' in decoded_data[:4000]):
+                    _logger.info("_detect_file_type: определен как DOCX по содержимому")
                     return 'docx'
                 else:
-                    _logger.info("_detect_file_type: найден ZIP, но не DOCX")
+                    _logger.info("_detect_file_type: найден ZIP, но не Excel или DOCX")
             
             # Проверяем, может быть это base64-кодированный PDF
             if decoded_data.startswith(b'JVBERi'):
@@ -612,7 +639,7 @@ class AmanatZayavkaDocuments(models.Model):
                     if double_decoded[:4] == b'%PDF':
                         _logger.info("_detect_file_type: после двойного декодирования определен как PDF")
                         return 'pdf'
-                except:
+                except Exception:
                     pass
             
             # Проверяем, может быть это base64-кодированные данные, которые нужно декодировать еще раз
@@ -625,8 +652,27 @@ class AmanatZayavkaDocuments(models.Model):
                         if b'word/' in double_decoded[:2000] or b'[Content_Types].xml' in double_decoded[:2000]:
                             _logger.info("_detect_file_type: после двойного декодирования определен как DOCX")
                             return 'docx'
-                except:
+                except Exception:
                     pass
+            
+            # Проверяем старые Excel файлы (.xls) - начинаются с определенной сигнатуры
+            if (decoded_data[:8] == b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1' or  # OLE2 сигнатура
+                decoded_data[:4] == b'\x09\x08\x08\x00'):  # Некоторые XLS файлы
+                _logger.info("_detect_file_type: определен как старый Excel (xls)")
+                return 'excel_old'
+            
+            # Проверяем CSV файлы - это текстовые файлы, проверим первые строки
+            try:
+                text_content = decoded_data[:1000].decode('utf-8', errors='ignore')
+                # Простая эвристика для CSV: содержит запятые/точки с запятой и переносы строк
+                if (',' in text_content or ';' in text_content) and '\n' in text_content:
+                    lines = text_content.split('\n')[:3]  # Проверяем первые 3 строки
+                    csv_like = all(',' in line or ';' in line for line in lines if line.strip())
+                    if csv_like:
+                        _logger.info("_detect_file_type: определен как CSV")
+                        return 'csv'
+            except Exception:
+                pass
                 
             _logger.warning(f"_detect_file_type: неизвестный тип файла, первые 10 байт: {decoded_data[:10]}")
             return 'unknown'
@@ -700,7 +746,7 @@ class AmanatZayavkaDocuments(models.Model):
                     if os.path.exists(pdf_path_cleanup):
                         os.unlink(pdf_path_cleanup)
                     os.rmdir(temp_dir)
-                except:
+                except Exception:
                     pass  # Игнорируем ошибки очистки
                     
         except subprocess.TimeoutExpired:
@@ -1043,7 +1089,7 @@ class AmanatZayavkaDocuments(models.Model):
             return None
         
         file_data = base64.b64decode(attachment.datas)
-        file_type = self._detect_file_type(file_data)
+        file_type = self._detect_file_type(file_data, attachment.name)
         
         _logger.info(f"Анализируем файл {attachment.name}, определенный тип: {file_type}, размер: {len(file_data)} байт")
         
@@ -1062,6 +1108,24 @@ class AmanatZayavkaDocuments(models.Model):
                 return None
         elif file_type == 'pdf':
             pdf_data = file_data
+        elif file_type in ['excel', 'excel_old', 'csv']:
+            # Обрабатываем Excel файлы через новую функциональность
+            try:
+                excel_file_info = {
+                    'attachment': attachment,
+                    'name': attachment.name,
+                    'extension': attachment.name.lower().split('.')[-1] if '.' in attachment.name else 'xlsx'
+                }
+                extracted_text = self._extract_text_from_excel(excel_file_info)
+                if extracted_text:
+                    _logger.info(f"Excel файл {attachment.name} успешно обработан, извлечено {len(extracted_text)} символов")
+                    return {'page1': extracted_text}  # Возвращаем в том же формате что и PDF
+                else:
+                    _logger.warning(f"Не удалось извлечь текст из Excel файла {attachment.name}")
+                    return None
+            except Exception as e:
+                _logger.error(f"Ошибка при обработке Excel файла {attachment.name}: {str(e)}")
+                return None
         else:
             _logger.warning(f"Неподдерживаемый тип файла {attachment.name}: {file_type}")
             return None
@@ -1108,6 +1172,110 @@ class AmanatZayavkaDocuments(models.Model):
             doc.close()
         
         return pages_text if pages_text else None
+
+    def _extract_text_from_excel(self, excel_file_info):
+        """
+        Извлекает текст из Excel файла
+        """
+        try:
+            attachment = excel_file_info['attachment']
+            file_name = excel_file_info['name']
+            file_extension = excel_file_info['extension']
+            
+            # Получаем данные файла
+            file_data = base64.b64decode(attachment.datas)
+            file_buffer = io.BytesIO(file_data)
+            
+            extracted_text = []
+            
+            if file_extension == 'csv':
+                # Обработка CSV файлов
+                try:
+                    # Пробуем разные кодировки
+                    for encoding in ['utf-8', 'cp1251', 'iso-8859-1']:
+                        try:
+                            file_buffer.seek(0)
+                            df = pd.read_csv(file_buffer, encoding=encoding)
+                            break
+                        except UnicodeDecodeError:
+                            continue
+                    else:
+                        # Если все кодировки не подошли
+                        file_buffer.seek(0)
+                        df = pd.read_csv(file_buffer, encoding='utf-8')
+                    
+                    # Извлекаем текст из всех ячеек
+                    for col in df.columns:
+                        extracted_text.append(f"Колонка: {col}")
+                        for value in df[col].dropna():
+                            if pd.notna(value) and str(value).strip():
+                                extracted_text.append(str(value).strip())
+                                
+                except Exception as e:
+                    _logger.error(f"Ошибка при чтении CSV файла {file_name}: {str(e)}")
+                    return None
+                    
+            else:
+                # Обработка Excel файлов (.xlsx, .xls, .xlsm)
+                try:
+                    # Читаем все листы Excel файла
+                    if file_extension in ['xlsx', 'xlsm']:
+                        excel_file = pd.ExcelFile(file_buffer, engine='openpyxl')
+                    else:  # .xls
+                        excel_file = pd.ExcelFile(file_buffer, engine='xlrd')
+                    
+                    sheet_names = excel_file.sheet_names
+                    _logger.info(f"📄 Листы в файле {file_name}: {sheet_names}")
+                    
+                    for sheet_name in sheet_names:
+                        try:
+                            # Читаем данные с листа
+                            df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                            
+                            extracted_text.append(f"\n=== ЛИСТ: {sheet_name} ===")
+                            
+                            # Извлекаем заголовки колонок
+                            if not df.empty:
+                                headers = [str(col) for col in df.columns if str(col) != 'Unnamed']
+                                if headers:
+                                    extracted_text.append(f"Заголовки: {', '.join(headers)}")
+                                
+                                # Извлекаем данные из всех ячеек
+                                for index, row in df.iterrows():
+                                    row_data = []
+                                    for col in df.columns:
+                                        value = row[col]
+                                        if pd.notna(value) and str(value).strip() and str(value) != 'nan':
+                                            row_data.append(str(value).strip())
+                                    
+                                    if row_data:  # Если в строке есть данные
+                                        extracted_text.append(f"Строка {index + 1}: {' | '.join(row_data)}")
+                            else:
+                                extracted_text.append("Лист пустой")
+                                
+                        except Exception as e:
+                            _logger.error(f"Ошибка при чтении листа '{sheet_name}' из файла {file_name}: {str(e)}")
+                            extracted_text.append(f"Ошибка чтения листа '{sheet_name}': {str(e)}")
+                            continue
+                            
+                except Exception as e:
+                    _logger.error(f"Ошибка при чтении Excel файла {file_name}: {str(e)}")
+                    return None
+            
+            # Объединяем весь текст
+            full_text = '\n'.join(extracted_text)
+            
+            if full_text.strip():
+                _logger.info(f"✅ Извлечен текст из {file_name}: {len(full_text)} символов")
+                _logger.info(f"📋 Первые 200 символов: {full_text[:200]}...")
+                return full_text
+            else:
+                _logger.warning(f"❌ Не удалось извлечь текст из {file_name} - файл пустой")
+                return None
+                
+        except Exception as e:
+            _logger.error(f"Ошибка при извлечении текста из Excel файла {excel_file_info['name']}: {str(e)}")
+            return None
 
     def _format_and_log_json(self, analysis_results):
         """

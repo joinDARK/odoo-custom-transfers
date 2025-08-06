@@ -2185,3 +2185,5 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     prefix = fields.Boolean(string='Перефикс', default=False)
     hidden_hadge = fields.Boolean(string='Не отображать хэдж', default=False)
+
+    

@@ -1,8 +1,27 @@
+"""
+YandexGPT анализ документов для заявок
+
+Функциональность:
+1. Анализ изображений с помощью Yandex Vision OCR + YandexGPT
+2. Анализ Excel документов (новая функциональность):
+   - Поддержка форматов: .xlsx, .xls, .xlsm, .csv
+   - Извлечение текста из всех листов и ячеек
+   - Детальное логирование результатов
+   - Готовность к интеграции с YandexGPT (отключена по умолчанию)
+
+Использование Excel анализа:
+- action_test_excel_analysis() - запуск тестового анализа
+- analyze_excel_documents() - основной метод анализа
+- get_excel_attachments() - поиск Excel файлов во вложениях
+"""
+
 import requests
 import logging
 import base64
 import json
-import os
+import pandas as pd
+import io
+# import os
 from odoo import models, api
 
 _logger = logging.getLogger(__name__)
@@ -21,6 +40,8 @@ PROMPT = """
 страна получателя
 свифт код
 назначение платежа
+номер заявки (application number)
+дата подачи заявки
 
 После этого сопоставь полученные данные и выдай мне информацию в формате json
 
@@ -31,6 +52,8 @@ PROMPT = """
 страна получателя - country_id
 свифт код - bank_swift
 назначение платежа - payment_purpose
+номер заявки - application_sequence
+дата подачи заявки - payment_date
 
 выдаем только первоначальную валюту без эквивалента
 если не указано, то оставляй пустоту
@@ -44,7 +67,16 @@ UPDATE_FIELDS = [
     'country_id',
     'bank_swift',
     'payment_purpose',
+    'application_sequence',
+    'payment_date',
 ]
+
+# Новая функциональность: Анализ Excel документов
+# Доступные методы:
+# - get_excel_attachments() - поиск Excel файлов во всех полях вложений
+# - analyze_excel_documents() - извлечение текста из Excel файлов и логирование
+# - action_test_excel_analysis() - тестовый метод для запуска анализа
+# Поддерживаемые форматы: .xlsx, .xls, .xlsm, .csv
 
 
 class ZayavkaYandexGPTAnalyse(models.Model):
@@ -52,6 +84,33 @@ class ZayavkaYandexGPTAnalyse(models.Model):
 
     def action_analyse_with_yandex_gpt(self):
         self._get_yandex_gpt_config()
+
+    def action_test_excel_analysis(self):
+        """
+        Тестовый метод для анализа Excel документов
+        """
+        try:
+            _logger.info("🚀 ЗАПУСК АНАЛИЗА EXCEL ДОКУМЕНТОВ")
+            _logger.info(f"📋 Заявка: {self.zayavka_id}")
+            _logger.info("📊 Этапы: 1) Поиск Excel файлов -> 2) Извлечение текста -> 3) Логирование результатов")
+            
+            # Запускаем анализ Excel документов
+            results = self.analyze_excel_documents()
+            
+            if results:
+                _logger.info(f"🎉 ТЕСТ ЗАВЕРШЕН УСПЕШНО: Обработано {len(results)} Excel файлов")
+                _logger.info("📋 ФИНАЛЬНАЯ СВОДКА:")
+                for i, result in enumerate(results, 1):
+                    _logger.info(f"  ✅ {i}. {result['file_name']}")
+                    _logger.info(f"     📂 Поле: {result['field_name']}")
+                    _logger.info(f"     📄 Размер: {result['file_size']} байт")
+                    _logger.info(f"     📊 Извлечено: {result['text_length']} символов")
+                _logger.info("🎯 Все Excel файлы прошли полный цикл обработки!")
+            else:
+                _logger.info("ℹ️ ТЕСТ: Не найдено Excel файлов для анализа или произошла ошибка")
+                
+        except Exception as e:
+            _logger.error(f"Ошибка при тестировании анализа Excel документов: {str(e)}")
 
     def action_test_screen_sber_ocr(self):
         """
@@ -189,13 +248,15 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             
             # Маппинг полей из JSON в поля модели (используем реальные поля из zayavka.py)
             field_mapping = {
-                'amount': 'amount',  # Сумма заявки (строка 916)
-                'currency': 'currency',  # Валюта (строка 846)
+                'amount': 'amount',  # Сумма заявки (строка 965)
+                'currency': 'currency',  # Валюта (строка 895)
                 'subagent_payer_ids': None,  # Это Many2many поле к amanat.payer, обработаем отдельно
                 'exporter_importer_name': 'exporter_importer_name',  # Наименование покупателя/продавца (строка 82)
                 'country_id': None,  # Это Many2one поле, обработаем отдельно  
                 'bank_swift': 'bank_swift',  # SWIFT код банка (строка 84)
-                'payment_purpose': 'payment_purpose',  # Назначение платежа (строка 1165)
+                'payment_purpose': 'payment_purpose',  # Назначение платежа (строка 1214)
+                'application_sequence': 'application_sequence',  # Порядковый номер заявления (строка 1228)
+                'payment_date': 'payment_date',  # Дата платежа - нужно определить правильное поле
             }
             
             for json_key, model_field in field_mapping.items():
@@ -227,6 +288,30 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                         }
                         currency_code = currency_mapping.get(str(value).upper(), str(value).lower())
                         update_values[model_field] = currency_code
+                    
+                    elif model_field == 'payment_date' and value:
+                        # Для поля даты нужно преобразовать строку в дату
+                        try:
+                            from datetime import datetime
+                            # Пробуем разные форматы дат
+                            date_formats = ['%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d %H:%M:%S']
+                            parsed_date = None
+                            
+                            date_str = str(value).strip()
+                            for date_format in date_formats:
+                                try:
+                                    parsed_date = datetime.strptime(date_str, date_format).date()
+                                    break
+                                except ValueError:
+                                    continue
+                            
+                            if parsed_date:
+                                update_values[model_field] = parsed_date
+                                _logger.info(f"Дата '{value}' преобразована в {parsed_date}")
+                            else:
+                                _logger.warning(f"Не удалось распознать формат даты: {value}")
+                        except Exception as e:
+                            _logger.error(f"Ошибка при обработке даты '{value}': {str(e)}")
                     
                     else:
                         # Для текстовых полей сохраняем как строку
@@ -520,4 +605,251 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         except Exception as e:
             _logger.error(f"Ошибка при анализе текста изображения '{image_name}' с YandexGPT: {str(e)}")
             
-        return None                                   
+        return None
+
+    def get_excel_attachments(self):
+        """
+        Получает Excel файлы из всех полей вложений заявки
+        """
+        try:
+            excel_files = []
+            
+            # Список полей с вложениями для поиска Excel файлов
+            attachment_fields = [
+                'zayavka_attachments',      # Заявка Вход
+            ]
+            
+            # Поддерживаемые форматы Excel
+            excel_extensions = ['xls', 'xlsx', 'xlsm', 'csv']
+            excel_mimetypes = [
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-excel.sheet.macroEnabled.12',
+                'text/csv',
+                'application/csv'
+            ]
+            
+            for field_name in attachment_fields:
+                if hasattr(self, field_name):
+                    attachments = getattr(self, field_name)
+                    if attachments:
+                        for attachment in attachments:
+                            try:
+                                # Проверяем расширение файла
+                                file_extension = attachment.name.lower().split('.')[-1] if '.' in attachment.name else ''
+                                
+                                # Проверяем mimetype
+                                is_excel_by_mime = attachment.mimetype and any(
+                                    mime in attachment.mimetype for mime in excel_mimetypes
+                                )
+                                
+                                # Проверяем расширение
+                                is_excel_by_ext = file_extension in excel_extensions
+                                
+                                if is_excel_by_mime or is_excel_by_ext:
+                                    excel_files.append({
+                                        'attachment': attachment,
+                                        'field_name': field_name,
+                                        'name': attachment.name,
+                                        'mimetype': attachment.mimetype,
+                                        'extension': file_extension,
+                                        'size': len(base64.b64decode(attachment.datas)) if attachment.datas else 0
+                                    })
+                                    
+                                    _logger.info(f"✅ Найден Excel файл: {attachment.name} в поле {field_name} "
+                                               f"({attachment.mimetype}, {file_extension})")
+                                    
+                            except Exception as e:
+                                _logger.error(f"Ошибка при обработке вложения {attachment.name}: {str(e)}")
+                                continue
+            
+            _logger.info(f"📊 Всего найдено Excel файлов: {len(excel_files)}")
+            return excel_files
+            
+        except Exception as e:
+            _logger.error(f"Ошибка при поиске Excel файлов: {str(e)}")
+            return []
+
+    def _extract_text_from_excel(self, excel_file_info):
+        """
+        Извлекает текст из Excel файла
+        """
+        try:
+            attachment = excel_file_info['attachment']
+            file_name = excel_file_info['name']
+            file_extension = excel_file_info['extension']
+            
+            # Получаем данные файла
+            file_data = base64.b64decode(attachment.datas)
+            file_buffer = io.BytesIO(file_data)
+            
+            extracted_text = []
+            
+            if file_extension == 'csv':
+                # Обработка CSV файлов
+                try:
+                    # Пробуем разные кодировки
+                    for encoding in ['utf-8', 'cp1251', 'iso-8859-1']:
+                        try:
+                            file_buffer.seek(0)
+                            df = pd.read_csv(file_buffer, encoding=encoding)
+                            break
+                        except UnicodeDecodeError:
+                            continue
+                    else:
+                        # Если все кодировки не подошли
+                        file_buffer.seek(0)
+                        df = pd.read_csv(file_buffer, encoding='utf-8')
+                    
+                    # Извлекаем текст из всех ячеек
+                    for col in df.columns:
+                        extracted_text.append(f"Колонка: {col}")
+                        for value in df[col].dropna():
+                            if pd.notna(value) and str(value).strip():
+                                extracted_text.append(str(value).strip())
+                                
+                except Exception as e:
+                    _logger.error(f"Ошибка при чтении CSV файла {file_name}: {str(e)}")
+                    return None
+                    
+            else:
+                # Обработка Excel файлов (.xlsx, .xls, .xlsm)
+                try:
+                    # Читаем все листы Excel файла
+                    if file_extension in ['xlsx', 'xlsm']:
+                        excel_file = pd.ExcelFile(file_buffer, engine='openpyxl')
+                    else:  # .xls
+                        excel_file = pd.ExcelFile(file_buffer, engine='xlrd')
+                    
+                    sheet_names = excel_file.sheet_names
+                    _logger.info(f"📄 Листы в файле {file_name}: {sheet_names}")
+                    
+                    for sheet_name in sheet_names:
+                        try:
+                            # Читаем данные с листа
+                            df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                            
+                            extracted_text.append(f"\n=== ЛИСТ: {sheet_name} ===")
+                            
+                            # Извлекаем заголовки колонок
+                            if not df.empty:
+                                headers = [str(col) for col in df.columns if str(col) != 'Unnamed']
+                                if headers:
+                                    extracted_text.append(f"Заголовки: {', '.join(headers)}")
+                                
+                                # Извлекаем данные из всех ячеек
+                                for index, row in df.iterrows():
+                                    row_data = []
+                                    for col in df.columns:
+                                        value = row[col]
+                                        if pd.notna(value) and str(value).strip() and str(value) != 'nan':
+                                            row_data.append(str(value).strip())
+                                    
+                                    if row_data:  # Если в строке есть данные
+                                        extracted_text.append(f"Строка {index + 1}: {' | '.join(row_data)}")
+                            else:
+                                extracted_text.append("Лист пустой")
+                                
+                        except Exception as e:
+                            _logger.error(f"Ошибка при чтении листа '{sheet_name}' из файла {file_name}: {str(e)}")
+                            extracted_text.append(f"Ошибка чтения листа '{sheet_name}': {str(e)}")
+                            continue
+                            
+                except Exception as e:
+                    _logger.error(f"Ошибка при чтении Excel файла {file_name}: {str(e)}")
+                    return None
+            
+            # Объединяем весь текст
+            full_text = '\n'.join(extracted_text)
+            
+            if full_text.strip():
+                _logger.info(f"✅ Извлечен текст из {file_name}: {len(full_text)} символов")
+                _logger.info(f"📋 Первые 200 символов: {full_text[:200]}...")
+                return full_text
+            else:
+                _logger.warning(f"❌ Не удалось извлечь текст из {file_name} - файл пустой")
+                return None
+                
+        except Exception as e:
+            _logger.error(f"Ошибка при извлечении текста из Excel файла {excel_file_info['name']}: {str(e)}")
+            return None
+
+    def analyze_excel_documents(self):
+        """
+        Анализирует Excel документы из вложений заявки
+        """
+        try:
+            # Получаем Excel файлы
+            excel_files = self.get_excel_attachments()
+            
+            if not excel_files:
+                _logger.info("📊 Нет Excel файлов для анализа в заявке")
+                return None
+            
+            # Анализируем каждый Excel файл
+            all_extracted_data = []
+            
+            for i, excel_file_info in enumerate(excel_files, 1):
+                _logger.info(f"🔍 Анализируем Excel файл {i}/{len(excel_files)}: {excel_file_info['name']}")
+                _logger.info(f"📂 Поле: {excel_file_info['field_name']}")
+                _logger.info(f"📄 Размер: {excel_file_info['size']} байт")
+                _logger.info(f"🔧 Тип: {excel_file_info['mimetype']} (.{excel_file_info['extension']})")
+                
+                # Извлекаем текст из Excel файла
+                extracted_text = self._extract_text_from_excel(excel_file_info)
+                
+                if extracted_text:
+                    all_extracted_data.append({
+                        'file_name': excel_file_info['name'],
+                        'field_name': excel_file_info['field_name'],
+                        'file_size': excel_file_info['size'],
+                        'extension': excel_file_info['extension'],
+                        'extracted_text': extracted_text,
+                        'text_length': len(extracted_text)
+                    })
+                    
+                    # Логируем результат
+                    _logger.info(f"✅ Успешно извлечен текст из {excel_file_info['name']}")
+                    _logger.info(f"📊 Длина извлеченного текста: {len(extracted_text)} символов")
+                    
+                    # Выводим полный текст в лог для анализа
+                    _logger.info(f"📋 ПОЛНЫЙ ТЕКСТ ИЗ ФАЙЛА '{excel_file_info['name']}':")
+                    _logger.info("=" * 80)
+                    _logger.info(extracted_text)
+                    _logger.info("=" * 80)
+                    
+                else:
+                    _logger.warning(f"❌ Не удалось извлечь текст из {excel_file_info['name']}")
+            
+            # Выводим общую сводку
+            if all_extracted_data:
+                _logger.info("🎉 АНАЛИЗ EXCEL ДОКУМЕНТОВ ЗАВЕРШЕН")
+                _logger.info(f"📊 Всего обработано файлов: {len(all_extracted_data)}")
+                _logger.info("📋 СВОДКА РЕЗУЛЬТАТОВ:")
+                
+                total_text_length = 0
+                for i, data in enumerate(all_extracted_data, 1):
+                    total_text_length += data['text_length']
+                    _logger.info(f"  {i}. {data['file_name']} ({data['extension'].upper()})")
+                    _logger.info(f"     Поле: {data['field_name']}")
+                    _logger.info(f"     Размер файла: {data['file_size']} байт")
+                    _logger.info(f"     Извлечено текста: {data['text_length']} символов")
+                
+                _logger.info(f"📈 Общий объем извлеченного текста: {total_text_length} символов")
+                _logger.info("✅ Все Excel файлы успешно обработаны!")
+                
+                # Примечание: здесь в будущем можно добавить отправку в YandexGPT
+                _logger.info("💡 ПРИМЕЧАНИЕ: Отправка в YandexGPT пока отключена (по требованию)")
+                _logger.info("💡 Для включения анализа YandexGPT раскомментируйте код ниже:")
+                _logger.info("💡 # for data in all_extracted_data:")
+                _logger.info("💡 #     self.analyze_document_with_yandex_gpt(data['extracted_text'])")
+                
+            else:
+                _logger.warning("❌ Не удалось извлечь текст ни из одного Excel файла")
+                
+            return all_extracted_data
+            
+        except Exception as e:
+            _logger.error(f"Ошибка при анализе Excel документов: {str(e)}")
+            
+        return None

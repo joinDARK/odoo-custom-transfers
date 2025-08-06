@@ -103,6 +103,19 @@ export class AmanatDashboard extends Component {
         // Хранилище для графиков
         this.charts = {};
         
+        // 🆕 УЛУЧШЕННАЯ СИСТЕМА ОБРАБОТКИ КЛИКОВ
+        this.clickState = {
+            isProcessing: false,           // Флаг обработки клика
+            lastClickTime: 0,              // Время последнего клика  
+            debounceDelay: 300,            // Задержка дебаунсинга (мс)
+            processingElements: new Set(), // Элементы в процессе обработки
+            clickCache: new Map(),         // Кеш результатов кликов
+            previewCache: new Map()        // Кеш предпросмотра данных
+        };
+        
+        // 🆕 Кеш для полных данных графиков (уже был, но выносим в отдельное свойство)
+        this.fullChartDataCache = new Map();
+        
         // Инициализация при загрузке компонента
         onMounted(() => {
             this.initializeDashboard();
@@ -436,8 +449,8 @@ export class AmanatDashboard extends Component {
                         data: data,
                         title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
                         backgroundColor: labels.map(label => {
-                            if (label === 'Импорт') return '#5DADE2';
-                            if (label === 'Экспорт') return '#F7DC6F';
+                            if (label === 'Импорт') return '#4299e1';
+                            if (label === 'Экспорт') return '#4299e1';
                             return '#95A5A6';
                         }),
                         borderColor: labels.map(label => {
@@ -464,8 +477,8 @@ export class AmanatDashboard extends Component {
                         type: 'horizontalBar', 
                         title: 'Соотношение ИМПОРТ/ЭКСПОРТ',
                         backgroundColor: labels.map(label => {
-                            if (label === 'Импорт') return '#5DADE2';
-                            if (label === 'Экспорт') return '#F7DC6F';
+                            if (label === 'Импорт') return '#4299e1';
+                            if (label === 'Экспорт') return '#4299e1';
                             return '#95A5A6';
                         }),
                         borderColor: labels.map(label => {
@@ -584,8 +597,8 @@ export class AmanatDashboard extends Component {
                         period2Label: `Период 2 (${this.state.dateRange2.start} - ${this.state.dateRange2.end})`,
                         title: 'Сравнение: Статусы заявок',
                         showFullData: false,
-                        backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
-                        borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
+                        backgroundColor: ['rgba(66, 153, 225, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderColor: ['rgba(66, 153, 225, 1)', 'rgba(255, 99, 132, 1)']
                     });
                     
                     // Сохраняем сравнительные данные для модального окна
@@ -626,7 +639,7 @@ export class AmanatDashboard extends Component {
                 });
 
                 // ИСПРАВЛЕНИЕ: Используем один цвет для всех статусов
-                const singleColor = '#2563EB'; // Синий цвет
+                const singleColor = '#4299e1'; // Синий цвет
                 
                 // Создаем labels и data с проверкой из отсортированных данных
                 const labels = sortedStatusData.map(s => s.name);
@@ -1280,7 +1293,17 @@ export class AmanatDashboard extends Component {
                         isPercentage: true,
                         showFullData: false,
                         backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
-                        borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
+                        borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
+                        clickable: true,
+                        onClick: (event, elements) => {
+                            console.log('График эффективности менеджеров (сравнительный режим): клик зарегистрирован', elements);
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const managerName = allManagerNames[index];
+                                console.log('Открываем информацию о менеджере:', managerName);
+                                this.openManagerInfo(managerName);
+                            }
+                        }
                     });
                     
                     // Сохраняем сравнительные данные для модального окна
@@ -2516,25 +2539,47 @@ export class AmanatDashboard extends Component {
     }
 
     async openZayavkiByContragent(contragentName) {
-        // Открываем заявки с фильтром по контрагенту
+        this.handleComparisonModeOrOpen(contragentName, 'contragent', this.openZayavkiByContragentForPeriod);
+    }
+
+    async openZayavkiByContragentForPeriod(contragentName, periodNumber = 1) {
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
+        
+        let actionName = `Заявки контрагента: ${contragentName}`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+
         const action = {
             type: "ir.actions.act_window",
-            name: `Заявки контрагента: ${contragentName}`,
+            name: actionName,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],
             target: "current",
-            domain: [['contragent_id.name', '=', contragentName]]
+            domain: [
+                '&',
+                ['contragent_id.name', '=', contragentName],
+                '&',
+                ['hide_in_dashboard', '!=', true],
+                ['status', '!=', '22']  // Исключаем отмененные клиентом заявки
+            ]
         };
         
-        // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
+        // Добавляем фильтр по дате для выбранного периода
+        if (dateRange.start && dateRange.end) {
             action.domain = [
                 '&',
                 ['contragent_id.name', '=', contragentName],
                 '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
+                ['hide_in_dashboard', '!=', true],
+                '&',
+                ['status', '!=', '22'],  // Исключаем отмененные клиентом заявки
+                '&',
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
             ];
         }
         
@@ -2542,25 +2587,47 @@ export class AmanatDashboard extends Component {
     }
 
     async openZayavkiByAgent(agentName) {
-        // Открываем заявки с фильтром по агенту
+        this.handleComparisonModeOrOpen(agentName, 'agent', this.openZayavkiByAgentForPeriod);
+    }
+
+    async openZayavkiByAgentForPeriod(agentName, periodNumber = 1) {
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
+        
+        let actionName = `Заявки агента: ${agentName}`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+
         const action = {
             type: "ir.actions.act_window",
-            name: `Заявки агента: ${agentName}`,
+            name: actionName,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],
             target: "current",
-            domain: [['agent_id.name', '=', agentName]]
+            domain: [
+                '&',
+                ['agent_id.name', '=', agentName],
+                '&',
+                ['hide_in_dashboard', '!=', true],
+                ['status', '!=', '22']  // Исключаем отмененные клиентом заявки
+            ]
         };
         
-        // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
+        // Добавляем фильтр по дате для выбранного периода
+        if (dateRange.start && dateRange.end) {
             action.domain = [
                 '&',
                 ['agent_id.name', '=', agentName],
                 '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
+                ['hide_in_dashboard', '!=', true],
+                '&',
+                ['status', '!=', '22'],  // Исключаем отмененные клиентом заявки
+                '&',
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
             ];
         }
         
@@ -2568,25 +2635,47 @@ export class AmanatDashboard extends Component {
     }
 
     async openZayavkiByClient(clientName) {
-        // Открываем заявки с фильтром по клиенту
+        this.handleComparisonModeOrOpen(clientName, 'client', this.openZayavkiByClientForPeriod);
+    }
+
+    async openZayavkiByClientForPeriod(clientName, periodNumber = 1) {
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
+        
+        let actionName = `Заявки клиента: ${clientName}`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+
         const action = {
             type: "ir.actions.act_window",
-            name: `Заявки клиента: ${clientName}`,
+            name: actionName,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],
             target: "current",
-            domain: [['client_id.name', '=', clientName]]
+            domain: [
+                '&',
+                ['client_id.name', '=', clientName],
+                '&',
+                ['hide_in_dashboard', '!=', true],
+                ['status', '!=', '22']  // Исключаем отмененные клиентом заявки
+            ]
         };
         
-        // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
+        // Добавляем фильтр по дате для выбранного периода
+        if (dateRange.start && dateRange.end) {
             action.domain = [
                 '&',
                 ['client_id.name', '=', clientName],
                 '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
+                ['hide_in_dashboard', '!=', true],
+                '&',
+                ['status', '!=', '22'],  // Исключаем отмененные клиентом заявки
+                '&',
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
             ];
         }
         
@@ -3897,25 +3986,47 @@ export class AmanatDashboard extends Component {
     }
 
     async openZayavkiBySubagent(subagentName) {
-        // Открываем заявки с фильтром по субагенту
+        this.handleComparisonModeOrOpen(subagentName, 'subagent', this.openZayavkiBySubagentForPeriod);
+    }
+
+    async openZayavkiBySubagentForPeriod(subagentName, periodNumber = 1) {
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
+        
+        let actionName = `Заявки субагента: ${subagentName}`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+
         const action = {
             type: "ir.actions.act_window",
-            name: `Заявки субагента: ${subagentName}`,
+            name: actionName,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],
             target: "current",
-            domain: [['subagent_ids.name', '=', subagentName]]
+            domain: [
+                '&',
+                ['subagent_ids.name', '=', subagentName],
+                '&',
+                ['hide_in_dashboard', '!=', true],
+                ['status', '!=', '22']  // Исключаем отмененные клиентом заявки
+            ]
         };
         
-        // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
+        // Добавляем фильтр по дате для выбранного периода
+        if (dateRange.start && dateRange.end) {
             action.domain = [
                 '&',
                 ['subagent_ids.name', '=', subagentName],
                 '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
+                ['hide_in_dashboard', '!=', true],
+                '&',
+                ['status', '!=', '22'],  // Исключаем отмененные клиентом заявки
+                '&',
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
             ];
         }
         
@@ -3923,25 +4034,47 @@ export class AmanatDashboard extends Component {
     }
 
     async openZayavkiByPayer(payerName) {
-        // Открываем заявки с фильтром по платежщику субагента
+        this.handleComparisonModeOrOpen(payerName, 'payer', this.openZayavkiByPayerForPeriod);
+    }
+
+    async openZayavkiByPayerForPeriod(payerName, periodNumber = 1) {
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
+        
+        let actionName = `Заявки плательщика: ${payerName}`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+
         const action = {
             type: "ir.actions.act_window",
-            name: `Заявки плательщика: ${payerName}`,
+            name: actionName,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],
             target: "current",
-            domain: [['subagent_payer_ids.name', '=', payerName]]
+            domain: [
+                '&',
+                ['subagent_payer_ids.name', '=', payerName],
+                '&',
+                ['hide_in_dashboard', '!=', true],
+                ['status', '!=', '22']  // Исключаем отмененные клиентом заявки
+            ]
         };
         
-        // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
+        // Добавляем фильтр по дате для выбранного периода
+        if (dateRange.start && dateRange.end) {
             action.domain = [
                 '&',
                 ['subagent_payer_ids.name', '=', payerName],
                 '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
+                ['hide_in_dashboard', '!=', true],
+                '&',
+                ['status', '!=', '22'],  // Исключаем отмененные клиентом заявки
+                '&',
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
             ];
         }
         
@@ -3949,10 +4082,22 @@ export class AmanatDashboard extends Component {
     }
 
     async openZayavkiByManager(managerName) {
-        // Открываем заявки с фильтром по менеджеру
+        this.handleComparisonModeOrOpen(managerName, 'manager', this.openZayavkiByManagerForPeriod);
+    }
+
+    async openZayavkiByManagerForPeriod(managerName, periodNumber = 1) {
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
+        
+        let actionName = `Заявки менеджера: ${managerName}`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+
         const action = {
             type: "ir.actions.act_window",
-            name: `Заявки менеджера: ${managerName}`,
+            name: actionName,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],
@@ -3962,22 +4107,22 @@ export class AmanatDashboard extends Component {
                 ['manager_ids.name', '=', managerName],
                 '&',
                 ['hide_in_dashboard', '!=', true],
-                ['status', '!=', 'cancel']
+                ['status', '!=', '22']  // '22' = "22. Отменено клиентом"
             ]
         };
         
-        // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
+        // Добавляем фильтр по дате для выбранного периода
+        if (dateRange.start && dateRange.end) {
             action.domain = [
                 '&',
                 ['manager_ids.name', '=', managerName],
                 '&',
                 ['hide_in_dashboard', '!=', true],
                 '&',
-                ['status', '!=', 'cancel'],
+                ['status', '!=', '22'],  // '22' = "22. Отменено клиентом"
                 '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
             ];
         }
         
@@ -3985,10 +4130,22 @@ export class AmanatDashboard extends Component {
     }
 
     async openZayavkiByManagerClosed(managerName) {
-        // Открываем заявки с фильтром по менеджеру для ЗАКРЫТЫХ заявок
+        this.handleComparisonModeOrOpen(managerName, 'manager_closed', this.openZayavkiByManagerClosedForPeriod);
+    }
+
+    async openZayavkiByManagerClosedForPeriod(managerName, periodNumber = 1) {
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
+        
+        let actionName = `Закрытые заявки менеджера: ${managerName}`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+
         const action = {
             type: "ir.actions.act_window",
-            name: `Закрытые заявки менеджера: ${managerName}`,
+            name: actionName,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],
@@ -3998,33 +4155,56 @@ export class AmanatDashboard extends Component {
                 ['manager_ids.name', '=', managerName],
                 '&',
                 ['hide_in_dashboard', '!=', true],
-                ['status', '=', 'close']  // Только закрытые заявки
+                ['status', '=', '21']  // '21' = "21. Заявка закрыта"
             ]
         };
         
-        // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
+        // Добавляем фильтр по дате для выбранного периода
+        if (dateRange.start && dateRange.end) {
             action.domain = [
                 '&',
                 ['manager_ids.name', '=', managerName],
                 '&',
                 ['hide_in_dashboard', '!=', true],
                 '&',
-                ['status', '=', 'close'],
+                ['status', '=', '21'],  // '21' = "21. Заявка закрыта"
                 '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
             ];
         }
         
         this.actionService.doAction(action);
     }
 
+    // ==================== УНИВЕРСАЛЬНАЯ СИСТЕМА ВЫБОРА ПЕРИОДА ====================
+    
+    /**
+     * Универсальная функция для обработки режима сравнения
+     * Автоматически показывает диалог выбора периода или открывает заявки для одного периода
+     */
+    handleComparisonModeOrOpen(value, type, openFunctionForPeriod) {
+        const isComparisonMode = this.state.dateRange2.start && this.state.dateRange2.end;
+        
+        if (isComparisonMode) {
+            // Если включен режим сравнения, показываем диалог выбора периода
+            this.showPeriodSelectionDialog(value, type);
+            return;
+        }
+        
+        // Обычный режим - открываем заявки для периода 1
+        openFunctionForPeriod.call(this, value, 1);
+    }
+
     async openZayavkiByStatus(statusName) {
-        console.log('🎯 openZayavkiByStatus вызван с параметром:', statusName);
-        console.log('🔍 Точное значение:', JSON.stringify(statusName));
-        console.log('🔍 Тип параметра:', typeof statusName);
-        console.log('🔍 Длина строки:', statusName?.length);
+        this.handleComparisonModeOrOpen(statusName, 'status', this.openZayavkiByStatusForPeriod);
+    }
+
+    async openZayavkiByStatusForPeriod(statusName, periodNumber = 1) {
+        console.log('🎯 openZayavkiByStatusForPeriod вызван:', { statusName, periodNumber });
+        
+        // Определяем какой диапазон дат использовать
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
         
         // Открываем заявки с фильтром по статусу
         let statusValue = statusName;
@@ -4114,10 +4294,18 @@ export class AmanatDashboard extends Component {
             ];
         }
         
+        // Формируем название с учетом периода  
+        let actionName = `Заявки со статусом: ${statusName}`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+        
         // Используем стандартное действие заявок из меню с указанием представления
         const action = {
             type: "ir.actions.act_window",
-            name: `Заявки со статусом: ${statusName}`,
+            name: actionName,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             view_type: "list",
@@ -4131,7 +4319,7 @@ export class AmanatDashboard extends Component {
         };
         
         // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
+        if (dateRange.start && dateRange.end) {
             if (statusValue === false) {
                 // Для заявок без статуса с фильтром по датам
             action.domain = [
@@ -4140,8 +4328,8 @@ export class AmanatDashboard extends Component {
                     ['status', '=', false],
                     ['status', '=', ''],
                     '&',
-                    ['date_placement', '>=', this.state.dateRange1.start],
-                    ['date_placement', '<=', this.state.dateRange1.end]
+                    ['date_placement', '>=', dateRange.start],
+                    ['date_placement', '<=', dateRange.end]
                 ];
             } else {
                 // Для заявок с конкретным статусом с фильтром по датам
@@ -4149,8 +4337,8 @@ export class AmanatDashboard extends Component {
                     '&',
                     ['status', '=', statusValue],
                 '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
             ];
             }
         }
@@ -4158,11 +4346,310 @@ export class AmanatDashboard extends Component {
         this.actionService.doAction(action);
     }
 
-    async openZayavkiByCycle(cycleDays) {
-        // Открываем заявки с фильтром по циклу сделки
+    showPeriodSelectionDialog(value, type) {
+        console.log('🎯 Показ диалога выбора периода');
+        
+        // СНАЧАЛА закрываем текущее модальное окно с графиком
+        const existingModal = document.querySelector('.full-chart-modal, .modal.show');
+        if (existingModal) {
+            console.log('🎯 Закрываем существующее модальное окно с графиком');
+            existingModal.style.display = 'none';
+            existingModal.remove();
+        }
+        
+        // Создаем НОВОЕ модальное окно для выбора периода
+        const modal = document.createElement('div');
+        modal.className = 'modal fade show';
+        modal.id = 'periodSelectionModal';
+        modal.style.display = 'block';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        modal.style.zIndex = '99999';
+        modal.setAttribute('tabindex', '-1');
+        
+        // Определяем заголовок в зависимости от типа
+        let title = 'Выбор периода';
+        let subtitle = '';
+        switch (type) {
+            case 'status':
+                title = 'Заявки по статусу';
+                subtitle = `Статус: "${value}"`;
+                break;
+            case 'manager':
+                title = 'Заявки менеджера';
+                subtitle = `Менеджер: "${value}"`;
+                break;
+            case 'contragent':
+                title = 'Заявки контрагента';
+                subtitle = `Контрагент: "${value}"`;
+                break;
+            default:
+                subtitle = `Значение: "${value}"`;
+                break;
+        }
+        
+        modal.innerHTML = `
+            <div class="modal-dialog modal-md">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">📅 ${title}</h5>
+                        <button type="button" class="btn-close" id="closePeriodModal" aria-label="Close">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <p class="text-muted mb-3">${subtitle}</p>
+                            <p><strong>Выберите период для просмотра заявок:</strong></p>
+                        </div>
+                        
+                        <div class="d-grid gap-3">
+                            <button type="button" class="btn btn-primary btn-lg period-choice-btn" data-period="1">
+                                <i class="fa fa-calendar text-primary me-2"></i>
+                                <div class="text-start">
+                                    <div><strong>Период 1 (Синий)</strong></div>
+                                    <small class="text-muted">${this.state.dateRange1.start} - ${this.state.dateRange1.end}</small>
+                                </div>
+                            </button>
+                            
+                            <button type="button" class="btn btn-danger btn-lg period-choice-btn" data-period="2">
+                                <i class="fa fa-calendar text-danger me-2"></i>
+                                <div class="text-start">
+                                    <div><strong>Период 2 (Красный)</strong></div>
+                                    <small class="text-muted">${this.state.dateRange2.start} - ${this.state.dateRange2.end}</small>
+                                </div>
+                            </button>
+                            
+                            <button type="button" class="btn btn-outline-success btn-lg period-choice-btn" data-period="both">
+                                <i class="fa fa-layer-group me-2"></i>
+                                <div class="text-start">
+                                    <div><strong>Оба периода объединенно</strong></div>
+                                    <small class="text-muted">Все заявки из обоих периодов</small>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancelPeriodSelection">
+                            <i class="fa fa-times me-2"></i>Отмена
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Функция для закрытия модального окна (как в основном модальном окне)
+        const closeModal = () => {
+            console.log('🎯 closeModal вызван - закрываем модальное окно выбора периода');
+            modal.style.display = 'none';
+            
+            // Дополнительная проверка
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+                console.log('✅ Модальное окно успешно удалено из DOM');
+            } else {
+                console.warn('⚠️ Родительский элемент не найден');
+            }
+        };
+        
+        // Обработчики закрытия
+        modal.querySelector('#closePeriodModal').addEventListener('click', closeModal);
+        modal.querySelector('#cancelPeriodSelection').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Обработчик нажатия Escape
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        
+        // Обработчики выбора периода
+        modal.querySelectorAll('.period-choice-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const selectedPeriod = e.currentTarget.dataset.period;
+                console.log('🎯 Кликнули по кнопке выбора периода:', selectedPeriod);
+                
+                // Закрываем модальное окно точно так же, как основное модальное окно
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+                
+                console.log('🎯 Вызываем handlePeriodSelection...');
+                // Вызываем соответствующую функцию в зависимости от типа и выбранного периода
+                this.handlePeriodSelection(value, type, selectedPeriod);
+            });
+        });
+    }
+
+    handlePeriodSelection(value, type, period) {
+        if (period === 'both') {
+            // Объединенный режим - показываем заявки из обоих периодов
+            this.openZayavkiForBothPeriods(value, type);
+        } else {
+            const periodNumber = parseInt(period);
+            
+            // Универсальная система вызова функций по типу
+            const typeToFunctionMap = {
+                'status': 'openZayavkiByStatusForPeriod',
+                'manager': 'openZayavkiByManagerForPeriod', 
+                'contragent': 'openZayavkiByContragentForPeriod',
+                'agent': 'openZayavkiByAgentForPeriod',
+                'client': 'openZayavkiByClientForPeriod',
+                'subagent': 'openZayavkiBySubagentForPeriod',
+                'payer': 'openZayavkiByPayerForPeriod',
+                'manager_closed': 'openZayavkiByManagerClosedForPeriod',
+                'deal_type': 'openZayavkiByDealTypeForPeriod',
+                'cycle': 'openZayavkiByCycleForPeriod'
+            };
+            
+            const functionName = typeToFunctionMap[type];
+            if (functionName && this[functionName]) {
+                // Вызываем соответствующую функцию динамически
+                this[functionName](value, periodNumber);
+            } else {
+                console.warn('⚠️ Неизвестный тип для выбора периода:', type);
+                console.warn('⚠️ Доступные типы:', Object.keys(typeToFunctionMap));
+            }
+        }
+    }
+
+    async openZayavkiForBothPeriods(value, type) {
+        console.log('🎯 openZayavkiForBothPeriods:', { value, type });
+        
+        // Создаем объединенный фильтр по датам для обоих периодов
+        const combinedDateDomain = [
+            '|',
+            '&',
+            ['date_placement', '>=', this.state.dateRange1.start],
+            ['date_placement', '<=', this.state.dateRange1.end],
+            '&', 
+            ['date_placement', '>=', this.state.dateRange2.start],
+            ['date_placement', '<=', this.state.dateRange2.end]
+        ];
+        
+        let specificDomain = [];
+        let actionName = '';
+        
+        // Универсальная система для всех типов графиков
+        switch (type) {
+            case 'status':
+                const statusMapping = {
+                    '1. В работе': '1', '2. Выставлен инвойс': '2', '3. Зафиксирован курс': '3',
+                    '4. Подписано поручение': '4', '5. Готовим на оплату': '5', '6. Передано на оплату': '6',
+                    '7. Получили ПП': '7', '8. Получили Swift': '8', '9. Подписан Акт-отчет': '9',
+                    '10. Ждем рубли': '10', '11. Получили рубли': '11', '12. Ждем поступление валюты': '12',
+                    '13. Валюта у получателя': '13', '14. Запрошен Swift 103': '14', '15. Получен Swift 103': '15',
+                    '16. Запрошен Swift 199': '16', '17. Получен Swift 199': '17', '18. Ожидаем возврат': '18',
+                    '19. Оплачено повторно': '19', '20. Возврат': '20', '21. Заявка закрыта': '21',
+                    '22. Отменено клиентом': '22', '23. Согласован получатель (экспорт)': '23',
+                    '24. Получили валюту (экспорт)': '24', '25. Оплатили рубли (экспорт)': '25'
+                };
+                const statusValue = statusMapping[value] || value;
+                specificDomain = statusValue === false ? [['status', '=', false], ['status', '=', '']] : [['status', '=', statusValue]];
+                actionName = `Заявки со статусом: ${value} (Оба периода)`;
+                break;
+                
+            case 'contragent':
+                specificDomain = [['contragent_id.name', '=', value]];
+                actionName = `Заявки контрагента: ${value} (Оба периода)`;
+                break;
+                
+            case 'agent':
+                specificDomain = [['agent_id.name', '=', value]];
+                actionName = `Заявки агента: ${value} (Оба периода)`;
+                break;
+                
+            case 'client':
+                specificDomain = [['client_id.name', '=', value]];
+                actionName = `Заявки клиента: ${value} (Оба периода)`;
+                break;
+                
+            case 'subagent':
+                specificDomain = [['subagent_ids.name', '=', value]];
+                actionName = `Заявки субагента: ${value} (Оба периода)`;
+                break;
+                
+            case 'payer':
+                specificDomain = [['subagent_payer_ids.name', '=', value]];
+                actionName = `Заявки плательщика: ${value} (Оба периода)`;
+                break;
+                
+            case 'manager':
+                specificDomain = [['manager_ids.name', '=', value]];
+                actionName = `Заявки менеджера: ${value} (Оба периода)`;
+                break;
+                
+            case 'manager_closed':
+                specificDomain = [['manager_ids.name', '=', value], ['status', '=', '21']];
+                actionName = `Закрытые заявки менеджера: ${value} (Оба периода)`;
+                break;
+                
+            case 'deal_type':
+                const dealTypeValue = value === 'Импорт' ? 'import' : value === 'Экспорт' ? 'export' : value;
+                specificDomain = [['deal_type', '=', dealTypeValue]];
+                actionName = `Заявки типа: ${value} (Оба периода)`;
+                break;
+                
+            case 'cycle':
+                // TODO: добавить реальное поле для цикла сделки
+                specificDomain = []; // Пока нет реального фильтра
+                actionName = `Заявки с циклом: ${value} дней (Оба периода)`;
+                break;
+                
+            default:
+                console.warn('⚠️ Тип не поддерживается для объединенного режима:', type);
+                return;
+        }
+        
+        // Создаем action с объединенным доменом
         const action = {
             type: "ir.actions.act_window",
-            name: `Заявки с циклом сделки: ${cycleDays} дней`,
+            name: actionName,
+            res_model: "amanat.zayavka",
+            view_mode: "list,form",
+            views: [[false, "list"], [false, "form"]],
+            target: "main",
+            domain: [
+                '&',
+                ...specificDomain,
+                '&',
+                ['hide_in_dashboard', '!=', true],
+                '&',
+                ['status', '!=', '22'],
+                ...combinedDateDomain
+            ]
+        };
+        
+        this.actionService.doAction(action);
+    }
+
+    async openZayavkiByCycle(cycleDays) {
+        this.handleComparisonModeOrOpen(cycleDays, 'cycle', this.openZayavkiByCycleForPeriod);
+    }
+
+    async openZayavkiByCycleForPeriod(cycleDays, periodNumber = 1) {
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
+        
+        let actionName = `Заявки с циклом сделки: ${cycleDays} дней`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+
+        const action = {
+            type: "ir.actions.act_window",
+            name: actionName,
             res_model: "amanat.zayavka",
             view_mode: "list,form",
             views: [[false, "list"], [false, "form"]],
@@ -4170,22 +4657,81 @@ export class AmanatDashboard extends Component {
             domain: [
                 '&',
                 ['hide_in_dashboard', '!=', true],
-                ['status', '!=', 'cancel']
+                ['status', '!=', '22']  // '22' = "22. Отменено клиентом"
                 // TODO: добавить фильтр по реальному полю цикла сделки
                 // Пока открываем все заявки с базовыми фильтрами
             ]
         };
         
-        // Добавляем фильтр по дате если установлен диапазон
-        if (this.state.dateRange1.start && this.state.dateRange1.end) {
+        // Добавляем фильтр по дате для выбранного периода
+        if (dateRange.start && dateRange.end) {
             action.domain = [
                 '&',
                 ['hide_in_dashboard', '!=', true],
                 '&',
-                ['status', '!=', 'cancel'],
+                ['status', '!=', '22'],  // '22' = "22. Отменено клиентом"
                 '&',
-                ['date_placement', '>=', this.state.dateRange1.start],
-                ['date_placement', '<=', this.state.dateRange1.end]
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
+            ];
+        }
+        
+        this.actionService.doAction(action);
+    }
+
+    async openZayavkiByDealType(dealTypeName) {
+        this.handleComparisonModeOrOpen(dealTypeName, 'deal_type', this.openZayavkiByDealTypeForPeriod);
+    }
+
+    async openZayavkiByDealTypeForPeriod(dealTypeName, periodNumber = 1) {
+        const dateRange = periodNumber === 1 ? this.state.dateRange1 : this.state.dateRange2;
+        
+        // Мапим отображаемые названия к значениям базы данных
+        let dealTypeValue;
+        if (dealTypeName === 'Импорт') {
+            dealTypeValue = 'import';
+        } else if (dealTypeName === 'Экспорт') {
+            dealTypeValue = 'export';
+        } else {
+            // Если передано уже готовое значение из базы
+            dealTypeValue = dealTypeName;
+        }
+        
+        let actionName = `Заявки типа: ${dealTypeName}`;
+        if (periodNumber === 1 && this.state.dateRange2.start && this.state.dateRange2.end) {
+            actionName += ` (Период 1: ${dateRange.start} - ${dateRange.end})`;
+        } else if (periodNumber === 2) {
+            actionName += ` (Период 2: ${dateRange.start} - ${dateRange.end})`;
+        }
+
+        const action = {
+            type: "ir.actions.act_window",
+            name: actionName,
+            res_model: "amanat.zayavka",
+            view_mode: "list,form",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: [
+                '&',
+                ['deal_type', '=', dealTypeValue],
+                '&',
+                ['hide_in_dashboard', '!=', true],
+                ['status', '!=', '22']  // '22' = "22. Отменено клиентом"
+            ]
+        };
+        
+        // Добавляем фильтр по дате для выбранного периода
+        if (dateRange.start && dateRange.end) {
+            action.domain = [
+                '&',
+                ['deal_type', '=', dealTypeValue],
+                '&',
+                ['hide_in_dashboard', '!=', true],
+                '&',
+                ['status', '!=', '22'],  // '22' = "22. Отменено клиентом"
+                '&',
+                ['date_placement', '>=', dateRange.start],
+                ['date_placement', '<=', dateRange.end]
             ];
         }
         
@@ -4691,8 +5237,6 @@ export class AmanatDashboard extends Component {
                 
                 fullData = response;
                 
-
-                
                 // Конвертируем данные в нужный формат для графика
                 fullData = this.convertServerDataToChartData(fullData, chartType);
                 
@@ -5047,7 +5591,14 @@ export class AmanatDashboard extends Component {
                                     period2Label: fullData.period2Label || 'Период 2',
                                     title: chartTitle,
                                     showFullData: true, // Отключаем ограничение TOP-3
-                                    clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
+                                    clickable: this.shouldEnableClicksInModal(chartType),
+                                    onClick: (event, elements) => {
+                                        if (elements.length > 0) {
+                                            const index = elements[0].index;
+                                            const clickedValue = fullData.labels[index];
+                                            this.handleModalChartClick(chartType, clickedValue, index, fullData);
+                                        }
+                                    },
                                     backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
                                     borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
                                 });
@@ -5064,7 +5615,14 @@ export class AmanatDashboard extends Component {
                                     period2Label: fullData.period2Label || 'Период 2',
                                     title: chartTitle,
                                     showFullData: true,
-                                    clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
+                                    clickable: this.shouldEnableClicksInModal(chartType),
+                                    onClick: (event, elements) => {
+                                        if (elements.length > 0) {
+                                            const index = elements[0].index;
+                                            const clickedValue = fullData.labels[index];
+                                            this.handleModalChartClick(chartType, clickedValue, index, fullData);
+                                        }
+                                    },
                                     tension: 0.3,
                                     pointStyle: 'circle'
                                 });
@@ -5081,7 +5639,14 @@ export class AmanatDashboard extends Component {
                                     chartType: chartType, // Передаем тип графика для правильного определения цветов
                                     showFullData: true,
                                     isPercentage: (fullData.originalConfig && fullData.originalConfig.isPercentage) || false,
-                                    clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
+                                    clickable: this.shouldEnableClicksInModal(chartType),
+                                    onClick: (event, elements) => {
+                                        if (elements.length > 0) {
+                                            const index = elements[0].index;
+                                            const clickedValue = fullData.labels[index];
+                                            this.handleModalChartClick(chartType, clickedValue, index, fullData);
+                                        }
+                                    },
                                     backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
                                     borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
                                 });
@@ -5098,7 +5663,14 @@ export class AmanatDashboard extends Component {
                                     title: chartTitle,
                                     showFullData: true,
                                     isPercentage: (fullData.originalConfig && fullData.originalConfig.isPercentage) || false,
-                                    clickable: (fullData.originalConfig && fullData.originalConfig.clickable) || false,
+                                    clickable: this.shouldEnableClicksInModal(chartType),
+                                    onClick: (event, elements) => {
+                                        if (elements.length > 0) {
+                                            const index = elements[0].index;
+                                            const clickedValue = fullData.labels[index];
+                                            this.handleModalChartClick(chartType, clickedValue, index, fullData);
+                                        }
+                                    },
                                     backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
                                     borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)']
                                 });
@@ -5154,6 +5726,14 @@ export class AmanatDashboard extends Component {
                                 showFullData: true, // Отключаем ограничение TOP-3
                                 isPercentage: config.isPercentage || false, // Передаем флаг процентов
                                 clickable: this.shouldEnableClicksInModal(chartType), // Включаем клики для интерактивных графиков
+                                onClick: (event, elements) => {
+                                    if (elements.length > 0) {
+                                        const index = elements[0].index;
+                                        const clickedValue = fullData.labels[index];
+                                        // 🚀 Используем улучшенную систему обработки кликов
+                                        this.handleEnhancedModalChartClick(chartType, clickedValue, index, fullData, event);
+                                    }
+                                },
                                 originalData: fullData.originalData // Передаем оригинальные данные для кликов
                             };
                             
@@ -5295,7 +5875,14 @@ export class AmanatDashboard extends Component {
                                 data: fullData.data,
                                 title: chartTitle,
                                 showFullData: true,
-                                clickable: false
+                                clickable: this.shouldEnableClicksInModal(chartType),
+                                onClick: (event, elements) => {
+                                    if (elements.length > 0) {
+                                        const index = elements[0].index;
+                                        const clickedValue = fullData.labels[index];
+                                        this.handleModalChartClick(chartType, clickedValue, index, fullData);
+                                    }
+                                }
                             });
                             break;
                         default:
@@ -6203,17 +6790,272 @@ export class AmanatDashboard extends Component {
             'managers_efficiency',
             'zayavka_status_data',
             'contragents_by_zayavki',
-            'agents_by_zayavki', 
-            'clients_by_zayavki',
+            'contragent_avg_check',
+            'contragent_reward_percent',
+            'agents_by_zayavki',
+            'agent_avg_amount',
+            'clients_by_zayavki', 
+            'client_avg_amount',
             'subagents_by_zayavki',
             'payers_by_zayavki',
             'managers_by_zayavki',
-            'managers_closed_zayavki'
+            'managers_closed_zayavki',
+            'deal_types'
         ];
         
         return clickableChartTypes.includes(chartType);
     }
     
+    // ==================== 🚀 УЛУЧШЕННАЯ СИСТЕМА ОБРАБОТКИ КЛИКОВ ====================
+    
+    /**
+     * 🛡️ Дебаунсер для предотвращения множественных кликов
+     */
+    debounce(func, delay, key = 'default') {
+        const now = Date.now();
+        const timeSinceLastClick = now - (this.clickState.lastClickTime || 0);
+        
+        if (timeSinceLastClick < delay) {
+            console.log(`⏱️ Клик заблокирован дебаунсером (${delay - timeSinceLastClick}мс до следующего)`);
+            return false;
+        }
+        
+        this.clickState.lastClickTime = now;
+        return func();
+    }
+
+    /**
+     * 🎨 Добавляет visual feedback для клика
+     */
+    addClickFeedback(element, type = 'success') {
+        if (!element) return;
+        
+        // Добавляем CSS класс для анимации
+        element.classList.add('chart-click-feedback', `feedback-${type}`);
+        
+        // Убираем класс через короткое время
+        setTimeout(() => {
+            element.classList.remove('chart-click-feedback', `feedback-${type}`);
+        }, 200);
+    }
+
+    /**
+     * ⏳ Показывает индикатор загрузки
+     */
+    showClickLoader(element, message = 'Загружаем данные...') {
+        if (!element) return null;
+        
+        const loader = document.createElement('div');
+        loader.className = 'chart-click-loader';
+        loader.innerHTML = `
+            <div class="loader-content">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                <span class="ms-2">${message}</span>
+            </div>
+        `;
+        
+        element.style.position = 'relative';
+        element.appendChild(loader);
+        
+        return loader;
+    }
+
+    /**
+     * 🗑️ Скрывает индикатор загрузки
+     */
+    hideClickLoader(loader) {
+        if (loader && loader.parentNode) {
+            loader.parentNode.removeChild(loader);
+        }
+    }
+
+    /**
+     * 📊 Получает предпросмотр данных для tooltip
+     */
+    async getDataPreview(chartType, clickedValue) {
+        const cacheKey = `${chartType}_${clickedValue}`;
+        
+        // Проверяем кеш
+        if (this.clickState.previewCache.has(cacheKey)) {
+            return this.clickState.previewCache.get(cacheKey);
+        }
+        
+        try {
+            // Получаем количество записей без их загрузки
+            const domain = this.buildFilterDomain(chartType, clickedValue);
+            const count = await this.orm.searchCount('amanat.zayavka', domain);
+            
+            const preview = {
+                count: count,
+                type: this.getReadableType(chartType),
+                value: clickedValue,
+                isComparison: !!(this.state.dateRange2.start && this.state.dateRange2.end)
+            };
+            
+            // Кешируем на 5 минут
+            this.clickState.previewCache.set(cacheKey, preview);
+            setTimeout(() => this.clickState.previewCache.delete(cacheKey), 5 * 60 * 1000);
+            
+            return preview;
+        } catch (error) {
+            console.warn('⚠️ Ошибка получения предпросмотра:', error);
+            return { count: 0, type: chartType, value: clickedValue };
+        }
+    }
+
+    /**
+     * 🔧 Строит домен для фильтра (упрощенная версия)
+     */
+    buildFilterDomain(chartType, clickedValue) {
+        const baseDomain = [
+            ['hide_in_dashboard', '!=', true],
+            ['status', '!=', '22']
+        ];
+        
+        const typeToFieldMap = {
+            'zayavka_status_data': ['status_display', '='],
+            'contragents_by_zayavki': ['contragent_id.name', '='],
+            'agents_by_zayavki': ['agent_id.name', '='],
+            'clients_by_zayavki': ['client_id.name', '='],
+            'managers_by_zayavki': ['manager_ids.name', '='],
+            'managers_closed_zayavki': ['manager_ids.name', '='],
+            'subagents_by_zayavki': ['subagent_ids.name', '='],
+            'payers_by_zayavki': ['subagent_payer_ids.name', '='],
+            'deal_types': ['deal_type', '=']
+        };
+        
+        const fieldConfig = typeToFieldMap[chartType];
+        if (fieldConfig) {
+            baseDomain.push([fieldConfig[0], fieldConfig[1], clickedValue]);
+        }
+        
+        return baseDomain;
+    }
+
+    /**
+     * 📝 Получает читаемое название типа графика
+     */
+    getReadableType(chartType) {
+        const typeNames = {
+            'zayavka_status_data': 'Заявки по статусу',
+            'contragents_by_zayavki': 'Заявки контрагента',
+            'agents_by_zayavki': 'Заявки агента',
+            'clients_by_zayavki': 'Заявки клиента',
+            'managers_by_zayavki': 'Заявки менеджера',
+            'managers_closed_zayavki': 'Закрытые заявки менеджера',
+            'subagents_by_zayavki': 'Заявки субагента',
+            'payers_by_zayavki': 'Заявки плательщика',
+            'deal_types': 'Заявки по типу сделки'
+        };
+        return typeNames[chartType] || chartType;
+    }
+
+    /**
+     * 💡 Показывает tooltip с предпросмотром данных при hover (опциональная функция)
+     */
+    async showPreviewTooltip(event, chartType, clickedValue) {
+        try {
+            const preview = await this.getDataPreview(chartType, clickedValue);
+            
+            // Создаем tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'chart-preview-tooltip';
+            tooltip.innerHTML = `
+                <strong>${preview.value}</strong><br>
+                ${preview.type}: ${preview.count} записей
+                ${preview.isComparison ? '<br><small>🔄 Режим сравнения активен</small>' : ''}
+            `;
+            
+            // Позиционируем relative к курсору
+            tooltip.style.left = (event.clientX + 10) + 'px';
+            tooltip.style.top = (event.clientY - 30) + 'px';
+            
+            document.body.appendChild(tooltip);
+            
+            // Удаляем tooltip через 3 секунды
+            setTimeout(() => {
+                if (tooltip.parentNode) {
+                    tooltip.parentNode.removeChild(tooltip);
+                }
+            }, 3000);
+            
+        } catch (error) {
+            console.warn('⚠️ Ошибка показа tooltip:', error);
+        }
+    }
+
+    /**
+     * 🎯 УЛУЧШЕННЫЙ обработчик кликов в модальном окне
+     */
+    async handleEnhancedModalChartClick(chartType, clickedValue, index, fullData, clickEvent = null) {
+        console.log('🚀 Улучшенная обработка клика:', { chartType, clickedValue, index });
+        
+        // 1. Дебаунсинг
+        const success = this.debounce(() => {
+            return this.processChartClick(chartType, clickedValue, index, fullData, clickEvent);
+        }, this.clickState.debounceDelay);
+        
+        if (!success) return;
+        
+        return success;
+    }
+
+    /**
+     * ⚙️ Основная логика обработки клика
+     */
+    async processChartClick(chartType, clickedValue, index, fullData, clickEvent) {
+        const clickId = `${chartType}_${clickedValue}_${Date.now()}`;
+        
+        // Проверяем, не обрабатывается ли уже этот клик
+        if (this.clickState.processingElements.has(clickId)) {
+            console.log('⏳ Клик уже обрабатывается...');
+            return;
+        }
+        
+        this.clickState.processingElements.add(clickId);
+        this.clickState.isProcessing = true;
+        
+        let loader = null;
+        
+        try {
+            // 2. Visual feedback
+            if (clickEvent && clickEvent.target) {
+                this.addClickFeedback(clickEvent.target.closest('canvas'));
+                loader = this.showClickLoader(
+                    clickEvent.target.closest('.modal-body') || document.body,
+                    'Подготавливаем данные...'
+                );
+            }
+            
+            // 3. Получаем предпросмотр (опционально)
+            const preview = await this.getDataPreview(chartType, clickedValue);
+            console.log('📊 Предпросмотр данных:', preview);
+            
+            // 4. Небольшая задержка для лучшего UX (показать loader)
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // 5. Вызываем оригинальную логику
+            await this.handleModalChartClick(chartType, clickedValue, index, fullData);
+            
+            // 6. Уведомление об успехе (опционально)
+            console.log(`✅ Найдено ${preview.count} записей по запросу "${clickedValue}"`);
+            
+        } catch (error) {
+            console.error('❌ Ошибка при обработке клика:', error);
+            this.showErrorMessage(`Ошибка при загрузке данных: ${error.message}`);
+            
+            // Visual feedback для ошибки
+            if (clickEvent && clickEvent.target) {
+                this.addClickFeedback(clickEvent.target.closest('canvas'), 'error');
+            }
+        } finally {
+            // 7. Очистка
+            this.hideClickLoader(loader);
+            this.clickState.processingElements.delete(clickId);
+            this.clickState.isProcessing = false;
+        }
+    }
+
     handleModalChartClick(chartType, clickedValue, index, fullData) {
         /**
          * Обрабатывает клики в модальном окне в зависимости от типа графика
@@ -6231,14 +7073,18 @@ export class AmanatDashboard extends Component {
                     break;
                     
                 case 'contragents_by_zayavki':
+                case 'contragent_avg_check':
+                case 'contragent_reward_percent':
                     this.openZayavkiByContragent(clickedValue);
                     break;
                     
                 case 'agents_by_zayavki':
+                case 'agent_avg_amount':
                     this.openZayavkiByAgent(clickedValue);
                     break;
                     
                 case 'clients_by_zayavki':
+                case 'client_avg_amount':
                     this.openZayavkiByClient(clickedValue);
                     break;
                     
@@ -6256,6 +7102,10 @@ export class AmanatDashboard extends Component {
                     
                 case 'managers_closed_zayavki':
                     this.openZayavkiByManagerClosed(clickedValue);
+                    break;
+                    
+                case 'deal_types':
+                    this.openZayavkiByDealType(clickedValue);
                     break;
                     
                 default:

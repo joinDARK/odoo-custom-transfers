@@ -49,6 +49,7 @@ class ZayavkaMethods(models.Model):
                 _logger.info(f"Старое Правило платежки: {old_payment_rule.name}")
                 _logger.info(f"Старое Правило расхода: {old_expense_rule.name}")
                 _logger.info(f"Старое Правило себестоимости: {old_money_cost_rule.name}")
+                rec.swift_status = 'closed'
                 rec.status = '21'
                 rec.apply_rules_by_deal_closed_date()
         
@@ -108,6 +109,7 @@ class ZayavkaMethods(models.Model):
             for rec in self:
                 _logger.info(f"Изменено поле 'invoice_attachments' для заявки {rec.id}")
                 rec.invoice_date = fields.Date.today()
+                rec.swift_status = 'swift_received'
                 rec.status = '2'
             
         if 'payment_order_date_to_client_account' in vals:
@@ -242,14 +244,17 @@ class ZayavkaMethods(models.Model):
         if vals.get('swift_attachments'):
             if not vals.get('swift_received_date'):
                 res.swift_received_date = fields.Date.today()
+            res.swift_status = 'swift_received'
             res.status = '12'
 
         if vals.get('deal_closed_date'):
+            res.swift_status = 'closed'
             res.status = '21'
 
         if vals.get('report_link'):
             if not vals.get('deal_closed_date'):
                 res.deal_closed_date = fields.Date.today()
+            res.swift_status = 'closed'
             res.status = '21'
 
         if vals.get('zayavka_attachments'):
@@ -259,7 +264,9 @@ class ZayavkaMethods(models.Model):
             res.analyze_screen_sber_images_with_yandex_gpt()
 
         if vals.get('invoice_attachments'):
-            res.invoice_date = fields.Date.today()
+            if not vals.get('swift_received_date'):
+                res.swift_received_date = fields.Date.today()
+            res.swift_status = 'swift_received'
             res.status = '2'
         
         if vals.get('payment_order_date_to_client_account'):

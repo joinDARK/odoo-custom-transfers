@@ -1348,4 +1348,288 @@ canvas[id*="agents-by-zayavki"] {
     background-color: rgba(237, 137, 54, 0.2);
     border-color: #ed8936;
     color: #fbb040;
+}
+
+/* ==================== МОДАЛЬНОЕ ОКНО ВЫБОРА ПЕРИОДА ==================== */
+
+#periodSelectionModal .modal-dialog {
+    max-width: 500px;
+}
+
+#periodSelectionModal .modal-content {
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+#periodSelectionModal .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+    padding: 20px 24px;
+}
+
+#periodSelectionModal .modal-title {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+#periodSelectionModal .btn-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.8);
+    font-size: 1.2rem;
+    opacity: 0.8;
+}
+
+#periodSelectionModal .btn-close:hover {
+    color: white;
+    opacity: 1;
+}
+
+#periodSelectionModal .modal-body {
+    padding: 24px;
+}
+
+#periodSelectionModal .period-choice-btn {
+    border-radius: 12px;
+    padding: 16px 20px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#periodSelectionModal .period-choice-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+#periodSelectionModal .period-choice-btn.btn-primary {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    border-color: #4299e1;
+}
+
+#periodSelectionModal .period-choice-btn.btn-primary:hover {
+    background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+    border-color: #3182ce;
+}
+
+#periodSelectionModal .period-choice-btn.btn-danger {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    border-color: #f56565;
+}
+
+#periodSelectionModal .period-choice-btn.btn-danger:hover {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+    border-color: #e53e3e;
+}
+
+#periodSelectionModal .period-choice-btn.btn-outline-success {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    border-color: #48bb78;
+    color: white;
+}
+
+#periodSelectionModal .period-choice-btn.btn-outline-success:hover {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    border-color: #38a169;
+    color: white;
+}
+
+#periodSelectionModal .period-choice-btn i {
+    font-size: 1.5rem;
+    min-width: 24px;
+}
+
+#periodSelectionModal .period-choice-btn small {
+    opacity: 0.9;
+}
+
+#periodSelectionModal .modal-footer {
+    border-top: 1px solid #e2e8f0;
+    padding: 16px 24px;
+}
+
+/* Темная тема для модального окна выбора периода */
+.o_dark_mode #periodSelectionModal .modal-content {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+
+.o_dark_mode #periodSelectionModal .modal-header {
+    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+    border-color: #4a5568;
+}
+
+.o_dark_mode #periodSelectionModal .modal-footer {
+    border-color: #4a5568;
+    background-color: #2d3748;
+}
+
+.o_dark_mode #periodSelectionModal .text-muted {
+    color: #a0aec0 !important;
+}
+
+/* Анимации для модального окна */
+#periodSelectionModal.show .modal-dialog {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    #periodSelectionModal .modal-dialog {
+        margin: 10px;
+        max-width: none;
+    }
+    
+    #periodSelectionModal .period-choice-btn {
+        padding: 14px 16px;
+        font-size: 0.9rem;
+    }
+    
+    #periodSelectionModal .period-choice-btn i {
+        font-size: 1.3rem;
+    }
+}
+
+/* ==================== 🚀 УЛУЧШЕННАЯ СИСТЕМА ОБРАБОТКИ КЛИКОВ ==================== */
+
+/* 🎨 Visual feedback для кликов */
+.chart-click-feedback {
+    animation: clickPulse 0.2s ease-out;
+}
+
+.feedback-success {
+    filter: brightness(1.1) saturate(1.2);
+}
+
+.feedback-error {
+    filter: brightness(0.8) hue-rotate(15deg);
+}
+
+@keyframes clickPulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ⏳ Индикатор загрузки при клике */
+.chart-click-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+    animation: fadeInLoader 0.2s ease-in;
+}
+
+.chart-click-loader .loader-content {
+    background: white;
+    padding: 16px 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+@keyframes fadeInLoader {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 🎯 Hover эффекты для кликабельных элементов */
+canvas:hover {
+    transition: filter 0.2s ease;
+}
+
+.chart-card:hover canvas {
+    filter: brightness(1.05);
+    cursor: pointer;
+}
+
+/* 📊 Tooltip для предпросмотра данных */
+.chart-preview-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 1001;
+    pointer-events: none;
+    white-space: nowrap;
+    animation: fadeInTooltip 0.2s ease-in;
+}
+
+@keyframes fadeInTooltip {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 🌙 Темная тема поддержка */
+.o_dark_mode .chart-click-loader .loader-content {
+    background: #2d2d2d;
+    color: #e5e5e5;
+}
+
+.o_dark_mode .chart-preview-tooltip {
+    background: rgba(45, 45, 45, 0.95);
+    color: #e5e5e5;
+}
+
+/* 📱 Мобильная адаптация */
+@media (max-width: 768px) {
+    .chart-click-loader .loader-content {
+        padding: 12px 16px;
+        font-size: 12px;
+    }
+    
+    .chart-preview-tooltip {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
 } 
