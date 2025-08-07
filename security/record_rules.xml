@@ -45,5 +45,53 @@
             <field name="domain_force">[]</field>
             <field name="groups" eval="[(4, ref('amanat.group_amanat_senior_manager'))]"/>
         </record>
+
+        <!-- Правило для пользователей с доступом только к транзитным переводам -->
+        <record id="amanat_transfer_transit_only_rule" model="ir.rule">
+            <field name="name">Доступ только к транзитным переводам</field>
+            <field name="model_id" ref="model_amanat_transfer"/>
+            <field name="domain_force">[('is_transit', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_transit_only'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <!-- Разрешить создание переводов для роли "Транзитные переводы" -->
+        <record id="amanat_transfer_transit_only_create_rule" model="ir.rule">
+            <field name="name">Создание переводов для транзитной роли</field>
+            <field name="model_id" ref="model_amanat_transfer"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_transit_only'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <!-- Правило для ордеров транзитных переводов -->
+        <record id="amanat_order_transit_only_rule" model="ir.rule">
+            <field name="name">Доступ только к ордерам транзитных переводов</field>
+            <field name="model_id" ref="model_amanat_order"/>
+            <field name="domain_force">[('transfer_id.is_transit', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_transit_only'))]"/>
+        </record>
+
+        <!-- Правило для денежных контейнеров транзитных переводов -->
+        <record id="amanat_money_transit_only_rule" model="ir.rule">
+            <field name="name">Доступ только к денежным контейнерам транзитных переводов</field>
+            <field name="model_id" ref="model_amanat_money"/>
+            <field name="domain_force">[('order_id.transfer_id.is_transit', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_transit_only'))]"/>
+        </record>
+
+        <!-- Правило для сверок транзитных переводов -->
+        <record id="amanat_reconciliation_transit_only_rule" model="ir.rule">
+            <field name="name">Доступ только к сверкам транзитных переводов</field>
+            <field name="model_id" ref="model_amanat_reconciliation"/>
+            <field name="domain_force">[('order_id.transfer_id.is_transit', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_transit_only'))]"/>
+        </record>
     </data>
 </odoo>

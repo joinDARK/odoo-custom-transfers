@@ -63,6 +63,7 @@ export class AppsBar extends Component {
             {
                 name: "Прайс листы",
                 items: [
+                    { name: "Прайс лист роялти", action: "amanat.price_list_royalty_action" },
                     { name: "Прайс лист партнеры", action: "amanat.price_list_partners_action" },
                     { name: "Прайс лист Плательщика", action: "amanat.price_list_payer_profit_action" },
                     { name: "Прайс лист Плательщика За проведение", action: "amanat.price_list_payer_carrying_out_action" },
@@ -231,6 +232,53 @@ export class AppsBar extends Component {
     }
 
     getFilteredMenuData() {
+        // Проверка для пользователей с ролью "Транзитные переводы"
+        if (this.state.userGroups.is_transit_only) {
+            // Если пользователь также является менеджером, показываем расширенное меню
+            if (this.state.userGroups.is_manager) {
+                return [
+                    {
+                        name: "Валютные операции",
+                        items: [
+                            { name: "Перевод", action: "amanat.transfer_action" },
+                        ],
+                    },
+                    {
+                        name: "Справочники",
+                        items: [
+                            { name: "Контрагенты", action: "amanat.contragent_action" },
+                            { name: "Страны", action: "amanat.country_action" },
+                            { name: "Плательщики", action: "amanat.payer_action" },
+                            { name: "Менеджеры", action: "amanat.manager_action" },
+                        ],
+                    },
+                    {
+                        name: "Заявки",
+                        action: "amanat.zayavka_action",
+                        actionMethod: "openZayvaki",
+                    },
+                    {
+                        name: "Калькуляторы",
+                        items: [
+                            { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                            { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
+                            { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
+                        ],
+                    },
+                ];
+            } else {
+                // Только роль "Транзитные переводы" - показываем минимальное меню
+                return [
+                    {
+                        name: "Валютные операции",
+                        items: [
+                            { name: "Перевод", action: "amanat.transfer_action" },
+                        ],
+                    },
+                ];
+            }
+        }
+
         if (this.state.userGroups.is_director) {
             return [
                 {
@@ -469,7 +517,7 @@ export class AppsBar extends Component {
             ];
         }
         
-        if (this.state.userGroups.is_manager && !this.state.userGroups.is_senior_manager && !this.state.userGroups.is_admin) {
+        if (this.state.userGroups.is_manager && !this.state.userGroups.is_senior_manager && !this.state.userGroups.is_admin && !this.state.userGroups.is_transit_only) {
             return [
                 {
                     name: "Справочники",
@@ -608,5 +656,4 @@ export class AppsBar extends Component {
         // Сохраняем новую ширину
         this.saveSidebarWidth(this.state.sidebarWidth);
     }
-
 }

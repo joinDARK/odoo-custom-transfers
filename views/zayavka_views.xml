@@ -497,10 +497,12 @@
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <field name="zayavka_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                    <field name="zayavka_attachments" 
+                           widget="amanat_attachment"
+                           options="{'accepted_file_extensions': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt'}"/>
                   </group>
                   <group>
-                    <field name="screen_sber_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                    <field name="screen_sber_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': True}"/>
                   </group>
                 </div>
               </group>
@@ -508,17 +510,17 @@
               <group string="Поручение Вход">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_assignment_start" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_start_attachments"/>
+                    <button name="action_detect_signatures_assignment_start" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_start_attachments or assignment_start_signature_state != 'draft'"/>
                     <button name="action_sign_assignment_start" type="object" string="Подписать" class="btn-primary" invisible="assignment_start_signature_state != 'ready'"/>
                     <button name="action_reset_assignment_start_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_start_attachments and not signed_assignment_start_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="assignment_start_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="assignment_start_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_assignment_start_attachments" readonly="1" invisible="assignment_start_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_assignment_start_attachments" readonly="1" invisible="assignment_start_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
                     <field name="assignment_start_signature_state"/>
@@ -540,17 +542,17 @@
               <group string="Заявка Выход">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_zayavka_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not zayavka_end_attachments"/>
+                    <button name="action_detect_signatures_zayavka_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not zayavka_end_attachments or zayavka_end_signature_state != 'draft'"/>
                     <button name="action_sign_zayavka_end" type="object" string="Подписать" class="btn-primary" invisible="zayavka_end_signature_state != 'ready'"/>
                     <button name="action_reset_zayavka_end_document" type="object" string="Сбросить" class="btn-warning" invisible="not zayavka_end_attachments and not signed_zayavka_end_attachments" confirm="Вы уверены, что хотите сбросить все данные заявки? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="zayavka_end_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': True}"/>
+                        <field name="zayavka_end_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': True}"/>
                       </group>
                       <group>
-                        <field name="signed_zayavka_end_attachments" invisible="zayavka_end_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_zayavka_end_attachments" invisible="zayavka_end_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
                     <field name="zayavka_end_signature_state"/>
@@ -572,17 +574,17 @@
               <group string="Поручение Выход">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_assignment_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_end_attachments"/>
+                    <button name="action_detect_signatures_assignment_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_end_attachments or assignment_end_signature_state != 'draft'"/>
                     <button name="action_sign_assignment_end" type="object" string="Подписать" class="btn-primary" invisible="assignment_end_signature_state != 'ready'"/>
                     <button name="action_reset_assignment_end_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_end_attachments and not signed_assignment_end_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="assignment_end_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="assignment_end_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_assignment_end_attachments" readonly="1" invisible="assignment_end_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_assignment_end_attachments" readonly="1" invisible="assignment_end_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
                     <field name="assignment_end_signature_state"/>
@@ -604,17 +606,17 @@
               <group string="Инвойс">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_invoice" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not invoice_attachments"/>
+                    <button name="action_detect_signatures_invoice" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not invoice_attachments or invoice_signature_state != 'draft'"/>
                     <button name="action_sign_invoice" type="object" string="Подписать" class="btn-primary" invisible="invoice_signature_state != 'ready'"/>
                     <button name="action_reset_invoice_document" type="object" string="Сбросить" class="btn-warning" invisible="not invoice_attachments and not signed_invoice_attachments" confirm="Вы уверены, что хотите сбросить все данные инвойса? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="invoice_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="invoice_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_invoice_attachments" readonly="1" invisible="invoice_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_invoice_attachments" readonly="1" invisible="invoice_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
                     <field name="invoice_signature_state"/>
@@ -636,17 +638,17 @@
               <group string="Поручение">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_assignment" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_attachments"/>
+                    <button name="action_detect_signatures_assignment" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_attachments or assignment_signature_state != 'draft'"/>
                     <button name="action_sign_assignment" type="object" string="Подписать" class="btn-primary" invisible="assignment_signature_state != 'ready'"/>
                     <button name="action_reset_assignment_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_attachments and not signed_assignment_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="assignment_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="assignment_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_assignment_attachments" readonly="1" invisible="assignment_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_assignment_attachments" readonly="1" invisible="assignment_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
                     <field name="assignment_signature_state"/>
@@ -668,17 +670,17 @@
               <group string="SWIFT">
                 <div>
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_swift" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not swift_attachments"/>
+                    <button name="action_detect_signatures_swift" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not swift_attachments or swift_signature_state != 'draft'"/>
                     <button name="action_sign_swift" type="object" string="Подписать" class="btn-primary" invisible="swift_signature_state != 'ready'"/>
                     <button name="action_reset_swift_document" type="object" string="Сбросить" class="btn-warning" invisible="not swift_attachments and not signed_swift_attachments" confirm="Вы уверены, что хотите сбросить все данные SWIFT? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="swift_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="swift_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_swift_attachments" readonly="1" invisible="swift_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_swift_attachments" readonly="1" invisible="swift_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
                     <field name="swift_signature_state"/>
@@ -700,17 +702,17 @@
               <group string="SWIFT 103">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_swift103" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not swift103_attachments"/>
+                    <button name="action_detect_signatures_swift103" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not swift103_attachments or swift103_signature_state != 'draft'"/>
                     <button name="action_sign_swift103" type="object" string="Подписать" class="btn-primary" invisible="swift103_signature_state != 'ready'"/>
                     <button name="action_reset_swift103_document" type="object" string="Сбросить" class="btn-warning" invisible="not swift103_attachments and not signed_swift103_attachments" confirm="Вы уверены, что хотите сбросить все данные SWIFT 103? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="swift103_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="swift103_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_swift103_attachments" readonly="1" invisible="swift103_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_swift103_attachments" readonly="1" invisible="swift103_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
                     <field name="swift103_signature_state"/>
@@ -732,17 +734,17 @@
               <group string="SWIFT 199">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_swift199" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not swift199_attachments"/>
+                    <button name="action_detect_signatures_swift199" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not swift199_attachments or swift199_signature_state != 'draft'"/>
                     <button name="action_sign_swift199" type="object" string="Подписать" class="btn-primary" invisible="swift199_signature_state != 'ready'"/>
                     <button name="action_reset_swift199_document" type="object" string="Сбросить" class="btn-warning" invisible="not swift199_attachments and not signed_swift199_attachments" confirm="Вы уверены, что хотите сбросить все данные SWIFT 199? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="swift199_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="swift199_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_swift199_attachments" readonly="1" invisible="swift199_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_swift199_attachments" readonly="1" invisible="swift199_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
                     <field name="swift199_signature_state"/>
@@ -764,17 +766,17 @@
               <group string="Акт-отчет">
                 <div class="o-form-group-3">
                   <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_report" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not report_attachments"/>
+                    <button name="action_detect_signatures_report" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not report_attachments or report_signature_state != 'draft'"/>
                     <button name="action_sign_report" type="object" string="Подписать" class="btn-primary" invisible="report_signature_state != 'ready'"/>
                     <button name="action_reset_report_document" type="object" string="Сбросить" class="btn-warning" invisible="not report_attachments and not signed_report_attachments" confirm="Вы уверены, что хотите сбросить все данные акт-отчета? Это действие нельзя отменить."/>
                   </div>
                   <group>
                     <div class="o-form-group-2">
                       <group>
-                        <field name="report_attachments" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="report_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                       <group>
-                        <field name="signed_report_attachments" readonly="1" invisible="report_signature_state != 'signed'" widget="many2many_binary" options="{'no_create': False, 'no_open': False}"/>
+                        <field name="signed_report_attachments" readonly="1" invisible="report_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
                       </group>
                     </div>
                     <field name="report_signature_state"/>
@@ -892,7 +894,7 @@
                         <field name="return_commission" widget="percentage"/>
                       </group>
                       <group>
-                        <field name="payers_for_return" widget="many2many_tags" domain="[('id', 'in', possible_payers)]"/>
+                        <field name="payers_for_return" widget="many2many_tags"/>
                       </group>
                     </div>
                   </group>
@@ -997,9 +999,12 @@
                 </div>
               </group>
               <group string="Возврат на предоплату следующего заказа" invisible="problem_stage != '5'">
-                <div>
+                <div class="o-form-group-2">
                   <group>
-                    <field name="return_amount"/>
+                    <field name="return_amount_prepayment_of_next"/>
+                  </group>
+                  <group>
+                    <field name="payment_order_date_to_prepayment_of_next"/>
                   </group>
                 </div>
               </group>

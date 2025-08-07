@@ -60,4 +60,11 @@
         <field name="category_id" ref="base.module_category_amanat"/>
         <field name="comment">Доступ только к выпискам, выпискам разнос и заявкам</field>
     </record>
+
+    <!-- Группа для пользователей с доступом только к транзитным переводам -->
+    <record id="group_amanat_transit_only" model="res.groups">
+        <field name="name">Транзитные переводы</field>
+        <field name="category_id" ref="base.module_category_amanat"/>
+        <field name="comment">Доступ только к переводам с галочкой 'Транзит'</field>
+    </record>
 </odoo>

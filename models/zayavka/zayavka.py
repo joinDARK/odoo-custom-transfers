@@ -2183,6 +2183,18 @@ class Zayavka(models.Model, AmanatBaseModel):
         tracking=True,
     )
 
+    # Поля для возврата на предоплату следующего заказа (problem_stage == '5')
+    return_amount_prepayment_of_next = fields.Float(
+        string='Сумма на возврат',
+        digits=(16, 2),
+        tracking=True,
+    )
+
+    payment_order_date_to_prepayment_of_next = fields.Date(
+        string='Дата возврата на расчетный счет клиента',
+        tracking=True,
+    )
+
     prefix = fields.Boolean(string='Перефикс', default=False)
     hidden_hadge = fields.Boolean(string='Не отображать хэдж', default=False)
 

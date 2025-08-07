@@ -1,0 +1,13 @@
+.amanat-dnd { 
+    transition: all .2s ease; 
+    cursor: pointer; 
+}
+.amanat-dnd.drag-over { 
+    background-color: #e3f2fd; 
+    border-color: #2196f3 !important; 
+    transform: scale(1.02);
+}
+.amanat-dnd:hover:not(.drag-over) { 
+    background-color: #f8f9fa; 
+    border-color: #6c757d; 
+}

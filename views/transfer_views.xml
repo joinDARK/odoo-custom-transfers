@@ -26,6 +26,7 @@
                 <field width="200" name="receiver_id" />
                 <field width="200" name="order_ids" widget="many2many_tags" />
                 <field width="200" name="is_complex" />
+                <field width="200" name="is_transit" />
                 <field width="200" name="royalti_Transfer"/>
                 <field width="200" name="royalty_recipient_1" />
                 <field width="200" name="royalty_recipient_2" />
@@ -112,6 +113,9 @@
                             </header>
                             <group>
                                 <field name="is_complex" />
+                            </group>
+                            <group>
+                                <field name="is_transit" />
                             </group>
                             <group>
                                 <div class="o-form-group-2">

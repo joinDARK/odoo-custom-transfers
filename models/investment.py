@@ -1126,3 +1126,59 @@ class Investment(models.Model, AmanatBaseModel):
             'target': 'current',
             'context': dict(self.env.context),
         }
+
+    @api.onchange('sender', 'receiver', 'date')
+    def _onchange_partners_auto_royalty(self):
+        """Автоматическое заполнение роялти на основе прайс-листа роялти для инвестиций"""
+        if not self.sender or not self.receiver or not self.date:
+            return
+
+        # Ищем подходящие записи в прайс-листе роялти
+        domain = [
+            ('operation_type', '=', 'investment'),  # Тип операции = Инвестиции
+            '|', '|',  # Три условия через ИЛИ
+            # 1. Тип участника = "Отправитель" И контрагент = отправитель инвестиций
+            '&', ('participant_type', '=', 'sender'), ('contragent_id', '=', self.sender.id),
+            # 2. Тип участника = "Получатель" И контрагент = получатель инвестиций  
+            '&', ('participant_type', '=', 'recipient'), ('contragent_id', '=', self.receiver.id),
+            # 3. Тип участника = "Отправитель или получатель" И контрагент = любой из участников
+            '&', ('participant_type', '=', 'both'), 
+            '|', ('contragent_id', '=', self.sender.id), ('contragent_id', '=', self.receiver.id)
+        ]
+
+        # Добавляем фильтрацию по датам (если указаны)
+        date_domain = []
+        date_domain.append('|')
+        date_domain.append('&')
+        date_domain.append('&')
+        date_domain.append(('date_from', '!=', False))
+        date_domain.append(('date_to', '!=', False))
+        date_domain.append('&')
+        date_domain.append(('date_from', '<=', self.date))
+        date_domain.append(('date_to', '>=', self.date))
+        date_domain.append('|')
+        date_domain.append(('date_from', '=', False))
+        date_domain.append(('date_to', '=', False))
+
+        full_domain = domain + date_domain
+
+        royalty_records = self.env['amanat.price_list_royalty'].search(full_domain)
+
+        # Логирование для отладки
+        _logger.info(f"Автоматизация роялти для инвестиций: отправитель={self.sender.name}, получатель={self.receiver.name}, дата={self.date}")
+        _logger.info(f"Найдено записей в прайс-листе роялти: {len(royalty_records)}")
+        
+        if royalty_records:
+            # Очищаем старые значения роялти (инвестиции поддерживают только 3 роялти)
+            for i in range(1, 4):
+                setattr(self, f'royalty_recipient_{i}', False)
+
+            # Заполняем новые значения роялти (максимум 3)
+            for index, record in enumerate(royalty_records[:3], 1):
+                setattr(self, f'royalty_recipient_{index}', record.royalty_recipient_id.id)
+                _logger.info(f"Инвестиции роялти {index}: получатель {record.royalty_recipient_id.name} (тип участника: {record.participant_type})")
+        else:
+            # Очищаем поля роялти если ничего не найдено
+            for i in range(1, 4):
+                setattr(self, f'royalty_recipient_{i}', False)
+            _logger.info("Подходящие записи роялти для инвестиций не найдены, поля очищены")

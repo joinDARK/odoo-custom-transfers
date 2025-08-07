@@ -569,6 +569,44 @@ class AmanatZayavkaDocuments(models.Model):
         # Меняем статус на готов к подписанию
         setattr(self, state_field, 'ready')
         
+        # Проверяем возможность автоматического подписания
+        if found_positions and self._check_if_all_signatures_are_auto_signable(found_positions):
+            _logger.info(f"Все найденные подписи в {document_type} подходят для автоматического подписания")
+            
+            # Словарь соответствий типов документов и их полей
+            document_fields_mapping = {
+                'zayavka': ('zayavka_attachments', 'signed_zayavka_attachments', 'zayavka_signature_state'),
+                'invoice': ('invoice_attachments', 'signed_invoice_attachments', 'invoice_signature_state'),
+                'assignment': ('assignment_attachments', 'signed_assignment_attachments', 'assignment_signature_state'),
+                'swift': ('swift_attachments', 'signed_swift_attachments', 'swift_signature_state'),
+                'swift103': ('swift103_attachments', 'signed_swift103_attachments', 'swift103_signature_state'),
+                'swift199': ('swift199_attachments', 'signed_swift199_attachments', 'swift199_signature_state'),
+                'report': ('report_attachments', 'signed_report_attachments', 'report_signature_state'),
+                'zayavka_start': ('zayavka_start_attachments', 'signed_zayavka_start_attachments', 'zayavka_start_signature_state'),
+                'zayavka_end': ('zayavka_end_attachments', 'signed_zayavka_end_attachments', 'zayavka_end_signature_state'),
+                'assignment_start': ('assignment_start_attachments', 'signed_assignment_start_attachments', 'assignment_start_signature_state'),
+                'assignment_end': ('assignment_end_attachments', 'signed_assignment_end_attachments', 'assignment_end_signature_state'),
+                'screen_sber': ('screen_sber_attachments', 'signed_screen_sber_attachments', 'screen_sber_signature_state'),
+            }
+            
+            if document_type in document_fields_mapping:
+                source_field, signed_field, state_field_for_sign = document_fields_mapping[document_type]
+                source_attachments = getattr(self, source_field)
+                
+                # Пытаемся автоматически подписать документ
+                if self._auto_sign_document_if_eligible(document_type, source_attachments, signed_field, state_field_for_sign):
+                    _logger.info(f"Документ {document_type} был автоматически подписан")
+                    return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': 'Автоматическое подписание',
+                            'message': f'Документ {document_type} был автоматически подписан, так как все найденные подписи относятся к ТДК/СТЕЛЛАР',
+                            'type': 'success',
+                            'sticky': True,
+                        }
+                    }
+        
         return {
             'type': 'ir.actions.client',
             'tag': 'reload',
@@ -757,6 +795,104 @@ class AmanatZayavkaDocuments(models.Model):
             _logger.error(f"Ошибка при конвертации DOCX в PDF: {str(e)}")
             raise RuntimeError(f"Не удалось конвертировать DOCX в PDF: {str(e)}")
 
+    def _extract_organization_from_signature_text(self, text):
+        """Извлекает название организации из текста подписи/печати"""
+        text_lower = text.lower().strip()
+        
+        # Паттерны для поиска организаций
+        if 'тдк' in text_lower:
+            return 'ТДК'
+        elif 'стеллар' in text_lower:
+            return 'СТЕЛЛАР'
+        
+        return None
+
+    def _check_if_all_signatures_are_auto_signable(self, found_positions):
+        """Проверяет, что все найденные подписи относятся к типам, которые можно автоматически подписать"""
+        if not found_positions:
+            return False
+        
+        # Разрешенные типы подписей для автоматического подписания
+        allowed_signature_names = [
+            'Подпись ТДК',
+            'Печать ТДК', 
+            'Подпись СТЕЛЛАР',
+            'Печать СТЕЛЛАР'
+        ]
+        
+        # Проверяем каждую найденную позицию
+        for position in found_positions:
+            position_name = position.get('name', '')
+            if position_name not in allowed_signature_names:
+                _logger.info(f"Найдена подпись '{position_name}', которая не входит в список для автоматического подписания")
+                return False
+        
+        _logger.info(f"Все найденные подписи ({len(found_positions)}) относятся к разрешенным типам для автоматического подписания")
+        return True
+
+    def _auto_sign_document_if_eligible(self, document_type, source_attachments, signed_attachments_field, state_field):
+        """Автоматически подписывает документ, если все назначения подписей заполнены"""
+        try:
+            # Получаем все назначения для данного типа документа
+            assignments = self.env['amanat.zayavka.signature.assignment'].search([
+                ('zayavka_id', '=', self.id),
+                ('document_type', '=', document_type)
+            ])
+            
+            if not assignments:
+                _logger.info(f"Нет назначений подписей для автоматического подписания документа {document_type}")
+                return False
+            
+            # Проверяем, что все назначения имеют подписи
+            missing_signatures = assignments.filtered(lambda x: not x.signature_id)
+            if missing_signatures:
+                _logger.info(f"Не все подписи назначены для автоматического подписания документа {document_type}: {len(missing_signatures)} из {len(assignments)}")
+                return False
+            
+            _logger.info(f"Все подписи назначены ({len(assignments)}), начинаем автоматическое подписание документа {document_type}")
+            
+            # Подписываем документ
+            self._sign_document(document_type, source_attachments, signed_attachments_field, state_field)
+            _logger.info(f"Документ {document_type} успешно автоматически подписан")
+            return True
+            
+        except Exception as e:
+            _logger.error(f"Ошибка при автоматическом подписании документа {document_type}: {str(e)}")
+            return False
+
+    def _find_signature_in_library_by_name(self, position_name, signature_type):
+        """Находит подпись в библиотеке по названию позиции и типу"""
+        if not position_name:
+            return None
+            
+        # Извлекаем организацию из названия позиции и определяем варианты поиска
+        search_terms = []
+        if 'ТДК' in position_name:
+            search_terms = ['ТДК', 'TDK']  # Ищем как русский, так и английский вариант
+        elif 'СТЕЛЛАР' in position_name:
+            search_terms = ['СТЕЛЛАР', 'STELLAR']  # Ищем как русский, так и английский вариант
+        
+        if not search_terms:
+            return None
+            
+        # Ищем в библиотеке подписей по каждому варианту названия
+        for search_term in search_terms:
+            _logger.info(f"Ищем в библиотеке: name ilike '{search_term}', signature_type='{signature_type}'")
+            signature_library = self.env['signature.library'].search([
+                ('name', 'ilike', search_term),
+                ('signature_type', '=', signature_type),
+                ('active', '=', True)
+            ], limit=1)
+            
+            if signature_library:
+                _logger.info(f"Найдена подпись в библиотеке: '{signature_library.name}' для позиции '{position_name}'")
+                return signature_library
+            else:
+                _logger.info(f"Не найдено подписей с термином '{search_term}' и типом '{signature_type}'")
+        
+        _logger.warning(f"Не найдено подходящих подписей для позиции '{position_name}' с типом '{signature_type}'")
+        return None
+
     def _auto_find_signatures(self, document_type, pdf_file):
         """Автоматический поиск белого текста 'Подпись' и 'Печать' в PDF (PDF может быть сконвертирован из DOCX)"""
         if not PYMUPDF_AVAILABLE:
@@ -796,21 +932,41 @@ class AmanatZayavkaDocuments(models.Model):
                                 # Белый цвет: RGB близко к (1.0, 1.0, 1.0)
                                 is_white = all(c > 0.9 for c in color_rgb)
                                 
-                                if is_white and text.lower() in ['подпись', 'печать']:
+                                # Расширенная проверка на подписи и печати
+                                text_lower = text.lower().strip()
+                                is_signature = False
+                                is_stamp = False
+                                organization = None
+                                
+                                # Проверяем составные фразы
+                                if 'подпись' in text_lower:
+                                    is_signature = True
+                                    organization = self._extract_organization_from_signature_text(text)
+                                elif 'печать' in text_lower:
+                                    is_stamp = True  
+                                    organization = self._extract_organization_from_signature_text(text)
+                                
+                                if is_white and (is_signature or is_stamp):
                                     bbox = span["bbox"]
                                     
                                     # Размеры области найденного текста
                                     text_width = bbox[2] - bbox[0]
                                     text_height = bbox[3] - bbox[1]
                                     
-                                    if text.lower() == 'подпись':
+                                    if is_signature:
                                         signature_count += 1
                                         sig_type = 'signature'
-                                        name = f'Подпись {signature_count}'
-                                    else:  # 'печать'
+                                        if organization:
+                                            name = f'Подпись {organization}'
+                                        else:
+                                            name = f'Подпись {signature_count}'
+                                    else:  # печать
                                         stamp_count += 1
                                         sig_type = 'stamp'
-                                        name = f'Печать {stamp_count}'
+                                        if organization:
+                                            name = f'Печать {organization}'
+                                        else:
+                                            name = f'Печать {stamp_count}'
                                     
                                     found_signatures.append({
                                         'name': name,
@@ -844,7 +1000,7 @@ class AmanatZayavkaDocuments(models.Model):
             raise UserError(f'Ошибка при поиске позиций белых подписей в {document_type}: {str(e)}')
 
     def _create_signature_assignments(self, document_type, found_positions):
-        """Создаем назначения подписей на основе найденных позиций"""
+        """Создаем назначения подписей на основе найденных позиций с автоматическим назначением"""
         position_model = self.env['amanat.zayavka.signature.position']
         assignment_model = self.env['amanat.zayavka.signature.assignment']
         
@@ -856,12 +1012,28 @@ class AmanatZayavkaDocuments(models.Model):
         
         # Создаем новые назначения для каждой позиции
         for position in positions:
-            assignment_model.create({
+            # Пытаемся автоматически найти подпись в библиотеке по названию позиции
+            auto_signature = self._find_signature_in_library_by_name(
+                position.name, 
+                position.signature_type
+            )
+            
+            if auto_signature:
+                _logger.info(f"Автоматически назначена подпись '{auto_signature.name}' для позиции '{position.name}'")
+            
+            # Создаем назначение
+            assignment_data = {
                 'zayavka_id': self.id,
                 'position_id': position.id,
                 'document_type': document_type,
                 'name': position.name,
-            })
+            }
+            
+            # Если нашли подпись автоматически, назначаем её
+            if auto_signature:
+                assignment_data['signature_id'] = auto_signature.id
+                
+            assignment_model.create(assignment_data)
 
     def _sign_document(self, document_type, source_attachments, signed_attachments_field, state_field):
         """Универсальный метод для подписания документа"""

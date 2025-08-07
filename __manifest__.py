@@ -44,6 +44,7 @@
         "views/kassa_3_views.xml",
         "views/price_list_partners_views.xml",
         "views/price_list_payer_carrying_out_views.xml",
+        "views/price_list_royalty_views.xml",
         "views/payment_order_rule_views.xml",
         "views/money_cost_rule_views.xml",
         "views/expense_rule_views.xml",
@@ -116,6 +117,13 @@
             ),
         ],
         "web.assets_backend": [
+            # JS
+            "amanat/static/src/js/file_input.js",
+            "amanat/static/src/js/attachment_widget.js",
+            # XML
+            "amanat/static/src/xml/attachment_templates.xml",
+            # CSS
+            "amanat/static/src/css/attachment_widget.css",
             # "amanat/static/src/js/debug_realtime.js",
             # "amanat/static/src/js/bus_diagnostic.js",
             # "amanat/static/src/js/realtime_test_helper.js",
@@ -181,11 +189,7 @@
             "amanat/static/src/js/kassa_filter_handler.js",
             "amanat/static/src/xml/attachment_preview.xml",
             "amanat/static/src/css/calculator_background.css",
-            # "amanat/static/src/scss/form_fields.scss",
             # "amanat/static/src/js/calculator_background.js",
-            # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.js",
-            # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.xml",
-            # "amanat/static/src/widgets/drag-and-drop_file/drag-and-drop_file.scss",
             "amanat/static/src/widgets/searchable_selection/searchable_selection.js",
             "amanat/static/src/widgets/searchable_selection/searchable_selection.xml",
             "amanat/static/src/widgets/searchable_selection/searchable_selection.scss",

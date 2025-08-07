@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_amanat_demo_form" model="ir.ui.view">
+        <field name="name">amanat.demo.form</field>
+        <field name="model">amanat.demo</field>
+        <field name="arch" type="xml">
+            <form>
+                <header/>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="attachment_ids"
+                               widget="amanat_attachment"
+                               options="{'accepted_file_extensions': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt'}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_amanat_demo_tree" model="ir.ui.view">
+        <field name="name">amanat.demo.tree</field>
+        <field name="model">amanat.demo</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <menuitem id="amanat_menu_root" name="Amanat"/>
+    <menuitem id="amanat_menu_demo" name="Demo" parent="amanat_menu_root"/>
+    <act_window id="amanat_demo_action" name="Demo"
+                res_model="amanat.demo"
+                view_mode="tree,form"
+                menu_id="amanat_menu_demo"/>
+</odoo>

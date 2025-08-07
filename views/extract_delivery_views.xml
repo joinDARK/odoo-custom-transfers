@@ -239,7 +239,7 @@
                                 </div>
                             </group>
                         </page>
-                        <page string="Выписка разнос Джесс" groups="amanat.group_amanat_fin_manager_jess">
+                        <page string="Выписка разнос Джесс" groups="amanat.group_amanat_fin_manager_jess,amanat.group_amanat_admin,amanat.group_amanat_director">
                             <group>
                                 <div class="o-form-group">
                                     <group>

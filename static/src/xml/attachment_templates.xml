@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="amanat.FileInput">
+        <div t-att-class="state.drag ? 'drag-over border-primary' : ''"
+             class="amanat-dnd border border-2 border-dashed rounded p-4 text-center">
+            <input type="file" t-ref="file-input" t-att-accept="props.acceptedFileExtensions"
+                   t-att-multiple="props.multiUpload" t-on-change="onChange" class="d-none"/>
+            
+            <div t-if="state.uploading" class="text-center">
+                <i class="fa fa-spinner fa-spin fa-2x text-primary mb-2"/>
+                <p class="mb-2">Загружаю файлы...</p>
+            </div>
+            
+            <div t-if="!state.uploading" class="text-center">
+                <i class="fa fa-cloud-upload fa-2x text-primary mb-2"/>
+                <p class="mb-2">Перетащите файлы сюда или нажмите для выбора</p>
+                <button type="button" class="btn btn-primary btn-sm" t-on-click="open">
+                    Выбрать файлы
+                </button>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="amanat.AttachmentWidget">
+        <div>
+            <AmanatFileInput acceptedFileExtensions="acceptedFileExtensions"
+                             resId="props.record.data.id"
+                             resModel="props.record.resModel"
+                             onUpload="onUpload"/>
+            <div t-if="files.length" class="mt-3">
+                <div t-foreach="files" t-as="f" t-key="f.id"
+                     class="d-flex justify-content-between align-items-center border rounded p-2 mb-1">
+                    <span t-esc="f.name"/>
+                    <div>
+                        <a t-att-href="url(f.id)" target="_blank"
+                           class="btn btn-outline-primary btn-sm me-1">
+                            <i class="fa fa-download"/>
+                        </a>
+                        <button class="btn btn-outline-danger btn-sm"
+                                t-att-data-file-id="f.id"
+                                t-on-click="onRemoveClick">
+                            <i class="fa fa-trash"/>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

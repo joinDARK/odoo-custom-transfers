@@ -1,4 +1,5 @@
 # crm_amanat/models/__init__.py
+from . import amanat_model
 from . import list_view_mixin
 from . import base_model
 from . import dashboard
@@ -27,6 +28,7 @@ from . import kassa_2
 from . import kassa_3
 from . import price_list_partners
 from . import price_list_payer_profit
+from . import price_list_royalty
 from . import tasks
 from . import payment
 from . import gold_deal

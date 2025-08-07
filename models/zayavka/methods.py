@@ -127,31 +127,36 @@ class ZayavkaMethods(models.Model):
                 _logger.info(f"Изменено поле 'payment_order_date_to_return' для заявки {rec.id}")
                 rec.run_return_with_partial_payment_of_remuneration_method()
 
+        if 'payment_order_date_to_prepayment_of_next' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'payment_order_date_to_prepayment_of_next' для заявки {rec.id}")
+                rec.run_return_with_prepayment_of_next_method()
+
         if 'supplier_currency_paid_date_again_1' in vals:
             for rec in self:
                 _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_1' для заявки {rec.id}")
                 rec.run_return_with_subsequent_payment_method()
-                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission), rec.supplier_currency_paid_date_again_1)
         
         if 'supplier_currency_paid_date_again_2' in vals:
             for rec in self:
                 _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_2' для заявки {rec.id}")
-                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission), rec.supplier_currency_paid_date_again_2)
         
         if 'supplier_currency_paid_date_again_3' in vals:
             for rec in self:
                 _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_3' для заявки {rec.id}")
-                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission), rec.supplier_currency_paid_date_again_3)
 
         if 'supplier_currency_paid_date_again_4' in vals:
             for rec in self:
                 _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_4' для заявки {rec.id}")
-                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission), rec.supplier_currency_paid_date_again_4)
 
         if 'supplier_currency_paid_date_again_5' in vals:
             for rec in self:
                 _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_5' для заявки {rec.id}")
-                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission))
+                rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission), rec.supplier_currency_paid_date_again_5)
 
         # ... (остальная логика по датам)
         #         # Получаем все даты из extract_delivery_ids
@@ -278,29 +283,33 @@ class ZayavkaMethods(models.Model):
             res.run_return_with_all_amount_method()
 
         if vals.get('payment_order_date_to_return'):
-            _logger.info("Возврат частичной суммы")
+            _logger.info("Возврата с частичной оплатой вознаграждения")
             res.run_return_with_partial_payment_of_remuneration_method()
+        
+        if vals.get('payment_order_date_to_prepayment_of_next'):
+            _logger.info("Возврат на предоплату следующего заказа")
+            res.run_return_with_prepayment_of_next_method()
         
         if vals.get('supplier_currency_paid_date_again_1'):
             _logger.info("Возврат частичной суммы")
             res.run_return_with_subsequent_payment_method()
-            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission), res.supplier_currency_paid_date_again_1)
         
         if vals.get('supplier_currency_paid_date_again_2'):
             _logger.info("Возврат частичной суммы")
-            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission), res.supplier_currency_paid_date_again_2)
 
         if vals.get('supplier_currency_paid_date_again_3'):
             _logger.info("Возврат частичной суммы")
-            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission), res.supplier_currency_paid_date_again_3)
 
         if vals.get('supplier_currency_paid_date_again_4'):
             _logger.info("Возврат частичной суммы")
-            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission), res.supplier_currency_paid_date_again_4)
 
         if vals.get('supplier_currency_paid_date_again_5'):
             _logger.info("Возврат частичной суммы")
-            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission))
+            res.run_return_with_subsequent_payment_method_new_subagent(res.amount - (res.amount * res.return_commission), res.supplier_currency_paid_date_again_5)
 
         return res
 

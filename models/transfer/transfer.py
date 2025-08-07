@@ -81,6 +81,9 @@ class Transfer(models.Model, AmanatBaseModel):
 
     # Delete
     delete_Transfer = fields.Boolean(string='Удалить заявку', default=False, tracking=True)
+    
+    # Transit
+    is_transit = fields.Boolean(string='Транзит', default=False, tracking=True)
 
     # Create
     create_order = fields.Boolean(string='Создать', default=False, tracking=True)
@@ -934,8 +937,25 @@ class Transfer(models.Model, AmanatBaseModel):
         }
 
     @api.model
+    def default_get(self, fields_list):
+        """Устанавливаем значения по умолчанию"""
+        defaults = super(Transfer, self).default_get(fields_list)
+        
+        # Автоматически устанавливаем галочку "Транзит" для пользователей с соответствующей ролью
+        if 'is_transit' in fields_list and self.env.user.has_group('amanat.group_amanat_transit_only'):
+            defaults['is_transit'] = True
+            _logger.info(f"Автоматически установлена галочка 'Транзит' для пользователя {self.env.user.name}")
+        
+        return defaults
+
+    @api.model
     def create(self, vals):
         _logger.info(f"Transfer create() вызван с vals: {vals}")
+        
+        # Автоматически устанавливаем галочку "Транзит" для пользователей с соответствующей ролью
+        if 'is_transit' not in vals and self.env.user.has_group('amanat.group_amanat_transit_only'):
+            vals['is_transit'] = True
+            _logger.info(f"Автоматически установлена галочка 'Транзит' при создании для пользователя {self.env.user.name}")
         
         # Найдём или создадим кошелёк «Неразмеченные»
         Wallet = self.env['amanat.wallet']
@@ -979,8 +999,67 @@ class Transfer(models.Model, AmanatBaseModel):
             'id', 'display_name', 'name', 'state', 'date', 'currency', 'amount',
             'sender_id', 'receiver_id', 'sender_payer_id', 'receiver_payer_id',
             'create_date', 'write_date', 'manager_id', 'comment', 'comment_accrual', 'combined_comment', 'hash',
-            'is_complex', 'intermediary_1_id', 'intermediary_2_id',
+            'is_complex', 'intermediary_1_id', 'intermediary_2_id', 'is_transit',
             'create_accrual', 'delete_accrual', 'date_accrual', 'currency_accrual', 'amount_accrual',
             'sender_id_accrual', 'sender_payer_id_accrual', 'sender_wallet_id_accrual',
             'receiver_id_accrual', 'receiver_payer_id_accrual', 'receiver_wallet_id_accrual'
         ]
+
+    @api.onchange('sender_id', 'receiver_id', 'date')
+    def _onchange_partners_auto_royalty(self):
+        """Автоматическое заполнение роялти на основе прайс-листа роялти"""
+        if not self.sender_id or not self.receiver_id or not self.date:
+            return
+
+        # Ищем подходящие записи в прайс-листе роялти
+        domain = [
+            ('operation_type', '=', 'transfer'),  # Тип операции = Перевод
+            '|', '|',  # Три условия через ИЛИ
+            # 1. Тип участника = "Отправитель" И контрагент = отправитель перевода
+            '&', ('participant_type', '=', 'sender'), ('contragent_id', '=', self.sender_id.id),
+            # 2. Тип участника = "Получатель" И контрагент = получатель перевода  
+            '&', ('participant_type', '=', 'recipient'), ('contragent_id', '=', self.receiver_id.id),
+            # 3. Тип участника = "Отправитель или получатель" И контрагент = любой из участников
+            '&', ('participant_type', '=', 'both'), 
+            '|', ('contragent_id', '=', self.sender_id.id), ('contragent_id', '=', self.receiver_id.id)
+        ]
+
+        # Добавляем фильтрацию по датам (если указаны)
+        date_domain = []
+        date_domain.append('|')
+        date_domain.append('&')
+        date_domain.append('&')
+        date_domain.append(('date_from', '!=', False))
+        date_domain.append(('date_to', '!=', False))
+        date_domain.append('&')
+        date_domain.append(('date_from', '<=', self.date))
+        date_domain.append(('date_to', '>=', self.date))
+        date_domain.append('|')
+        date_domain.append(('date_from', '=', False))
+        date_domain.append(('date_to', '=', False))
+
+        full_domain = domain + date_domain
+
+        royalty_records = self.env['amanat.price_list_royalty'].search(full_domain)
+
+        # Логирование для отладки
+        _logger.info(f"Автоматизация роялти для перевода: отправитель={self.sender_id.name}, получатель={self.receiver_id.name}, дата={self.date}")
+        _logger.info(f"Найдено записей в прайс-листе роялти: {len(royalty_records)}")
+        
+        if royalty_records:
+            # Очищаем старые значения роялти
+            for i in range(1, 6):
+                setattr(self, f'royalty_percent_{i}', 0.0)
+                setattr(self, f'royalty_recipient_{i}', False)
+
+            # Заполняем новые значения роялти (максимум 5)
+            for index, record in enumerate(royalty_records[:5], 1):
+                setattr(self, f'royalty_percent_{index}', record.royalty_percentage)
+                setattr(self, f'royalty_recipient_{index}', record.royalty_recipient_id.id)
+                _logger.info(f"Роялти {index}: {record.royalty_percentage*100:.2f}% для {record.royalty_recipient_id.name} (тип участника: {record.participant_type})")
+        else:
+            # Очищаем поля роялти если ничего не найдено
+            for i in range(1, 6):
+                setattr(self, f'royalty_percent_{i}', 0.0)
+                setattr(self, f'royalty_recipient_{i}', False)
+            _logger.info("Подходящие записи роялти не найдены, поля очищены")

@@ -351,3 +351,64 @@ class Reserve(models.Model, AmanatBaseModel):
                     'receiver_id': [(6, 0, [payer2.id])]        if payer2         else [],
                     **fields
                 })
+
+    @api.onchange('sender_id', 'receiver_id', 'today_date')
+    def _onchange_partners_auto_royalty(self):
+        """Автоматическое заполнение роялти на основе прайс-листа роялти для валютного резерва"""
+        if not self.sender_id or not self.receiver_id or not self.today_date:
+            return
+
+        # Ищем подходящие записи в прайс-листе роялти
+        domain = [
+            ('operation_type', '=', 'currency_reserve'),  # Тип операции = Валютный резерв
+            '|', '|',  # Три условия через ИЛИ
+            # 1. Тип участника = "Отправитель" И контрагент = отправитель резерва
+            '&', ('participant_type', '=', 'sender'), ('contragent_id', '=', self.sender_id.id),
+            # 2. Тип участника = "Получатель" И контрагент = получатель резерва  
+            '&', ('participant_type', '=', 'recipient'), ('contragent_id', '=', self.receiver_id.id),
+            # 3. Тип участника = "Отправитель или получатель" И контрагент = любой из участников
+            '&', ('participant_type', '=', 'both'), 
+            '|', ('contragent_id', '=', self.sender_id.id), ('contragent_id', '=', self.receiver_id.id)
+        ]
+
+        # Добавляем фильтрацию по датам (если указаны)
+        date_domain = []
+        date_domain.append('|')
+        date_domain.append('&')
+        date_domain.append('&')
+        date_domain.append(('date_from', '!=', False))
+        date_domain.append(('date_to', '!=', False))
+        date_domain.append('&')
+        date_domain.append(('date_from', '<=', self.today_date))
+        date_domain.append(('date_to', '>=', self.today_date))
+        date_domain.append('|')
+        date_domain.append(('date_from', '=', False))
+        date_domain.append(('date_to', '=', False))
+
+        full_domain = domain + date_domain
+
+        royalty_records = self.env['amanat.price_list_royalty'].search(full_domain)
+
+        # Логирование для отладки
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info(f"Автоматизация роялти для валютного резерва: отправитель={self.sender_id.name}, получатель={self.receiver_id.name}, дата={self.today_date}")
+        _logger.info(f"Найдено записей в прайс-листе роялти: {len(royalty_records)}")
+        
+        if royalty_records:
+            # Очищаем старые значения роялти
+            for i in range(1, 6):
+                setattr(self, f'royalty_percent_{i}', 0.0)
+                setattr(self, f'royalty_recipient_{i}', False)
+
+            # Заполняем новые значения роялти (максимум 5)
+            for index, record in enumerate(royalty_records[:5], 1):
+                setattr(self, f'royalty_percent_{index}', record.royalty_percentage)
+                setattr(self, f'royalty_recipient_{index}', record.royalty_recipient_id.id)
+                _logger.info(f"Валютный резерв роялти {index}: {record.royalty_percentage*100:.2f}% для {record.royalty_recipient_id.name} (тип участника: {record.participant_type})")
+        else:
+            # Очищаем поля роялти если ничего не найдено
+            for i in range(1, 6):
+                setattr(self, f'royalty_percent_{i}', 0.0)
+                setattr(self, f'royalty_recipient_{i}', False)
+            _logger.info("Подходящие записи роялти для валютного резерва не найдены, поля очищены")

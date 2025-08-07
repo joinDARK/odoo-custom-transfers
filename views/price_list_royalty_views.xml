@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Представление списка -->
+    <record id="price_list_royalty_list_view" model="ir.ui.view">
+        <field name="name">price_list_royalty.list</field>
+        <field name="model">amanat.price_list_royalty</field>
+        <field name="arch" type="xml">
+            <list editable="top" multi_edit="1" create="1" edit="1">
+                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <field width="200" name="name"/>
+                <field width="200" name="contragent_id"/>
+                <field width="150" name="participant_type"/>
+                <field width="100" name="royalty_percentage" widget="percentage" options="{'digits': [16, 4]}"/>
+                <field width="200" name="royalty_recipient_id"/>
+                <field width="150" name="operation_type"/>
+                <field width="100" name="date_from"/>
+                <field width="100" name="date_to"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Форма редактирования -->
+    <record id="price_list_royalty_form_view" model="ir.ui.view">
+        <field name="name">price_list_royalty.form</field>
+        <field name="model">amanat.price_list_royalty</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <h1><field name="name" placeholder="Наименование"/></h1>
+                </header>
+                <sheet>
+                    <group>
+                        <div class="o-form-group-2">
+                            <group>
+                                <field name="contragent_id"/>
+                                <field name="participant_type"/>
+                                <field name="royalty_percentage" widget="percentage" options="{'digits': [16, 4]}"/>
+                                <field name="date_from"/>
+                            </group>
+                            <group>
+                                <field name="royalty_recipient_id"/>
+                                <field name="operation_type"/>
+                                <field name="date_to"/>
+                            </group>
+                        </div>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Действие (action) -->
+    <record id="price_list_royalty_action" model="ir.actions.act_window">
+        <field name="name">Прайс лист роялти</field>
+        <field name="res_model">amanat.price_list_royalty</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="price_list_royalty_list_view"/>
+        <field name="target">main</field>
+    </record>
+
+</odoo>
