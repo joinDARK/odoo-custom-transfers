@@ -74,6 +74,7 @@
      </record>
 
     <!-- MENU (необязательно: можно повесить в любое место меню) -->
-    <menuitem id="menu_amanat_calculator_root" name="Amanat" sequence="10"/>
-    <menuitem id="menu_amanat_calculator" name="Калькулятор" parent="menu_amanat_calculator_root" action="action_amanat_calculator_wizard" sequence="10"/>
+    <!-- Меню временно отключено -->
+    <!-- <menuitem id="menu_amanat_calculator_root" name="Amanat" sequence="10"/>
+    <menuitem id="menu_amanat_calculator" name="Калькулятор" parent="menu_amanat_calculator_root" action="action_amanat_calculator_wizard" sequence="10"/> -->
 </odoo>
