@@ -54,8 +54,38 @@ class Contragent(models.Model, AmanatBaseModel):
         tracking=True
     )
     inn = fields.Char(string='ИНН', tracking=True)
-    date_start = fields.Date(string='дата начало', tracking=True)
-    date_end = fields.Date(string='дата конец', tracking=True)
+    
+    # Связь с договорами
+    contract_ids = fields.One2many(
+        'amanat.contragent.contract',
+        'contragent_id',
+        string='Договоры',
+        tracking=True
+    )
+    
+    # Поля для актуального договора - автоматически обновляются
+    date_start = fields.Date(
+        string='Дата начала актуального договора', 
+        compute='_compute_contract_dates',
+        store=True,
+        tracking=True,
+        help='Автоматически заполняется из актуального договора'
+    )
+    date_end = fields.Date(
+        string='Дата окончания актуального договора', 
+        compute='_compute_contract_dates', 
+        store=True,
+        tracking=True,
+        help='Автоматически заполняется из актуального договора'
+    )
+    
+    # Поле для отображения актуального договора
+    actual_contract_id = fields.Many2one(
+        'amanat.contragent.contract',
+        string='Актуальный договор',
+        compute='_compute_contract_dates',
+        store=True
+    )
 
     @api.depends('payer_ids.inn')
     def _compute_payer_inn(self):
@@ -63,6 +93,22 @@ class Contragent(models.Model, AmanatBaseModel):
             # Фильтруем связанные записи, чтобы исключить несуществующие или пустые ИНН
             valid_payers = record.payer_ids.filtered(lambda r: r.exists() and r.inn)
             record.payer_inn = ", ".join(valid_payers.mapped('inn')) if valid_payers else ''
+    
+    @api.depends('contract_ids.is_actual', 'contract_ids.start_date', 'contract_ids.end_date')
+    def _compute_contract_dates(self):
+        """Вычисляем даты и актуальный договор"""
+        for record in self:
+            actual_contract = record.contract_ids.filtered('is_actual')
+            if actual_contract:
+                # Берем первый актуальный договор (должен быть только один)
+                contract = actual_contract[0]
+                record.actual_contract_id = contract
+                record.date_start = contract.start_date
+                record.date_end = contract.end_date
+            else:
+                record.actual_contract_id = False
+                record.date_start = False
+                record.date_end = False
     
     @api.model
     def name_search(self, name='', args=None, operator='ilike', limit=100):

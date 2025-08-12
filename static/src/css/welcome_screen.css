@@ -1,12 +1,14 @@
 /* Стили для приветственного экрана модуля ТДК */
 
 .amanat-welcome-container {
-    min-height: calc(100vh - 120px);
     background: #f9f9f9;
     display: flex;
-    align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    align-items: flex-start;
+    padding: 40px 20px 0;
+    box-sizing: border-box;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 .amanat-welcome-content {
@@ -15,9 +17,11 @@
     background: #fff;
     border-radius: 6px;
     padding: 40px;
+    margin: 0 0 40px 0;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border: 1px solid #ddd;
+    flex-shrink: 0;
 }
 
 .amanat-welcome-header {
@@ -26,6 +30,11 @@
 
 .amanat-logo {
     margin-bottom: 20px;
+}
+
+
+.amanat-logo-img {
+    width: 200px;
 }
 
 .amanat-logo i {
@@ -47,20 +56,40 @@
 
 .amanat-welcome-features {
     margin-bottom: 40px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
+}
+
+.amanat-welcome-features .row {
+    margin-left: -12px;
+    margin-right: -12px;
+    margin-bottom: 24px;
+}
+
+.amanat-welcome-features .row:last-child {
+    margin-bottom: 0;
+}
+
+.amanat-welcome-features .row::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+.amanat-welcome-features .col-md-4 {
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-bottom: 24px;
+    width: 33.333333%;
+    float: left;
 }
 
 .amanat-feature-card {
     background: #fff;
     border-radius: 4px;
-    padding: 24px 16px;
-    margin-bottom: 20px;
+    padding: 24px 20px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e0e0e0;
     height: 100%;
+    transition: all 0.2s ease;
 }
 
 .amanat-feature-card:hover {
@@ -87,7 +116,6 @@
 
 .amanat-welcome-footer {
     padding-top: 24px;
-    border-top: 1px solid #e0e0e0;
 }
 
 .amanat-welcome-footer p {
@@ -101,6 +129,10 @@
     color: #875a7b;
 }
 
+.amanat-welcome-features .row {
+    justify-content: center;
+}
+
 /* Цветовые классы для иконок */
 .text-yellow {
     color: #f0ad4e !important;
@@ -110,10 +142,22 @@
     color: #875a7b !important;
 }
 
-/* Адаптивность */
+/* Адаптивность для Bootstrap колонок */
+@media (max-width: 992px) {
+    .amanat-welcome-features .col-md-4 {
+        width: 50%;
+        float: left;
+    }
+}
+
 @media (max-width: 768px) {
+    .amanat-welcome-container {
+        padding: 32px 20px 0;
+    }
+    
     .amanat-welcome-content {
-        padding: 32px 20px;
+        padding: 32px 24px;
+        margin: 0 0 32px 0;
     }
     
     .amanat-welcome-title {
@@ -124,18 +168,39 @@
         font-size: 1.1rem;
     }
     
+    .amanat-welcome-features .row {
+        margin-left: -10px;
+        margin-right: -10px;
+        margin-bottom: 20px;
+    }
+    
+    .amanat-welcome-features .row::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+    
+    .amanat-welcome-features .col-md-4 {
+        padding-left: 10px;
+        padding-right: 10px;
+        margin-bottom: 20px;
+        width: 50%;
+        float: left;
+    }
+    
     .amanat-feature-card {
-        margin-bottom: 16px;
+        padding: 20px 16px;
     }
 }
 
 @media (max-width: 576px) {
     .amanat-welcome-container {
-        padding: 20px 15px;
+        padding: 24px 16px 0;
     }
     
     .amanat-welcome-content {
-        padding: 24px 16px;
+        padding: 24px 20px;
+        margin: 0 0 24px 0;
     }
     
     .amanat-welcome-title {
@@ -144,5 +209,70 @@
     
     .amanat-welcome-subtitle {
         font-size: 1rem;
+    }
+    
+    .amanat-welcome-features .row {
+        margin-left: -8px;
+        margin-right: -8px;
+        margin-bottom: 16px;
+    }
+    
+    .amanat-welcome-features .row::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+    
+    .amanat-welcome-features .col-md-4 {
+        padding-left: 8px;
+        padding-right: 8px;
+        margin-bottom: 16px;
+        width: 100%;
+        float: none;
+    }
+    
+    .amanat-feature-card {
+        padding: 18px 16px;
+    }
+}
+
+@media (max-width: 400px) {
+    .amanat-welcome-container {
+        padding: 20px 12px 0;
+    }
+    
+    .amanat-welcome-content {
+        padding: 20px 16px;
+        margin: 0 0 20px 0;
+    }
+    
+    .amanat-welcome-title {
+        font-size: 1.8rem;
+    }
+    
+    .amanat-logo-img {
+        width: 160px;
+    }
+    
+    .amanat-welcome-features .row {
+        margin-left: -6px;
+        margin-right: -6px;
+        margin-bottom: 12px;
+    }
+    
+    .amanat-welcome-features .row::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+    
+    .amanat-welcome-features .col-md-4 {
+        padding-left: 6px;
+        padding-right: 6px;
+        margin-bottom: 12px;
+    }
+    
+    .amanat-feature-card {
+        padding: 16px 14px;
     }
 } 

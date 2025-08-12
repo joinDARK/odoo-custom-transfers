@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- VIEW: Form -->
+    <record id="view_amanat_calculator_wizard_form" model="ir.ui.view">
+        <field name="name">amanat.calculator.wizard.form</field>
+        <field name="model">amanat.calculator.usd.addition.for.all.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Расчет добавка в $ для всех" class="calculator-form-background" create="false" edit="true">
+                <sheet style="background: rgba(255, 255, 255, 0.95) !important; border-radius: 10px !important; padding: 20px !important; margin: 10px !important; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;">
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Название расчета..." readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group string="Параметры">
+                        <group>
+                            <field name="calc_mode"/>
+                            <field name="currency_code"/>
+                            <field name="date"/>
+                            <field name="amount"/>
+                            <field name="reward_percent"/>
+                        </group>
+                    </group>
+
+                    <!-- РЕЖИМ: В % -->
+                    <group string="Режим: В %" invisible="calc_mode != 'percent'" colspan="4">
+                        <group>
+                            <field name="rate" required="calc_mode == 'percent'"/>
+                            <field name="xe" invisible="currency_code == 'USD'" required="calc_mode == 'percent' and currency_code in ['CNY','EUR']"/>
+                            <field name="usd_equivalent" readonly="1" invisible="currency_code == 'USD'"/>
+                        </group>
+                        <group>
+                            <field name="addition"/>
+                            <field name="addition_percent" readonly="1"/>
+                            <field name="total_percent" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- РЕЖИМ: В КУРС -->
+                    <group string="Режим: В КУРС" invisible="calc_mode != 'rate'" colspan="4">
+                        <group>
+                            <field name="real_rate" required="calc_mode == 'rate'"/>
+                            <field name="usd_rate" invisible="currency_code == 'USD'" required="calc_mode == 'rate' and currency_code in ['CNY','EUR']"/>
+                            <field name="addition_usd"/>
+                        </group>
+                        <group>
+                            <field name="surcharge_sum_rub" readonly="1"/>
+                            <field name="total_rate" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ИТОГИ (общие для обоих режимов) -->
+                    <group string="Итоги" colspan="4" invisible="not calc_mode">
+                        <group>
+                            <field name="request_amount_rub" readonly="1"/>
+                            <field name="reward_rub" readonly="1"/>
+                            <field name="total_rub" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+         <!-- ACTION -->
+     <record id="action_amanat_calculator_wizard" model="ir.actions.act_window">
+         <field name="name">Калькулятор</field>
+         <field name="res_model">amanat.calculator.usd.addition.for.all.wizard</field>
+         <field name="view_mode">form</field>
+         <field name="view_id" ref="view_amanat_calculator_wizard_form"/>
+         <field name="target">main</field>
+         <field name="context">{'default_date': context_today().strftime('%Y-%m-%d')}</field>
+     </record>
+
+    <!-- MENU (необязательно: можно повесить в любое место меню) -->
+    <menuitem id="menu_amanat_calculator_root" name="Amanat" sequence="10"/>
+    <menuitem id="menu_amanat_calculator" name="Калькулятор" parent="menu_amanat_calculator_root" action="action_amanat_calculator_wizard" sequence="10"/>
+</odoo>

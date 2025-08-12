@@ -8,6 +8,7 @@ from . import zayavka_fiks_dashboard
 from . import test_realtime
 from . import activity
 from . import contragent
+from . import contragent_contract
 from . import payer
 from . import transfer
 from . import wallet
@@ -47,11 +48,12 @@ from . import zayavka_date_range_wizard
 from . import zayavka_kassa_wizard
 from . import reconciliation_date_range_wizard
 from . import contragent_gold
-
+from . import ygpt_config
 
 # SWIFT integration
 from . import swift
 from . import swift_api_config
+from . import swift_document_upload
 from . import mail_bot_extension
 from . import zayavka_swift_extension
 from . import discuss_channel_extension
@@ -64,6 +66,7 @@ from . import res_config_settings
 from . import ir_attachment
 
 from . import signature_library
+from . import template_library
 from . import zayavka_signature_position
 from . import zayavka_signature_assignment
 

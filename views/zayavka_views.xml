@@ -4,42 +4,44 @@
   <record id="view_amanat_zayavka_form_treasurer" model="ir.ui.view">
     <field name="name">amanat.zayavka.form.treasurer</field>
     <field name="model">amanat.zayavka</field>
-    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
+    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]" />
     <field name="priority">20</field>
     <field name="arch" type="xml">
       <form string="Заявки (Казначей)">
         <header>
-          <h1><field name="zayavka_id" readonly="1"/></h1>
+          <h1>
+            <field name="zayavka_id" readonly="1" />
+          </h1>
         </header>
         <sheet>
           <group string="Основная информация">
             <div class="o-form-group-2">
               <group>
-                <field name="zayavka_num"/>
-                <field name="status" widget="searchable_selection"/>
-                <field name="date_placement"/>
+                <field name="zayavka_num" />
+                <field name="status" widget="searchable_selection" />
+                <field name="date_placement" />
               </group>
               <group>
-                <field name="contragent_id"/>
-                <field name="client_id"/>
-                <field name="country_id"/>
+                <field name="contragent_id" />
+                <field name="client_id" />
+                <field name="country_id" />
               </group>
             </div>
-            <field name="comment"/>
+            <field name="comment" />
           </group>
           <group string="Даты операций">
             <div class="o-form-group-3">
               <group>
-                <field name="invoice_date"/>
-                <field name="payment_date"/>
+                <field name="invoice_date" />
+                <field name="payment_date" />
               </group>
               <group>
-                <field name="supplier_currency_paid_date"/>
-                <field name="supplier_currency_received_date"/>
+                <field name="supplier_currency_paid_date" />
+                <field name="supplier_currency_received_date" />
               </group>
               <group>
-                <field name="deal_closed_date"/>
-                <field name="deal_cycle_days"/>
+                <field name="deal_closed_date" />
+                <field name="deal_cycle_days" />
               </group>
             </div>
           </group>
@@ -51,7 +53,8 @@
   <record id="view_amanat_zayavka_form" model="ir.ui.view">
     <field name="name">amanat.zayavka.form</field>
     <field name="model">amanat.zayavka</field>
-    <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
+    <field name="groups_id"
+      eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]" />
     <field name="arch" type="xml">
       <form string="Заявки" create="false">
         <header>
@@ -64,388 +67,492 @@
               <group string="Базовая информация">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="zayavka_num"/>
-                    <field name="status" widget="searchable_selection"/>
-                    <field name="date_placement"/>
+                    <field name="zayavka_num" />
+                    <field name="status" widget="searchable_selection" />
+                    <field name="date_placement" />
                   </group>
                   <group>
-                    <field name="contragent_id"/>
-                    <field name="client_id"/>
-                    <field name="country_id"/>
+                    <field name="contragent_id" />
+                    <field name="client_id" />
+                    <field name="country_id" />
                   </group>
                 </div>
-                <field name="comment"/>
+                <field name="comment" />
               </group>
               <group string="Даты">
                 <div class="o-form-group-3">
                   <group>
-                    <field name="invoice_date"/>
-                    <field name="payment_date"/>
+                    <field name="invoice_date" />
+                    <field name="payment_date" />
                   </group>
                   <group>
-                    <field name="supplier_currency_paid_date"/>
-                    <field name="supplier_currency_received_date"/>
+                    <field name="supplier_currency_paid_date" />
+                    <field name="supplier_currency_received_date" />
                   </group>
                   <group>
-                    <field name="deal_closed_date"/>
-                    <field name="deal_cycle_days"/>
+                    <field name="deal_closed_date" />
+                    <field name="deal_cycle_days" />
                   </group>
                 </div>
               </group>
             </page>
-            
+
             <page string="Основное" groups="!amanat.group_amanat_limited_access">
               <group string="Основная информация">
                 <div class="o-form-group">
                   <group>
-                    <field name="zayavka_num"/>
+                    <field name="zayavka_num" />
                     <!-- Поля для всех, кроме группы ограниченного доступа -->
-                    <field name="manager_ids" widget="many2many_tags" groups="!amanat.group_amanat_limited_access"/>
-                    <field name="checker_ids" widget="many2many_tags" groups="!amanat.group_amanat_limited_access"/>
+                    <field name="manager_ids" widget="many2many_tags"
+                      groups="!amanat.group_amanat_limited_access" />
+                    <field name="checker_ids" widget="many2many_tags"
+                      groups="!amanat.group_amanat_limited_access" />
                   </group>
                   <group>
-                    <field name="status" widget="searchable_selection"/>
-                    <field name="date_placement"/>
+                    <field name="status" widget="searchable_selection" />
+                    <field name="date_placement" />
                     <!-- Скрываем для ограниченного доступа -->
-                    <field name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/>
-                    <field name="country_id"/>
+                    <field name="taken_in_work_date" groups="!amanat.group_amanat_limited_access" />
+                    <field name="country_id" />
                   </group>
                   <group>
-                    <field name="contragent_id" options="{'search_limit': 20}"/>
-                    <field name="agent_id" groups="!amanat.group_amanat_limited_access"/>
-                    <field name="client_id"/>
+                    <field name="contragent_id" options="{'search_limit': 20}" />
+                    <field name="agent_id" groups="!amanat.group_amanat_limited_access" />
+                    <field name="client_id" />
                     <!-- Полностью скрываем ИНН для ограниченного доступа -->
-                    <field name="inn" groups="!amanat.group_amanat_limited_access"/>
+                    <field name="inn" groups="!amanat.group_amanat_limited_access" />
                     <!-- <field name="client_inn"/> -->
                   </group>
                 </div>
-                <field name="exporter_importer_name"/>
-                <field name="bank_swift"/>
-                <field name="payment_purpose"/>
-                <field name="comment"/>
+                <field name="exporter_importer_name" />
+                <field name="bank_swift" />
+                <field name="payment_purpose" />
+                <field name="comment" />
+                <field name="beneficiary_address" />
+                <field name="beneficiary_bank_name" />
+                <field name="bank_address" />
+                <field name="iban_accc" />
+                <field name="contract_number" />
               </group>
               <!-- Скрываем финансовые данные для ограниченного доступа -->
               <group groups="!amanat.group_amanat_limited_access">
                 <div class="rates-section-header">
                   <strong class="rates-section-title">Сравнение курса</strong>
                   <!-- 🎯 Красивая компактная кнопка справа с анимацией -->
-                  <button class="btn refresh-rates-btn" 
-                          title="Обновить курсы валют из API (Инвестинг + ЦБ)" 
-                          type="object" 
-                          name="refresh_rates"
-                          style="border: 1px solid #000; border-radius: 5px; padding: 2px 5px;">
-                    <i class="fa fa-refresh"/> Обновить
-                  </button>
+                  <button class="btn refresh-rates-btn"
+                    title="Обновить курсы валют из API (Инвестинг + ЦБ)"
+                    type="object"
+                    name="refresh_rates"
+                    style="border: 1px solid #000; border-radius: 5px; padding: 2px 5px;">
+                    <i class="fa fa-refresh" /> Обновить </button>
                 </div>
                 <div class="o-form-group">
                   <group>
-                    <field name="investing_rate"/>
-                    <field name="exchange_rate_1"/>
+                    <field name="investing_rate" />
+                    <field name="exchange_rate_1" />
                   </group>
                   <group>
-                    <field name="cb_rate"/>
-                    <field name="exchange_rate_2"/>
+                    <field name="cb_rate" />
+                    <field name="exchange_rate_2" />
                   </group>
                   <group>
-                    <field name="cross_rate"/>
-                    <field name="exchange_rate_3"/>
+                    <field name="cross_rate" />
+                    <field name="exchange_rate_3" />
                   </group>
                 </div>
               </group>
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <field name="best_rate_name"/>
+                    <field name="best_rate_name" />
                   </group>
                   <group>
-                    <field name="best_rate"/>
+                    <field name="best_rate" />
                   </group>
                 </div>
               </group>
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <field name="is_sberbank_contragent" invisible="is_sovcombank_contragent"/>
+                    <field name="is_sberbank_contragent" invisible="is_sovcombank_contragent" />
                   </group>
                   <group>
-                    <field name="is_sovcombank_contragent" invisible="is_sberbank_contragent"/>
+                    <field name="is_sovcombank_contragent" invisible="is_sberbank_contragent" />
                   </group>
                 </div>
               </group>
-              <group string="Ввод данных Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent" groups="!amanat.group_amanat_limited_access">
+              <group string="Ввод данных Клиент"
+                invisible="is_sovcombank_contragent or is_sberbank_contragent"
+                groups="!amanat.group_amanat_limited_access">
                 <div class="o-form-group-2 top">
                   <group>
-                    <field name="payment_conditions"/>
-                    <field name="instruction_number"/>
-                    <field name="currency"/>
-                    <field name="rate_field"/>
-                    <field name="rate_fixation_date"/>
-                    <field name="prefix"/>
-                    <field name="plus_dollar"/>
-                    <field name="xe_rate"/>
-                    <field name="export_agent_flag" invisible="deal_type != 'export'"/>
+                    <field name="payment_conditions" />
+                    <field name="instruction_number" />
+                    <field name="currency" />
+                    <field name="rate_field" />
+                    <field name="rate_fixation_date" />
+                    <field name="prefix" />
+                    <field name="plus_dollar" />
+                    <field name="xe_rate" />
+                    <field name="export_agent_flag" invisible="deal_type != 'export'" />
                   </group>
                   <group>
-                    <field name="deal_type"/>
-                    <field name="instruction_signed_date"/>
-                    <field name="amount"/>
-                    <field name="best_rate" string="Скрытый курс"/>
-                    <field name="hand_reward_percent" widget="percentage"/>
-                    <field name="hidden_hadge"/>
-                    <field name="dollar_cross_rate"/>
+                    <field name="deal_type" />
+                    <field name="instruction_signed_date" />
+                    <field name="amount" />
+                    <field name="best_rate" string="Скрытый курс" />
+                    <field name="hand_reward_percent" widget="percentage" />
+                    <field name="hidden_hadge" />
+                    <field name="dollar_cross_rate" />
                   </group>
                 </div>
               </group>
               <group string="Курс Джесс" groups="!amanat.group_amanat_manager">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="jess_rate_id" groups="!amanat.group_amanat_manager"/>
+                    <field name="jess_rate_id" groups="!amanat.group_amanat_manager" />
                   </group>
                   <group>
-                    <field name="jess_rate" groups="!amanat.group_amanat_manager"/>
+                    <field name="jess_rate" groups="!amanat.group_amanat_manager" />
                   </group>
                 </div>
               </group>
               <group invisible="is_sovcombank_contragent or is_sberbank_contragent">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="plus_currency"/>
+                    <field name="plus_currency" />
                   </group>
                   <group>
-                    <field name="invoice_plus_percent" widget="percentage"/>
+                    <field name="invoice_plus_percent" widget="percentage" />
                   </group>
                 </div>
               </group>
               <group invisible="is_sovcombank_contragent or is_sberbank_contragent">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="conversion_auto" widget="percentage"/>
+                    <field name="conversion_auto" widget="percentage" />
                   </group>
                   <group>
-                    <field name="reward_percent" widget="percentage"/>
+                    <field name="reward_percent" widget="percentage" />
                   </group>
                 </div>
-                <field name="hidden_commission" widget="percentage"/>
+                <field name="hidden_commission" widget="percentage" />
               </group>
               <group string="Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
                 <div class="o-form-group">
                   <group>
-                    <field name="application_amount_rub_contract"/>
+                    <field name="application_amount_rub_contract" />
                   </group>
                   <group>
-                    <field name="client_reward"/>
+                    <field name="client_reward" />
                   </group>
                   <group>
-                    <field name="total_client"/>
+                    <field name="total_client" />
                   </group>
                 </div>
               </group>
-              <group string="Управленка Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
+              <group string="Управленка Клиент"
+                invisible="is_sovcombank_contragent or is_sberbank_contragent">
                 <div class="o-form-group">
                   <group>
-                    <field name="rate_real"/>
+                    <field name="rate_real" />
                   </group>
                   <group>
-                    <field name="our_client_reward"/>
+                    <field name="our_client_reward" />
                   </group>
                   <group>
-                    <field name="non_our_client_reward"/>
+                    <field name="non_our_client_reward" />
                   </group>
                 </div>
-                <field name="total_client_management"/>
+                <field name="total_client_management" />
               </group>
               <group string="Ввод данных Сбербанк" invisible="not is_sberbank_contragent">
                 <div class="o-form-group-2 top">
                   <group>
-                    <field name="payment_conditions"/>
-                    <field name="instruction_number"/>
-                    <field name="currency"/>
-                    <field name="rate_field"/>
-                    <field name="rate_fixation_date"/>
-                    <field name="prefix"/>
-                    <field name="plus_dollar"/>
-                    <field name="xe_rate"/>
-                    <field name="export_agent_flag" invisible="deal_type != 'export'"/>
+                    <field name="payment_conditions" />
+                    <field name="instruction_number" />
+                    <field name="currency" />
+                    <field name="rate_field" />
+                    <field name="rate_fixation_date" />
+                    <field name="prefix" />
+                    <field name="plus_dollar" />
+                    <field name="xe_rate" />
+                    <field name="export_agent_flag" invisible="deal_type != 'export'" />
                   </group>
                   <group>
-                    <field name="deal_type"/>
-                    <field name="instruction_signed_date"/>
-                    <field name="amount"/>
-                    <field name="best_rate" string="Скрытый курс"/>
-                    <field name="hand_reward_percent" widget="percentage"/>
-                    <field name="hidden_hadge"/>
-                    <field name="dollar_cross_rate"/>
-                    <field name="jess_rate" groups="!amanat.group_amanat_manager"/>
+                    <field name="deal_type" />
+                    <field name="instruction_signed_date" />
+                    <field name="amount" />
+                    <field name="best_rate" string="Скрытый курс" />
+                    <field name="hand_reward_percent" widget="percentage" />
+                    <field name="hidden_hadge" />
+                    <field name="dollar_cross_rate" />
+                    <field name="jess_rate" groups="!amanat.group_amanat_manager" />
                   </group>
                 </div>
               </group>
               <group invisible="not is_sberbank_contragent">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="plus_currency"/>
+                    <field name="plus_currency" />
                   </group>
                   <group>
-                    <field name="invoice_plus_percent" widget="percentage"/>
+                    <field name="invoice_plus_percent" widget="percentage" />
                   </group>
                 </div>
               </group>
               <group invisible="not is_sberbank_contragent">
                 <div class="o-form-group">
                   <group>
-                    <field name="conversion_auto" widget="percentage"/>
+                    <field name="conversion_auto" widget="percentage" />
                   </group>
                   <group>
-                    <field name="reward_percent" widget="percentage"/>
+                    <field name="reward_percent" widget="percentage" />
                   </group>
                   <group>
-                    <field name="calculated_percent" widget="percentage"/>
+                    <field name="calculated_percent" widget="percentage" />
                   </group>
                 </div>
               </group>
               <group string="Клиент Сбербанк" invisible="not is_sberbank_contragent">
                 <div class="o-form-group">
                   <group>
-                    <field name="application_amount_rub_contract"/>
+                    <field name="application_amount_rub_contract" />
                   </group>
                   <group>
-                    <field name="sber_reward"/>
+                    <field name="sber_reward" />
                   </group>
                   <group>
-                    <field name="total_sber"/>
+                    <field name="total_sber" />
                   </group>
                 </div>
               </group>
               <group string="Управленка Сбербанк" invisible="not is_sberbank_contragent">
                 <div class="o-form-group">
                   <group>
-                    <field name="rate_real"/>
+                    <field name="rate_real" />
                   </group>
                   <group>
-                    <field name="our_sber_reward"/>
+                    <field name="our_sber_reward" />
                   </group>
                   <group>
-                    <field name="total_sber_management"/>
+                    <field name="total_sber_management" />
                   </group>
                 </div>
               </group>
               <group string="Ввод данных Совкомбанк" invisible="not is_sovcombank_contragent">
                 <div class="o-form-group-2 top">
                   <group>
-                    <field name="payment_conditions"/>
-                    <field name="instruction_number"/>
-                    <field name="currency"/>
-                    <field name="rate_field"/>
-                    <field name="rate_fixation_date"/>
-                    <field name="prefix"/>
-                    <field name="plus_dollar"/>
-                    <field name="xe_rate"/>
-                    <field name="export_agent_flag" invisible="deal_type != 'export'"/>
+                    <field name="payment_conditions" />
+                    <field name="instruction_number" />
+                    <field name="currency" />
+                    <field name="rate_field" />
+                    <field name="rate_fixation_date" />
+                    <field name="prefix" />
+                    <field name="plus_dollar" />
+                    <field name="xe_rate" />
+                    <field name="export_agent_flag" invisible="deal_type != 'export'" />
                   </group>
                   <group>
-                    <field name="deal_type"/>
-                    <field name="instruction_signed_date"/>
-                    <field name="amount"/>
-                    <field name="best_rate" string="Скрытый курс"/>
-                    <field name="hand_reward_percent" widget="percentage"/>
-                    <field name="hidden_hadge"/>
-                    <field name="dollar_cross_rate"/>
-                    <field name="jess_rate" groups="!amanat.group_amanat_manager"/>
+                    <field name="deal_type" />
+                    <field name="instruction_signed_date" />
+                    <field name="amount" />
+                    <field name="best_rate" string="Скрытый курс" />
+                    <field name="hand_reward_percent" widget="percentage" />
+                    <field name="hidden_hadge" />
+                    <field name="dollar_cross_rate" />
+                    <field name="jess_rate" groups="!amanat.group_amanat_manager" />
                   </group>
                 </div>
               </group>
               <group invisible="not is_sovcombank_contragent">
                 <div class="o-form-group-4">
                   <group>
-                    <field name="rate_real"/>
+                    <field name="rate_real" />
                   </group>
                   <group>
-                    <field name="plus_currency"/>
+                    <field name="plus_currency" />
                   </group>
                   <group>
-                    <field name="invoice_plus_percent" widget="percentage"/>
+                    <field name="invoice_plus_percent" widget="percentage" />
                   </group>
                   <group>
-                    <field name="reward_percent" widget="percentage"/>
+                    <field name="reward_percent" widget="percentage" />
                   </group>
                 </div>
               </group>
               <group invisible="not is_sovcombank_contragent">
                 <div class="o-form-group">
                   <group>
-                    <field name="overall_sovok_percent"/>
+                    <field name="overall_sovok_percent" />
                   </group>
                   <group>
-                    <field name="calculated_percent"/>
+                    <field name="calculated_percent" />
                   </group>
                   <group>
-                    <field name="error_sovok"/>
+                    <field name="error_sovok" />
                   </group>
                 </div>
-                <field name="error_in_rate"/>
+                <field name="error_in_rate" />
               </group>
               <group string="Клиент Совкомбанк" invisible="not is_sovcombank_contragent">
                 <div class="o-form-group">
                   <group>
-                    <field name="application_amount_rub_contract"/>
+                    <field name="application_amount_rub_contract" />
                   </group>
                   <group>
-                    <field name="sovok_reward"/>
+                    <field name="sovok_reward" />
                   </group>
                   <group>
-                    <field name="total_sovok"/>
+                    <field name="total_sovok" />
                   </group>
                 </div>
               </group>
               <group string="Управленка Совкомбанк" invisible="not is_sovcombank_contragent">
                 <div class="o-form-group">
                   <group>
-                    <field name="rate_real"/>
+                    <field name="rate_real" />
                   </group>
                   <group>
-                    <field name="our_sovok_reward"/>
+                    <field name="our_sovok_reward" />
                   </group>
                   <group>
-                    <field name="total_sovok_management"/>
+                    <field name="total_sovok_management" />
                   </group>
                 </div>
               </group>
               <notebook>
               </notebook>
             </page>
+
+            <page string="Документы" groups="!amanat.group_amanat_limited_access">
+              <group>
+                <div class="o-form-group-1">
+                  <group string="Комплект">
+                    <div class="o_inner_group d-flex">
+                      <button name="action_generate_statement_document" type="object"
+                        string="Генерировать заявление" class="btn-primary" />
+                    </div>
+                  </group>
+
+                  <group class="col-12">
+                    <div class="d-flex gap-2">
+                      <label for="zayavka_attachments">zayavka_attachments</label>
+                      <field name="zayavka_attachments" widget="amanat_attachment"
+                        options="{'accepted_file_extensions': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt'}" />
+                      <!-- <field name="report_attachments" widget="amanat_attachment"
+                      options="{'no_create': False, 'no_open': False}"/> -->
+                      <label for="assignment_attachments">assignment_attachments</label>
+                      <field name="assignment_attachments" widget="amanat_attachment"
+                        options="{'no_create': False, 'no_open': False}" />
+                    </div>
+                  </group>
+                  
+                  <group>
+                    <field name="act_report_attachments" widget="amanat_attachment"
+                      options="{'no_create': False, 'no_open': False}" />
+                  </group>
+
+                  <group>
+                    <group class="col-6">
+                      <field name="swift103_attachments" widget="amanat_attachment"
+                        options="{'no_create': False, 'no_open': False}" />
+                    </group>
+                    <group class="col-6">
+                      <field name="swift199_attachments" widget="amanat_attachment"
+                        options="{'no_create': False, 'no_open': False}" />
+                    </group>
+                  </group>
+                  <group>
+                    <field name="swift_attachments" widget="amanat_attachment"
+                      options="{'no_create': False, 'no_open': False}" />
+                  </group>
+
+                  <group>
+                    <field name="screen_sber_attachments" widget="amanat_attachment"
+                      options="{'no_create': False, 'no_open': True}" />
+                  </group>
+                </div>
+              </group>
+
+              <group string="Первичные документы">
+                <div class="o-form-group-3">
+                  <group>
+                    <field name="zayavka_output_attachments" widget="amanat_attachment"
+                      options="{'no_create': False, 'no_open': False}" />
+                  </group>
+                </div>
+              </group>
+
+              <group>
+                <div class="o-form-group-2">
+                  <group>
+                    <!-- <field name="assignment_start_attachments" widget="amanat_attachment"
+                    options="{'no_create': False, 'no_open': False}"/> -->
+                    <field name="assignment_end_attachments" widget="amanat_attachment"
+                      options="{'no_create': False, 'no_open': False}" />
+                  </group>
+                  <group>
+                    <field name="invoice_attachments" widget="amanat_attachment"
+                    options="{'no_create': False, 'no_open': False}" />
+                  </group>
+                  
+                </div>
+              </group>
+            </page>
+            
             <page string="Калькулятор кросс курса" groups="!amanat.group_amanat_limited_access">
               <group>
-                <div class="text-uppercase fw-bolder small">Кросс <span class="o_stat_value"><field name="is_cross" class="o_field_boolean mb-0"/></span></div>
+                <div class="text-uppercase fw-bolder small">Кросс <span class="o_stat_value">
+                    <field name="is_cross" class="o_field_boolean mb-0" />
+                  </span></div>
               </group>
               <group invisible="not is_cross">
-                <field name="currency_pair"/>
+                <field name="currency_pair" />
                 <div class="o-form-group">
                   <group>
-                    <field name="cross_rate_pair"/>
+                    <field name="cross_rate_pair" />
                   </group>
                   <group>
-                    <field name="xe_rate"/>
+                    <field name="xe_rate" />
                   </group>
                   <group>
-                    <field name="cross_rate_usd_rub"/>
+                    <field name="cross_rate_usd_rub" />
                   </group>
                 </div>
               </group>
               <group invisible="not is_cross">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="conversion_ratio" widget="percentage"/>
+                    <field name="conversion_ratio" widget="percentage" />
                   </group>
                   <group>
-                    <field name="conversion_percent" widget="percentage" options="{'rounding': 4}"/>
+                    <field name="conversion_percent" widget="percentage" options="{'rounding': 4}" />
                   </group>
                 </div>
-                <field name="real_cross_rate"/>
+                <field name="real_cross_rate" />
                 <!-- <field name="rate_field"/> -->
                 <div>
-                  <field name="error_in_bank_rate" invisible="not ((currency_pair == 'cny_usd' and cross_rate_pair &lt; 5) or (currency_pair == 'euro_usd' and cross_rate_pair &gt; 1) or (currency_pair == 'usd_cny' and cross_rate_pair &gt; 0.5) or (currency_pair == 'usd_euro' and cross_rate_pair &lt; 1) or (currency_pair == 'aed_usd' and cross_rate_pair &lt; 2) or (currency_pair == 'usd_aed' and cross_rate_pair &gt; 0.7))" class="alert alert-danger text-center fw-bold" style="background-color: #dc3545; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;" readonly="1" nolabel="1"/>
-                  <field name="error_in_xe_rate" invisible="not ((currency_pair == 'cny_usd' and xe_rate &lt; 5) or (currency_pair == 'euro_usd' and xe_rate &gt; 1) or (currency_pair == 'usd_cny' and xe_rate &gt; 0.5) or (currency_pair == 'usd_euro' and xe_rate &lt; 1) or (currency_pair == 'aed_usd' and xe_rate &lt; 2) or (currency_pair == 'usd_aed' and xe_rate &gt; 0.7))" class="alert alert-danger text-center fw-bold"  style="background-color: #dc3545; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;" readonly="1" nolabel="1"/>
-                  <field name="bank_select" invisible="not ((currency_pair == 'usd_cny' and conversion_ratio &gt; 0) or (currency_pair == 'usd_euro' and conversion_ratio &gt; 0) or (currency_pair == 'usd_aed' and conversion_ratio &gt; 0) or (currency_pair == 'usd_thb' and conversion_ratio &gt; 0) or (currency_pair == 'cny_usd' and conversion_ratio &lt; 0) or (currency_pair == 'euro_usd' and conversion_ratio &lt; 0) or (currency_pair == 'aed_usd' and conversion_ratio &lt; 0) or (currency_pair == 'thb_usd' and conversion_ratio &lt; 0))" class="alert alert-success text-center fw-bold" style="background-color: #28a745; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;" readonly="1" nolabel="1"/>
-                  <field name="xe_select" invisible="not ((currency_pair == 'usd_cny' and conversion_ratio &lt; 0) or (currency_pair == 'usd_euro' and conversion_ratio &lt; 0) or (currency_pair == 'usd_aed' and conversion_ratio &lt; 0) or (currency_pair == 'usd_thb' and conversion_ratio &lt; 0) or (currency_pair == 'cny_usd' and conversion_ratio &gt; 0) or (currency_pair == 'euro_usd' and conversion_ratio &gt; 0) or (currency_pair == 'aed_usd' and conversion_ratio &gt; 0) or (currency_pair == 'thb_usd' and conversion_ratio &gt; 0))" class="alert alert-success text-center fw-bold"  style="background-color: #28a745; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;" readonly="1" nolabel="1"/>
+                  <field name="error_in_bank_rate"
+                    invisible="not ((currency_pair == 'cny_usd' and cross_rate_pair &lt; 5) or (currency_pair == 'euro_usd' and cross_rate_pair &gt; 1) or (currency_pair == 'usd_cny' and cross_rate_pair &gt; 0.5) or (currency_pair == 'usd_euro' and cross_rate_pair &lt; 1) or (currency_pair == 'aed_usd' and cross_rate_pair &lt; 2) or (currency_pair == 'usd_aed' and cross_rate_pair &gt; 0.7))"
+                    class="alert alert-danger text-center fw-bold"
+                    style="background-color: #dc3545; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;"
+                    readonly="1" nolabel="1" />
+                  <field name="error_in_xe_rate"
+                    invisible="not ((currency_pair == 'cny_usd' and xe_rate &lt; 5) or (currency_pair == 'euro_usd' and xe_rate &gt; 1) or (currency_pair == 'usd_cny' and xe_rate &gt; 0.5) or (currency_pair == 'usd_euro' and xe_rate &lt; 1) or (currency_pair == 'aed_usd' and xe_rate &lt; 2) or (currency_pair == 'usd_aed' and xe_rate &gt; 0.7))"
+                    class="alert alert-danger text-center fw-bold"
+                    style="background-color: #dc3545; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;"
+                    readonly="1" nolabel="1" />
+                  <field name="bank_select"
+                    invisible="not ((currency_pair == 'usd_cny' and conversion_ratio &gt; 0) or (currency_pair == 'usd_euro' and conversion_ratio &gt; 0) or (currency_pair == 'usd_aed' and conversion_ratio &gt; 0) or (currency_pair == 'usd_thb' and conversion_ratio &gt; 0) or (currency_pair == 'cny_usd' and conversion_ratio &lt; 0) or (currency_pair == 'euro_usd' and conversion_ratio &lt; 0) or (currency_pair == 'aed_usd' and conversion_ratio &lt; 0) or (currency_pair == 'thb_usd' and conversion_ratio &lt; 0))"
+                    class="alert alert-success text-center fw-bold"
+                    style="background-color: #28a745; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;"
+                    readonly="1" nolabel="1" />
+                  <field name="xe_select"
+                    invisible="not ((currency_pair == 'usd_cny' and conversion_ratio &lt; 0) or (currency_pair == 'usd_euro' and conversion_ratio &lt; 0) or (currency_pair == 'usd_aed' and conversion_ratio &lt; 0) or (currency_pair == 'usd_thb' and conversion_ratio &lt; 0) or (currency_pair == 'cny_usd' and conversion_ratio &gt; 0) or (currency_pair == 'euro_usd' and conversion_ratio &gt; 0) or (currency_pair == 'aed_usd' and conversion_ratio &gt; 0) or (currency_pair == 'thb_usd' and conversion_ratio &gt; 0))"
+                    class="alert alert-success text-center fw-bold"
+                    style="background-color: #28a745; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; border: none; box-shadow: none; width: 100%; display: block;"
+                    readonly="1" nolabel="1" />
                 </div>
               </group>
             </page>
@@ -453,344 +560,42 @@
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <field name="with_accreditive"/>
-                    <field name="invoice_date"/>
-                    <field name="bank_registration_date"/>
+                    <field name="with_accreditive" />
+                    <field name="invoice_date" />
+                    <field name="bank_registration_date" />
                   </group>
                   <group>
-                    <field name="received_initial_docs"/>
-                    <field name="agent_contract_date"/>
-                    <field name="accreditive_open_date"/>
+                    <field name="received_initial_docs" />
+                    <field name="agent_contract_date" />
+                    <field name="accreditive_open_date" />
                   </group>
                 </div>
               </group>
               <group>
                 <div class="o-form-group">
                   <group>
-                    <field name="payment_date"/>
+                    <field name="payment_date" />
                   </group>
                   <group>
-                    <field name="supplier_currency_paid_date"/>
+                    <field name="supplier_currency_paid_date" />
                   </group>
                   <group>
-                    <field name="supplier_currency_received_date"/>
+                    <field name="supplier_currency_received_date" />
                   </group>
                 </div>
               </group>
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <field name="client_ruble_paid_date"/>
-                    <field name="act_report_signed_date"/>
-                    <field name="date_received_on_pc_payment"/>
-                    <field name="date_agent_on_pc" invisible="1"/>
+                    <field name="client_ruble_paid_date" />
+                    <field name="act_report_signed_date" />
+                    <field name="date_received_on_pc_payment" />
+                    <field name="date_agent_on_pc" invisible="1" />
                   </group>
                   <group>
-                    <field name="accreditive_revealed_date"/>
-                    <field name="deal_closed_date"/>
-                    <field name="deal_cycle_days"/>
-                  </group>
-                </div>
-              </group>
-            </page>
-            <page string="Документы" groups="!amanat.group_amanat_limited_access">
-              <group>
-                <div class="o-form-group-2">
-                  <group>
-                    <field name="zayavka_attachments" 
-                           widget="amanat_attachment"
-                           options="{'accepted_file_extensions': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt'}"/>
-                  </group>
-                  <group>
-                    <field name="screen_sber_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': True}"/>
-                  </group>
-                </div>
-              </group>
-
-              <group string="Поручение Вход">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_assignment_start" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_start_attachments or assignment_start_signature_state != 'draft'"/>
-                    <button name="action_sign_assignment_start" type="object" string="Подписать" class="btn-primary" invisible="assignment_start_signature_state != 'ready'"/>
-                    <button name="action_reset_assignment_start_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_start_attachments and not signed_assignment_start_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="assignment_start_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_assignment_start_attachments" readonly="1" invisible="assignment_start_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="assignment_start_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="assignment_start_signature_state == 'draft'">
-                    <field name="assignment_start_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                </group>
-                </div>
-              </group>
-
-              <group string="Заявка Выход">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_zayavka_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not zayavka_end_attachments or zayavka_end_signature_state != 'draft'"/>
-                    <button name="action_sign_zayavka_end" type="object" string="Подписать" class="btn-primary" invisible="zayavka_end_signature_state != 'ready'"/>
-                    <button name="action_reset_zayavka_end_document" type="object" string="Сбросить" class="btn-warning" invisible="not zayavka_end_attachments and not signed_zayavka_end_attachments" confirm="Вы уверены, что хотите сбросить все данные заявки? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="zayavka_end_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': True}"/>
-                      </group>
-                      <group>
-                        <field name="signed_zayavka_end_attachments" invisible="zayavka_end_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="zayavka_end_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="zayavka_end_signature_state == 'draft'">
-                    <field name="zayavka_end_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                  </group>
-                </div>
-              </group>
-
-              <group string="Поручение Выход">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_assignment_end" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_end_attachments or assignment_end_signature_state != 'draft'"/>
-                    <button name="action_sign_assignment_end" type="object" string="Подписать" class="btn-primary" invisible="assignment_end_signature_state != 'ready'"/>
-                    <button name="action_reset_assignment_end_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_end_attachments and not signed_assignment_end_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="assignment_end_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_assignment_end_attachments" readonly="1" invisible="assignment_end_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="assignment_end_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="assignment_end_signature_state == 'draft'">
-                    <field name="assignment_end_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                </group>
-                </div>
-              </group>
-              
-              <group string="Инвойс">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_invoice" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not invoice_attachments or invoice_signature_state != 'draft'"/>
-                    <button name="action_sign_invoice" type="object" string="Подписать" class="btn-primary" invisible="invoice_signature_state != 'ready'"/>
-                    <button name="action_reset_invoice_document" type="object" string="Сбросить" class="btn-warning" invisible="not invoice_attachments and not signed_invoice_attachments" confirm="Вы уверены, что хотите сбросить все данные инвойса? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="invoice_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_invoice_attachments" readonly="1" invisible="invoice_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="invoice_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="invoice_signature_state == 'draft'">
-                    <field name="invoice_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                  </group>
-                </div>
-              </group>
-              
-              <group string="Поручение">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_assignment" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not assignment_attachments or assignment_signature_state != 'draft'"/>
-                    <button name="action_sign_assignment" type="object" string="Подписать" class="btn-primary" invisible="assignment_signature_state != 'ready'"/>
-                    <button name="action_reset_assignment_document" type="object" string="Сбросить" class="btn-warning" invisible="not assignment_attachments and not signed_assignment_attachments" confirm="Вы уверены, что хотите сбросить все данные поручения? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="assignment_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_assignment_attachments" readonly="1" invisible="assignment_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="assignment_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="assignment_signature_state == 'draft'">
-                    <field name="assignment_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                </group>
-                </div>
-              </group>
-              
-              <group string="SWIFT">
-                <div>
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_swift" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not swift_attachments or swift_signature_state != 'draft'"/>
-                    <button name="action_sign_swift" type="object" string="Подписать" class="btn-primary" invisible="swift_signature_state != 'ready'"/>
-                    <button name="action_reset_swift_document" type="object" string="Сбросить" class="btn-warning" invisible="not swift_attachments and not signed_swift_attachments" confirm="Вы уверены, что хотите сбросить все данные SWIFT? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="swift_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_swift_attachments" readonly="1" invisible="swift_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="swift_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="swift_signature_state == 'draft'">
-                    <field name="swift_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                  </group>
-                </div>
-              </group>
-              
-              <group string="SWIFT 103">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_swift103" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not swift103_attachments or swift103_signature_state != 'draft'"/>
-                    <button name="action_sign_swift103" type="object" string="Подписать" class="btn-primary" invisible="swift103_signature_state != 'ready'"/>
-                    <button name="action_reset_swift103_document" type="object" string="Сбросить" class="btn-warning" invisible="not swift103_attachments and not signed_swift103_attachments" confirm="Вы уверены, что хотите сбросить все данные SWIFT 103? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="swift103_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_swift103_attachments" readonly="1" invisible="swift103_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="swift103_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="swift103_signature_state == 'draft'">
-                    <field name="swift103_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                  </group>
-                </div>
-              </group>
-              
-              <group string="SWIFT 199">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_swift199" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not swift199_attachments or swift199_signature_state != 'draft'"/>
-                    <button name="action_sign_swift199" type="object" string="Подписать" class="btn-primary" invisible="swift199_signature_state != 'ready'"/>
-                    <button name="action_reset_swift199_document" type="object" string="Сбросить" class="btn-warning" invisible="not swift199_attachments and not signed_swift199_attachments" confirm="Вы уверены, что хотите сбросить все данные SWIFT 199? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="swift199_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_swift199_attachments" readonly="1" invisible="swift199_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="swift199_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="swift199_signature_state == 'draft'">
-                    <field name="swift199_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
-                  </group>
-                </div>
-              </group>
-              
-              <group string="Акт-отчет">
-                <div class="o-form-group-3">
-                  <div class="o_inner_group d-flex">
-                    <button name="action_detect_signatures_report" type="object" string="Определить сигнатуры" class="btn-secondary" invisible="not report_attachments or report_signature_state != 'draft'"/>
-                    <button name="action_sign_report" type="object" string="Подписать" class="btn-primary" invisible="report_signature_state != 'ready'"/>
-                    <button name="action_reset_report_document" type="object" string="Сбросить" class="btn-warning" invisible="not report_attachments and not signed_report_attachments" confirm="Вы уверены, что хотите сбросить все данные акт-отчета? Это действие нельзя отменить."/>
-                  </div>
-                  <group>
-                    <div class="o-form-group-2">
-                      <group>
-                        <field name="report_attachments" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                      <group>
-                        <field name="signed_report_attachments" readonly="1" invisible="report_signature_state != 'signed'" widget="amanat_attachment" options="{'no_create': False, 'no_open': False}"/>
-                      </group>
-                    </div>
-                    <field name="report_signature_state"/>
-                  </group>
-                  <group string="Назначения подписей" invisible="report_signature_state == 'draft'">
-                    <field name="report_signature_assignment_ids" nolabel="1">
-                      <list editable="bottom">
-                        <field name="name"/>
-                        <field name="signature_type"/>
-                        <field name="page_number"/>
-                        <field name="signature_id" domain="[('signature_type', '=', signature_type)]"/>
-                        <field name="required"/>
-                      </list>
-                    </field>
+                    <field name="accreditive_revealed_date" />
+                    <field name="deal_closed_date" />
+                    <field name="deal_cycle_days" />
                   </group>
                 </div>
               </group>
@@ -800,28 +605,28 @@
               <group string="Субагент">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="application_sequence"/>
-                    <field name="subagent_ids" widget="many2many_tags"/>
+                    <field name="application_sequence" />
+                    <field name="subagent_ids" widget="many2many_tags" />
                   </group>
                   <group>
-                    <field name="subagent_docs_prepared_date"/>
-                    <field name="subagent_payer_ids" widget="many2many_tags"/>
+                    <field name="subagent_docs_prepared_date" />
+                    <field name="subagent_payer_ids" widget="many2many_tags" />
                   </group>
                 </div>
               </group>
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <field name="swift_received_date"/>
-                    <field name="swift_103_requested_date"/>
-                    <field name="swift_199_requested_date"/>
-                    <field name="return_requested_date"/>
+                    <field name="swift_received_date" />
+                    <field name="swift_103_requested_date" />
+                    <field name="swift_199_requested_date" />
+                    <field name="return_requested_date" />
                   </group>
                   <group>
-                    <field name="swift_status"/>
-                    <field name="swift_103_received_date"/>
-                    <field name="swift_199_received_date"/>
-                    <field name="return_money_received_date"/>
+                    <field name="swift_status" />
+                    <field name="swift_103_received_date" />
+                    <field name="swift_199_received_date" />
+                    <field name="return_money_received_date" />
                   </group>
                 </div>
               </group>
@@ -837,7 +642,8 @@
                     <field name="swift_status_display"/>
                     <field name="swift_auto_filled" readonly="1"/>
                     <field name="swift_last_updated" readonly="1"/>
-                    <button name="action_fetch_swift_info" type="object" string="Получить SWIFT информацию" class="btn-primary"/>
+                    <button name="action_fetch_swift_info" type="object" string="Получить SWIFT информацию"
+              class="btn-primary"/>
                   </group>
                 </div>
                 <field name="swift_status_info" nolabel="1"/>
@@ -847,119 +653,136 @@
               <group>
                 <div class="o-form-group">
                   <group>
-                    <field name="is_money_stuck"/>
+                    <field name="is_money_stuck" />
                   </group>
                   <group>
-                    <field name="hide_in_dashboard" groups="!amanat.group_amanat_manager"/>
+                    <field name="hide_in_dashboard" groups="!amanat.group_amanat_manager" />
                   </group>
                   <group>
-                    <field name="problem_stage"/>
+                    <field name="problem_stage" />
                   </group>
                 </div>
-                <field name="problem_comment"/>
+                <field name="problem_comment" />
                 <div class="o-form-group-2">
                   <group>
-                    <field name="currency_stuck"/>
+                    <field name="currency_stuck" />
                   </group>
                   <group>
-                    <field name="sum_stuck"/>
+                    <field name="sum_stuck" />
                   </group>
                 </div>
-                <field name="whose_mistake"/>
-                <field name="zayavka_mistake"/>
+                <field name="whose_mistake" />
+                <field name="zayavka_mistake" />
               </group>
               <group>
-                <div class="text-uppercase fw-bolder small">Возврат по кроссу <span class="o_stat_value"><field name="cross_return" class="o_field_boolean mb-0"/></span></div>
+                <div class="text-uppercase fw-bolder small">Возврат по кроссу <span
+                    class="o_stat_value">
+                    <field name="cross_return" class="o_field_boolean mb-0" />
+                  </span></div>
               </group>
               <group invisible="not cross_return">
-                <div class="o-form-group-2">
+                <div class="o-form-group">
                   <group>
-                    <field name="cross_return_date"/>
-                    <field name="cross_return_bank_rate"/>
+                    <field name="cross_return_bank_rate" />
                   </group>
                   <group>
-                    <field name="cross_return_currency_pair"/>
-                    <field name="cross_return_conversion_amount"/>
+                    <field name="cross_return_currency_pair" />
+                  </group>
+                  <group>
+                    <field name="cross_return_conversion_amount" />
                   </group>
                 </div>
+              </group>
+              <group>
+                <field name="cross_return_date" />
               </group>
               <group string="Возврат с последующей оплатой" invisible="problem_stage != '1'">
                 <div>
                   <group>
-                    <div class="text-uppercase fw-medium">Сменить плательщика <span class="o_stat_value"><field name="change_payer" class="o_field_boolean mb-0"/></span></div>
+                    <div class="text-uppercase fw-medium">Сменить плательщика <span
+                        class="o_stat_value">
+                        <field name="change_payer" class="o_field_boolean mb-0" />
+                      </span></div>
                   </group>
                   <group invisible="not change_payer">
-                    <div class="o-form-group-2">
+                    <div class="o-form-group">
                       <group>
-                        <field name="return_commission" widget="percentage"/>
+                        <field name="return_subagent" />
                       </group>
                       <group>
-                        <field name="payers_for_return" widget="many2many_tags"/>
+                        <field name="payers_for_return" widget="many2many_tags" />
+                      </group>
+                      <group>
+                        <field name="return_commission" widget="percentage" />
                       </group>
                     </div>
                   </group>
                   <group>
                     <div class="o-form-group">
                       <group>
-                        <field name="payment_date_again_1"/>
+                        <field name="payment_date_again_1" />
                       </group>
                       <group>
-                        <field name="supplier_currency_paid_date_again_1"/>
+                        <field name="supplier_currency_paid_date_again_1" />
                       </group>
                       <group>
-                        <field name="supplier_currency_received_date_again_1"/>
-                      </group>
-                    </div>
-                  </group>
-                  <group invisible="not payment_date_again_1 or not supplier_currency_paid_date_again_1 or not supplier_currency_received_date_again_1">
-                    <div class="o-form-group">
-                      <group>
-                        <field name="payment_date_again_2"/>
-                      </group>
-                      <group>
-                        <field name="supplier_currency_paid_date_again_2"/>
-                      </group>
-                      <group>
-                        <field name="supplier_currency_received_date_again_2"/>
+                        <field name="supplier_currency_received_date_again_1" />
                       </group>
                     </div>
                   </group>
-                  <group invisible="not payment_date_again_2 or not supplier_currency_paid_date_again_2 or not supplier_currency_received_date_again_2">
+                  <group
+                    invisible="not payment_date_again_1 or not supplier_currency_paid_date_again_1 or not supplier_currency_received_date_again_1">
                     <div class="o-form-group">
                       <group>
-                        <field name="payment_date_again_3"/>
+                        <field name="payment_date_again_2" />
                       </group>
                       <group>
-                        <field name="supplier_currency_paid_date_again_3"/>
+                        <field name="supplier_currency_paid_date_again_2" />
                       </group>
                       <group>
-                        <field name="supplier_currency_received_date_again_3"/>
+                        <field name="supplier_currency_received_date_again_2" />
                       </group>
                     </div>
                   </group>
-                  <group invisible="not payment_date_again_3 or not supplier_currency_paid_date_again_3 or not supplier_currency_received_date_again_3">
+                  <group
+                    invisible="not payment_date_again_2 or not supplier_currency_paid_date_again_2 or not supplier_currency_received_date_again_2">
                     <div class="o-form-group">
                       <group>
-                        <field name="payment_date_again_4"/>
+                        <field name="payment_date_again_3" />
                       </group>
                       <group>
-                        <field name="supplier_currency_paid_date_again_4"/>
+                        <field name="supplier_currency_paid_date_again_3" />
                       </group>
                       <group>
-                        <field name="supplier_currency_received_date_again_4"/>
+                        <field name="supplier_currency_received_date_again_3" />
                       </group>
                     </div>
                   </group>
-                  <group invisible="not payment_date_again_4 or not supplier_currency_paid_date_again_4 or not supplier_currency_received_date_again_4">
+                  <group
+                    invisible="not payment_date_again_3 or not supplier_currency_paid_date_again_3 or not supplier_currency_received_date_again_3">
                     <div class="o-form-group">
                       <group>
-                        <field name="payment_date_again_5"/>
+                        <field name="payment_date_again_4" />
                       </group>
                       <group>
-                        <field name="supplier_currency_paid_date_again_5"/>
+                        <field name="supplier_currency_paid_date_again_4" />
                       </group>
                       <group>
-                        <field name="supplier_currency_received_date_again_5"/>
+                        <field name="supplier_currency_received_date_again_4" />
+                      </group>
+                    </div>
+                  </group>
+                  <group
+                    invisible="not payment_date_again_4 or not supplier_currency_paid_date_again_4 or not supplier_currency_received_date_again_4">
+                    <div class="o-form-group">
+                      <group>
+                        <field name="payment_date_again_5" />
+                      </group>
+                      <group>
+                        <field name="supplier_currency_paid_date_again_5" />
+                      </group>
+                      <group>
+                        <field name="supplier_currency_received_date_again_5" />
                       </group>
                     </div>
                   </group>
@@ -968,787 +791,792 @@
               <group string="Возврат с возвратом основной суммы" invisible="problem_stage != '2'">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="return_amount_to_client"/>
+                    <field name="return_amount_to_client" />
                   </group>
                   <group>
-                    <field name="payment_order_date_to_client_account"/>
+                    <field name="payment_order_date_to_client_account" />
                   </group>
                 </div>
               </group>
               <group string="Возврат с возвратом всей суммы" invisible="problem_stage != '3'">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="return_amount"/>
+                    <field name="return_amount" />
                   </group>
                   <group>
-                    <field name="payment_order_date_to_client_account_return_all"/>
+                    <field name="payment_order_date_to_client_account_return_all" />
                   </group>
                 </div>
               </group>
-              <group string="Возврат с частичной оплатой вознаграждения" invisible="problem_stage != '4'">
-                <div class="o-form-group">
-                  <group>
-                    <field name="return_amount_to_reward"/>
-                  </group>
-                  <group>
-                    <field name="return_amount_main"/>
-                  </group>
-                  <group>
-                    <field name="payment_order_date_to_return"/>
-                  </group>
-                </div>
-              </group>
-              <group string="Возврат на предоплату следующего заказа" invisible="problem_stage != '5'">
+              <group string="Возврат с частичной оплатой вознаграждения"
+                invisible="problem_stage != '4'">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="return_amount_prepayment_of_next"/>
+                    <field name="return_amount_main" />
                   </group>
                   <group>
-                    <field name="payment_order_date_to_prepayment_of_next"/>
+                    <field name="payment_order_date_to_return" />
+                  </group>
+                </div>
+              </group>
+              <group string="Возврат на предоплату следующего заказа"
+                invisible="problem_stage != '5'">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="return_amount_to_reward" />
+                  </group>
+                  <group>
+                    <field name="payment_order_date_to_prepayment_of_next" />
                   </group>
                 </div>
               </group>
             </page>
-            
-            <page string="Финансовый расчет" invisible="not is_sovcombank_contragent" groups="!amanat.group_amanat_manager">
+
+            <page string="Финансовый расчет" invisible="not is_sovcombank_contragent"
+              groups="!amanat.group_amanat_manager">
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <field name="for_khalida_temp"/>
+                    <field name="for_khalida_temp" />
                   </group>
                   <group>
-                    <field name="fin_entry_check"/>
+                    <field name="fin_entry_check" />
                   </group>
                 </div>
               </group>
               <group string="Правило платежка">
-                <field name="payment_order_rule_id"/>
-                <field name="percent_from_payment_order_rule" widget="percentage"/>
+                <field name="payment_order_rule_id" />
+                <field name="percent_from_payment_order_rule" widget="percentage" />
               </group>
               <group string="Правило себестоимость денег">
-                <field name="money_cost_rule_id"/>
+                <field name="money_cost_rule_id" />
                 <div class="o-form-group">
                   <group>
-                    <field name="money_cost_rule_credit_rate" widget="percentage"/>
+                    <field name="money_cost_rule_credit_rate" widget="percentage" />
                   </group>
                   <group>
-                    <field name="money_cost_rule_credit_period"/>
+                    <field name="money_cost_rule_credit_period" />
                   </group>
                   <group>
-                    <field name="money_cost_rule_extra_days"/>
+                    <field name="money_cost_rule_extra_days" />
                   </group>
                 </div>
               </group>
               <group string="Правило расхода платежа">
-                <field name="expense_rule_id"/>
-                <field name="percent_from_expense_rule" widget="percentage"/>
+                <field name="expense_rule_id" />
+                <field name="percent_from_expense_rule" widget="percentage" />
               </group>
               <group string="Прайс лист Плательщика Прибыль">
-                <field name="price_list_profit_id"/>
-                <field name="price_list_percent_accrual" widget="percentage"/>
+                <field name="price_list_profit_id" />
+                <field name="price_list_percent_accrual" widget="percentage" />
               </group>
               <group string="Прайс лист За проведение">
-                <field name="price_list_carrying_out_id"/>
+                <field name="price_list_carrying_out_id" />
                 <div class="o-form-group-2">
                   <group>
-                    <field name="price_list_carrying_out_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_carrying_out_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_carrying_out_fixed_deal_fee"/>
+                    <field name="price_list_carrying_out_fixed_deal_fee" />
                   </group>
                 </div>
               </group>
               <group string="Прайс лист Партнеры">
-                <field name="price_list_partners_id"/>
+                <field name="price_list_partners_id" />
                 <div class="o-form-group-2">
                   <group>
-                    <field name="price_list_partners_id_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_2" invisible="not price_list_partners_id"/>
+                <field name="price_list_partners_id_2" invisible="not price_list_partners_id" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id">
                   <group>
-                    <field name="price_list_partners_id_2_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_2_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_2_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_2_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_3" invisible="not price_list_partners_id_2"/>
+                <field name="price_list_partners_id_3" invisible="not price_list_partners_id_2" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id_2">
                   <group>
-                    <field name="price_list_partners_id_3_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_3_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_3_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_3_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_4" invisible="not price_list_partners_id_3"/>
+                <field name="price_list_partners_id_4" invisible="not price_list_partners_id_3" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id_3">
                   <group>
-                    <field name="price_list_partners_id_4_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_4_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_4_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_4_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_5" invisible="not price_list_partners_id_4"/>
+                <field name="price_list_partners_id_5" invisible="not price_list_partners_id_4" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id_4">
                   <group>
-                    <field name="price_list_partners_id_5_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_5_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_5_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_5_fixed_deal_fee" />
                   </group>
                 </div>
               </group>
               <group string="Курсы и конвертация">
                 <div class="o-form-group-4">
                   <group>
-                    <field name="real_post_conversion_rate"/>
+                    <field name="real_post_conversion_rate" />
                   </group>
                   <group>
-                    <field name="payer_cross_rate_usd"/>
+                    <field name="payer_cross_rate_usd" />
                   </group>
                   <group>
-                    <field name="payer_cross_rate_rub"/>
+                    <field name="payer_cross_rate_rub" />
                   </group>
                   <group>
-                    <field name="payment_order_rf_sovok"/>
+                    <field name="payment_order_rf_sovok" />
                   </group>
                 </div>
               </group>
               <group string="Купили валюту Совок реал">
                 <div class="o-form-group">
                   <group>
-                    <field name="kupili_valyutu_sovok_real"/>
+                    <field name="kupili_valyutu_sovok_real" />
                   </group>
                   <group>
-                    <field name="kupili_valyutu_sovok_real_usd"/>
+                    <field name="kupili_valyutu_sovok_real_usd" />
                   </group>
                   <group>
-                    <field name="kupili_valyutu_sovok_real_rub"/>
+                    <field name="kupili_valyutu_sovok_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Себестоимость денег Совок">
                 <div class="o-form-group">
                   <group>
-                    <field name="sebestoimost_denej_sovok_real"/>
+                    <field name="sebestoimost_denej_sovok_real" />
                   </group>
                   <group>
-                    <field name="sebestoimost_denej_sovok_real_usd"/>
+                    <field name="sebestoimost_denej_sovok_real_usd" />
                   </group>
                   <group>
-                    <field name="sebestoimost_denej_sovok_real_rub"/>
+                    <field name="sebestoimost_denej_sovok_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Операционные расходы Совок">
                 <div class="o-form-group">
                   <group>
-                    <field name="operating_expenses_sovok_real"/>
+                    <field name="operating_expenses_sovok_real" />
                   </group>
                   <group>
-                    <field name="operating_expenses_sovok_real_usd"/>
+                    <field name="operating_expenses_sovok_real_usd" />
                   </group>
                   <group>
-                    <field name="operating_expenses_sovok_real_rub"/>
+                    <field name="operating_expenses_sovok_real_rub" />
                   </group>
                 </div>
-                <field name="correction"/>
+                <field name="correction" />
               </group>
               <group string="Скрытые комиссии партнера">
                 <div class="o-form-group">
                   <group>
-                    <field name="hidden_partner_commission_real"/>
+                    <field name="hidden_partner_commission_real" />
                   </group>
                   <group>
-                    <field name="hidden_partner_commission_real_usd"/>
+                    <field name="hidden_partner_commission_real_usd" />
                   </group>
                   <group>
-                    <field name="hidden_partner_commission_real_rub"/>
+                    <field name="hidden_partner_commission_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Расходы платежей Совок">
                 <div class="o-form-group">
                   <group>
-                    <field name="payment_cost_sovok"/>
+                    <field name="payment_cost_sovok" />
                   </group>
                   <group>
-                    <field name="payment_cost_sovok_real_usd"/>
+                    <field name="payment_cost_sovok_real_usd" />
                   </group>
                   <group>
-                    <field name="payment_cost_sovok_real_rub"/>
+                    <field name="payment_cost_sovok_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Прибыль плательщика">
                 <div class="o-form-group">
                   <group>
-                    <field name="payer_profit_currency"/>
+                    <field name="payer_profit_currency" />
                   </group>
                   <group>
-                    <field name="payer_profit_usd"/>
+                    <field name="payer_profit_usd" />
                   </group>
                   <group>
-                    <field name="payer_profit_rub"/>
+                    <field name="payer_profit_rub" />
                   </group>
                 </div>
               </group>
               <group string="Прочие поля">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="currency" readonly="1"/>
+                    <field name="currency" readonly="1" />
                   </group>
                   <group>
-                    <field name="send_to_reconciliation"/>
+                    <field name="send_to_reconciliation" />
                   </group>
                 </div>
               </group>
               <group string="Финансовые результаты Совок">
                 <div class="o-form-group">
                   <group>
-                    <field name="fin_res_sovok_real"/>
+                    <field name="fin_res_sovok_real" />
                   </group>
                   <group>
-                    <field name="fin_res_sovok_real_usd"/>
+                    <field name="fin_res_sovok_real_usd" />
                   </group>
                   <group>
-                    <field name="fin_res_sovok_real_rub"/>
+                    <field name="fin_res_sovok_real_rub" />
                   </group>
                 </div>
               </group>
             </page>
-            <page string="Финансовый расчет" invisible="not is_sberbank_contragent" groups="!amanat.group_amanat_manager">
+            <page string="Финансовый расчет" invisible="not is_sberbank_contragent"
+              groups="!amanat.group_amanat_manager">
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <field name="for_khalida_temp"/>
+                    <field name="for_khalida_temp" />
                   </group>
                   <group>
-                    <field name="fin_entry_check"/>
+                    <field name="fin_entry_check" />
                   </group>
                 </div>
               </group>
               <group string="Правило платежка">
-                <field name="payment_order_rule_id"/>
-                <field name="percent_from_payment_order_rule" widget="percentage"/>
+                <field name="payment_order_rule_id" />
+                <field name="percent_from_payment_order_rule" widget="percentage" />
               </group>
               <group string="Правило себестоимость денег">
-                <field name="money_cost_rule_id"/>
+                <field name="money_cost_rule_id" />
                 <div class="o-form-group">
                   <group>
-                    <field name="money_cost_rule_credit_rate" widget="percentage"/>
+                    <field name="money_cost_rule_credit_rate" widget="percentage" />
                   </group>
                   <group>
-                    <field name="money_cost_rule_credit_period"/>
+                    <field name="money_cost_rule_credit_period" />
                   </group>
                   <group>
-                    <field name="money_cost_rule_extra_days"/>
+                    <field name="money_cost_rule_extra_days" />
                   </group>
                 </div>
               </group>
               <group string="Правило расхода платежа">
-                <field name="expense_rule_id"/>
-                <field name="percent_from_expense_rule" widget="percentage"/>
+                <field name="expense_rule_id" />
+                <field name="percent_from_expense_rule" widget="percentage" />
               </group>
               <group string="Прайс лист Плательщика Прибыль">
-                <field name="price_list_profit_id"/>
-                <field name="price_list_percent_accrual" widget="percentage"/>
+                <field name="price_list_profit_id" />
+                <field name="price_list_percent_accrual" widget="percentage" />
               </group>
               <group string="Прайс лист За проведение">
-                <field name="price_list_carrying_out_id"/>
+                <field name="price_list_carrying_out_id" />
                 <div class="o-form-group-2">
                   <group>
-                    <field name="price_list_carrying_out_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_carrying_out_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_carrying_out_fixed_deal_fee"/>
+                    <field name="price_list_carrying_out_fixed_deal_fee" />
                   </group>
                 </div>
               </group>
               <group string="Прайс лист Партнеры">
-                <field name="price_list_partners_id"/>
+                <field name="price_list_partners_id" />
                 <div class="o-form-group-2">
                   <group>
-                    <field name="price_list_partners_id_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_2" invisible="not price_list_partners_id"/>
+                <field name="price_list_partners_id_2" invisible="not price_list_partners_id" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id">
                   <group>
-                    <field name="price_list_partners_id_2_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_2_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_2_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_2_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_3" invisible="not price_list_partners_id_2"/>
+                <field name="price_list_partners_id_3" invisible="not price_list_partners_id_2" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id_2">
                   <group>
-                    <field name="price_list_partners_id_3_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_3_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_3_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_3_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_4" invisible="not price_list_partners_id_3"/>
+                <field name="price_list_partners_id_4" invisible="not price_list_partners_id_3" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id_3">
                   <group>
-                    <field name="price_list_partners_id_4_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_4_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_4_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_4_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_5" invisible="not price_list_partners_id_4"/>
+                <field name="price_list_partners_id_5" invisible="not price_list_partners_id_4" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id_4">
                   <group>
-                    <field name="price_list_partners_id_5_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_5_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_5_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_5_fixed_deal_fee" />
                   </group>
                 </div>
               </group>
               <group string="Курсы">
                 <div class="o-form-group">
                   <group>
-                    <field name="payment_order_rf_sber"/>
+                    <field name="payment_order_rf_sber" />
                   </group>
                   <group>
-                    <field name="payer_cross_rate_usd"/>
+                    <field name="payer_cross_rate_usd" />
                   </group>
                   <group>
-                    <field name="payer_cross_rate_rub"/>
+                    <field name="payer_cross_rate_rub" />
                   </group>
                 </div>
               </group>
               <group string="Курсы и конвертация">
                 <div class="o-form-group">
                   <group>
-                    <field name="real_post_conversion_rate"/>
+                    <field name="real_post_conversion_rate" />
                   </group>
                   <group>
-                    <field name="real_post_conversion_rate_usd"/>
+                    <field name="real_post_conversion_rate_usd" />
                   </group>
                   <group>
-                    <field name="real_post_conversion_rate_rub"/>
+                    <field name="real_post_conversion_rate_rub" />
                   </group>
                 </div>
               </group>
               <group string="Купили валюту Сбер">
                 <div class="o-form-group">
                   <group>
-                    <field name="kupili_valyutu_sber_real"/>
+                    <field name="kupili_valyutu_sber_real" />
                   </group>
                   <group>
-                    <field name="kupili_valyutu_sber_real_usd"/>
+                    <field name="kupili_valyutu_sber_real_usd" />
                   </group>
                   <group>
-                    <field name="kupili_valyutu_sber_real_rub"/>
+                    <field name="kupili_valyutu_sber_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Себестоимость денег Сбер">
                 <div class="o-form-group">
                   <group>
-                    <field name="sebestoimost_denej_sber_real"/>
+                    <field name="sebestoimost_denej_sber_real" />
                   </group>
                   <group>
-                    <field name="sebestoimost_denej_sber_real_usd"/>
+                    <field name="sebestoimost_denej_sber_real_usd" />
                   </group>
                   <group>
-                    <field name="sebestoimost_denej_sber_real_rub"/>
+                    <field name="sebestoimost_denej_sber_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Операционные расходы Сбер">
                 <div class="o-form-group">
                   <group>
-                    <field name="sber_operating_expenses_real"/>
+                    <field name="sber_operating_expenses_real" />
                   </group>
                   <group>
-                    <field name="sber_operating_expenses_real_usd"/>
+                    <field name="sber_operating_expenses_real_usd" />
                   </group>
                   <group>
-                    <field name="sber_operating_expenses_real_rub"/>
+                    <field name="sber_operating_expenses_real_rub" />
                   </group>
                 </div>
-                <field name="correction"/>
+                <field name="correction" />
               </group>
               <group string="Скрытые комиссии партнера">
                 <div class="o-form-group">
                   <group>
-                    <field name="hidden_partner_commission_real"/>
+                    <field name="hidden_partner_commission_real" />
                   </group>
                   <group>
-                    <field name="hidden_partner_commission_real_usd"/>
+                    <field name="hidden_partner_commission_real_usd" />
                   </group>
                   <group>
-                    <field name="hidden_partner_commission_real_rub"/>
+                    <field name="hidden_partner_commission_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Расходы платежей Сбер">
                 <div class="o-form-group">
                   <group>
-                    <field name="sber_payment_cost"/>
+                    <field name="sber_payment_cost" />
                   </group>
                   <group>
-                    <field name="sber_payment_cost_usd"/>
+                    <field name="sber_payment_cost_usd" />
                   </group>
                   <group>
-                    <field name="sber_payment_cost_rub"/>
+                    <field name="sber_payment_cost_rub" />
                   </group>
                 </div>
               </group>
               <group string="Прибыль плательщика">
                 <div class="o-form-group">
                   <group>
-                    <field name="payer_profit_currency"/>
+                    <field name="payer_profit_currency" />
                   </group>
                   <group>
-                    <field name="payer_profit_usd"/>
+                    <field name="payer_profit_usd" />
                   </group>
                   <group>
-                    <field name="payer_profit_rub"/>
+                    <field name="payer_profit_rub" />
                   </group>
                 </div>
               </group>
               <group string="Прочие поля">
                 <div class="o-form-group">
                   <group>
-                    <field name="currency" readonly="1"/>
+                    <field name="currency" readonly="1" />
                   </group>
                   <group>
-                    <field name="send_to_reconciliation"/>
+                    <field name="send_to_reconciliation" />
                   </group>
                   <group>
-                    <field name="conversion_expenses_currency"/>
+                    <field name="conversion_expenses_currency" />
                   </group>
                 </div>
               </group>
               <group string="Финансовые результаты Сбер">
                 <div class="o-form-group">
                   <group>
-                    <field name="fin_res_sber_real"/>
+                    <field name="fin_res_sber_real" />
                   </group>
                   <group>
-                    <field name="fin_res_sber_real_usd"/>
+                    <field name="fin_res_sber_real_usd" />
                   </group>
                   <group>
-                    <field name="fin_res_sber_real_rub"/>
+                    <field name="fin_res_sber_real_rub" />
                   </group>
                 </div>
               </group>
             </page>
-            <page string="Финансовый расчет" invisible="is_sovcombank_contragent or is_sberbank_contragent" groups="!amanat.group_amanat_manager">
+            <page string="Финансовый расчет"
+              invisible="is_sovcombank_contragent or is_sberbank_contragent"
+              groups="!amanat.group_amanat_manager">
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <field name="for_khalida_temp"/>
+                    <field name="for_khalida_temp" />
                   </group>
                   <group>
-                    <field name="fin_entry_check"/>
+                    <field name="fin_entry_check" />
                   </group>
                 </div>
               </group>
               <group string="Правило платежка">
-                <field name="payment_order_rule_id"/>
-                <field name="percent_from_payment_order_rule" widget="percentage"/>
+                <field name="payment_order_rule_id" />
+                <field name="percent_from_payment_order_rule" widget="percentage" />
               </group>
               <group string="Правило себестоимость денег">
-                <field name="money_cost_rule_id"/>
+                <field name="money_cost_rule_id" />
                 <div class="o-form-group">
                   <group>
-                    <field name="money_cost_rule_credit_rate" widget="percentage"/>
+                    <field name="money_cost_rule_credit_rate" widget="percentage" />
                   </group>
                   <group>
-                    <field name="money_cost_rule_credit_period"/>
+                    <field name="money_cost_rule_credit_period" />
                   </group>
                   <group>
-                    <field name="money_cost_rule_extra_days"/>
+                    <field name="money_cost_rule_extra_days" />
                   </group>
                 </div>
               </group>
               <group string="Правило расхода платежа">
-                <field name="expense_rule_id"/>
-                <field name="percent_from_expense_rule" widget="percentage"/>
+                <field name="expense_rule_id" />
+                <field name="percent_from_expense_rule" widget="percentage" />
               </group>
               <group string="Прайс лист Плательщика Прибыль">
-                <field name="price_list_profit_id"/>
-                <field name="price_list_percent_accrual" widget="percentage"/>
+                <field name="price_list_profit_id" />
+                <field name="price_list_percent_accrual" widget="percentage" />
               </group>
               <group string="Прайс лист За проведение">
-                <field name="price_list_carrying_out_id"/>
+                <field name="price_list_carrying_out_id" />
                 <div class="o-form-group-2">
                   <group>
-                    <field name="price_list_carrying_out_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_carrying_out_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_carrying_out_fixed_deal_fee"/>
+                    <field name="price_list_carrying_out_fixed_deal_fee" />
                   </group>
                 </div>
               </group>
               <group string="Прайс лист Партнеры">
-                <field name="price_list_partners_id"/>
+                <field name="price_list_partners_id" />
                 <div class="o-form-group-2">
                   <group>
-                    <field name="price_list_partners_id_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_2" invisible="not price_list_partners_id"/>
+                <field name="price_list_partners_id_2" invisible="not price_list_partners_id" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id">
                   <group>
-                    <field name="price_list_partners_id_2_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_2_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_2_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_2_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_3" invisible="not price_list_partners_id_2"/>
+                <field name="price_list_partners_id_3" invisible="not price_list_partners_id_2" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id_2">
                   <group>
-                    <field name="price_list_partners_id_3_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_3_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_3_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_3_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_4" invisible="not price_list_partners_id_3"/>
+                <field name="price_list_partners_id_4" invisible="not price_list_partners_id_3" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id_3">
                   <group>
-                    <field name="price_list_partners_id_4_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_4_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_4_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_4_fixed_deal_fee" />
                   </group>
                 </div>
-                <field name="price_list_partners_id_5" invisible="not price_list_partners_id_4"/>
+                <field name="price_list_partners_id_5" invisible="not price_list_partners_id_4" />
                 <div class="o-form-group-2" invisible="not price_list_partners_id_4">
                   <group>
-                    <field name="price_list_partners_id_5_accrual_percentage" widget="percentage"/>
+                    <field name="price_list_partners_id_5_accrual_percentage" widget="percentage" />
                   </group>
                   <group>
-                    <field name="price_list_partners_id_5_fixed_deal_fee"/>
+                    <field name="price_list_partners_id_5_fixed_deal_fee" />
                   </group>
                 </div>
               </group>
               <group string="Курсы">
                 <div class="o-form-group">
                   <group>
-                    <field name="payment_order_rf_client"/>
+                    <field name="payment_order_rf_client" />
                   </group>
                   <group>
-                    <field name="payer_cross_rate_usd"/>
+                    <field name="payer_cross_rate_usd" />
                   </group>
                   <group>
-                    <field name="payer_cross_rate_rub"/>
+                    <field name="payer_cross_rate_rub" />
                   </group>
                 </div>
               </group>
               <group string="Курс после конвертации">
                 <div class="o-form-group">
                   <group>
-                    <field name="real_post_conversion_rate"/>
+                    <field name="real_post_conversion_rate" />
                   </group>
                   <group>
-                    <field name="real_post_conversion_rate_usd"/>
+                    <field name="real_post_conversion_rate_usd" />
                   </group>
                   <group>
-                    <field name="real_post_conversion_rate_rub"/>
+                    <field name="real_post_conversion_rate_rub" />
                   </group>
                 </div>
               </group>
               <group string="Купили валюту">
                 <div class="o-form-group">
                   <group>
-                    <field name="client_currency_bought_real"/>
+                    <field name="client_currency_bought_real" />
                   </group>
                   <group>
-                    <field name="client_currency_bought_real_usd"/>
+                    <field name="client_currency_bought_real_usd" />
                   </group>
                   <group>
-                    <field name="client_currency_bought_real_rub"/>
+                    <field name="client_currency_bought_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Себестоимость денег">
                 <div class="o-form-group">
                   <group>
-                    <field name="cost_of_money_client_real"/>
+                    <field name="cost_of_money_client_real" />
                   </group>
                   <group>
-                    <field name="cost_of_money_client_real_usd"/>
+                    <field name="cost_of_money_client_real_usd" />
                   </group>
                   <group>
-                    <field name="cost_of_money_client_real_rub"/>
+                    <field name="cost_of_money_client_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Операционные расходы">
                 <div class="o-form-group">
                   <group>
-                    <field name="client_real_operating_expenses"/>
+                    <field name="client_real_operating_expenses" />
                   </group>
                   <group>
-                    <field name="client_real_operating_expenses_usd"/>
+                    <field name="client_real_operating_expenses_usd" />
                   </group>
                   <group>
-                    <field name="client_real_operating_expenses_rub"/>
+                    <field name="client_real_operating_expenses_rub" />
                   </group>
                 </div>
-                <field name="correction"/>
+                <field name="correction" />
               </group>
               <group string="Скрытые комиссии партнера">
                 <div class="o-form-group">
                   <group>
-                    <field name="hidden_partner_commission_real"/>
+                    <field name="hidden_partner_commission_real" />
                   </group>
                   <group>
-                    <field name="hidden_partner_commission_real_usd"/>
+                    <field name="hidden_partner_commission_real_usd" />
                   </group>
                   <group>
-                    <field name="hidden_partner_commission_real_rub"/>
+                    <field name="hidden_partner_commission_real_rub" />
                   </group>
                 </div>
               </group>
               <group string="Расходы платежей">
                 <div class="o-form-group">
                   <group>
-                    <field name="client_payment_cost"/>
+                    <field name="client_payment_cost" />
                   </group>
                   <group>
-                    <field name="client_payment_cost_usd"/>
+                    <field name="client_payment_cost_usd" />
                   </group>
                   <group>
-                    <field name="client_payment_cost_rub"/>
+                    <field name="client_payment_cost_rub" />
                   </group>
                 </div>
               </group>
               <group string="Прибыль плательщика">
                 <div class="o-form-group">
                   <group>
-                    <field name="payer_profit_currency"/>
+                    <field name="payer_profit_currency" />
                   </group>
                   <group>
-                    <field name="payer_profit_usd"/>
+                    <field name="payer_profit_usd" />
                   </group>
                   <group>
-                    <field name="payer_profit_rub"/>
+                    <field name="payer_profit_rub" />
                   </group>
                 </div>
               </group>
               <group string="Прочие поля">
                 <div class="o-form-group">
                   <group>
-                    <field name="currency" readonly="1"/>
+                    <field name="currency" readonly="1" />
                   </group>
                   <group>
-                    <field name="send_to_reconciliation"/>
+                    <field name="send_to_reconciliation" />
                   </group>
                   <group>
-                    <field name="conversion_expenses_currency"/>
+                    <field name="conversion_expenses_currency" />
                   </group>
                 </div>
               </group>
               <group string="Финансовые результаты">
                 <div class="o-form-group">
                   <group>
-                    <field name="fin_res_client_real"/>
+                    <field name="fin_res_client_real" />
                   </group>
                   <group>
-                    <field name="fin_res_client_real_usd"/>
+                    <field name="fin_res_client_real_usd" />
                   </group>
                   <group>
-                    <field name="fin_res_client_real_rub"/>
+                    <field name="fin_res_client_real_rub" />
                   </group>
                 </div>
               </group>
             </page>
-            <page string="Нераспределенные" groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director">
+            <page string="Нераспределенные"
+              groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director">
               <group>
-                <field name="for_khalida_temp"/>
-                <field name="bank_cross_rate"/>
+                <field name="for_khalida_temp" />
+                <field name="bank_cross_rate" />
               </group>
               <group>
-                <field name="order_ids"/>
+                <field name="order_ids" />
               </group>
               <group>
-                <field name="extract_delivery_ids"/>
+                <field name="extract_delivery_ids" />
               </group>
               <group string="Даты">
-                <field name="date_received_tezera"/>
+                <field name="date_received_tezera" />
               </group>
               <group string="Фин менеджер Сбер управленка">
-                <field name="sber_operating_expenses"/>
+                <field name="sber_operating_expenses" />
               </group>
               <group string="Диапазон">
-                <field name="range_id"/>
-                <field name="range_date_start"/>
-                <field name="range_date_end"/>
-                <field name="range_date_start_copy"/>
-                <field name="range_date_end_copy"/>
-                <field name="status_range"/>
-                <field name="status_range_copy"/>
+                <field name="range_id" />
+                <field name="range_date_start" />
+                <field name="range_date_end" />
+                <field name="range_date_start_copy" />
+                <field name="range_date_end_copy" />
+                <field name="status_range" />
+                <field name="status_range_copy" />
               </group>
             </page>
-            <page string="Compute-поля" groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director">
+            <page string="Compute-поля"
+              groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director">
               <group>
-                <field name="usd_equivalent"/>
-                <field name="conversion_expenses_rub"/>
-                <field name="real_cross_rate"/>
-                <field name="xe_rate_auto"/>
-                <field name="client_payment_cost"/>
-                <field name="payment_cost_sovok"/>
-                <field name="course_profitable"/>
-                <field name="equivalent_amount_usd"/>
-                <field name="contract_reward"/>
-                <field name="bank_vypiska"/>
-                <field name="calculation"/>
-                <field name="waiting_for_replenishment"/>
-                <field name="deal_amount_received"/>
-                <field name="total_amount_received"/>
-                <field name="sum_from_extracts"/>
-                <field name="error_sber"/>
-                <field name="partner_post_conversion_rate"/>
-                <field name="payer_cross_rate_usd_auto"/>
-                <field name="date_received_on_pc_auto"/>
-                <field name="status_range_copy"/>
-                <field name="status_range"/>
-                <field name="client_operating_expenses"/>
-                <field name="hidden_partner_commission"/>
-                <field name="date_days"/>
-                <field name="operating_expenses_sovok_partner"/>
-                <field name="cost_of_money_client"/>
-                <field name="fin_res_client"/>
-                <field name="sebestoimost_denej_sovok_partner"/>
-                <field name="payment_cost_sovok_partner_usd"/>
-                <field name="fin_res_sovok_partner"/>
-                <field name="sber_payment_cost_on_usd"/>
-                <field name="sber_payment_cost_on_usd_real"/>
-                <field name="sebestoimost_denej_sber"/>
-                <field name="fin_res_sber"/>
+                <field name="usd_equivalent" />
+                <field name="conversion_expenses_rub" />
+                <field name="real_cross_rate" />
+                <field name="xe_rate_auto" />
+                <field name="client_payment_cost" />
+                <field name="payment_cost_sovok" />
+                <field name="course_profitable" />
+                <field name="equivalent_amount_usd" />
+                <field name="contract_reward" />
+                <field name="bank_vypiska" />
+                <field name="calculation" />
+                <field name="waiting_for_replenishment" />
+                <field name="deal_amount_received" />
+                <field name="total_amount_received" />
+                <field name="sum_from_extracts" />
+                <field name="error_sber" />
+                <field name="partner_post_conversion_rate" />
+                <field name="payer_cross_rate_usd_auto" />
+                <field name="date_received_on_pc_auto" />
+                <field name="status_range_copy" />
+                <field name="status_range" />
+                <field name="client_operating_expenses" />
+                <field name="hidden_partner_commission" />
+                <field name="date_days" />
+                <field name="operating_expenses_sovok_partner" />
+                <field name="cost_of_money_client" />
+                <field name="fin_res_client" />
+                <field name="sebestoimost_denej_sovok_partner" />
+                <field name="payment_cost_sovok_partner_usd" />
+                <field name="fin_res_sovok_partner" />
+                <field name="sber_payment_cost_on_usd" />
+                <field name="sber_payment_cost_on_usd_real" />
+                <field name="sebestoimost_denej_sber" />
+                <field name="fin_res_sber" />
               </group>
             </page>
           </notebook>
         </sheet>
         <chatter groups="!amanat.group_amanat_manager">
-          <field name="message_follower_ids"/>
-          <field name="activity_ids"/>
-          <field name="message_ids"/>
+          <field name="message_follower_ids" />
+          <field name="activity_ids" />
+          <field name="message_ids" />
         </chatter>
       </form>
     </field>
@@ -1758,24 +1586,26 @@
   <record id="zayavka_list_view_treasurer" model="ir.ui.view">
     <field name="name">zayavka.list.treasurer</field>
     <field name="model">amanat.zayavka</field>
-    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
+    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]" />
     <field name="priority">20</field>
     <field name="arch" type="xml">
       <list string="Заявки (Казначей)" delete="false">
-        <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-        <field name="zayavka_id"/>
-        <field name="zayavka_num"/>
-        <field name="status" widget="searchable_selection"/>
-        <field name="date_placement"/>
-        <field name="contragent_id"/>
-        <field name="client_id"/>
-        <field name="country_id"/>
-        <field name="invoice_date"/>
-        <field name="payment_date"/>
-        <field name="supplier_currency_paid_date"/>
-        <field name="supplier_currency_received_date"/>
-        <field name="deal_closed_date"/>
-        <field name="deal_cycle_days"/>
+        <!-- <button width="30" title="Перейти в форму" type="object" name="open_form"
+          icon="fa-external-link" /> -->
+        <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
+        <field name="zayavka_id" />
+        <field name="zayavka_num" />
+        <field name="status" widget="searchable_selection" />
+        <field name="date_placement" />
+        <field name="contragent_id" />
+        <field name="client_id" />
+        <field name="country_id" />
+        <field name="invoice_date" />
+        <field name="payment_date" />
+        <field name="supplier_currency_paid_date" />
+        <field name="supplier_currency_received_date" />
+        <field name="deal_closed_date" />
+        <field name="deal_cycle_days" />
       </list>
     </field>
   </record>
@@ -1783,62 +1613,63 @@
   <record id="zayavka_list_view" model="ir.ui.view">
     <field name="name">zayavka.list</field>
     <field name="model">amanat.zayavka</field>
-    <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
+    <field name="groups_id"
+      eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]" />
     <field name="arch" type="xml">
       <list editable="top" multi_edit="1" create="false">
         <header>
-            <button name="action_create_new_zayavka" 
-                    string="Новый" 
-                    type="object" 
-                    class="btn-primary"
-                    icon="fa-plus"
-                    display="always"/>
-            <button name="%(action_zayavka_date_range_wizard)d" 
-                    string="Диапазон" 
-                    type="action" 
-                    class="btn-primary"
-                    icon="fa-calendar"/>
-            <button name="%(action_zayavka_kassa_wizard)d" 
-                    string="Касса" 
-                    type="action" 
-                    class="btn-success"
-                    icon="fa-money"/>
+          <button name="action_create_new_zayavka"
+            string="Новый"
+            type="object"
+            class="btn-primary"
+            icon="fa-plus"
+            display="always" />
+          <button name="%(action_zayavka_date_range_wizard)d"
+            string="Диапазон"
+            type="action"
+            class="btn-primary"
+            icon="fa-calendar" />
+          <button name="%(action_zayavka_kassa_wizard)d"
+            string="Касса"
+            type="action"
+            class="btn-success"
+            icon="fa-money" />
         </header>
-        <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+        <!-- <button width="30" title="Перейти в форму" type="object" name="open_form"
+          icon="fa-external-link" /> -->
+        <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
         <!-- <field name="zayavka_id"/> -->
-        <field width="200" name="date_placement"/>
-        <field width="200" name="zayavka_num"/>
-        <field width="200" name="status" widget="searchable_selection"/>
-        <field width="200" name="contragent_id"/>
-        <field width="200" name="agent_id"/>
-        <field width="200" name="client_id"/>
-        <field width="200" name="payment_conditions"/>
-        <field width="200" name="usd_equivalent"/>
-        <field width="200" name="xe_rate"/>
-        <field width="200" name="currency"/>
-        <field width="200" name="rate_field"/>
-        <field width="200" name="reward_percent"/>
-        <field width="200" name="rate_fixation_date"/>
-        <field width="200" name="application_amount_rub_contract"/>
-        <field width="200" name="agent_reward"/>
-        <field width="200" name="total_amount"/>
-        <field width="200" name="deal_type"/>
-        
-        
+        <field width="200" name="date_placement" />
+        <field width="200" name="zayavka_num" />
+        <field width="200" name="status" widget="searchable_selection" />
+        <field width="200" name="contragent_id" />
+        <field width="200" name="agent_id" />
+        <field width="200" name="client_id" />
+        <field width="200" name="payment_conditions" />
+        <field width="200" name="usd_equivalent" />
+        <field width="200" name="xe_rate" />
+        <field width="200" name="currency" />
+        <field width="200" name="rate_field" />
+        <field width="200" name="reward_percent" />
+        <field width="200" name="rate_fixation_date" />
+        <field width="200" name="application_amount_rub_contract" />
+        <field width="200" name="agent_reward" />
+        <field width="200" name="total_amount" />
+        <field width="200" name="deal_type" />
 
-        <field width="200" name="xe_rate"/>
-        <field width="200" name="best_rate"/>
-        <field width="200" name="usd_equivalent"/>
-        <field width="200" name="comment_hedge"/>
-        <field width="200" name="best_rate_name"/>
-        <field width="200" name="hidden_hadge"/>
-        
-        
+
+        <field width="200" name="xe_rate" />
+        <field width="200" name="best_rate" />
+        <field width="200" name="usd_equivalent" />
+        <field width="200" name="comment_hedge" />
+        <field width="200" name="best_rate_name" />
+        <field width="200" name="hidden_hadge" />
 
 
         <!-- <field width="200" name="date_placement"/> -->
         <!-- Ограниченный доступ: скрываем конфиденциальные поля -->
-        <!-- <field width="200" name="taken_in_work_date" groups="!amanat.group_amanat_limited_access"/> -->
+        <!-- <field width="200" name="taken_in_work_date"
+        groups="!amanat.group_amanat_limited_access"/> -->
         <!-- <field width="200" name="checker_ids" widget="many2many_tags"/> -->
 
         <!-- <field width="200" name="inn" groups="!amanat.group_amanat_limited_access"/> -->
@@ -1852,11 +1683,12 @@
     <field name="name">Заявки (Казначей)</field>
     <field name="res_model">amanat.zayavka</field>
     <field name="view_mode">list,form</field>
-    <field name="view_ids" eval="[(5, 0, 0),
+    <field name="view_ids"
+      eval="[(5, 0, 0),
                                    (0, 0, {'view_mode': 'list', 'view_id': ref('zayavka_list_view_treasurer')}),
-                                   (0, 0, {'view_mode': 'form', 'view_id': ref('view_amanat_zayavka_form_treasurer')})]"/>
+                                   (0, 0, {'view_mode': 'form', 'view_id': ref('view_amanat_zayavka_form_treasurer')})]" />
     <field name="target">main</field>
-    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
+    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]" />
   </record>
 
   <record id="zayavka_action" model="ir.actions.act_window">
@@ -1865,7 +1697,8 @@
     <field name="view_mode">list,form</field>
     <field name="target">main</field>
     <field name="context">{'default_status': '1_no_chat'}</field>
-    <field name="groups_id" eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]"/>
+    <field name="groups_id"
+      eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]" />
   </record>
 
   <record id="zayavka_search_view" model="ir.ui.view">
@@ -1873,26 +1706,33 @@
     <field name="model">amanat.zayavka</field>
     <field name="arch" type="xml">
       <search string="Поиск заявок">
-        <field name="zayavka_num" string="№ заявки"/>
-        <field name="status" widget="searchable_selection"/>
-        <field name="date_placement" string="Дата размещения" filter_domain="[('date_placement','&gt;=',self),('date_placement','&lt;=',self)]"/>
-        <field name="taken_in_work_date" string="Взята в работу" filter_domain="[('taken_in_work_date','&gt;=',self),('taken_in_work_date','&lt;=',self)]"/>
-        <field name="contragent_id"/>
-        <field name="agent_id"/>
-        <field name="client_id"/>
-        <field name="deal_type"/>
+        <field name="zayavka_num" string="№ заявки" />
+        <field name="status" widget="searchable_selection" />
+        <field name="date_placement" string="Дата размещения"
+          filter_domain="[('date_placement','&gt;=',self),('date_placement','&lt;=',self)]" />
+        <field name="taken_in_work_date" string="Взята в работу"
+          filter_domain="[('taken_in_work_date','&gt;=',self),('taken_in_work_date','&lt;=',self)]" />
+        <field name="contragent_id" />
+        <field name="agent_id" />
+        <field name="client_id" />
+        <field name="deal_type" />
         <!-- <field name="range_id" string="Диапазон"/> -->
         <!-- <separator/>
         <filter name="filter_in_range" string="В диапазоне" domain="[('range_id','!=',False)]"/>
         <separator/> -->
         <group expand="0" string="Group By">
-            <filter name="group_by_date" string="Дата размещения" context="{'group_by':'date_placement'}"/>
-            <filter name="group_by_taken_date" string="Взята в работу" context="{'group_by':'taken_in_work_date'}"/>
-            <filter name="group_by_status" string="Статус" context="{'group_by':'status'}"/>
-            <filter name="group_by_contragent" string="Контрагент" context="{'group_by':'contragent_id'}"/>
-            <filter name="group_by_agent" string="Агент" context="{'group_by':'agent_id'}"/>
-            <filter name="group_by_month" string="Месяц размещения" context="{'group_by':'date_placement:month'}"/>
-            <filter name="group_by_taken_month" string="Месяц взятия в работу" context="{'group_by':'taken_in_work_date:month'}"/>
+          <filter name="group_by_date" string="Дата размещения"
+            context="{'group_by':'date_placement'}" />
+          <filter name="group_by_taken_date" string="Взята в работу"
+            context="{'group_by':'taken_in_work_date'}" />
+          <filter name="group_by_status" string="Статус" context="{'group_by':'status'}" />
+          <filter name="group_by_contragent" string="Контрагент"
+            context="{'group_by':'contragent_id'}" />
+          <filter name="group_by_agent" string="Агент" context="{'group_by':'agent_id'}" />
+          <filter name="group_by_month" string="Месяц размещения"
+            context="{'group_by':'date_placement:month'}" />
+          <filter name="group_by_taken_month" string="Месяц взятия в работу"
+            context="{'group_by':'taken_in_work_date:month'}" />
         </group>
       </search>
     </field>

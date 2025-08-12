@@ -36,6 +36,13 @@
                            class="btn btn-outline-primary btn-sm me-1">
                             <i class="fa fa-download"/>
                         </a>
+                        <button class="btn btn-outline-success btn-sm me-1 preview-offline-btn"
+                                t-att-data-attachment-id="f.id"
+                                t-att-data-file-type="f.extension"
+                                t-att-data-file-name="f.name"
+                                title="Предпросмотр файла">
+                            <i class="fa fa-eye"/>
+                        </button>
                         <button class="btn btn-outline-danger btn-sm"
                                 t-att-data-file-id="f.id"
                                 t-on-click="onRemoveClick">
@@ -43,6 +50,16 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Модальное окно для предпросмотра файлов -->
+        <div id="xlsx_preview" class="modal" style="display: none; position: fixed; z-index: 10000; padding-top: 100px; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+            <div class="modal-content" id="MyPreview_content" style="background-color: #fefefe; overflow: hidden; margin: auto; padding: 20px; border: 1px solid #888; width: 80%; max-height: 80vh; overflow-y: auto;">
+                <span class="close" id="stop-preview-button" style="color: #aaaaaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">×</span>
+                <h1 id="FileHead" style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #333;"></h1>
+                <div class="XlsxTable" style="overflow: auto; max-height: 70vh;"></div>
+                <div class="MyDocs" style="overflow: auto; text-align: justify; padding: 30px; line-height: 1.6;"></div>
             </div>
         </div>
     </t>

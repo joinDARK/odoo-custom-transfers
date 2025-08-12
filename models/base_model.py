@@ -19,6 +19,41 @@ class AmanatBaseModel(models.AbstractModel):
             'target': 'current',
         }
 
+    def open_form_new_tab(self):
+        """Открыть форму в новой вкладке браузера"""
+        # Формируем URL для открытия формы
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        url = f"{base_url}/web#id={self.id}&view_type=form&model={self._name}"
+        
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',  # Открывает в новом окне/вкладке браузера
+        }
+
+    def open_form_modal(self):
+        """Открыть форму в модальном окне"""
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'view_mode': 'form',
+            'res_id': self.id,
+            'target': 'new',  # Открывает в модальном окне
+            'name': f'{self.display_name}',
+        }
+
+    def open_form_new_tab_js(self):
+        """Альтернативный метод открытия формы в новой вкладке через JavaScript"""
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'open_form_new_tab',
+            'params': {
+                'model': self._name,
+                'res_id': self.id,
+                'view_mode': 'form',
+            }
+        }
+
     def _should_log(self):
         """Проверяем, нужно ли логировать операцию"""
         return (

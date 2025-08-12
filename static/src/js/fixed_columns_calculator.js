@@ -11,6 +11,8 @@ class FixedColumnsCalculator {
         this.debounceTimer = null;
         this.isProcessing = false;
         this.lastTableHTML = '';
+        // Cache locked widths per table to avoid width jitter during edits
+        this.lockedWidthsByTable = new WeakMap();
     }
 
     init() {
@@ -127,6 +129,12 @@ class FixedColumnsCalculator {
     }
 
     processTable(table, tableIndex) {
+        // Skip recalculation while any row is in edit mode to preserve widths
+        if (this.isEditing(table)) {
+            console.log('⏸️ Пропускаем перерасчет: активировано редактирование строки');
+            return;
+        }
+
         // Получаем первую строку для расчета ширин
         const firstRow = table.querySelector('thead tr') || table.querySelector('tbody tr');
         if (!firstRow) {
@@ -143,8 +151,19 @@ class FixedColumnsCalculator {
         // Очищаем старые классы границ
         this.clearOldBorderClasses(table);
 
-        // Рассчитываем позиции первых 4 колонок
-        const positions = this.calculatePositions(cells);
+        // Ensure and lock header widths based on current measurement once,
+        // so inputs/widgets don't change column widths during inline edits
+        const headerCells = table.querySelectorAll('thead th');
+        let locked = this.lockedWidthsByTable.get(table);
+        if (!locked || locked.length !== headerCells.length) {
+            locked = Array.from(headerCells).map((th) => Math.ceil(th.getBoundingClientRect().width));
+            this.lockedWidthsByTable.set(table, locked);
+        }
+
+        this.applyLockedWidthsToFirstColumns(table, locked);
+
+        // Рассчитываем позиции первых 4 колонок на основе зафиксированных ширин
+        const positions = this.calculatePositionsFromLocked(locked, Math.min(4, cells.length));
         console.log('📏 Рассчитанные позиции:', positions);
 
         // Применяем позиции к заголовкам
@@ -195,6 +214,52 @@ class FixedColumnsCalculator {
         }
         
         return false;
+    }
+
+    isEditing(table) {
+        return Boolean(
+            table.querySelector('.o_data_row.o_selected_row') ||
+            table.querySelector('.o_field_widget.o_input') ||
+            table.querySelector('input:focus, select:focus, textarea:focus')
+        );
+    }
+
+    applyLockedWidthsToFirstColumns(table, lockedWidths) {
+        const headerCells = table.querySelectorAll('thead th');
+        const bodyRows = table.querySelectorAll('tbody tr');
+        const lockCount = Math.min(4, headerCells.length);
+
+        for (let i = 0; i < lockCount; i++) {
+            const width = lockedWidths[i];
+            const th = headerCells[i];
+            if (th && width) {
+                th.style.setProperty('width', `${width}px`, 'important');
+                th.style.setProperty('min-width', `${width}px`, 'important');
+                th.style.setProperty('max-width', `${width}px`, 'important');
+            }
+            bodyRows.forEach((row) => {
+                const td = row.children[i];
+                if (td && width) {
+                    td.style.setProperty('width', `${width}px`, 'important');
+                    td.style.setProperty('min-width', `${width}px`, 'important');
+                    td.style.setProperty('max-width', `${width}px`, 'important');
+                }
+            });
+        }
+    }
+
+    calculatePositionsFromLocked(lockedWidths, count) {
+        const positions = [0];
+        let cumulativeWidth = 0;
+        const borderWidth = 2;
+
+        for (let i = 0; i < Math.min(4, count - 1); i++) {
+            const width = lockedWidths[i] || 0;
+            cumulativeWidth += width;
+            const adjustedPosition = i === 0 ? cumulativeWidth : cumulativeWidth - (borderWidth * (i + 1));
+            positions.push(adjustedPosition);
+        }
+        return positions.slice(0, 4);
     }
 
     calculatePositions(cells) {

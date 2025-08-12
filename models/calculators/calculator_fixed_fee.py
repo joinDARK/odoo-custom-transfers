@@ -69,7 +69,7 @@ class CalculatorFixedFeeWizard(models.Model):
         store=True, 
         digits=(16, 4)
     )
-    client_percent_amount = fields.Float(string='Процент', digits=(16, 4))
+    client_percent_amount = fields.Float(string='Вознаграждение руб', digits=(16, 4))
     client_rub_total = fields.Float(
         string='Сумма руб итог клиенту', 
         compute='_compute_client_fields', 

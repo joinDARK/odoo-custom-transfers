@@ -1,3 +1,4 @@
+
 from odoo import models, fields
 from ..base_model import AmanatBaseModel
 
@@ -197,6 +198,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     payment_order_rf_client = fields.Float(
         string='Платежка РФ Клиент',
         compute='_compute_payment_order_rf_client',
+        help="""
+        Платежка РФ Клиент = (Заявка по курсу в рублях по договору + Вознаграждение по договору Клиент) * Процент (from Правило платежка)
+        """,
         readonly=False,
         store=True,
         tracking=True
@@ -435,6 +439,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     payment_order_rf_sber = fields.Float(
         string='Платежка РФ Сбер',
         compute='_compute_payment_order_rf_sber',
+        help="""
+        Платежка РФ Сбер = (Заявка по курсу в рублях по договору + Вознаграждение по договору Сбер) * Процент (from Правило платежка)
+        """,
         readonly=False,
         store=True,
         tracking=True
@@ -677,6 +684,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     payment_order_rf_sovok = fields.Float(
         string='Платежка РФ Совок',
         compute='_compute_payment_order_rf_sovok',
+        help="""
+        Платежка РФ Совок = (Заявка по курсу в рублях по договору + Вознаграждение по договору Совок) * Процент (from Правило платежка)
+        """,
         readonly=False,
         store=True,
         tracking=True
@@ -905,7 +915,6 @@ class Zayavka(models.Model, AmanatBaseModel):
             ('inr', 'INR'), ('inr_cashe', 'INR КЭШ'),
         ],
         string='Валюта',
-        default='usd',
         tracking=True
     )
 
@@ -1315,6 +1324,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     payer_profit_currency = fields.Float(
         string='Прибыль Плательщика по валюте заявки',
         compute='_compute_payer_profit_currency',
+        help="""
+        Прибыль Плательщика по валюте заявки = Сумма × % Начисления (from Прайс листа Плательщика Прибыль)
+        """,
         readonly=False,
         store=True,
         tracking=True
@@ -1415,13 +1427,13 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Заявка Выход'
     )
 
-    assignment_start_attachments = fields.Many2many(
-        'ir.attachment', 
-        'assignment_start_attachment_rel', 
-        'zayavka_id', 
-        'attachment_id', 
-        string='Поручение Вход'
-    )
+    # assignment_start_attachments = fields.Many2many(
+    #     'ir.attachment', 
+    #     'assignment_start_attachment_rel', 
+    #     'zayavka_id', 
+    #     'attachment_id', 
+    #     string='Поручение Вход'
+    # )
 
     assignment_end_attachments = fields.Many2many(
         'ir.attachment', 
@@ -1650,6 +1662,11 @@ class Zayavka(models.Model, AmanatBaseModel):
     payer_cross_rate_usd_auto = fields.Float(
         string='Кросс-курс Плательщика $ авто',
         compute='_compute_payer_cross_rate_usd_auto',
+        help="""
+        — если пусты «Кросс-курс Плательщика $» и «Курс XE» и валюта USD / USD КЭШ: Кросс-курс Плательщика $ авто = 1; 
+        — если задан «Кросс-курс Плательщика $»: Кросс-курс Плательщика $ авто = Кросс-курс Плательщика $; 
+        — иначе: Кросс-курс Плательщика $ авто = Курс XE
+        """,
         readonly=False,
         store=True,
         digits=(16, 4),
@@ -1659,6 +1676,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     real_post_conversion_rate = fields.Float(
         string='Курс после конвертации реал',
         compute='_compute_real_post_conversion_rate',
+        help="""
+        Курс после конвертации реал = Курс Джесс * Кросс-курс Плательщика $ авто
+        """,
         readonly=False,
         store=True,
         digits=(16, 6),
@@ -1668,6 +1688,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     real_post_conversion_rate_usd = fields.Float(
         string='Курс после конвертации реал $',
         compute='_compute_real_post_conversion_rate_usd',
+        help="""
+        Курс после конвертации реал $ = Курс после конвертации реал * Кросс-курс Плательщика $ авто
+        """,
         readonly=False,
         store=True,
         digits=(16, 6),
@@ -1679,6 +1702,9 @@ class Zayavka(models.Model, AmanatBaseModel):
         compute='_compute_payer_cross_rate_rub',
         readonly=False,
         store=True,
+        help="""
+        Кросс-курс Плательщика ₽ = Курс Джесс
+        """,
         digits=(16, 6),
         tracking=True
     )
@@ -1688,12 +1714,19 @@ class Zayavka(models.Model, AmanatBaseModel):
         compute='_compute_real_post_conversion_rate_rub',
         readonly=False,
         store=True,
+        help="""
+        Курс после конвертации реал ₽ = Курс после конвертации реал $ * Кросс-курс Плательщика ₽
+        """,
         digits=(16, 6),
         tracking=True
     )
 
     payer_profit_usd = fields.Float(
         string='Прибыль плательщика $',
+        help="""
+        — если задан «Кросс-курс Плательщика $ авто»: Прибыль плательщика $ = Прибыль Плательщика по валюте заявки × Кросс-курс Плательщика $ авто × Фикс за сделку $ (из Прайс лист Плательщика Прибыль); 
+        — иначе: Прибыль плательщика $ = Фикс за сделку $ (из Прайс лист Плательщика Прибыль)
+        """,
         compute='_compute_payer_profit_usd',
         readonly=False,
         store=True,
@@ -2020,7 +2053,7 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     # Возвраты
     cross_return = fields.Boolean(string='Возврат по кроссу', default=False, tracking=True)
-    cross_return_date = fields.Date(string='Дата возврата по кроссу', tracking=True)
+    cross_return_date = fields.Date(string='Дата возврата платежа', tracking=True)
     cross_return_currency_pair = fields.Selection(
         [
             ('usd_cny', 'USD/CNY'),
@@ -2051,11 +2084,20 @@ class Zayavka(models.Model, AmanatBaseModel):
         tracking=True,
     )
 
+    return_subagent = fields.Many2one(
+        'amanat.contragent',
+        string='Субагент для возврата',
+        tracking=True,
+    )
+
+    domain_return_payer_subagent = fields.Json(string='Домен плательщика субагента', compute='_compute_domain_return_payer_subagent', store=True)
+
     payers_for_return = fields.Many2many(
         'amanat.payer',
         'amanat_zayavka_payer_return_rel',  # Уникальная таблица связи
         'zayavka_id',
         'payer_id',
+        domain="[('id', 'in', domain_return_payer_subagent or [])]",
         string='Плательщик для возврата',
         tracking=True,
     )
@@ -2144,6 +2186,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     # Поля для возврата с возвратом основной суммы (problem_stage == '2')
     return_amount_to_client = fields.Float(
         string='Сумма на возврат клиенту',
+        help="""
+        Указываем в рублях
+        """,
         digits=(16, 2),
         tracking=True,
     )
@@ -2156,6 +2201,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     # Поля для возврата с возвратом всей суммы (problem_stage == '3')
     return_amount = fields.Float(
         string='Сумма на возврат',
+        help="""
+        Указываем в рублях
+        """,
         digits=(16, 2),
         tracking=True,
     )
@@ -2167,13 +2215,17 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     # Поля для возврата с частичной оплатой вознаграждения (problem_stage == '4')
     return_amount_to_reward = fields.Float(
-        string='Сумма вознаграждения на возврат',
+        string='Сумма на возврат',
+        help="""Указываем в валюте заявки""",
         digits=(16, 2),
         tracking=True,
     )
 
     return_amount_main = fields.Float(
         string='Основная сумма на возврат',
+        help="""
+        Указываем в рублях
+        """,
         digits=(16, 2),
         tracking=True,
     )
@@ -2198,4 +2250,24 @@ class Zayavka(models.Model, AmanatBaseModel):
     prefix = fields.Boolean(string='Перефикс', default=False)
     hidden_hadge = fields.Boolean(string='Не отображать хэдж', default=False)
 
+    beneficiary_address = fields.Char(string='Адрес получателя', tracking=True)
+    beneficiary_bank_name = fields.Char(string='Наименование банка получателя', tracking=True)
+    bank_address = fields.Char(string='Адрес банка получателя', tracking=True)
+    iban_accc = fields.Char(string='IBAN/ACC', tracking=True)
+    contract_number = fields.Char(string='№ контракта', tracking=True)
     
+        # Поле для хранения сгенерированных документов
+    zayavka_output_attachments = fields.One2many(
+        'ir.attachment',
+        'res_id',
+        domain=[('res_model', '=', 'amanat.zayavka'), ('res_field', '=', 'zayavka_output_attachments')],
+        string='Заявка Выход'
+    )
+    
+    # Поле для хранения актов-отчетов
+    act_report_attachments = fields.One2many(
+        'ir.attachment',
+        'res_id',
+        domain=[('res_model', '=', 'amanat.zayavka'), ('res_field', '=', 'act_report_attachments')],
+        string='Акт Отчет'
+    )

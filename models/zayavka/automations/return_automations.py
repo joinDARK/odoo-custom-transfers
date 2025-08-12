@@ -6,40 +6,51 @@ _logger = logging.getLogger(__name__)
 class ZayavkaReturnAutomations(models.Model):
     _inherit = 'amanat.zayavka'
 
-    def run_return_with_main_amount(self): # ! Проверен
+    def run_return_payment_to_payer(self):
         if self.deal_type == 'export':
-            return self._return_with_main_amount_method(isExport=True)
+            return self.return_payment_to_payer(isExport=True)
         else:
-            return self._return_with_main_amount_method(isExport=False)
+            return self.return_payment_to_payer(isExport=False)
+
+    def run_return_with_main_amount(self):
+        if self.deal_type == 'export':
+            return self._return_with_main_amount_method()
+        else:
+            return self._return_with_main_amount_method()
     
-    def run_return_with_subsequent_payment_method(self): # ! Проверен
+    def run_return_with_subsequent_payment_method(self):
         if self.deal_type == 'export':
             self._return_with_subsequent_payment_method(isExport=True)
         else:
             self._return_with_subsequent_payment_method(isExport=False)
     
-    def run_return_with_subsequent_payment_method_new_subagent(self, new_amount, date): # !
+    def run_return_with_subsequent_payment_method_new_subagent(self, new_amount, date, date2):
         if not self.subagent_ids:
             _logger.warning("Не заполнен Субагент!")
             return False
+
+        if self.return_subagent:
+            new_subagent = self.return_subagent
+        else:
+            new_subagent = self.subagent_ids[0]
         
         if self.payers_for_return:
             new_subagent_payer = self.payers_for_return[0]
         else:
-            subagent_payer = self._get_first_payer(self.subagent_ids[0])
+            subagent_payer = self._get_first_payer(new_subagent)
             temp_subagent_payer = self.subagent_payer_ids and self.subagent_payer_ids[0] or subagent_payer
-            new_subagent_payer = temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)
+            new_subagent_payer = temp_subagent_payer if temp_subagent_payer else subagent_payer
 
         if not new_amount:
             _logger.warning("Не передана сумма оплаты!")
             return False
         
         if self.deal_type == 'export':
-            return self._return_with_subsequent_payment_method_new_subagent(isExport=True, new_subagent_payer=new_subagent_payer, new_amount=new_amount, date=date)
+            return self._return_with_subsequent_payment_method_new_subagent(isExport=True, new_subagent=new_subagent, new_subagent_payer=new_subagent_payer, new_amount=new_amount, date=date, date2=date2)
         else:
-            return self._return_with_subsequent_payment_method_new_subagent(isExport=False, new_subagent_payer=new_subagent_payer, new_amount=new_amount, date=date)
+            return self._return_with_subsequent_payment_method_new_subagent(isExport=False, new_subagent=new_subagent, new_subagent_payer=new_subagent_payer, new_amount=new_amount, date=date, date2=date2)
 
-    def run_return_with_all_amount_method(self): # ! Проверен
+    def run_return_with_all_amount_method(self):
         if self.is_sberbank_contragent and not self.is_sovcombank_contragent:
             payment_cost = self.sber_payment_cost
         elif not self.is_sberbank_contragent and self.is_sovcombank_contragent:
@@ -52,11 +63,18 @@ class ZayavkaReturnAutomations(models.Model):
         else:
             return self._return_with_all_amount_method(isExport=False, payment_cost=payment_cost)
 
-    def run_return_with_partial_payment_of_remuneration_method(self): # ! Проверен
-        if self.deal_type == 'export':
-            return self._return_with_partial_payment_of_remuneration_method(isExport=True)
+    def run_return_with_partial_payment_of_remuneration_method(self):
+        if self.is_sberbank_contragent and not self.is_sovcombank_contragent:
+            payment_cost = self.sber_payment_cost
+        elif not self.is_sberbank_contragent and self.is_sovcombank_contragent:
+            payment_cost = self.payment_cost_sovok
         else:
-            return self._return_with_partial_payment_of_remuneration_method(isExport=False)
+            payment_cost = self.client_payment_cost
+
+        if self.deal_type == 'export':
+            return self._return_with_partial_payment_of_remuneration_method(isExport=True, payment_cost=payment_cost)
+        else:
+            return self._return_with_partial_payment_of_remuneration_method(isExport=False, payment_cost=payment_cost)
 
     def run_return_with_prepayment_of_next_method(self):
         if self.is_sberbank_contragent and not self.is_sovcombank_contragent:
@@ -76,7 +94,7 @@ class ZayavkaReturnAutomations(models.Model):
         else:
             return self._return_with_prepayment_of_next_method(isExport=False, payment_cost=payment_cost)
 
-    def _return_with_all_amount_method(self, payment_cost, isExport = False): # ! Проверен
+    def _return_with_all_amount_method(self, payment_cost, isExport = False):
         _logger.info("[_return_with_all_amount_method] Создаем ордер/контейнера/сверки...")
         date = self.payment_order_date_to_client_account_return_all
 
@@ -107,14 +125,13 @@ class ZayavkaReturnAutomations(models.Model):
         temp_subagent_payer = self.subagent_payer_ids and self.subagent_payer_ids[0] or subagent_payer
 
         currency = self.currency
+        if not currency:
+            _logger.warning("[_return_with_all_amount_method] Не заполнен Валюта!")
+            return False
+
         agentka_wallet = self.env['amanat.wallet'].search([('name', '=', 'Агентка')], limit=1)
         if not agentka_wallet:
             _logger.warning("[_return_with_all_amount_method] Кошелек 'Агентка' не найден.")
-            return False
-        
-        amount = self.amount
-        if not amount:
-            _logger.warning("[_return_with_all_amount_method] Сумма заявки не заполнена!")
             return False
 
         return_amount = self.return_amount
@@ -122,56 +139,7 @@ class ZayavkaReturnAutomations(models.Model):
             _logger.warning("[_return_with_all_amount_method] Сумма возврата не заполнена!")
             return False
 
-        client = self.client_id
-        if not client:
-            _logger.warning("[_return_with_all_amount_method] Не заполнен Клиент!")
-            return False
-        
-        client_payer = self._get_first_payer(client)
-        if not client_payer:
-            _logger.warning("[_return_with_all_amount_method] Не заполнен Плательщик Клиента!")
-            return False
-
-        contragent = self.contragent_id
-        if not contragent:
-            _logger.warning("[_return_with_all_amount_method] Не заполнен Контрагент!")
-            return False
-
         zayavka_id = self.id
-
-        order = self._create_order({
-            'date': date,
-            'type': 'transfer',
-            'partner_1_id': subagent.id if isExport else agent.id,
-            'payer_1_id': (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id,
-            'partner_2_id': agent.id if isExport else subagent.id,
-            'payer_2_id': agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)),
-            'amount': amount,
-            'currency': currency,
-            'wallet_1_id': agentka_wallet.id,
-            'wallet_2_id': agentka_wallet.id,
-            'zayavka_ids': [(6, 0, [zayavka_id])],
-            'comment': f"Возврат валюты по {self.zayavka_num}",
-        })
-        self._create_money({
-            'date': date,
-            'partner_id': subagent.id,
-            'currency': currency,
-            'state': 'debt' if isExport else 'positive',
-            'wallet_id': agentka_wallet.id,
-            'order_id': order.id,
-            **self._get_currency_fields(currency, -amount if isExport else amount),
-        })
-        self._create_reconciliation({
-            'date': date,
-            'currency': currency,
-            **self._get_reconciliation_currency_fields(currency, -amount if isExport else amount),
-            'partner_id': subagent.id if isExport else agent.id,
-            'order_id': [(6, 0, [order.id])],
-            'sender_id': [(6, 0, [(temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id])],
-            'receiver_id': [(6, 0, [agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False))])],
-            'wallet_id': agentka_wallet.id,
-        })
 
         order2 = self._create_order({
             'date': date,
@@ -207,7 +175,8 @@ class ZayavkaReturnAutomations(models.Model):
             'wallet_id': agentka_wallet.id,
         })
 
-        for extract in self.extract_delivery_ids:
+        if self.extract_delivery_ids:
+            extract = self.extract_delivery_ids[0]
             _logger.info(f"Обрабатываем выписку {extract.id}: сумма={extract.amount}")
 
             vypiska_payer = extract.payer
@@ -292,48 +261,18 @@ class ZayavkaReturnAutomations(models.Model):
                 reconciliation_vals_2['receiver_id'] = [(4, vypiska_receiver.id)]
                 
             self._create_reconciliation(reconciliation_vals_2)
+        else:
+            _logger.info("Не заполнены выписки для возврата, пропускаем создание рублевых ордеров/контейнеров/сверки")
 
         return True
 
-    def _return_with_main_amount_method(self, isExport = False): # ! Проверен
+    def _return_with_main_amount_method(self):
         _logger.info("[_return_with_main_amount_method] Создаем ордер/контейнера/сверки...")
         date = self.payment_order_date_to_client_account
-
-        agent = self.agent_id
-        if not agent:
-            _logger.warning("[_return_with_main_amount_method] Не заполнен Агент!")
-            return False
-        
-        agent_payer = self._get_first_payer(agent)
-        if not agent_payer:
-            _logger.warning("[_return_with_main_amount_method] Не заполнен Плательщик Агента!")
-            return False
-        
-        if not self.subagent_ids:
-            _logger.warning("[_return_with_main_amount_method] Не заполнен Субагент!")
-            return False
-        subagent = self.subagent_ids[0]
-        
-        subagent_payer = self._get_first_payer(subagent)
-        if not subagent_payer:
-            _logger.warning("[_return_with_main_amount_method] Не заполнен Плательщик Субагента!")
-            return False
-
-        temp_subagent_payer = self.subagent_payer_ids and self.subagent_payer_ids[0] or subagent_payer
-
-        currency = self.currency
-        if not currency:
-            _logger.warning("[_return_with_main_amount_method] Не заполнен Валюта!")
-            return False
         
         agentka_wallet = self.env['amanat.wallet'].search([('name', '=', 'Агентка')], limit=1)
         if not agentka_wallet:
             _logger.warning("[_return_with_main_amount_method] Кошелек 'Агентка' не найден.")
-            return False
-        
-        amount = self.amount
-        if not amount:
-            _logger.warning("[_return_with_main_amount_method] Сумма заявки не заполнена!")
             return False
 
         return_amount = self.return_amount_to_client
@@ -341,58 +280,10 @@ class ZayavkaReturnAutomations(models.Model):
             _logger.warning("[_return_with_main_amount_method] Сумма возврата не заполнена!")
             return False
 
-        client = self.client_id
-        if not client:
-            _logger.warning("[_return_with_main_amount_method] Не заполнен Клиент!")
-            return False
-        
-        client_payer = self._get_first_payer(client)
-        if not client_payer:
-            _logger.warning("[_return_with_main_amount_method] Не заполнен Плательщик Клиента!")
-            return False
-
-        contragent = self.contragent_id
-        if not contragent:
-            _logger.warning("[_return_with_main_amount_method] Не заполнен Контрагент!")
-            return False
-
         zayavka_id = self.id
 
-        order = self._create_order({
-            'date': date,
-            'type': 'transfer',
-            'partner_1_id': subagent.id if isExport else agent.id,
-            'payer_1_id': (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id,
-            'partner_2_id': agent.id if isExport else subagent.id,
-            'payer_2_id': agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)),
-            'amount': amount,
-            'currency': currency,
-            'wallet_1_id': agentka_wallet.id,
-            'wallet_2_id': agentka_wallet.id,
-            'zayavka_ids': [(6, 0, [zayavka_id])],
-            'comment': f"Возврат валюты по {self.zayavka_num}",
-        })
-        self._create_money({
-            'date': date,
-            'partner_id': subagent.id,
-            'currency': currency,
-            'state': 'debt' if isExport else 'positive',
-            'wallet_id': agentka_wallet.id,
-            'order_id': order.id,
-            **self._get_currency_fields(currency, -amount if isExport else amount),
-        })
-        self._create_reconciliation({
-            'date': date,
-            'currency': currency,
-            **self._get_reconciliation_currency_fields(currency, -amount if isExport else amount),
-            'partner_id': subagent.id if isExport else agent.id,
-            'order_id': [(6, 0, [order.id])],
-            'sender_id': [(6, 0, [(temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id])],
-            'receiver_id': [(6, 0, [agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False))])],
-            'wallet_id': agentka_wallet.id,
-        })
-
-        for extract in self.extract_delivery_ids:
+        if self.extract_delivery_ids:
+            extract = self.extract_delivery_ids[0]
             _logger.info(f"Обрабатываем выписку {extract.id}: сумма={extract.amount}")
 
             vypiska_payer = extract.payer
@@ -477,14 +368,15 @@ class ZayavkaReturnAutomations(models.Model):
                 reconciliation_vals_2['receiver_id'] = [(4, vypiska_receiver.id)]
                 
             self._create_reconciliation(reconciliation_vals_2)
+        else:
+            _logger.info("Не заполнены выписки для возврата, пропускаем создание рублевых ордеров/контейнеров/сверки")
 
         return True
     
-    def _return_with_partial_payment_of_remuneration_method(self, isExport = False): # ! Проверен
+    def _return_with_partial_payment_of_remuneration_method(self, payment_cost, isExport = False):
         _logger.info("[_return_with_partial_payment_of_remuneration_method] Создаем ордер/контейнера/сверки...")
         date = self.payment_order_date_to_return
 
-        payment_cost = self.return_amount_to_reward
         if not payment_cost:
             _logger.warning("[_return_with_partial_payment_of_remuneration_method] Сумма вознаграждения не была передена в метод!")
             return False
@@ -520,67 +412,13 @@ class ZayavkaReturnAutomations(models.Model):
         if not agentka_wallet:
             _logger.warning("[_return_with_partial_payment_of_remuneration_method] Кошелек 'Агентка' не найден.")
             return False
-        
-        amount = self.amount
-        if not amount:
-            _logger.warning("[_return_with_partial_payment_of_remuneration_method] Сумма заявки не заполнена!")
-            return False
 
         return_amount = self.return_amount_main
         if not return_amount:
             _logger.warning("[_return_with_partial_payment_of_remuneration_method] Сумма возврата не заполнена!")
             return False
 
-        client = self.client_id
-        if not client:
-            _logger.warning("[_return_with_partial_payment_of_remuneration_method] Не заполнен Клиент!")
-            return False
-        
-        client_payer = self._get_first_payer(client)
-        if not client_payer:
-            _logger.warning("[_return_with_partial_payment_of_remuneration_method] Не заполнен Плательщик Клиента!")
-            return False
-
-        contragent = self.contragent_id
-        if not contragent:
-            _logger.warning("[_return_with_partial_payment_of_remuneration_method] Не заполнен Контрагент!")
-            return False
-
         zayavka_id = self.id
-
-        order = self._create_order({
-            'date': date,
-            'type': 'transfer',
-            'partner_1_id': subagent.id if isExport else agent.id,
-            'payer_1_id': (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id,
-            'partner_2_id': agent.id if isExport else subagent.id,
-            'payer_2_id': agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)),
-            'amount': amount,
-            'currency': currency,
-            'wallet_1_id': agentka_wallet.id,
-            'wallet_2_id': agentka_wallet.id,
-            'zayavka_ids': [(6, 0, [zayavka_id])],
-            'comment': f"Возврат валюты по {self.zayavka_num}",
-        })
-        self._create_money({
-            'date': date,
-            'partner_id': subagent.id,
-            'currency': currency,
-            'state': 'debt' if isExport else 'positive',
-            'wallet_id': agentka_wallet.id,
-            'order_id': order.id,
-            **self._get_currency_fields(currency, -amount if isExport else amount),
-        })
-        self._create_reconciliation({
-            'date': date,
-            'currency': currency,
-            **self._get_reconciliation_currency_fields(currency, -amount if isExport else amount),
-            'partner_id': subagent.id if isExport else agent.id,
-            'order_id': [(6, 0, [order.id])],
-            'sender_id': [(6, 0, [(temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id])],
-            'receiver_id': [(6, 0, [agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False))])],
-            'wallet_id': agentka_wallet.id,
-        })
 
         order2 = self._create_order({
             'date': date,
@@ -616,7 +454,8 @@ class ZayavkaReturnAutomations(models.Model):
             'wallet_id': agentka_wallet.id,
         })
 
-        for extract in self.extract_delivery_ids:
+        if self.extract_delivery_ids:
+            extract = self.extract_delivery_ids[0]
             _logger.info(f"Обрабатываем выписку {extract.id}: сумма={extract.amount}")
 
             vypiska_payer = extract.payer
@@ -701,10 +540,12 @@ class ZayavkaReturnAutomations(models.Model):
                 reconciliation_vals_2['receiver_id'] = [(4, vypiska_receiver.id)]
                 
             self._create_reconciliation(reconciliation_vals_2)
+        else:
+            _logger.info("Не заполнены выписки для возврата, пропускаем создание рублевых ордеров/контейнеров/сверки")
 
         return True
 
-    def _return_with_subsequent_payment_method(self, isExport = False): # ! Проверен
+    def _return_with_subsequent_payment_method(self, isExport = False):
         _logger.info("[_return_with_subsequent_payment_method] Создаем ордер/контейнера/сверки...")
         date = self.payment_date_again_1
         if not date:
@@ -786,12 +627,12 @@ class ZayavkaReturnAutomations(models.Model):
             'state': 'debt' if isExport else 'positive',
             'wallet_id': agentka_wallet.id,
             'order_id': order.id,
-            **self._get_currency_fields(currency, -amount if isExport else amount),
+            **self._get_currency_fields(currency, amount if isExport else -amount),
         })
         self._create_reconciliation({
             'date': date,
             'currency': currency,
-            **self._get_reconciliation_currency_fields(currency, -amount if isExport else amount),
+            **self._get_reconciliation_currency_fields(currency, amount if isExport else -amount),
             'partner_id': subagent.id if isExport else agent.id,
             'order_id': [(6, 0, [order.id])],
             'sender_id': [(6, 0, [(temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id])],
@@ -801,10 +642,18 @@ class ZayavkaReturnAutomations(models.Model):
 
         return True
 
-    def _return_with_subsequent_payment_method_new_subagent(self, new_subagent_payer, new_amount, date, isExport = False): # ! Проверен
+    def _return_with_subsequent_payment_method_new_subagent(self, new_subagent, new_subagent_payer, new_amount, date, date2, isExport = False):
         _logger.info("[_return_with_subsequent_payment_method_new_subagent] Создаем ордер/контейнера/сверки...")
         if not date:
             _logger.warning("Дата оплаты валюты поставщику не заполнена!")
+            return False
+        
+        if not date2:
+            _logger.warning("date2 у не заполнена!")
+            return False
+        
+        if not new_subagent:
+            _logger.warning("[_return_with_subsequent_payment_method_new_subagent] Не передан Субагент!")
             return False
 
         if not new_subagent_payer:
@@ -828,7 +677,8 @@ class ZayavkaReturnAutomations(models.Model):
         if not self.subagent_ids:
             _logger.warning("[_return_with_subsequent_payment_method_new_subagent] Не заполнен Субагент!")
             return False
-        subagent = self.subagent_ids[0]
+            
+        subagent = new_subagent
         
         subagent_payer = new_subagent_payer
 
@@ -869,10 +719,10 @@ class ZayavkaReturnAutomations(models.Model):
             'wallet_1_id': agentka_wallet.id,
             'wallet_2_id': agentka_wallet.id,
             'zayavka_ids': [(6, 0, [zayavka_id])],
-            'comment': f"Оплата валюты по заявке {self.zayavka_num}",
+            'comment': f"Списываем валюту с первого плательщика по заявке {self.zayavka_num}",
         })
         self._create_money({
-            'date': date,
+            'date': date2,
             'partner_id': subagent.id,
             'currency': currency,
             'state': 'debt' if isExport else 'positive',
@@ -881,9 +731,28 @@ class ZayavkaReturnAutomations(models.Model):
             **self._get_currency_fields(currency, -amount if isExport else amount),
         })
         self._create_reconciliation({
-            'date': date,
+            'date': date2,
             'currency': currency,
             **self._get_reconciliation_currency_fields(currency, -amount if isExport else amount),
+            'partner_id': subagent.id if isExport else agent.id,
+            'order_id': [(6, 0, [order.id])],
+            'sender_id': [(6, 0, [subagent_payer.id if isExport else agent_payer.id])],
+            'receiver_id': [(6, 0, [agent_payer.id if isExport else subagent_payer.id])],
+            'wallet_id': agentka_wallet.id,
+        })
+        self._create_money({
+            'date': date,
+            'partner_id': subagent.id,
+            'currency': currency,
+            'state': 'positive' if isExport else 'debt',
+            'wallet_id': agentka_wallet.id,
+            'order_id': order.id,
+            **self._get_currency_fields(currency, amount if isExport else -amount),
+        })
+        self._create_reconciliation({
+            'date': date,
+            'currency': currency,
+            **self._get_reconciliation_currency_fields(currency, amount if isExport else -amount),
             'partner_id': subagent.id if isExport else agent.id,
             'order_id': [(6, 0, [order.id])],
             'sender_id': [(6, 0, [subagent_payer.id if isExport else agent_payer.id])],
@@ -897,6 +766,9 @@ class ZayavkaReturnAutomations(models.Model):
         _logger.info("[_return_with_prepayment_of_next_method] Создаем ордер/контейнера/сверки...")
         date = self.payment_order_date_to_prepayment_of_next
         
+        if self.return_amount_to_reward:
+            payment_cost = self.return_amount_to_reward
+
         if not payment_cost:
             _logger.warning(f"[_return_with_prepayment_of_next_method] Сумма вознаграждения не была передена в метод! payment_cost: {payment_cost}")
             return False
@@ -932,62 +804,8 @@ class ZayavkaReturnAutomations(models.Model):
         if not agentka_wallet:
             _logger.warning("[_return_with_prepayment_of_next_method] Кошелек 'Агентка' не найден.")
             return False
-        
-        return_amount = self.return_amount_prepayment_of_next
-        if not return_amount:
-            _logger.warning("[_return_with_prepayment_of_next_method] Сумма возврата не заполнена!")
-            return False
-
-        client = self.client_id
-        if not client:
-            _logger.warning("[_return_with_prepayment_of_next_method] Не заполнен Клиент!")
-            return False
-        
-        client_payer = self._get_first_payer(client)
-        if not client_payer:
-            _logger.warning("[_return_with_prepayment_of_next_method] Не заполнен Плательщик Клиента!")
-            return False
-
-        contragent = self.contragent_id
-        if not contragent:
-            _logger.warning("[_return_with_prepayment_of_next_method] Не заполнен Контрагент!")
-            return False
 
         zayavka_id = self.id
-
-        order = self._create_order({
-            'date': date,
-            'type': 'transfer',
-            'partner_1_id': subagent.id if isExport else agent.id,
-            'payer_1_id': (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id,
-            'partner_2_id': agent.id if isExport else subagent.id,
-            'payer_2_id': agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)),
-            'amount': return_amount,
-            'currency': currency,
-            'wallet_1_id': agentka_wallet.id,
-            'wallet_2_id': agentka_wallet.id,
-            'zayavka_ids': [(6, 0, [zayavka_id])],
-            'comment': f"Возврат валюты по {self.zayavka_num}",
-        })
-        self._create_money({
-            'date': date,
-            'partner_id': subagent.id,
-            'currency': currency,
-            'state': 'debt' if isExport else 'positive',
-            'wallet_id': agentka_wallet.id,
-            'order_id': order.id,
-            **self._get_currency_fields(currency, -return_amount if isExport else return_amount),
-        })
-        self._create_reconciliation({
-            'date': date,
-            'currency': currency,
-            **self._get_reconciliation_currency_fields(currency, -return_amount if isExport else return_amount),
-            'partner_id': subagent.id if isExport else agent.id,
-            'order_id': [(6, 0, [order.id])],
-            'sender_id': [(6, 0, [(temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id])],
-            'receiver_id': [(6, 0, [agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False))])],
-            'wallet_id': agentka_wallet.id,
-        })
 
         order2 = self._create_order({
             'date': date,
@@ -1024,3 +842,95 @@ class ZayavkaReturnAutomations(models.Model):
         })
 
         return True
+
+    def return_payment_to_payer(self, isExport = False):
+        _logger.info("[return_payment_to_payer] Создаем ордер/контейнера/сверки...")
+        date = self.cross_return_date
+
+        agent = self.agent_id
+        if not agent:
+            _logger.warning("[return_payment_to_payer] Не заполнен Агент!")
+            return False
+        
+        agent_payer = self._get_first_payer(agent)
+        if not agent_payer:
+            _logger.warning("[return_payment_to_payer] Не заполнен Плательщик Агента!")
+            return False
+        
+        if not self.subagent_ids:
+            _logger.warning("[return_payment_to_payer] Не заполнен Субагент!")
+            return False
+        subagent = self.subagent_ids[0]
+        
+        subagent_payer = self._get_first_payer(subagent)
+        if not subagent_payer:
+            _logger.warning("[return_payment_to_payer] Не заполнен Плательщик Субагента!")
+            return False
+
+        temp_subagent_payer = self.subagent_payer_ids and self.subagent_payer_ids[0] or subagent_payer
+
+        currency = self.currency
+        if not currency:
+            _logger.warning("[return_payment_to_payer] Не заполнен Валюта!")
+            return False
+        
+        agentka_wallet = self.env['amanat.wallet'].search([('name', '=', 'Агентка')], limit=1)
+        if not agentka_wallet:
+            _logger.warning("[return_payment_to_payer] Кошелек 'Агентка' не найден.")
+            return False
+        
+        amount = self.amount
+        if not amount:
+            _logger.warning("[return_payment_to_payer] Сумма заявки не заполнена!")
+            return False
+
+        client = self.client_id
+        if not client:
+            _logger.warning("[return_payment_to_payer] Не заполнен Клиент!")
+            return False
+        
+        client_payer = self._get_first_payer(client)
+        if not client_payer:
+            _logger.warning("[return_payment_to_payer] Не заполнен Плательщик Клиента!")
+            return False
+
+        contragent = self.contragent_id
+        if not contragent:
+            _logger.warning("[return_payment_to_payer] Не заполнен Контрагент!")
+            return False
+
+        zayavka_id = self.id
+
+        order = self._create_order({
+            'date': date,
+            'type': 'transfer',
+            'partner_1_id': subagent.id if isExport else agent.id,
+            'payer_1_id': (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id,
+            'partner_2_id': agent.id if isExport else subagent.id,
+            'payer_2_id': agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)),
+            'amount': amount,
+            'currency': currency,
+            'wallet_1_id': agentka_wallet.id,
+            'wallet_2_id': agentka_wallet.id,
+            'zayavka_ids': [(6, 0, [zayavka_id])],
+            'comment': f"Возврат платежа на счет плательщика по заявке {self.zayavka_num}",
+        })
+        self._create_money({
+            'date': date,
+            'partner_id': subagent.id,
+            'currency': currency,
+            'state': 'debt' if isExport else 'positive',
+            'wallet_id': agentka_wallet.id,
+            'order_id': order.id,
+            **self._get_currency_fields(currency, -amount if isExport else amount),
+        })
+        self._create_reconciliation({
+            'date': date,
+            'currency': currency,
+            **self._get_reconciliation_currency_fields(currency, -amount if isExport else amount),
+            'partner_id': subagent.id if isExport else agent.id,
+            'order_id': [(6, 0, [order.id])],
+            'sender_id': [(6, 0, [(temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False)) if isExport else agent_payer.id])],
+            'receiver_id': [(6, 0, [agent_payer.id if isExport else (temp_subagent_payer.id if temp_subagent_payer else (subagent_payer.id if subagent_payer else False))])],
+            'wallet_id': agentka_wallet.id,
+        })

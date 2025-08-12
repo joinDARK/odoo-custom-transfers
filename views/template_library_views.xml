@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Форма для библиотеки шаблонов документов -->
+    <record id="template_library_form_view" model="ir.ui.view">
+        <field name="name">template.library.form</field>
+        <field name="model">template.library</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Название шаблона документа"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="template_type" widget="radio"/>
+                            <field name="category"/>
+                        </group>
+                        <group>
+                            <field name="template_file" filename="template_filename"/>
+                            <field name="template_filename"/>
+                            <field name="usage_count" readonly="1"/>
+                            <field name="last_used" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Описание шаблона документа"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Список библиотеки шаблонов документов -->
+    <record id="template_library_list_view" model="ir.ui.view">
+        <field name="name">template.library.list</field>
+        <field name="model">template.library</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="template_type"/>
+                <field name="category"/>
+                <field name="template_filename"/>
+                <field name="usage_count"/>
+                <field name="last_used"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Канбан для библиотеки шаблонов документов -->
+    <record id="template_library_kanban_view" model="ir.ui.view">
+        <field name="name">template.library.kanban</field>
+        <field name="model">template.library</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="name"/>
+                <field name="template_type"/>
+                <field name="category"/>
+                <field name="template_filename"/>
+                <field name="usage_count"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_card">
+                            <div class="oe_kanban_content">
+                                <div class="oe_kanban_details">
+                                    <strong><field name="name"/></strong>
+                                    <div class="text-muted">
+                                        <i class="fa fa-file-o"/> <field name="template_type"/>
+                                    </div>
+                                    <div class="text-muted">
+                                        <i class="fa fa-folder-o"/> <field name="category"/>
+                                    </div>
+                                    <div class="text-muted" t-if="record.template_filename.raw_value">
+                                        <i class="fa fa-paperclip"/> <field name="template_filename"/>
+                                    </div>
+                                    <div class="text-muted" t-if="record.usage_count.raw_value > 0">
+                                        <i class="fa fa-bar-chart"/> Использований: <field name="usage_count"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Поиск для библиотеки шаблонов документов -->
+    <record id="template_library_search_view" model="ir.ui.view">
+        <field name="name">template.library.search</field>
+        <field name="model">template.library</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="template_type"/>
+                <field name="category"/>
+                <field name="template_filename"/>
+                <field name="description"/>
+                
+                <!-- Фильтры по типу шаблона -->
+                <filter name="docx_templates" string="Word документы" domain="[('template_type', '=', 'docx')]"/>
+                <filter name="xlsx_templates" string="Excel документы" domain="[('template_type', '=', 'xlsx')]"/>
+                <filter name="pdf_templates" string="PDF документы" domain="[('template_type', '=', 'pdf')]"/>
+                <filter name="html_templates" string="HTML шаблоны" domain="[('template_type', '=', 'html')]"/>
+                
+                <separator/>
+                
+                <!-- Фильтры по категории -->
+                <filter name="contracts" string="Договоры" domain="[('category', '=', 'contract')]"/>
+                <filter name="invoices" string="Счета" domain="[('category', '=', 'invoice')]"/>
+                <filter name="reports" string="Отчеты" domain="[('category', '=', 'report')]"/>
+                <filter name="letters" string="Письма" domain="[('category', '=', 'letter')]"/>
+                <filter name="certificates" string="Справки" domain="[('category', '=', 'certificate')]"/>
+                <filter name="statements" string="Заявления" domain="[('category', '=', 'statement')]"/>
+                
+                <separator/>
+                
+                <!-- Фильтры по состоянию -->
+                <filter name="frequently_used" string="Часто используемые" domain="[('usage_count', '>', 5)]"/>
+                
+                <separator/>
+                
+                <!-- Группировка -->
+                <group expand="0" string="Группировать по">
+                    <filter name="group_by_type" string="Тип шаблона" context="{'group_by': 'template_type'}"/>
+                    <filter name="group_by_category" string="Категория" context="{'group_by': 'category'}"/>
+                    <filter name="group_by_create_date" string="Дата создания" context="{'group_by': 'create_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Действие для библиотеки шаблонов документов -->
+    <record id="template_library_action" model="ir.actions.act_window">
+        <field name="name">Библиотека шаблонов документов</field>
+        <field name="res_model">template.library</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="template_library_search_view"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Создайте первый шаблон документа
+            </p>
+            <p>
+                Загрузите шаблоны документов (Word, Excel, PDF, HTML), которые будут использоваться 
+                для автоматической генерации документов в системе.
+            </p>
+            <p>
+                Шаблоны могут содержать переменные для подстановки данных из системы.
+            </p>
+        </field>
+    </record>
+
+    <!-- Пункт меню для библиотеки шаблонов документов -->
+    <menuitem id="template_library_menu"
+              name="Шаблоны документов"
+              parent="amanat_menu_root"
+              action="template_library_action"
+              sequence="25"/>
+</odoo>

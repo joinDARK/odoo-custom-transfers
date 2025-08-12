@@ -7,13 +7,14 @@
             <div class="amanat-welcome-content">
                 <div class="amanat-welcome-header">
                     <div class="amanat-logo">
-                        <i class="fa fa-building fa-4x text-primary"></i>
+                        <!-- <i class="fa fa-building fa-4x text-primary"></i> -->
+                         <img src="/amanat/static/src/img/logo_tdk.png" alt="logo" class="amanat-logo-img"/>
                     </div>
-                    <h1 class="amanat-welcome-title">Добро пожаловать в ТДК</h1>
+                    <!-- <h1 class="amanat-welcome-title">Добро пожаловать в ТДК</h1> -->
 
-                    <p class="amanat-welcome-subtitle">
+                    <!-- <p class="amanat-welcome-subtitle">
                         Система управления валютными операциями и переводами
-                    </p>
+                    </p> -->
                 </div>
                 
                 <div class="amanat-welcome-features">

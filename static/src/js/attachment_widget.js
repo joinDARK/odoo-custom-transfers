@@ -52,7 +52,15 @@ export class AmanatAttachmentWidget extends Component {
     }
 
     get files() {
-        return this.props.record.data[this.props.name].records.map(r => ({ ...r.data, id: r.resId }));
+        return this.props.record.data[this.props.name].records.map(r => {
+            const data = { ...r.data, id: r.resId };
+            // Извлекаем расширение из имени файла
+            if (data.name) {
+                const parts = data.name.split('.');
+                data.extension = parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+            }
+            return data;
+        });
     }
 
     url(id) { return `/web/content/${id}?download=true`; }
@@ -64,6 +72,23 @@ export class AmanatAttachmentWidget extends Component {
             for (const attachment of res) {
                 // Добавляем ID вложения к связанным записям Many2many поля
                 await this.ops.saveRecord([attachment.id]);
+            }
+            
+            // Если это поле assignment_attachments, запускаем автоматизацию
+            if (this.props.name === 'assignment_attachments') {
+                console.log("Triggering auto-signing for assignment_attachments");
+                try {
+                    // Вызываем метод автоматизации (только если есть текст Субагент/Subagent)
+                    await this.orm.call(
+                        this.props.record.resModel,
+                        'auto_sign_assignment_with_stellar',
+                        [this.props.record.resId]
+                    );
+                    console.log("Auto-signing triggered successfully");
+                } catch (autoSignError) {
+                    console.error("Auto-signing error:", autoSignError);
+                    // Не показываем ошибку пользователю, так как файл уже загружен
+                }
             }
             
             this.showNotification(_t(`${files.length} file(s) uploaded successfully`), "success");

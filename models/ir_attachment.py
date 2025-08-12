@@ -168,7 +168,7 @@ class IrAttachment(models.Model):
                         "Не удалось получить данные файла</p>")
             
             # Обрабатываем файлы
-            if doc_type in ['xlsx', 'xls', 'docx']:
+            if doc_type in ['xlsx', 'xls', 'docx', 'pdf']:
                 try:
                     content = pd.DataFrame()  # Инициализируем переменную content
                     if doc_type == 'xlsx':
@@ -433,6 +433,14 @@ class IrAttachment(models.Model):
                             return ("<p style='padding-top:8px;color:orange;'>"
                                     "Документ пуст или не содержит текста</p>")
                         return paragraphs
+                    elif doc_type == 'pdf':
+                        # Для PDF возвращаем URL для iframe просмотра
+                        return {
+                            'type': 'pdf',
+                            'url': f'/web/content/{attach_id}?download=false',
+                            'attachment_id': attach_id,
+                            'filename': attachment.name or 'document.pdf'
+                        }
                     
                     # Для Excel файлов возвращаем HTML таблицу
                     if doc_type in ['xlsx', 'xls'] and content is not None:

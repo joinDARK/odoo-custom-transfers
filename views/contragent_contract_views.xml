@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form view для договоров контрагентов -->
+    <record id="contragent_contract_form_view" model="ir.ui.view">
+        <field name="name">contragent.contract.form</field>
+        <field name="model">amanat.contragent.contract</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="is_actual" widget="boolean_button" options="{'terminology': 'active'}" 
+                           string="Актуальный" class="btn-success"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="contragent_id" readonly="context.get('default_contragent_id', False)"/>
+                    </group>
+                    
+                    <group string="Даты действия договора">
+                        <div class="o-form-group-2">
+                            <group>
+                                <field name="start_date"/>
+                            </group>
+                            <group>
+                                <field name="end_date"/>
+                            </group>
+                        </div>
+                        <field name="auto_prolongation"/>
+                    </group>
+                    
+                    <group string="Файлы договора">
+                        <field name="contract_attachments" widget="amanat_attachment"
+                               options="{'accepted_file_extensions': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt'}"/>
+                    </group>
+                    
+                    <group string="Дополнительная информация">
+                        <field name="description"/>
+                    </group>
+                </sheet>
+                
+                <!-- Виджет трекинга -->
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+    
+    <!-- List view для договоров контрагентов -->
+    <record id="contragent_contract_list_view" model="ir.ui.view">
+        <field name="name">contragent.contract.list</field>
+        <field name="model">amanat.contragent.contract</field>
+        <field name="arch" type="xml">
+            <list editable="top" multi_edit="1">
+                <field name="name" width="300"/>
+                <field name="contragent_id" width="200"/>
+                <field name="start_date" width="150"/>
+                <field name="end_date" width="150"/>
+                <field name="is_actual" widget="boolean_toggle" width="100"/>
+                <field name="auto_prolongation" widget="boolean_toggle" width="150"/>
+                <field name="contract_attachments" widget="many2many_tags" width="200"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Search view для договоров -->
+    <record id="contragent_contract_search_view" model="ir.ui.view">
+        <field name="name">contragent.contract.search</field>
+        <field name="model">amanat.contragent.contract</field>
+        <field name="arch" type="xml">
+            <search>
+                <!-- Поля поиска -->
+                <field name="name" string="Название договора" filter_domain="[('name','ilike',self)]"/>
+                <field name="contragent_id" string="Контрагент" filter_domain="[('contragent_id.name','ilike',self)]"/>
+                
+                <!-- Фильтры -->
+                <filter name="actual_contracts" string="Актуальные договоры" domain="[('is_actual', '=', True)]"/>
+                <filter name="expired_contracts" string="Истекшие договоры" domain="[('end_date', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="auto_prolongation" string="С автопролонгацией" domain="[('auto_prolongation', '=', True)]"/>
+                
+                <separator/>
+                <filter name="this_month" string="Истекают в этом месяце" 
+                        domain="[('end_date', '&gt;=', context_today().strftime('%Y-%m-01')), 
+                                 ('end_date', '&lt;=', (context_today() + relativedelta(months=1, day=1) - relativedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                
+                <!-- Группировка -->
+                <group expand="0" string="Группировать по">
+                    <filter name="group_by_contragent" string="По контрагентам" context="{'group_by': 'contragent_id'}"/>
+                    <filter name="group_by_is_actual" string="По актуальности" context="{'group_by': 'is_actual'}"/>
+                    <filter name="group_by_month" string="По месяцу окончания" context="{'group_by': 'end_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Action для договоров -->
+    <record id="contragent_contract_action" model="ir.actions.act_window">
+        <field name="name">Договоры контрагентов</field>
+        <field name="res_model">amanat.contragent.contract</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="contragent_contract_search_view"/>
+        <field name="context">{'search_default_actual_contracts': 1}</field>
+        <field name="target">main</field>
+    </record>
+</odoo>
+

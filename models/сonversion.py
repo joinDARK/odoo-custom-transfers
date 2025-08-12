@@ -283,8 +283,16 @@ class Conversion(models.Model, AmanatBaseModel):
         })
 
     def write(self, vals):
+        # Отладка: логируем контекст
         if self.env.context.get('skip_automation'):
+            _logger.info('ОТЛАДКА: skip_automation=True в контексте, автоматизация пропущена. Контекст: %s', self.env.context)
             return super(Conversion, self).write(vals)
+        
+        # Отладка: логируем какие поля изменяются
+        automation_fields = ['create_conversion', 'make_royalty', 'delete_conversion']
+        changed_automation = {k: v for k, v in vals.items() if k in automation_fields}
+        if changed_automation:
+            _logger.info('ОТЛАДКА: Изменяются поля автоматизации: %s', changed_automation)
 
         do_create = vals.get('create_conversion', False)
         do_royal = vals.get('make_royalty', False)
@@ -295,7 +303,10 @@ class Conversion(models.Model, AmanatBaseModel):
         recs = self.browse(self.ids)
 
         for rec in recs:
+            _logger.info('ОТЛАДКА: Обрабатывается запись ID=%s, состояние=%s', rec.id, rec.state)
+            
             if rec.state == 'archive':
+                _logger.info('ОТЛАДКА: Запись в архиве, просто сбрасываем флаги')
                 # просто сбрасываем флаги
                 rec.with_context(skip_automation=True).write({
                     'create_conversion': False,
@@ -305,15 +316,17 @@ class Conversion(models.Model, AmanatBaseModel):
                 continue
 
             if do_create:
+                _logger.info('ОТЛАДКА: Выполняется create_conversion для записи ID=%s', rec.id)
                 rec.with_context(skip_automation=True)._create_conversion_order()
                 rec.with_context(skip_automation=True).write({'create_conversion': False})
 
             if do_royal:
-                print('do_royal')
+                _logger.info('ОТЛАДКА: Выполняется make_royalty для записи ID=%s', rec.id)
                 rec.with_context(skip_automation=True)._create_royalty_entries()
                 rec.with_context(skip_automation=True).write({'make_royalty': False})
 
             if do_delete:
+                _logger.info('ОТЛАДКА: Выполняется delete_conversion для записи ID=%s', rec.id)
                 rec.with_context(skip_automation=True).action_delete_conversion()
                 rec.with_context(skip_automation=True).write({'delete_conversion': False})
 

@@ -1,5 +1,7 @@
 /** @odoo-module **/
 
+import { rpc } from "@web/core/network/rpc";
+
 // Простая реализация функциональности preview offline
 // Избегаем конфликтов с патчами и компонентами
 
@@ -63,17 +65,18 @@ async function handlePreviewOffline(ev) {
     
     fileHead.textContent = fileName || 'Предпросмотр файла';
     
-    if (['xls', 'xlsx', 'docx'].includes(fileType)) {
+    if (['xls', 'xlsx', 'docx', 'pdf'].includes(fileType)) {
         modal.style.display = "block";
         
         try {
             console.log('Получаем данные файла...');
-            // Используем встроенный сервис ORM Odoo
-            const data = await odoo.env.services.orm.call(
-                "ir.attachment", 
-                "decode_content", 
-                [parseInt(attachmentId), fileType]
-            );
+            // Используем RPC для вызова метода сервера
+            const data = await rpc("/web/dataset/call_kw", {
+                model: "ir.attachment",
+                method: "decode_content",
+                args: [parseInt(attachmentId), fileType],
+                kwargs: {}
+            });
             
             console.log('Данные получены, обрабатываем...');
             
@@ -100,6 +103,40 @@ async function handlePreviewOffline(ev) {
                             myDocs.appendChild(p);
                         });
                     }
+                }
+            } else if (fileType === 'pdf') {
+                // Обрабатываем PDF файлы
+                if (data && data.type === 'pdf') {
+                    // Очищаем все контейнеры
+                    if (myDocs) myDocs.innerHTML = '';
+                    if (xlsxTable) xlsxTable.innerHTML = '';
+                    
+                    // Создаем PDF viewer
+                    const pdfContainer = document.createElement('div');
+                    pdfContainer.className = 'pdf-viewer-container';
+                    
+                    const iframe = document.createElement('iframe');
+                    iframe.src = data.url;
+                    iframe.className = 'pdf-viewer-iframe';
+                    iframe.title = `PDF: ${data.filename}`;
+                    
+                    // Добавляем обработчик ошибок
+                    iframe.onerror = () => {
+                        pdfContainer.innerHTML = `
+                            <div class="pdf-error">
+                                <i class="fa fa-file-pdf-o fa-3x" style="color: #dc3545; margin-bottom: 15px;"></i>
+                                <h4>Не удалось загрузить PDF</h4>
+                                <p>Попробуйте <a href="${data.url}" target="_blank">открыть в новой вкладке</a></p>
+                            </div>
+                        `;
+                    };
+                    
+                    pdfContainer.appendChild(iframe);
+                    
+                    // Добавляем контейнер в модальное окно
+                    modal.querySelector('.modal-content').appendChild(pdfContainer);
+                    
+                    console.log('PDF успешно загружен в iframe');
                 }
             }
         } catch (error) {
@@ -233,6 +270,12 @@ function addCloseHandler(modal) {
         newCloseBtn.onclick = () => {
             modal.style.display = "none";
             isPreviewActive = false;
+            
+            // Очищаем PDF контейнер если он есть
+            const pdfContainer = modal.querySelector('.pdf-viewer-container');
+            if (pdfContainer) {
+                pdfContainer.remove();
+            }
         };
     }
 
@@ -241,6 +284,13 @@ function addCloseHandler(modal) {
         if (event.target === modal) {
             modal.style.display = "none";
             isPreviewActive = false;
+            
+            // Очищаем PDF контейнер если он есть
+            const pdfContainer = modal.querySelector('.pdf-viewer-container');
+            if (pdfContainer) {
+                pdfContainer.remove();
+            }
+            
             window.removeEventListener('click', modalClickHandler);
         }
     };

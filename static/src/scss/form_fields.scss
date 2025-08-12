@@ -1,0 +1,297 @@
+// Стили для вертикального расположения полей в формах в стиле Airtable
+// Метка поля сверху, поле ввода снизу
+
+// Максимально агрессивные селекторы для переопределения стандартных стилей Odoo
+.o_form_view,
+.o_form_view .o_form_view_container,
+.o_form_view .o_form_sheet_bg,
+.o_form_view .o_form_sheet {
+    
+    // Переопределяем все возможные комбинации классов для полей
+    .o_inner_group.grid .o_wrap_field,
+    .o_inner_group.grid .o_wrap_field.d-flex,
+    .o_inner_group.grid .o_wrap_field.d-flex.d-sm-contents,
+    .o_inner_group.grid .o_wrap_field.d-flex.d-sm-contents.flex-column,
+    .o_inner_group.grid .o_wrap_field.d-flex.d-sm-contents.flex-column.mb-3,
+    .o_inner_group.grid .o_wrap_field.d-flex.d-sm-contents.flex-column.mb-3.mb-sm-0,
+    .o_wrap_field,
+    .o_wrap_field.d-flex,
+    .o_wrap_field.d-flex.d-sm-contents,
+    .o_wrap_field.d-flex.d-sm-contents.flex-column,
+    .o_wrap_field.d-flex.d-sm-contents.flex-column.mb-3,
+    .o_wrap_field.d-flex.d-sm-contents.flex-column.mb-3.mb-sm-0 {
+        // Принудительно делаем flex вместо grid contents
+        display: flex !important;
+        flex-direction: column !important;
+        
+        // Убираем все grid-related стили
+        grid-column: unset !important;
+        grid-row: unset !important;
+        
+        // Airtable-style spacing
+        margin-bottom: 1.25rem !important;
+        padding: 0 !important;
+        
+        // Airtable-style background and borders
+        background: transparent !important;
+    }
+    
+    // Контейнер для метки поля - Airtable style
+    .o_wrap_label,
+    .o_cell.o_wrap_label,
+    .o_cell.o_wrap_label.text-break,
+    .o_cell.o_wrap_label.text-break.text-900 {
+        margin-bottom: 0.5rem !important;
+        order: 1 !important; // Метка всегда первая
+        padding: 0 !important;
+        
+        .o_form_label,
+        .o_form_label.o_form_label_readonly {
+            // Airtable-style labels
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            color: #374151 !important; // Темно-серый как в Airtable
+            margin-bottom: 0 !important;
+            line-height: 1.25 !important;
+            text-transform: none !important;
+        }
+    }
+    
+    // Контейнер для поля ввода - Airtable style
+    .o_wrap_input,
+    .o_cell.o_wrap_input,
+    .o_cell.o_wrap_input.text-break {
+        order: 2 !important; // Поле ввода всегда второе
+        padding: 0 !important;
+        margin-bottom: 0 !important;
+        
+        // Airtable-style field widgets
+        .o_field_widget {
+            width: 100% !important;
+            margin-bottom: 0 !important;
+            
+            // Универсальные стили для всех input полей в стиле Airtable
+            .o_input,
+            input.o_input,
+            textarea.o_input,
+            select.o_input {
+                width: 100% !important;
+                padding: 0.75rem !important; // Больше отступы как в Airtable
+                border: 1px solid #d1d5db !important; // Светло-серая граница
+                border-radius: 0.5rem !important; // Скругленные углы
+                background-color: #ffffff !important; // Белый фон
+                font-size: 0.875rem !important;
+                line-height: 1.25 !important;
+                color: #374151 !important;
+                transition: all 0.15s ease-in-out !important;
+                
+                // Состояния фокуса и hover в стиле Airtable
+                &:hover {
+                    border-color: #9ca3af !important;
+                    box-shadow: none !important;
+                }
+                
+                &:focus {
+                    border-color: #3b82f6 !important; // Синяя граница при фокусе
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+                    outline: none !important;
+                }
+                
+                // Placeholder стили
+                &::placeholder {
+                    color: #9ca3af !important;
+                    opacity: 1 !important;
+                }
+            }
+            
+            // Специальные стили для readonly полей
+            &.o_readonly_modifier {
+                span {
+                    padding: 0.75rem !important;
+                    background-color: #f9fafb !important; // Очень светло-серый фон
+                    border: 1px solid #e5e7eb !important;
+                    border-radius: 0.5rem !important;
+                    color: #6b7280 !important;
+                    display: block !important;
+                    font-size: 0.875rem !important;
+                    min-height: 2.75rem !important;
+                    box-sizing: border-box !important;
+                }
+            }
+            
+            // Many2one поля
+            &.o_field_many2one {
+                .o_field_many2one_selection {
+                    width: 100% !important;
+                    
+                    .o_input_dropdown {
+                        width: 100% !important;
+                        
+                        .o-autocomplete input {
+                            padding-right: 2.5rem !important; // Место для кнопки dropdown
+                        }
+                    }
+                }
+            }
+            
+            // Many2many теги
+            &.o_field_many2many_tags {
+                .o_field_tags {
+                    width: 100% !important;
+                    border: 1px solid #d1d5db !important;
+                    border-radius: 0.5rem !important;
+                    padding: 0.5rem !important;
+                    background-color: #ffffff !important;
+                    min-height: 2.75rem !important;
+                    
+                    .o_tag {
+                        background-color: #eff6ff !important;
+                        border: 1px solid #bfdbfe !important;
+                        color: #1e40af !important;
+                        border-radius: 0.375rem !important;
+                        font-size: 0.75rem !important;
+                        padding: 0.25rem 0.5rem !important;
+                    }
+                }
+            }
+            
+            // Поля выбора (select)
+            &.o_field_selection {
+                select.o_input {
+                    appearance: none !important;
+                    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E") !important;
+                    background-position: right 0.75rem center !important;
+                    background-repeat: no-repeat !important;
+                    background-size: 1rem !important;
+                    padding-right: 2.5rem !important;
+                }
+            }
+        }
+    }
+    
+    // Стили для группировки полей
+    .o_inner_group,
+    .o_inner_group.grid {
+        gap: 0 !important;
+        row-gap: 0 !important;
+        
+        // Убираем стандартные grid стили
+        grid-template-columns: 1fr !important;
+        
+        // Специальный класс для сохранения горизонтального расположения
+        &.o_form_group_horizontal {
+            .o_wrap_field {
+                flex-direction: row !important;
+                align-items: flex-start !important;
+                
+                .o_wrap_label {
+                    margin-right: 1rem !important;
+                    margin-bottom: 0 !important;
+                    min-width: 150px !important;
+                    flex-shrink: 0 !important;
+                }
+                
+                .o_wrap_input {
+                    flex: 1 !important;
+                }
+            }
+        }
+    }
+    
+    // Стили для разделителей секций
+    .o_horizontal_separator {
+        margin: 2rem 0 1.5rem 0 !important;
+        padding-bottom: 0.5rem !important;
+        border-bottom: 2px solid #e5e7eb !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        color: #374151 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+    }
+}
+
+// Дополнительные адаптивные стили
+@media (max-width: 768px) {
+    .o_form_view {
+        .o_wrap_field {
+            margin-bottom: 1rem !important;
+        }
+        
+        .o_wrap_label .o_form_label {
+            font-size: 0.8125rem !important;
+        }
+        
+        .o_field_widget .o_input,
+        .o_field_widget input.o_input,
+        .o_field_widget textarea.o_input,
+        .o_field_widget select.o_input {
+            padding: 0.625rem !important;
+            font-size: 0.8125rem !important;
+        }
+    }
+}
+
+// Дополнительные улучшения для лучшей интеграции с Odoo
+.o_form_view {
+    // Убираем стандартные отступы форм
+    .o_form_sheet {
+        padding: 1.5rem !important;
+    }
+    
+    // Стили для кнопок в стиле Airtable
+    .btn {
+        border-radius: 0.5rem !important;
+        font-weight: 500 !important;
+        font-size: 0.875rem !important;
+        padding: 0.75rem 1rem !important;
+        transition: all 0.15s ease-in-out !important;
+        
+        &.btn-primary {
+            background-color: #3b82f6 !important;
+            border-color: #3b82f6 !important;
+            
+            &:hover {
+                background-color: #2563eb !important;
+                border-color: #2563eb !important;
+            }
+        }
+        
+        &.btn-secondary {
+            background-color: #f3f4f6 !important;
+            border-color: #d1d5db !important;
+            color: #374151 !important;
+            
+            &:hover {
+                background-color: #e5e7eb !important;
+                border-color: #9ca3af !important;
+            }
+        }
+    }
+    
+    // Улучшение для notebook/tabs
+    .nav-tabs {
+        border-bottom: 2px solid #e5e7eb !important;
+        margin-bottom: 1.5rem !important;
+        
+        .nav-link {
+            border: none !important;
+            border-radius: 0 !important;
+            color: #6b7280 !important;
+            font-weight: 500 !important;
+            padding: 0.75rem 1rem !important;
+            border-bottom: 2px solid transparent !important;
+            
+            &.active {
+                background-color: transparent !important;
+                color: #3b82f6 !important;
+                border-bottom-color: #3b82f6 !important;
+            }
+            
+            &:hover:not(.active) {
+                color: #374151 !important;
+                border-bottom-color: #d1d5db !important;
+            }
+        }
+    }
+}

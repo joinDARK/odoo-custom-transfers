@@ -343,3 +343,9 @@
     top: 0;
     z-index: 999;
 }
+
+/* Сохраняем переносы строк в уведомлениях */
+.o_notification .o_notification_content {
+    white-space: pre-line;
+}
+

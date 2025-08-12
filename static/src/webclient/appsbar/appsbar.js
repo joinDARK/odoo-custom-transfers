@@ -38,10 +38,12 @@ export class AppsBar extends Component {
                 name: "Справочники",
                 items: [
                     { name: "Контрагенты", action: "amanat.contragent_action" },
+                    { name: "SWIFT Документы", action: "amanat.action_swift_document_upload" },
                     { name: "Плательщики", action: "amanat.payer_action" },
                     { name: "Страны", action: "amanat.country_action" },
                     { name: "Менеджеры", action: "amanat.manager_action" },
                     { name: "Библиотека подписей", action: "amanat.signature_library_action" },
+                    { name: "Шаблоны документов", action: "amanat.template_library_action" },
                     { name: "Курс Джесс", action: "amanat.jess_rate_action" },
                 ],
             },
@@ -96,9 +98,9 @@ export class AppsBar extends Component {
             {
                 name: "Калькуляторы",
                 items: [
-                    { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                    { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
+                    { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                     { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
-                    { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
                 ],
             },
             {
@@ -247,6 +249,7 @@ export class AppsBar extends Component {
                         name: "Справочники",
                         items: [
                             { name: "Контрагенты", action: "amanat.contragent_action" },
+                            { name: "SWIFT Документы", action: "amanat.action_swift_document_upload" },
                             { name: "Страны", action: "amanat.country_action" },
                             { name: "Плательщики", action: "amanat.payer_action" },
                             { name: "Менеджеры", action: "amanat.manager_action" },
@@ -260,9 +263,8 @@ export class AppsBar extends Component {
                     {
                         name: "Калькуляторы",
                         items: [
-                            { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                            { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
                             { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
-                            { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
                         ],
                     },
                 ];
@@ -308,6 +310,7 @@ export class AppsBar extends Component {
                         { name: "Страны", action: "amanat.country_action" },
                         { name: "Менеджеры", action: "amanat.manager_action" },
                         { name: "Библиотека подписей", action: "amanat.signature_library_action" },
+                        { name: "Шаблоны документов", action: "amanat.template_library_action" },
                         { name: "Курс Джесс", action: "amanat.jess_rate_action" },
                     ],
                 },
@@ -361,9 +364,9 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
-                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
-                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
                     ],
                 },
                 {
@@ -402,9 +405,9 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
-                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
-                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
                     ],
                 },
             ];
@@ -451,9 +454,9 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
-                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
-                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
                     ],
                 },
             ];
@@ -477,6 +480,7 @@ export class AppsBar extends Component {
                         { name: "Ордер", action: "amanat.order_action" },
                         { name: "Контейнер", action: "amanat.money_action" },
                         { name: "Сверка", action: "amanat.reconciliation_action" },
+                        { name: "Касса файлы", action: "amanat.action_amanat_kassa_files" },
                     ],
                 },
                 {
@@ -509,9 +513,9 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
-                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
-                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
                     ],
                 },
             ];
@@ -536,9 +540,9 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
-                        { name: "Расчет 50 usd", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет надбавка $", action: "amanat.action_amanat_calculator_50_usd" },
+                        { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
-                        { name: "Расчет 125 usd", action: "amanat.action_amanat_calculator_125_usd" },
                     ],
                 },
             ];

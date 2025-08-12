@@ -1,33 +1,16 @@
-"""
-YandexGPT анализ документов для заявок
-
-Функциональность:
-1. Анализ изображений с помощью Yandex Vision OCR + YandexGPT
-2. Анализ Excel документов (новая функциональность):
-   - Поддержка форматов: .xlsx, .xls, .xlsm, .csv
-   - Извлечение текста из всех листов и ячеек
-   - Детальное логирование результатов
-   - Готовность к интеграции с YandexGPT (отключена по умолчанию)
-
-Использование Excel анализа:
-- action_test_excel_analysis() - запуск тестового анализа
-- analyze_excel_documents() - основной метод анализа
-- get_excel_attachments() - поиск Excel файлов во вложениях
-"""
-
 import requests
 import logging
 import base64
 import json
-import pandas as pd
-import io
-# import os
-from odoo import models, api
+import os
+from dotenv import load_dotenv  # отключено: используем конфиг Odoo/ENV напрямую
+from odoo import models
 
 _logger = logging.getLogger(__name__)
 
-API_KEY = os.environ.get('YANDEX_API_KEY', '')
-FOLDER_ID = 'b1gutoi9c7ngrfbtd6cl'
+# Загружаем переменные окружения из .env (если файл присутствует)
+load_dotenv()
+
 URL = 'https://llm.api.cloud.yandex.net/foundationModels/v1/completion'
 OCR_URL = 'https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText'
 PROMPT = """
@@ -42,6 +25,11 @@ PROMPT = """
 назначение платежа
 номер заявки (application number)
 дата подачи заявки
+номер контракта от <дата_если_есть>
+адрес получателя (бенефициара)
+наименование банка получателя (бенефициара)
+адрес банка получателя
+iban/acc
 
 После этого сопоставь полученные данные и выдай мне информацию в формате json
 
@@ -54,6 +42,11 @@ PROMPT = """
 назначение платежа - payment_purpose
 номер заявки - application_sequence
 дата подачи заявки - payment_date
+номер контракта от <дата_если_есть> - contract_number
+адрес получателя (бенефициара) - beneficiary_address
+наименование банка получателя (бенефициара) - beneficiary_bank_name
+адрес банка получателя - bank_address
+iban/acc - iban_accc
 
 выдаем только первоначальную валюту без эквивалента
 если не указано, то оставляй пустоту
@@ -65,128 +58,155 @@ UPDATE_FIELDS = [
     'subagent_ids',
     'exporter_importer_name',
     'country_id',
+    'agent_id',
     'bank_swift',
     'payment_purpose',
     'application_sequence',
     'payment_date',
+    'contract_number',
+    'beneficiary_address',
+    'beneficiary_bank_name',
+    'bank_address',
+    'iban_accc',
+    'deal_type',
+    'instruction_number',
+    'rate_field',
+    'agent_contract_date',
+    'instruction_signed_date',
+    'client_id',
 ]
+def _get_yandex_gpt_config(env, is_zayavka=True, is_sber_screen=False, is_assignment=False):
+    """Возвращает конфиг YandexGPT из системных параметров с фолбэком к ENV."""
+    try:
+        icp = env['ir.config_parameter'].sudo()
+        api_key = icp.get_param('amanat.ygpt.api_key') or os.getenv('YANDEX_GPT_API_KEY', '')
+        folder_id = icp.get_param('amanat.ygpt.folder_id') or os.getenv('YANDEX_GPT_FOLDER_ID', '')
+        if is_zayavka:
+            prompt = icp.get_param('amanat.ygpt.prompt_for_zayavka_analyse') or PROMPT
+        elif is_sber_screen:
+            prompt = icp.get_param('amanat.ygpt.prompt_for_sber_screen_analyse') or PROMPT
+        elif is_assignment:
+            prompt = icp.get_param('amanat.ygpt.prompt_for_assignment_analyse') or PROMPT
+        else:
+            prompt = PROMPT
+        _logger.info(f"[_get_yandex_gpt_config] prompt: {prompt}")
+        return {
+            'api_key': api_key or '',
+            'folder_id': folder_id or '',
+            'prompt': prompt or PROMPT,
+        }
+    except Exception as e:
+        _logger.error(f"[_get_yandex_gpt_config] Ошибка получения конфигурации: {e}")
+        return {
+            'api_key': os.getenv('YANDEX_GPT_API_KEY', ''),
+            'folder_id': os.getenv('YANDEX_GPT_FOLDER_ID', ''),
+            'prompt': PROMPT,
+        }
 
-# Новая функциональность: Анализ Excel документов
-# Доступные методы:
-# - get_excel_attachments() - поиск Excel файлов во всех полях вложений
-# - analyze_excel_documents() - извлечение текста из Excel файлов и логирование
-# - action_test_excel_analysis() - тестовый метод для запуска анализа
-# Поддерживаемые форматы: .xlsx, .xls, .xlsm, .csv
+def _make_headers(api_key, folder_id):
+    return {
+        "Authorization": f"Api-Key {api_key}",
+        "Content-Type": "application/json",
+        "X-Folder-Id": folder_id,
+    }
 
+FIELD_MAPPING = {
+    'amount': 'amount',  # Сумма заявки (строка 965)
+    'currency': 'currency',  # Валюта (строка 895)
+    'subagent_payer_ids': None,  # Это Many2many поле к amanat.payer, обработаем отдельно
+    'exporter_importer_name': 'exporter_importer_name',  # Наименование покупателя/продавца (строка 82)
+    'country_id': None,  # Это Many2one поле, обработаем отдельно 
+    'agent_id': None,  # Это Many2one поле, обработаем отдельно
+    'bank_swift': 'bank_swift',  # SWIFT код банка (строка 84)
+    'payment_purpose': 'payment_purpose',  # Назначение платежа (строка 1214)
+    'application_sequence': 'application_sequence',  # Порядковый номер заявления (строка 1228)
+    'payment_date': 'payment_date',  # Дата платежа - нужно определить правильное поле
+    'contract_number': 'contract_number',  # Номер контракта
+    'beneficiary_address': 'beneficiary_address',  # Адрес получателя (бенефициара)
+    'beneficiary_bank_name': 'beneficiary_bank_name',  # Наименование банка получателя
+    'bank_address': 'bank_address',  # Адрес банка получателя
+    'iban_accc': 'iban_accc',  # IBAN/ACC
+    'deal_type': 'deal_type',  # Тип сделки
+    'instruction_number': 'instruction_number', # Номер поручения
+    'rate_field': 'rate_field', # Курс
+    'agent_contract_date': 'agent_contract_date',  # Дата контракта агента
+    'instruction_signed_date': 'instruction_signed_date',  # Дата подписания поручения
+    'client_id': None,  # Это Many2one поле, обработаем отдельно
+}
 
 class ZayavkaYandexGPTAnalyse(models.Model):
     _inherit = 'amanat.zayavka'
 
-    def action_analyse_with_yandex_gpt(self):
-        self._get_yandex_gpt_config()
-
-    def action_test_excel_analysis(self):
-        """
-        Тестовый метод для анализа Excel документов
-        """
+    # Внешние методы
+    def _notify_user_simple(self, title, message, warning=False, sticky=False):
+        """Отправляет пользователю простое UI-уведомление через bus.bus (не почта)."""
         try:
-            _logger.info("🚀 ЗАПУСК АНАЛИЗА EXCEL ДОКУМЕНТОВ")
-            _logger.info(f"📋 Заявка: {self.zayavka_id}")
-            _logger.info("📊 Этапы: 1) Поиск Excel файлов -> 2) Извлечение текста -> 3) Логирование результатов")
-            
-            # Запускаем анализ Excel документов
-            results = self.analyze_excel_documents()
-            
-            if results:
-                _logger.info(f"🎉 ТЕСТ ЗАВЕРШЕН УСПЕШНО: Обработано {len(results)} Excel файлов")
-                _logger.info("📋 ФИНАЛЬНАЯ СВОДКА:")
-                for i, result in enumerate(results, 1):
-                    _logger.info(f"  ✅ {i}. {result['file_name']}")
-                    _logger.info(f"     📂 Поле: {result['field_name']}")
-                    _logger.info(f"     📄 Размер: {result['file_size']} байт")
-                    _logger.info(f"     📊 Извлечено: {result['text_length']} символов")
-                _logger.info("🎯 Все Excel файлы прошли полный цикл обработки!")
-            else:
-                _logger.info("ℹ️ ТЕСТ: Не найдено Excel файлов для анализа или произошла ошибка")
-                
-        except Exception as e:
-            _logger.error(f"Ошибка при тестировании анализа Excel документов: {str(e)}")
-
-    def action_test_screen_sber_ocr(self):
-        """
-        Тестовый метод для полного анализа изображений screen_sber: OCR + YandexGPT + обновление полей
-        """
-        try:
-            _logger.info("🚀 Запуск ПОЛНОГО АНАЛИЗА для screen_sber_attachments")
-            _logger.info("📋 Этапы: 1) OCR распознавание -> 2) YandexGPT анализ -> 3) Обновление полей заявки")
-            
-            # Анализируем изображения (теперь с полной обработкой)
-            results = self.analyze_screen_sber_images_with_yandex_gpt()
-            
-            if results:
-                _logger.info(f"ТЕСТ ЗАВЕРШЕН: Обработано {len(results)} изображений")
-                _logger.info("📋 СВОДКА РЕЗУЛЬТАТОВ:")
-                for i, result in enumerate(results, 1):
-                    _logger.info(f"  {i}. {result['image_name']}")
-                    _logger.info(f"     Длина распознанного текста: {len(result['recognized_text'])} символов")
-                    _logger.info(f"     Первые 100 символов: {result['recognized_text'][:100]}...")
-                _logger.info("✅ Все изображения прошли полный цикл обработки и анализа!")
-            else:
-                _logger.info("❌ ТЕСТ: Не удалось распознать текст ни из одного изображения")
-                
-        except Exception as e:
-            _logger.error(f"Ошибка при тестировании полного анализа screen_sber: {str(e)}")
-
-    @api.model
-    def _get_yandex_gpt_config(self):
-        headers = {
-            "Authorization": f"Api-Key {API_KEY}",
-            "Content-Type": "application/json",
-            "X-Folder-Id": FOLDER_ID
-        }
-
-        data = {
-            "modelUri": f"gpt://{FOLDER_ID}/yandexgpt/latest",  # или rc/pro/lite, если нужно
-            "completionOptions": {
-                "stream": False,
-                "temperature": 0.3,
-                "maxTokens": "1000"
-            },
-            "messages": [
-                {"role": "system", "text": "Ты умный ассистент. Говори кратко и понятно."},
-                {"role": "user", "text": "Объясни принцип работы нейронной сети простым языком."}
-            ]
-        }
-
-        return headers, data
-
-    def analyze_document_with_yandex_gpt(self, document_json):
-        """
-        Анализирует JSON документа с помощью YandexGPT
-        """
-        try:
-            headers = {
-                "Authorization": f"Api-Key {API_KEY}",
-                "Content-Type": "application/json",
-                "X-Folder-Id": FOLDER_ID
+            partner = self.env.user.partner_id
+            payload = {
+                'title': str(title) if title is not None else 'Уведомление',
+                'message': str(message) if message is not None else '',
+                'sticky': bool(sticky),
+                'warning': bool(warning),
             }
+            # Для Odoo 18 требуется указывать тип сообщения вторым аргументом
+            self.env['bus.bus']._sendone(partner, 'simple_notification', payload)
+        except Exception as notify_err:
+            _logger.warning(f"[_notify_user_simple] Не удалось отправить уведомление пользователю: {notify_err}")
 
-            # Формируем сообщение с JSON документа
-            user_message = f"Документ для анализа:\n{document_json}"
+    def analyze_document_with_yandex_gpt(self, content, is_zayavka=True, is_sber_screen=False, is_assignment=False):
+        try:
+
+            # Подготавливаем содержимое: поддержка как JSON/словаря, так и обычного текста
+            prepared_text = None
+            label = "Документ для анализа"
+
+            try:
+                # Если передан dict/list — сериализуем в JSON
+                if isinstance(content, (dict, list)):
+                    prepared_text = json.dumps(content, ensure_ascii=False)
+                else:
+                    text = str(content)
+                    stripped = text.strip()
+                    # Эвристика: если похоже на JSON, оставляем как есть и считаем документом
+                    if (stripped.startswith('{') and stripped.endswith('}')) or (stripped.startswith('[') and stripped.endswith(']')):
+                        prepared_text = text
+                    else:
+                        # Иначе это свободный текст
+                        label = "Текст для анализа"
+                        prepared_text = text
+            except Exception:
+                # На всякий случай используем строковое представление
+                label = "Текст для анализа"
+                prepared_text = str(content)
+
+            # Формируем сообщение для GPT
+            user_message = f"{label}:\n{prepared_text}"
+
+            cfg = _get_yandex_gpt_config(self.env, is_zayavka, is_sber_screen, is_assignment)
+            if not cfg['api_key'] or not cfg['folder_id']:
+                self._notify_user_simple(
+                    title="YandexGPT",
+                    message="Не настроены API ключ и/или Folder ID в Настройках (YandexGPT)",
+                    warning=True,
+                    sticky=False,
+                )
+                _logger.error("[analyze_document_with_yandex_gpt] Не настроены ygpt_api_key/ygpt_folder_id")
+                return None
 
             data = {
-                "modelUri": f"gpt://{FOLDER_ID}/yandexgpt/latest",
+                "modelUri": f"gpt://{cfg['folder_id']}/yandexgpt/latest",
                 "completionOptions": {
                     "stream": False,
                     "temperature": 0.3,
                     "maxTokens": "2000"
                 },
                 "messages": [
-                    {"role": "system", "text": PROMPT},
+                    {"role": "system", "text": cfg['prompt']},
                     {"role": "user", "text": user_message}
                 ]
             }
 
+            headers = _make_headers(cfg['api_key'], cfg['folder_id'])
             response = requests.post(URL, headers=headers, json=data, timeout=30)
             
             if response.status_code == 200:
@@ -199,22 +219,216 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                         gpt_response = alternatives[0]['message']['text']
                         
                         # Выводим ответ нейронки в логер
-                        _logger.info(f"🤖 YandexGPT АНАЛИЗ ДОКУМЕНТА для заявки {self.zayavka_id}:\n{gpt_response}")
+                        _logger.info(f"[analyze_document_with_yandex_gpt] YandexGPT АНАЛИЗ СОДЕРЖИМОГО для заявки {self.zayavka_id}:\n{gpt_response}")
                         
                         # Парсим ответ и обновляем поля заявки
                         self._update_fields_from_gpt_response(gpt_response)
                         
                         return gpt_response
                 else:
-                    _logger.warning(f"Неожиданная структура ответа от YandexGPT: {result}")
+                    _logger.warning(f"[analyze_document_with_yandex_gpt] Неожиданная структура ответа от YandexGPT: {result}")
             else:
-                _logger.error(f"Ошибка API YandexGPT: {response.status_code} - {response.text}")
+                _logger.error(f"[analyze_document_with_yandex_gpt] Ошибка API YandexGPT: {response.status_code} - {response.text}")
                 
         except Exception as e:
-            _logger.error(f"Ошибка при анализе документа с YandexGPT: {str(e)}")
+            _logger.error(f"[analyze_document_with_yandex_gpt] Ошибка при анализе документа с YandexGPT: {str(e)}")
+            
+        return None
+    
+    def analyze_screen_sber_images_with_yandex_gpt(self):
+        """
+        Анализирует изображения из screen_sber_attachments с помощью Yandex Vision OCR API
+        """
+        try:
+            # Получаем изображения в base64
+            images_data = self._get_screen_sber_images_base64()
+            
+            if not images_data:
+                _logger.warning("[analyze_screen_sber_images_with_yandex_gpt] Нет изображений для анализа в screen_sber_attachments")
+                return None
+            
+            # Анализируем каждое изображение
+            all_recognized_text = []
+            
+            for i, image_info in enumerate(images_data, 1):
+                _logger.info(f"[analyze_screen_sber_images_with_yandex_gpt] Анализируем изображение {i}/{len(images_data)}: {image_info['name']}")
+                
+                recognized_text = self._send_image_to_yandex_gpt_vision(image_info)
+                if recognized_text:
+                    all_recognized_text.append({
+                        'image_name': image_info['name'],
+                        'recognized_text': recognized_text
+                    })
+                    _logger.info(f"[analyze_screen_sber_images_with_yandex_gpt] Распознан текст из {image_info['name']}:\n{recognized_text}")
+                    
+                    # Отправляем распознанный текст в YandexGPT для анализа
+                    _logger.info(f"[analyze_screen_sber_images_with_yandex_gpt] Отправляем текст из {image_info['name']} в YandexGPT для анализа...")
+                    self.analyze_document_with_yandex_gpt(recognized_text, is_zayavka=False, is_sber_screen=True, is_assignment=False)
+                    
+                else:
+                    _logger.warning(f"[analyze_screen_sber_images_with_yandex_gpt] Не удалось распознать текст из {image_info['name']}")
+            
+            # Выводим общий результат
+            if all_recognized_text:
+                _logger.info(f"[analyze_screen_sber_images_with_yandex_gpt] Успешно обработано {len(all_recognized_text)} изображений")
+                _logger.info("[analyze_screen_sber_images_with_yandex_gpt] Все изображения прошли полный цикл: OCR -> YandexGPT -> Обновление полей заявки")
+                for result in all_recognized_text:
+                    _logger.info(f"[analyze_screen_sber_images_with_yandex_gpt] {result['image_name']}:\n{result['recognized_text']}\n" + "="*50)
+            else:
+                _logger.warning("[analyze_screen_sber_images_with_yandex_gpt] Не удалось распознать текст ни из одного изображения")
+                
+            return all_recognized_text
+            
+        except Exception as e:
+            _logger.error(f"[analyze_screen_sber_images_with_yandex_gpt] Ошибка при анализе изображений screen_sber с Yandex Vision OCR: {str(e)}")
             
         return None
 
+    def zayavka_analyse_with_yandex_gpt(self):
+        """
+        Анализирует заявку с помощью YandexGPT
+        """
+        attachments = self.zayavka_attachments
+        if not attachments:
+            _logger.info(f"Заявка {self.id}: нет вложений в 'zayavka_attachments' — пропускаем анализ документов")
+            return self
+        attachment = attachments[0]
+            
+        # Пробуем анализировать каждое вложение
+        analyzed_any = False
+        text = None
+        
+        # Сначала пробуем как DOCX
+        try:
+            text = self.extract_text_from_docx_attachment(attachment)
+            if text:
+                _logger.info(f"Заявка {self.id}: извлечён текст из DOCX '{attachment.name}'")
+        except Exception as e:
+            _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как DOCX: {str(e)}")
+        
+        # Если не DOCX, пробуем как Excel
+        if not text:
+            try:
+                text = self.extract_text_from_excel_attachment(attachment)
+                if text:
+                    _logger.info(f"Заявка {self.id}: извлечён текст из Excel '{attachment.name}'")
+            except Exception as e:
+                _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как Excel: {str(e)}")
+        
+        # Если текст извлечён, отправляем на анализ
+        if text:
+            try:
+                self.analyze_document_with_yandex_gpt(text)
+                analyzed_any = True
+                _logger.info(f"Заявка {self.id}: успешно проанализирован документ '{attachment.name}'")
+            except Exception as e:
+                _logger.error(f"Заявка {self.id}: ошибка анализа документа '{attachment.name}': {str(e)}")
+        else:
+            # Если не удалось извлечь текст из DOCX/Excel, пробуем PDF через OCR
+            try:
+                self.analyze_pdf_attachments_with_yandex_gpt(attachment)
+                analyzed_any = True
+                _logger.info(f"Заявка {self.id}: успешно проанализирован PDF '{attachment.name}' через OCR")
+            except Exception as e:
+                _logger.error(f"Заявка {self.id}: ошибка анализа PDF '{attachment.name}': {str(e)}")
+    
+        if not analyzed_any:
+            _logger.info(f"Заявка {self.id}: подходящих документов (DOCX/Excel) с текстом не найдено — анализ пропущен")
+
+    def analyze_assignment_with_yandex_gpt(self):
+        attachments = self.assignment_attachments
+        if not attachments:
+            _logger.info(f"Заявка {self.id}: нет вложений в 'assignment_attachments' — пропускаем анализ документов")
+            return self
+        else:
+            attachment = attachments[0]
+            analyzed_any = False
+            
+            text = None
+            
+            # Сначала пробуем как DOCX
+            try:
+                text = self.extract_text_from_docx_attachment(attachment)
+                if text:
+                    _logger.info(f"Заявка {self.id}: извлечён текст из DOCX '{attachment.name}'")
+            except Exception as e:
+                _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как DOCX: {str(e)}")
+            
+            # Если не DOCX, пробуем как Excel
+            if not text:
+                try:
+                    text = self.extract_text_from_excel_attachment(attachment)
+                    if text:
+                        _logger.info(f"Заявка {self.id}: извлечён текст из Excel '{attachment.name}'")
+                except Exception as e:
+                    _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как Excel: {str(e)}")
+
+            # Если текст извлечён, отправляем на анализ
+            if text:
+                try:
+                    self.analyze_document_with_yandex_gpt(text, is_zayavka=False, is_sber_screen=False, is_assignment=True)
+                    analyzed_any = True
+                    _logger.info(f"Заявка {self.id}: успешно проанализирован документ '{attachment.name}'")
+                except Exception as e:
+                    _logger.error(f"Заявка {self.id}: ошибка анализа документа '{attachment.name}': {str(e)}")
+            else:
+                # Если не удалось извлечь текст из DOCX/Excel, пробуем PDF через OCR
+                try:
+                    self.analyze_pdf_attachments_with_yandex_gpt(attachment, is_zayavka=False, is_sber_screen=False, is_assignment=True)
+                    analyzed_any = True
+                    _logger.info(f"Заявка {self.id}: успешно проанализирован PDF '{attachment.name}' через OCR")
+                except Exception as e:
+                    _logger.error(f"Заявка {self.id}: ошибка анализа PDF '{attachment.name}': {str(e)}")
+
+            if not analyzed_any:
+                _logger.info(f"Заявка {self.id}: подходящих документов (DOCX/Excel) с текстом не найдено — анализ пропущен")
+
+    def analyze_pdf_attachments_with_yandex_gpt(self, attachment, is_zayavka=True, is_sber_screen=False, is_assignment=False):
+        """
+        Анализирует PDF-файлы из zayavka_attachments с помощью Yandex Vision OCR API и выводит распознанный текст.
+        Дополнительно отправляет распознанный текст в YandexGPT для структурного анализа.
+        """
+        try:
+            pdfs_data = self._get_pdf_attachments_base64(attachment)
+
+            if not pdfs_data:
+                _logger.warning("[analyze_pdf_attachments_with_yandex_gpt] Нет PDF-файлов для анализа в zayavka_attachments")
+                return None
+
+            all_results = []
+
+            for i, pdf_info in enumerate(pdfs_data, 1):
+                _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] Анализируем PDF {i}/{len(pdfs_data)}: {pdf_info['name']}")
+
+                recognized_text = self._send_image_to_yandex_gpt_vision(pdf_info)
+                if recognized_text:
+                    all_results.append({
+                        'pdf_name': pdf_info['name'],
+                        'recognized_text': recognized_text,
+                    })
+
+                    # Отправляем распознанный текст в YandexGPT для структурного анализа
+                    try:
+                        self.analyze_document_with_yandex_gpt(recognized_text, is_zayavka=is_zayavka, is_sber_screen=is_sber_screen, is_assignment=is_assignment)
+                    except Exception as gpt_err:
+                        _logger.warning(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось отправить распознанный PDF-текст в YandexGPT: {gpt_err}")
+                else:
+                    _logger.warning(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось распознать текст из {pdf_info['name']}")
+
+            if all_results:
+                _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] Успешно обработано PDF: {len(all_results)}")
+                for result in all_results:
+                    _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] {result['pdf_name']}:\n{result['recognized_text']}\n" + "="*50)
+            else:
+                _logger.warning("[analyze_pdf_attachments_with_yandex_gpt] Не удалось распознать текст ни из одного PDF")
+
+            return all_results
+
+        except Exception as e:
+            _logger.error(f"[analyze_pdf_attachments_with_yandex_gpt] Ошибка при анализе PDF-файлов с Yandex Vision OCR: {str(e)}")
+            return None
+
+    # Внутренние методы
     def _update_fields_from_gpt_response(self, gpt_response):
         """
         Парсит ответ YandexGPT и обновляет поля заявки
@@ -233,92 +447,96 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 if json_match:
                     json_str = json_match.group(0)
                 else:
-                    _logger.warning(f"Не удалось найти JSON в ответе YandexGPT: {gpt_response}")
+                    _logger.warning(f"[_update_fields_from_gpt_response] Не удалось найти JSON в ответе YandexGPT: {gpt_response}")
                     return
 
             # Парсим JSON
             try:
                 parsed_data = json.loads(json_str)
             except json.JSONDecodeError as e:
-                _logger.error(f"Ошибка парсинга JSON из ответа YandexGPT: {e}\nJSON: {json_str}")
+                _logger.error(f"[_update_fields_from_gpt_response] Ошибка парсинга JSON из ответа YandexGPT: {e}\nJSON: {json_str}")
                 return
 
             # Подготавливаем данные для обновления
             update_values = {}
             
-            # Маппинг полей из JSON в поля модели (используем реальные поля из zayavka.py)
-            field_mapping = {
-                'amount': 'amount',  # Сумма заявки (строка 965)
-                'currency': 'currency',  # Валюта (строка 895)
-                'subagent_payer_ids': None,  # Это Many2many поле к amanat.payer, обработаем отдельно
-                'exporter_importer_name': 'exporter_importer_name',  # Наименование покупателя/продавца (строка 82)
-                'country_id': None,  # Это Many2one поле, обработаем отдельно  
-                'bank_swift': 'bank_swift',  # SWIFT код банка (строка 84)
-                'payment_purpose': 'payment_purpose',  # Назначение платежа (строка 1214)
-                'application_sequence': 'application_sequence',  # Порядковый номер заявления (строка 1228)
-                'payment_date': 'payment_date',  # Дата платежа - нужно определить правильное поле
-            }
-            
-            for json_key, model_field in field_mapping.items():
+            for json_key, model_field in FIELD_MAPPING.items():
                 if json_key in parsed_data and parsed_data[json_key] and model_field:
                     value = parsed_data[json_key]
                     
                     # Специальная обработка для разных типов полей
-                    if model_field == 'amount' and value:
-                        try:
+                    try:
+                        if model_field in ['amount', 'rate_field'] and value:
                             # Конвертируем в float, убираем пробелы и запятые
-                            value = float(str(value).replace(',', '.').replace(' ', ''))
-                            update_values[model_field] = value
-                        except (ValueError, TypeError):
-                            _logger.warning(f"Не удалось конвертировать сумму: {value}")
+                            try:
+                                clean_value = str(value).replace(',', '.').replace(' ', '')
+                                update_values[model_field] = float(clean_value)
+                            except (ValueError, TypeError):
+                                _logger.warning(f"[_update_fields_from_gpt_response] Не удалось конвертировать число '{value}' для поля '{model_field}'")
+                                continue
 
-                    elif model_field == 'currency' and value:
-                        # Для поля валюты нужно преобразовать в правильный код
-                        currency_mapping = {
-                            'CNY': 'cny',
-                            'USD': 'usd', 
-                            'EUR': 'euro',
-                            'EURO': 'euro',
-                            'RUB': 'rub',
-                            'AED': 'aed',
-                            'THB': 'thb',
-                            'IDR': 'idr',
-                            'INR': 'inr',
-                            'USDT': 'usdt'
-                        }
-                        currency_code = currency_mapping.get(str(value).upper(), str(value).lower())
-                        update_values[model_field] = currency_code
-                    
-                    elif model_field == 'payment_date' and value:
-                        # Для поля даты нужно преобразовать строку в дату
-                        try:
-                            from datetime import datetime
-                            # Пробуем разные форматы дат
-                            date_formats = ['%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d %H:%M:%S']
-                            parsed_date = None
+                        elif model_field == 'currency' and value:
+                            # Для поля валюты нужно преобразовать в правильный код
+                            currency_mapping = {
+                                'CNY': 'cny',
+                                'USD': 'usd', 
+                                'EUR': 'euro',
+                                'EURO': 'euro',
+                                'RUB': 'rub',
+                                'AED': 'aed',
+                                'THB': 'thb',
+                                'IDR': 'idr',
+                                'INR': 'inr',
+                                'USDT': 'usdt'
+                            }
+                            currency_code = currency_mapping.get(str(value).upper(), str(value).lower())
+                            update_values[model_field] = currency_code
+
+                        elif model_field == 'deal_type' and value:
+                            value = str(value).lower()
+
+                            deal_type_mapping = {
+                                'импорт': 'import',
+                                'экспорт': 'export',
+                                'экспорт-возврат': 'export_return',
+                                'импорт-возврат': 'import_return',
+                            }
+                            deal_type_code = deal_type_mapping.get(value, value)
+                            update_values[model_field] = deal_type_code
+                        
+                        elif model_field in ['payment_date', 'agent_contract_date', 'instruction_signed_date'] and value:
+                            # Для полей дат нужно преобразовать строку в дату
+                            try:
+                                from datetime import datetime
+                                # Пробуем разные форматы дат
+                                date_formats = ['%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d %H:%M:%S']
+                                parsed_date = None
+                                
+                                date_str = str(value).strip()
+                                for date_format in date_formats:
+                                    try:
+                                        parsed_date = datetime.strptime(date_str, date_format).date()
+                                        break
+                                    except ValueError:
+                                        continue
+                                
+                                if parsed_date:
+                                    update_values[model_field] = parsed_date
+                                else:
+                                    _logger.warning(f"[_update_fields_from_gpt_response] Не удалось распознать формат даты '{value}' для поля '{model_field}'")
+                            except Exception as e:
+                                _logger.error(f"[_update_fields_from_gpt_response] Ошибка при обработке даты '{value}' для поля '{model_field}': {str(e)}")
+                        
+                        else:
+                            # Для текстовых полей сохраняем как строку
+                            update_values[model_field] = str(value)
                             
-                            date_str = str(value).strip()
-                            for date_format in date_formats:
-                                try:
-                                    parsed_date = datetime.strptime(date_str, date_format).date()
-                                    break
-                                except ValueError:
-                                    continue
-                            
-                            if parsed_date:
-                                update_values[model_field] = parsed_date
-                                _logger.info(f"Дата '{value}' преобразована в {parsed_date}")
-                            else:
-                                _logger.warning(f"Не удалось распознать формат даты: {value}")
-                        except Exception as e:
-                            _logger.error(f"Ошибка при обработке даты '{value}': {str(e)}")
-                    
-                    else:
-                        # Для текстовых полей сохраняем как строку
-                        update_values[model_field] = str(value)
+                    except Exception as field_error:
+                        _logger.error(f"[_update_fields_from_gpt_response] Ошибка при обработке поля '{model_field}' со значением '{value}': {str(field_error)}")
+                        continue
             
             # Обработка специальных полей Many2one и Many2many
-            self._handle_special_fields(parsed_data, update_values)
+            special_warnings = self._handle_special_fields(parsed_data, update_values)
 
             # Обновляем поля, если есть что обновлять
             if update_values:
@@ -327,23 +545,161 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 filtered_values = {k: v for k, v in update_values.items() if k in existing_fields}
                 
                 if filtered_values:
-                    self.write(filtered_values)
-                    
-                    # Логируем обновления
-                    updated_fields = ', '.join(f"{k}: {v}" for k, v in filtered_values.items())
-                    _logger.info(f"✅ Обновлены поля заявки {self.zayavka_id}: {updated_fields}")
+                    # Перед записью выбираем только те поля, которые пустые. Заполненные — не трогаем.
+                    fields_to_write = {}
+                    skipped_pairs = []  # [(rus_name, new_display)]
+
+                    # Сопоставление model_field -> json_key для извлечения "значения из анализа"
+                    model_to_json_key = {}
+                    try:
+                        model_to_json_key = {mf: jk for jk, mf in FIELD_MAPPING.items() if mf}
+                        # Поля, у которых mf=None, но которые есть в модели и в parsed_data
+                        model_to_json_key.setdefault('country_id', 'country_id')
+                        model_to_json_key.setdefault('subagent_payer_ids', 'subagent_payer_ids')
+                    except Exception:
+                        model_to_json_key = {}
+
+                    for field_name, new_value in filtered_values.items():
+                        try:
+                            field = self._fields.get(field_name)
+                            current_value = getattr(self, field_name)
+
+                            def _format_rel_value(val):
+                                try:
+                                    if not val:
+                                        return "(пусто)"
+                                    if hasattr(val, 'id') and hasattr(val, 'name'):
+                                        return f"{val.id} | {val.name}"
+                                    if hasattr(val, 'ids'):
+                                        ids_list = list(val.ids)
+                                        names = []
+                                        for rec in val:
+                                            name_val = getattr(rec, 'name', None)
+                                            names.append(str(name_val) if name_val is not None else str(rec.id))
+                                        return f"ids={ids_list}, names={names}"
+                                except Exception:
+                                    return str(val)
+                                return str(val)
+
+                            def _format_new_value(field_def, value):
+                                try:
+                                    if isinstance(value, list) and value and isinstance(value[0], tuple):
+                                        ids_agg = []
+                                        for cmd in value:
+                                            if isinstance(cmd, tuple) and len(cmd) >= 3 and isinstance(cmd[2], (list, tuple)):
+                                                ids_agg.extend(list(cmd[2]))
+                                        return f"commands={value}, ids={ids_agg}" if ids_agg else f"commands={value}"
+                                    return str(value)
+                                except Exception:
+                                    return str(value)
+
+                            formatted_current = _format_rel_value(current_value) if field else str(current_value)
+                            formatted_new = _format_new_value(field, new_value)
+
+                            # Определение «пустоты» для поля (включая псевдопустые значения)
+                            def _is_effectively_empty(val, field_name_inner):
+                                try:
+                                    _logger.info(f"[_is_effectively_empty] {field_name_inner} — {val}")
+                                    if not val:
+                                        return True
+                                except Exception:
+                                    return False
+
+                            is_empty = _is_effectively_empty(current_value, field_name)
+
+                            if is_empty:
+                                _logger.info(f"[_update_fields_from_gpt_response] Поле '{field_name}' пустое. Будет установлено новое значение: '{formatted_new}'")
+                                fields_to_write[field_name] = new_value
+                            else:
+                                # Человекочитаемая метка поля
+                                field_label = self._get_field_label(field_name)
+                                # Значение из анализа
+                                analysis_value = None
+                                try:
+                                    json_key = model_to_json_key.get(field_name)
+                                    if json_key and json_key in parsed_data:
+                                        analysis_value = parsed_data.get(json_key)
+                                except Exception:
+                                    analysis_value = None
+
+                                # Спец-обработка для subagent_ids (берём человеко-читаемое имя из команд, если есть)
+                                if field_name == 'subagent_ids' and analysis_value in (None, ''):
+                                    try:
+                                        ids_from_cmds = []
+                                        if isinstance(new_value, list):
+                                            for cmd in new_value:
+                                                if isinstance(cmd, tuple) and len(cmd) >= 3 and isinstance(cmd[2], (list, tuple)):
+                                                    ids_from_cmds.extend(list(cmd[2]))
+                                        if ids_from_cmds:
+                                            names = self.env['amanat.contragent'].browse(ids_from_cmds).mapped('name')
+                                            if names:
+                                                analysis_value = ', '.join([str(n) for n in names if n])
+                                    except Exception:
+                                        pass
+
+                                # Fallback на отформатированное новое значение
+                                if analysis_value in (None, ''):
+                                    analysis_value = formatted_new
+
+                                skipped_pairs.append((field_label, str(analysis_value)))
+                                _logger.warning(f"[_update_fields_from_gpt_response] Поле '{field_name}' уже заполнено (текущее='{formatted_current}'). Пропускаем обновление.")
+                        except Exception as log_err:
+                            _logger.warning(f"[_update_fields_from_gpt_response] Ошибка при подготовке обновления поля '{field_name}': {log_err}")
+
+                    if fields_to_write:
+                        self.write(fields_to_write)
+                        updated_fields = ', '.join(f"{k}: {v}" for k, v in fields_to_write.items())
+                        _logger.info(f"[_update_fields_from_gpt_response] Обновлены поля заявки {self.zayavka_id}: {updated_fields}")
+                    else:
+                        _logger.info("[_update_fields_from_gpt_response] Все целевые поля уже были заполнены. Запись не выполнялась.")
+
+                    # Уведомление пользователю в читабельном виде
+                    if skipped_pairs or special_warnings:
+                        lines = []
+                        if skipped_pairs:
+                            lines.append("Уже заполнены следующие поля:")
+                            for rus_name, new_disp in skipped_pairs:
+                                lines.append(f"- {rus_name} — {new_disp}")
+                        if special_warnings:
+                            lines.append("Предупреждения:")
+                            for w in special_warnings:
+                                lines.append(f"- {w}")
+                        msg = "\n".join(lines)
+                        self._notify_user_simple(title="YandexGPT", message=msg, warning=True, sticky=False)
                 else:
-                    _logger.warning(f"Ни одно из полей не найдено в модели: {list(update_values.keys())}")
+                    _logger.warning(f"[_update_fields_from_gpt_response] Ни одно из полей не найдено в модели: {list(update_values.keys())}")
+                    self._notify_user_simple(title="YandexGPT", message="Ни одно из полученных полей не найдено в модели заявки.", warning=True, sticky=False)
             else:
-                _logger.info("Нет данных для обновления в ответе YandexGPT")
+                _logger.info("[_update_fields_from_gpt_response] Нет данных для обновления в ответе YandexGPT")
                 
         except Exception as e:
-            _logger.error(f"Ошибка при обновлении полей из ответа YandexGPT: {str(e)}")
+            _logger.error(f"[_update_fields_from_gpt_response] Ошибка при обновлении полей из ответа YandexGPT: {str(e)}")
+
+    def _get_field_label(self, field_name):
+        """Возвращает человеко-читаемое название поля (field.string)."""
+        try:
+            field = self._fields.get(field_name)
+            if field is not None:
+                label = getattr(field, 'string', None)
+                if label:
+                    return str(label)
+            # Резервный способ через fields_get
+            try:
+                info = self.fields_get([field_name]) or {}
+                label = (info.get(field_name) or {}).get('string')
+                if label:
+                    return str(label)
+            except Exception:
+                pass
+        except Exception:
+            pass
+        return str(field_name)
 
     def _handle_special_fields(self, parsed_data, update_values):
         """
         Обработка специальных полей Many2one и Many2many
         """
+        warnings = []
         try:
             # Обработка country_id (Many2one к amanat.country)
             if 'country_id' in parsed_data and parsed_data['country_id']:
@@ -356,9 +712,11 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 
                 if country:
                     update_values['country_id'] = country.id
-                    _logger.info(f"Найдена страна: {country.name} (ID: {country.id})")
                 else:
-                    _logger.warning(f"Страна '{country_name}' не найдена в базе данных, пропускаем обновление поля country_id")
+                    label_country = self._get_field_label('country_id')
+                    msg = f"{label_country}: '{country_name}' не найдена"
+                    warnings.append(msg)
+                    _logger.warning(f"[_handle_special_fields] {msg}")
             
             # Обработка subagent_payer_ids (Many2many к amanat.payer)
             if 'subagent_payer_ids' in parsed_data and parsed_data['subagent_payer_ids']:
@@ -372,25 +730,46 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 if payer:
                     # Очищаем поле subagent_payer_ids и добавляем нового плательщика
                     update_values['subagent_payer_ids'] = [(6, 0, [payer.id])]  # (6, 0, ids) - заменить все записи
-                    _logger.info(f"Очищено поле subagent_payer_ids и добавлен плательщик субагента: {payer.name} (ID: {payer.id})")
-                    
                     # Теперь ищем связанного контрагента для subagent_ids
                     if payer.contragents_ids:
                         # Берем первого связанного контрагента
                         contragent = payer.contragents_ids[0]
                         # Очищаем поле subagent_ids и добавляем нового контрагента
                         update_values['subagent_ids'] = [(6, 0, [contragent.id])]  # (6, 0, ids) - заменить все записи
-                        _logger.info(f"Очищено поле subagent_ids и добавлен связанный субагент: {contragent.name} (ID: {contragent.id})")
                     else:
-                        _logger.warning(f"У плательщика {payer.name} нет связанных контрагентов, пропускаем обновление поля subagent_ids")
+                        label_subagent = self._get_field_label('subagent_ids')
+                        msg = f"{label_subagent}: у плательщика '{payer.name}' нет связанных контрагентов"
+                        warnings.append(msg)
+                        _logger.warning(f"[_handle_special_fields] {msg}")
                         
                 else:
-                    _logger.warning(f"Плательщик '{payer_name}' не найден в базе данных, пропускаем обновление полей subagent_payer_ids и subagent_ids")
+                    label_payer = self._get_field_label('subagent_payer_ids')
+                    label_subagent = self._get_field_label('subagent_ids')
+                    msg = f"{label_payer}/{label_subagent}: плательщик '{payer_name}' не найден"
+                    warnings.append(msg)
+                    _logger.warning(f"[_handle_special_fields] {msg}")
                         
+            if 'agent_id' in parsed_data and parsed_data['agent_id']:
+                agent_name = str(parsed_data['agent_id']).strip()
+                agent = self.env['amanat.contragent'].search([
+                    ('name', 'ilike', agent_name)
+                ], limit=1)
+                if agent:
+                    update_values['agent_id'] = agent.id
+            
+            if 'client_id' in parsed_data and parsed_data['client_id']:
+                client_name = str(parsed_data['client_id']).strip()
+                client = self.env['amanat.contragent'].search([
+                    ('name', 'ilike', client_name)
+                ], limit=1)
+                if client:
+                    update_values['client_id'] = client.id
+            
         except Exception as e:
-            _logger.error(f"Ошибка при обработке специальных полей: {str(e)}")                                   
+            _logger.error(f"[_handle_special_fields] Ошибка при обработке специальных полей: {str(e)}")                                   
+        return warnings
 
-    def get_screen_sber_images_base64(self):
+    def _get_screen_sber_images_base64(self):
         """
         Получает изображения из поля screen_sber_attachments и кодирует их в base64
         """
@@ -398,7 +777,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             images_data = []
             
             if not self.screen_sber_attachments:
-                _logger.info("Нет изображений в поле screen_sber_attachments")
+                _logger.info("[_get_screen_sber_images_base64] Нет изображений в поле screen_sber_attachments")
                 return images_data
             
             # Поддерживаемые форматы изображений
@@ -408,13 +787,13 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 try:
                     # Проверяем что это изображение
                     if not attachment.mimetype or not attachment.mimetype.startswith('image/'):
-                        _logger.warning(f"Файл {attachment.name} не является изображением (mimetype: {attachment.mimetype})")
+                        _logger.warning(f"[_get_screen_sber_images_base64] Файл {attachment.name} не является изображением (mimetype: {attachment.mimetype})")
                         continue
                     
                     # Получаем расширение файла
                     file_extension = attachment.name.lower().split('.')[-1] if '.' in attachment.name else ''
                     if file_extension not in supported_formats:
-                        _logger.warning(f"Неподдерживаемый формат изображения: {file_extension} для файла {attachment.name}")
+                        _logger.warning(f"[_get_screen_sber_images_base64] Неподдерживаемый формат изображения: {file_extension} для файла {attachment.name}")
                         continue
                     
                     # Получаем данные файла
@@ -430,79 +809,62 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                         'base64': image_base64
                     })
                     
-                    _logger.info(f"✅ Подготовлено изображение: {attachment.name} ({attachment.mimetype}, {len(image_data)} байт)")
+                    _logger.info(f"[_get_screen_sber_images_base64] Подготовлено изображение: {attachment.name} ({attachment.mimetype}, {len(image_data)} байт)")
                     
                 except Exception as e:
-                    _logger.error(f"Ошибка при обработке изображения {attachment.name}: {str(e)}")
+                    _logger.error(f"[_get_screen_sber_images_base64] Ошибка при обработке изображения {attachment.name}: {str(e)}")
                     continue
             
-            _logger.info(f"📸 Всего подготовлено изображений: {len(images_data)}")
+            _logger.info(f"[_get_screen_sber_images_base64] Всего подготовлено изображений: {len(images_data)}")
             return images_data
             
         except Exception as e:
-            _logger.error(f"Ошибка при получении изображений screen_sber: {str(e)}")
+            _logger.error(f"[_get_screen_sber_images_base64] Ошибка при получении изображений screen_sber: {str(e)}")
             return []
 
-    def analyze_screen_sber_images_with_yandex_gpt(self):
+    def _get_pdf_attachments_base64(self, attachment):
         """
-        Анализирует изображения из screen_sber_attachments с помощью Yandex Vision OCR API
+        Собирает PDF из поля zayavka_attachments и возвращает список dict с полями name, mimetype, base64.
         """
         try:
-            # Получаем изображения в base64
-            images_data = self.get_screen_sber_images_base64()
-            
-            if not images_data:
-                _logger.info("📸 Нет изображений для анализа в screen_sber_attachments")
-                return None
-            
-            # Анализируем каждое изображение
-            all_recognized_text = []
-            
-            for i, image_info in enumerate(images_data, 1):
-                _logger.info(f"🔍 Анализируем изображение {i}/{len(images_data)}: {image_info['name']}")
-                
-                recognized_text = self._send_image_to_yandex_gpt_vision(image_info)
-                if recognized_text:
-                    all_recognized_text.append({
-                        'image_name': image_info['name'],
-                        'recognized_text': recognized_text
-                    })
-                    _logger.info(f"✅ Распознан текст из {image_info['name']}:\n{recognized_text}")
-                    
-                    # Отправляем распознанный текст в YandexGPT для анализа
-                    _logger.info(f"🤖 Отправляем текст из {image_info['name']} в YandexGPT для анализа...")
-                    self._analyze_ocr_text_with_yandex_gpt(recognized_text, image_info['name'])
-                    
-                else:
-                    _logger.warning(f"❌ Не удалось распознать текст из {image_info['name']}")
-            
-            # Выводим общий результат
-            if all_recognized_text:
-                _logger.info(f"ИТОГО: Успешно обработано {len(all_recognized_text)} изображений")
-                _logger.info("📋 Все изображения прошли полный цикл: OCR -> YandexGPT -> Обновление полей заявки")
-                for result in all_recognized_text:
-                    _logger.info(f"📄 {result['image_name']}:\n{result['recognized_text']}\n" + "="*50)
-            else:
-                _logger.warning("❌ Не удалось распознать текст ни из одного изображения")
-                
-            return all_recognized_text
-            
+            pdfs = []
+            if not attachment:
+                _logger.warning("[_get_pdf_attachments_base64] Нет вложения")
+                return []
+            try:
+                is_pdf = (attachment.mimetype == 'application/pdf') or ((attachment.name or '').lower().endswith('.pdf'))
+                if not is_pdf:
+                    return []
+                if not attachment.datas:
+                    _logger.warning(f"[_get_pdf_attachments_base64] У вложения {attachment.name} отсутствуют данные")
+                    return []
+                base64_data = attachment.datas.decode('utf-8') if isinstance(attachment.datas, bytes) else attachment.datas
+                pdfs.append({
+                    'name': attachment.name,
+                    'mimetype': 'application/pdf',
+                    'base64': base64_data,
+                })
+            except Exception as one_err:
+                _logger.error(f"[_get_pdf_attachments_base64] Ошибка при обработке вложения {getattr(attachment, 'name', 'unknown')}: {one_err}")
+
+            _logger.info(f"[_get_pdf_attachments_base64] Всего подготовлено PDF: {len(pdfs)}")
+            return pdfs
         except Exception as e:
-            _logger.error(f"Ошибка при анализе изображений screen_sber с Yandex Vision OCR: {str(e)}")
-            
-        return None
+            _logger.error(f"[_get_pdf_attachments_base64] Ошибка при получении PDF из zayavka_attachments: {str(e)}")
+            return []
 
     def _send_image_to_yandex_gpt_vision(self, image_info):
         """
         Отправляет одно изображение в Yandex Vision OCR API для распознавания текста
         """
         try:
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Api-Key {API_KEY}",
-                "x-folder-id": FOLDER_ID,
-                "x-data-logging-enabled": "true"
-            }
+            cfg = _get_yandex_gpt_config(self.env)
+            if not cfg['api_key'] or not cfg['folder_id']:
+                _logger.error("[_send_image_to_yandex_gpt_vision] Не настроены ygpt_api_key/ygpt_folder_id")
+                return None
+
+            headers = _make_headers(cfg['api_key'], cfg['folder_id'])
+            headers['x-data-logging-enabled'] = 'true'
 
             # Формируем данные для OCR API
             data = {
@@ -511,12 +873,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 "content": image_info['base64']
             }
 
-            response = requests.post(
-                url=OCR_URL, 
-                headers=headers, 
-                data=json.dumps(data), 
-                timeout=60
-            )
+            response = requests.post(url=OCR_URL, headers=headers, data=json.dumps(data), timeout=60)
             
             if response.status_code == 200:
                 result = response.json()
@@ -545,311 +902,9 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 return recognized_text.strip() if recognized_text else None
                 
             else:
-                _logger.error(f"Ошибка API Yandex Vision OCR: {response.status_code} - {response.text}")
+                _logger.error(f"[_send_image_to_yandex_gpt_vision] Ошибка API Yandex Vision OCR: {response.status_code} - {response.text}")
                 return None
                 
         except Exception as e:
-            _logger.error(f"Ошибка при отправке изображения в Yandex Vision OCR: {str(e)}")
+            _logger.error(f"[_send_image_to_yandex_gpt_vision] Ошибка при отправке изображения в Yandex Vision OCR: {str(e)}")
             return None
-
-    def _analyze_ocr_text_with_yandex_gpt(self, recognized_text, image_name):
-        """
-        Анализирует распознанный текст с изображения с помощью YandexGPT
-        """
-        try:
-            headers = {
-                "Authorization": f"Api-Key {API_KEY}",
-                "Content-Type": "application/json",
-                "X-Folder-Id": FOLDER_ID
-            }
-
-            # Формируем сообщение с распознанным текстом
-            user_message = f"Текст, распознанный с изображения '{image_name}':\n{recognized_text}"
-
-            data = {
-                "modelUri": f"gpt://{FOLDER_ID}/yandexgpt/latest",
-                "completionOptions": {
-                    "stream": False,
-                    "temperature": 0.3,
-                    "maxTokens": "2000"
-                },
-                "messages": [
-                    {"role": "system", "text": PROMPT},
-                    {"role": "user", "text": user_message}
-                ]
-            }
-
-            response = requests.post(URL, headers=headers, json=data, timeout=30)
-            
-            if response.status_code == 200:
-                result = response.json()
-                
-                # Извлекаем текст ответа
-                if 'result' in result and 'alternatives' in result['result']:
-                    alternatives = result['result']['alternatives']
-                    if alternatives and len(alternatives) > 0:
-                        gpt_response = alternatives[0]['message']['text']
-                        
-                        # Выводим ответ нейронки в логер
-                        _logger.info(f"🤖 YandexGPT АНАЛИЗ ИЗОБРАЖЕНИЯ '{image_name}' для заявки {self.zayavka_id}:\n{gpt_response}")
-                        
-                        # Парсим ответ и обновляем поля заявки (используем тот же метод что и для документов)
-                        self._update_fields_from_gpt_response(gpt_response)
-                        
-                        return gpt_response
-                else:
-                    _logger.warning(f"Неожиданная структура ответа от YandexGPT при анализе изображения '{image_name}': {result}")
-            else:
-                _logger.error(f"Ошибка API YandexGPT при анализе изображения '{image_name}': {response.status_code} - {response.text}")
-                
-        except Exception as e:
-            _logger.error(f"Ошибка при анализе текста изображения '{image_name}' с YandexGPT: {str(e)}")
-            
-        return None
-
-    def get_excel_attachments(self):
-        """
-        Получает Excel файлы из всех полей вложений заявки
-        """
-        try:
-            excel_files = []
-            
-            # Список полей с вложениями для поиска Excel файлов
-            attachment_fields = [
-                'zayavka_attachments',      # Заявка Вход
-            ]
-            
-            # Поддерживаемые форматы Excel
-            excel_extensions = ['xls', 'xlsx', 'xlsm', 'csv']
-            excel_mimetypes = [
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.ms-excel.sheet.macroEnabled.12',
-                'text/csv',
-                'application/csv'
-            ]
-            
-            for field_name in attachment_fields:
-                if hasattr(self, field_name):
-                    attachments = getattr(self, field_name)
-                    if attachments:
-                        for attachment in attachments:
-                            try:
-                                # Проверяем расширение файла
-                                file_extension = attachment.name.lower().split('.')[-1] if '.' in attachment.name else ''
-                                
-                                # Проверяем mimetype
-                                is_excel_by_mime = attachment.mimetype and any(
-                                    mime in attachment.mimetype for mime in excel_mimetypes
-                                )
-                                
-                                # Проверяем расширение
-                                is_excel_by_ext = file_extension in excel_extensions
-                                
-                                if is_excel_by_mime or is_excel_by_ext:
-                                    excel_files.append({
-                                        'attachment': attachment,
-                                        'field_name': field_name,
-                                        'name': attachment.name,
-                                        'mimetype': attachment.mimetype,
-                                        'extension': file_extension,
-                                        'size': len(base64.b64decode(attachment.datas)) if attachment.datas else 0
-                                    })
-                                    
-                                    _logger.info(f"✅ Найден Excel файл: {attachment.name} в поле {field_name} "
-                                               f"({attachment.mimetype}, {file_extension})")
-                                    
-                            except Exception as e:
-                                _logger.error(f"Ошибка при обработке вложения {attachment.name}: {str(e)}")
-                                continue
-            
-            _logger.info(f"📊 Всего найдено Excel файлов: {len(excel_files)}")
-            return excel_files
-            
-        except Exception as e:
-            _logger.error(f"Ошибка при поиске Excel файлов: {str(e)}")
-            return []
-
-    def _extract_text_from_excel(self, excel_file_info):
-        """
-        Извлекает текст из Excel файла
-        """
-        try:
-            attachment = excel_file_info['attachment']
-            file_name = excel_file_info['name']
-            file_extension = excel_file_info['extension']
-            
-            # Получаем данные файла
-            file_data = base64.b64decode(attachment.datas)
-            file_buffer = io.BytesIO(file_data)
-            
-            extracted_text = []
-            
-            if file_extension == 'csv':
-                # Обработка CSV файлов
-                try:
-                    # Пробуем разные кодировки
-                    for encoding in ['utf-8', 'cp1251', 'iso-8859-1']:
-                        try:
-                            file_buffer.seek(0)
-                            df = pd.read_csv(file_buffer, encoding=encoding)
-                            break
-                        except UnicodeDecodeError:
-                            continue
-                    else:
-                        # Если все кодировки не подошли
-                        file_buffer.seek(0)
-                        df = pd.read_csv(file_buffer, encoding='utf-8')
-                    
-                    # Извлекаем текст из всех ячеек
-                    for col in df.columns:
-                        extracted_text.append(f"Колонка: {col}")
-                        for value in df[col].dropna():
-                            if pd.notna(value) and str(value).strip():
-                                extracted_text.append(str(value).strip())
-                                
-                except Exception as e:
-                    _logger.error(f"Ошибка при чтении CSV файла {file_name}: {str(e)}")
-                    return None
-                    
-            else:
-                # Обработка Excel файлов (.xlsx, .xls, .xlsm)
-                try:
-                    # Читаем все листы Excel файла
-                    if file_extension in ['xlsx', 'xlsm']:
-                        excel_file = pd.ExcelFile(file_buffer, engine='openpyxl')
-                    else:  # .xls
-                        excel_file = pd.ExcelFile(file_buffer, engine='xlrd')
-                    
-                    sheet_names = excel_file.sheet_names
-                    _logger.info(f"📄 Листы в файле {file_name}: {sheet_names}")
-                    
-                    for sheet_name in sheet_names:
-                        try:
-                            # Читаем данные с листа
-                            df = pd.read_excel(excel_file, sheet_name=sheet_name)
-                            
-                            extracted_text.append(f"\n=== ЛИСТ: {sheet_name} ===")
-                            
-                            # Извлекаем заголовки колонок
-                            if not df.empty:
-                                headers = [str(col) for col in df.columns if str(col) != 'Unnamed']
-                                if headers:
-                                    extracted_text.append(f"Заголовки: {', '.join(headers)}")
-                                
-                                # Извлекаем данные из всех ячеек
-                                for index, row in df.iterrows():
-                                    row_data = []
-                                    for col in df.columns:
-                                        value = row[col]
-                                        if pd.notna(value) and str(value).strip() and str(value) != 'nan':
-                                            row_data.append(str(value).strip())
-                                    
-                                    if row_data:  # Если в строке есть данные
-                                        extracted_text.append(f"Строка {index + 1}: {' | '.join(row_data)}")
-                            else:
-                                extracted_text.append("Лист пустой")
-                                
-                        except Exception as e:
-                            _logger.error(f"Ошибка при чтении листа '{sheet_name}' из файла {file_name}: {str(e)}")
-                            extracted_text.append(f"Ошибка чтения листа '{sheet_name}': {str(e)}")
-                            continue
-                            
-                except Exception as e:
-                    _logger.error(f"Ошибка при чтении Excel файла {file_name}: {str(e)}")
-                    return None
-            
-            # Объединяем весь текст
-            full_text = '\n'.join(extracted_text)
-            
-            if full_text.strip():
-                _logger.info(f"✅ Извлечен текст из {file_name}: {len(full_text)} символов")
-                _logger.info(f"📋 Первые 200 символов: {full_text[:200]}...")
-                return full_text
-            else:
-                _logger.warning(f"❌ Не удалось извлечь текст из {file_name} - файл пустой")
-                return None
-                
-        except Exception as e:
-            _logger.error(f"Ошибка при извлечении текста из Excel файла {excel_file_info['name']}: {str(e)}")
-            return None
-
-    def analyze_excel_documents(self):
-        """
-        Анализирует Excel документы из вложений заявки
-        """
-        try:
-            # Получаем Excel файлы
-            excel_files = self.get_excel_attachments()
-            
-            if not excel_files:
-                _logger.info("📊 Нет Excel файлов для анализа в заявке")
-                return None
-            
-            # Анализируем каждый Excel файл
-            all_extracted_data = []
-            
-            for i, excel_file_info in enumerate(excel_files, 1):
-                _logger.info(f"🔍 Анализируем Excel файл {i}/{len(excel_files)}: {excel_file_info['name']}")
-                _logger.info(f"📂 Поле: {excel_file_info['field_name']}")
-                _logger.info(f"📄 Размер: {excel_file_info['size']} байт")
-                _logger.info(f"🔧 Тип: {excel_file_info['mimetype']} (.{excel_file_info['extension']})")
-                
-                # Извлекаем текст из Excel файла
-                extracted_text = self._extract_text_from_excel(excel_file_info)
-                
-                if extracted_text:
-                    all_extracted_data.append({
-                        'file_name': excel_file_info['name'],
-                        'field_name': excel_file_info['field_name'],
-                        'file_size': excel_file_info['size'],
-                        'extension': excel_file_info['extension'],
-                        'extracted_text': extracted_text,
-                        'text_length': len(extracted_text)
-                    })
-                    
-                    # Логируем результат
-                    _logger.info(f"✅ Успешно извлечен текст из {excel_file_info['name']}")
-                    _logger.info(f"📊 Длина извлеченного текста: {len(extracted_text)} символов")
-                    
-                    # Выводим полный текст в лог для анализа
-                    _logger.info(f"📋 ПОЛНЫЙ ТЕКСТ ИЗ ФАЙЛА '{excel_file_info['name']}':")
-                    _logger.info("=" * 80)
-                    _logger.info(extracted_text)
-                    _logger.info("=" * 80)
-                    
-                else:
-                    _logger.warning(f"❌ Не удалось извлечь текст из {excel_file_info['name']}")
-            
-            # Выводим общую сводку
-            if all_extracted_data:
-                _logger.info("🎉 АНАЛИЗ EXCEL ДОКУМЕНТОВ ЗАВЕРШЕН")
-                _logger.info(f"📊 Всего обработано файлов: {len(all_extracted_data)}")
-                _logger.info("📋 СВОДКА РЕЗУЛЬТАТОВ:")
-                
-                total_text_length = 0
-                for i, data in enumerate(all_extracted_data, 1):
-                    total_text_length += data['text_length']
-                    _logger.info(f"  {i}. {data['file_name']} ({data['extension'].upper()})")
-                    _logger.info(f"     Поле: {data['field_name']}")
-                    _logger.info(f"     Размер файла: {data['file_size']} байт")
-                    _logger.info(f"     Извлечено текста: {data['text_length']} символов")
-                
-                _logger.info(f"📈 Общий объем извлеченного текста: {total_text_length} символов")
-                _logger.info("✅ Все Excel файлы успешно обработаны!")
-                
-                # Примечание: здесь в будущем можно добавить отправку в YandexGPT
-                _logger.info("💡 ПРИМЕЧАНИЕ: Отправка в YandexGPT пока отключена (по требованию)")
-                _logger.info("💡 Для включения анализа YandexGPT раскомментируйте код ниже:")
-                _logger.info("💡 # for data in all_extracted_data:")
-                _logger.info("💡 #     self.analyze_document_with_yandex_gpt(data['extracted_text'])")
-                
-            else:
-                _logger.warning("❌ Не удалось извлечь текст ни из одного Excel файла")
-                
-            return all_extracted_data
-            
-        except Exception as e:
-            _logger.error(f"Ошибка при анализе Excel документов: {str(e)}")
-            
-        return None

@@ -13,6 +13,7 @@
         <record id="demo_signature_stellar_sign" model="signature.library">
             <field name="name">СТЕЛЛАР Подпись</field>
             <field name="signature_type">signature</field>
+            <field name="inn">9909701578</field>
             <field name="active">True</field>
             <field name="default_width">100</field>
             <field name="default_height">25</field>

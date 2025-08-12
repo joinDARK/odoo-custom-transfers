@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- Шаблон заявления (реальный файл) -->
+        <record id="demo_template_statement_docx" model="template.library">
+            <field name="name">Заявление</field>
+            <field name="template_type">docx</field>
+            <field name="category">statement</field>
+            <field name="template_filename">Заявление.docx</field>
+            <field name="description">Шаблон заявления для различных целей</field>
+            <field name="template_file" type="base64" file="amanat/static/src/template_documents/Заявление.docx"/>
+        </record>
+
+        <!-- Шаблон акта (реальный файл) -->
+        <record id="demo_template_act_docx" model="template.library">
+            <field name="name">Акт</field>
+            <field name="template_type">docx</field>
+            <field name="category">report</field>
+            <field name="template_filename">Акт.docx</field>
+            <field name="description">Шаблон акта выполненных работ или оказанных услуг</field>
+            <field name="template_file" type="base64" file="amanat/static/src/template_documents/Акт.docx"/>
+        </record>
+    </data>
+</odoo>

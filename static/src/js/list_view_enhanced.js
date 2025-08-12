@@ -7,6 +7,17 @@ import { patch } from "@web/core/utils/patch";
 // Проверяем, что модуль загружается
 console.log('🚀 Amanat: list_view_enhanced.js loaded!');
 
+// Отключаем магию авто-ширин Odoo, чтобы не переопределялись наши фиксированные ширины при редактировании
+// Важно: делать это до инициализации любых экземпляров ListRenderer
+try {
+    if (ListRenderer && ListRenderer.useMagicColumnWidths !== false) {
+        ListRenderer.useMagicColumnWidths = false;
+        console.log('🧊 Amanat: отключены useMagicColumnWidths для ListRenderer');
+    }
+} catch (e) {
+    console.warn('Amanat: не удалось отключить useMagicColumnWidths', e);
+}
+
 // Расширяем стандартный ListRenderer для поддержки real-time обновлений
 patch(ListRenderer.prototype, {
 
@@ -102,6 +113,17 @@ patch(ListRenderer.prototype, {
         const headers = Array.from(allHeaders).slice(0, 4);
         console.log('Amanat: Working with headers:', headers.map(h => h.textContent?.trim()));
         
+        // Если строка в режиме редактирования — не пересчитываем, чтобы не сбрасывать ширины
+        const isEditing = Boolean(
+            tbody.querySelector('.o_data_row.o_selected_row') ||
+            tbody.querySelector('.o_field_widget.o_input') ||
+            tbody.querySelector('input:focus, select:focus, textarea:focus')
+        );
+        if (isEditing) {
+            console.log('Amanat: Skip sticky recalculation during edit');
+            return;
+        }
+
         // Временно убираем sticky для точного измерения
         console.log('Amanat: Removing sticky temporarily...');
         headers.forEach((th, index) => {
@@ -123,18 +145,22 @@ patch(ListRenderer.prototype, {
         requestAnimationFrame(() => {
             console.log('Amanat: Measuring widths after removing sticky...');
             
-            // Измеряем ширины
+            // Измеряем ширины и фиксируем их, чтобы не скакали при редактировании
             const widths = [];
             headers.forEach((th, index) => {
+                const rectWidth = Math.ceil(th.getBoundingClientRect().width);
                 const measurements = {
                     offsetWidth: th.offsetWidth,
                     clientWidth: th.clientWidth,
-                    boundingRect: th.getBoundingClientRect().width,
+                    boundingRect: rectWidth,
                     scrollWidth: th.scrollWidth
                 };
-                
                 console.log(`Amanat: Header ${index} measurements:`, measurements);
-                widths.push(measurements.boundingRect); // Используем boundingRect как основной
+                widths.push(rectWidth);
+                // Принудительно фиксируем ширину заголовка
+                th.style.width = rectWidth + 'px';
+                th.style.minWidth = rectWidth + 'px';
+                th.style.maxWidth = rectWidth + 'px';
             });
             
             console.log('Amanat: Collected widths:', widths);
@@ -153,6 +179,10 @@ patch(ListRenderer.prototype, {
                 rows.forEach(row => {
                     const td = row.children[index];
                     if (td) {
+                        // Фиксируем ширину и sticky позицию
+                        td.style.width = widths[index] + 'px';
+                        td.style.minWidth = widths[index] + 'px';
+                        td.style.maxWidth = widths[index] + 'px';
                         td.style.position = 'sticky';
                         td.style.left = currentLeft + 'px';
                     }
