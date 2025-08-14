@@ -671,6 +671,108 @@ class AmanatZayavkaDocuments(models.Model):
             _logger.error(f"[extract_text_from_excel_attachment] ошибка обработки {attachment and attachment.name}: {str(e)}")
             return None
 
+    def extract_text_from_doc_attachment(self, attachment):
+        """
+        Извлекает текст из старых .doc файлов (Microsoft Word 97-2003) для анализа YandexGPT
+        Использует LibreOffice для конвертации в текст
+        """
+        try:
+            if not attachment or not attachment.datas:
+                _logger.warning("[extract_text_from_doc_attachment] пустое вложение или отсутствуют данные")
+                return None
+
+            # Быстрая проверка расширения/типов
+            name_lower = (attachment.name or '').lower()
+            mimetype = (attachment.mimetype or '').lower()
+            
+            # Проверяем что это именно .doc файл (старый формат)
+            if not (name_lower.endswith('.doc') or mimetype == 'application/msword'):
+                _logger.info(f"[extract_text_from_doc_attachment] вложение {attachment.name} не DOC (mimetype={mimetype})")
+                return None
+
+            # Исключаем .docx файлы (они обрабатываются отдельно)
+            if name_lower.endswith('.docx') or 'officedocument' in mimetype:
+                _logger.info(f"[extract_text_from_doc_attachment] вложение {attachment.name} является DOCX, а не DOC")
+                return None
+
+            doc_bytes = base64.b64decode(attachment.datas)
+            return self._extract_text_from_doc_using_libreoffice(doc_bytes, attachment.name)
+
+        except Exception as e:
+            _logger.error(f"[extract_text_from_doc_attachment] ошибка обработки {attachment and attachment.name}: {str(e)}")
+            return None
+
+    def _extract_text_from_doc_using_libreoffice(self, doc_bytes, filename=None):
+        """
+        Извлекает текст из .doc файла используя LibreOffice для конвертации в текст
+        """
+        if not doc_bytes:
+            return None
+
+        try:
+            # Создаем временный .doc файл
+            with tempfile.NamedTemporaryFile(suffix='.doc', delete=False) as doc_temp:
+                doc_temp.write(doc_bytes)
+                doc_path = doc_temp.name
+
+            # Создаем временную директорию для выходного файла
+            out_dir = tempfile.mkdtemp()
+            
+            try:
+                # Конвертируем .doc в .txt используя LibreOffice
+                cmd = [
+                    'libreoffice', '--headless', '--convert-to', 'txt:Text', '--outdir', out_dir, doc_path
+                ]
+                _logger.info(f"[_extract_text_from_doc_using_libreoffice] Выполняем команду: {' '.join(cmd)}")
+                
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                if result.returncode != 0:
+                    _logger.error(f"[_extract_text_from_doc_using_libreoffice] Ошибка LibreOffice: {result.stderr}")
+                    return None
+
+                # Ищем созданный .txt файл
+                txt_filename = os.path.splitext(os.path.basename(doc_path))[0] + '.txt'
+                txt_path = os.path.join(out_dir, txt_filename)
+                
+                if not os.path.exists(txt_path):
+                    _logger.error(f"[_extract_text_from_doc_using_libreoffice] Конвертированный TXT файл не найден: {txt_path}")
+                    return None
+
+                # Читаем текст из файла
+                with open(txt_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    text = f.read()
+                
+                if not text or not text.strip():
+                    _logger.warning(f"[_extract_text_from_doc_using_libreoffice] Извлеченный текст пуст для файла {filename}")
+                    return None
+                
+                # Очищаем текст от лишних пробелов и переносов
+                text = re.sub(r'\n{3,}', '\n\n', text)  # Убираем множественные переносы строк
+                text = re.sub(r'[ \t]+', ' ', text)     # Нормализуем пробелы
+                text = text.strip()
+                
+                _logger.info(f"[_extract_text_from_doc_using_libreoffice] Успешно извлечен текст из {filename}: {len(text)} символов")
+                return text if text else None
+                
+            finally:
+                # Очищаем временные файлы
+                try:
+                    os.unlink(doc_path)
+                except Exception:
+                    pass
+                try:
+                    txt_filename = os.path.splitext(os.path.basename(doc_path))[0] + '.txt'
+                    txt_path_cleanup = os.path.join(out_dir, txt_filename)
+                    if os.path.exists(txt_path_cleanup):
+                        os.unlink(txt_path_cleanup)
+                    os.rmdir(out_dir)
+                except Exception:
+                    pass
+                    
+        except Exception as e:
+            _logger.error(f"[_extract_text_from_doc_using_libreoffice] Ошибка при извлечении текста из DOC файла: {str(e)}")
+            return None
+
     @staticmethod
     def _extract_text_from_excel_bytes(excel_bytes, filename=None):
         """

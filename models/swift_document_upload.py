@@ -19,6 +19,13 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
     swift_file_name = fields.Char(
         string='Имя файла'
     )
+
+    manager_id = fields.Many2one(
+        'amanat.manager',
+        string='Менеджер',
+        required=False,
+        tracking=True
+    )
     
     currency = fields.Char(
         string='Валюта',
@@ -231,45 +238,242 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
             _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} прошла все проверки: валюта={zayavka.currency}, сумма={zayavka.amount}, SWIFT файлов=0")
             return True
         
-        # Ищем заявку по плательщику субагента с точным совпадением
+        # Сначала пробуем старую логику для точных совпадений
+        # 1. Точное совпадение с проверками
         zayavka = self.env['amanat.zayavka'].search([
             ('subagent_payer_ids.name', '=', self.payer_subagent)
         ], limit=1)
         
         if zayavka and _validate_zayavka_conditions(zayavka):
-            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по плательщику субагента с точным совпадением: {zayavka.id}")
+            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по точному совпадению: {zayavka.id}")
             return zayavka
         elif zayavka:
             _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по точному совпадению, но не прошла дополнительные проверки")
         
-        # Ищем заявку по плательщику субагента с нечетким поиском
+        # 2. Нечеткий поиск ilike
         zayavka = self.env['amanat.zayavka'].search([
             ('subagent_payer_ids.name', 'ilike', self.payer_subagent)
         ], limit=1)
         
         if zayavka and _validate_zayavka_conditions(zayavka):
-            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по плательщику субагента с нечетким совпадением: {zayavka.id}")
+            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по ilike поиску: {zayavka.id}")
             return zayavka
         elif zayavka:
-            _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по нечеткому совпадению, но не прошла дополнительные проверки")
+            _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по ilike поиску, но не прошла дополнительные проверки")
         
-        # Дополнительный поиск по частичному совпадению имени плательщика субагента
-        payer_words = self.payer_subagent.split()
-        if len(payer_words) > 1:
-            # Ищем по первому слову в имени плательщика субагента
-            first_word = payer_words[0]
-            zayavka = self.env['amanat.zayavka'].search([
-                ('subagent_payer_ids.name', 'ilike', f'%{first_word}%')
-            ], limit=1)
-            
-            if zayavka and _validate_zayavka_conditions(zayavka):
-                _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по частичному совпадению плательщика субагента: {zayavka.id}")
-                return zayavka
-            elif zayavka:
-                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по частичному совпадению, но не прошла дополнительные проверки")
+        # 3. Улучшенный алгоритм нечеткого поиска - ищем среди кандидатов, которые проходят проверки
+        best_zayavka = self._find_best_matching_zayavka_with_validation(_validate_zayavka_conditions)
+        
+        if best_zayavka:
+            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка с улучшенным алгоритмом поиска: {best_zayavka.id}")
+            return best_zayavka
         
         _logger.warning(f"[SWIFT AUTO] Подходящая заявка не найдена для плательщика субагента '{self.payer_subagent}' с учетом проверок валюты, суммы и отсутствия SWIFT файлов")
         return None
+
+    def _find_best_matching_zayavka_by_payer_name(self):
+        """Улучшенный алгоритм поиска ближайшего совпадения по имени плательщика субагента"""
+        import re
+        from difflib import SequenceMatcher
+        
+        if not self.payer_subagent:
+            return None
+        
+        def _normalize_string(s):
+            """Нормализация строки для сравнения"""
+            if not s:
+                return ""
+            # Приводим к нижнему регистру, убираем лишние пробелы и знаки препинания
+            normalized = re.sub(r'[^\w\s]', '', s.lower()).strip()
+            normalized = re.sub(r'\s+', ' ', normalized)  # Заменяем множественные пробелы на одинарные
+            return normalized
+        
+        def _calculate_similarity(str1, str2):
+            """Вычисляем сходство между двумя строками (0.0 - 1.0)"""
+            return SequenceMatcher(None, str1, str2).ratio()
+        
+        def _check_token_overlap(tokens1, tokens2):
+            """Проверяем пересечение токенов между двумя наборами"""
+            if not tokens1 or not tokens2:
+                return 0.0
+            
+            common_tokens = set(tokens1) & set(tokens2)
+            total_tokens = len(set(tokens1) | set(tokens2))
+            
+            if total_tokens == 0:
+                return 0.0
+            
+            return len(common_tokens) / total_tokens
+        
+        # Нормализуем исходное имя плательщика
+        normalized_payer = _normalize_string(self.payer_subagent)
+        payer_tokens = set(normalized_payer.split())
+        
+        _logger.info(f"[SWIFT AUTO FUZZY] Ищем ближайшее совпадение для плательщика: '{self.payer_subagent}' (нормализовано: '{normalized_payer}')")
+        _logger.info(f"[SWIFT AUTO FUZZY] Токены плательщика: {payer_tokens}")
+        
+        # Получаем все заявки с плательщиками субагентов
+        all_zayavkas = self.env['amanat.zayavka'].search([
+            ('subagent_payer_ids', '!=', False)
+        ])
+        
+        best_match = None
+        best_score = 0.0
+        candidates = []
+        
+        for zayavka in all_zayavkas:
+            for payer in zayavka.subagent_payer_ids:
+                if not payer.name:
+                    continue
+                
+                normalized_candidate = _normalize_string(payer.name)
+                candidate_tokens = set(normalized_candidate.split())
+                
+                # Рассчитываем различные метрики сходства
+                string_similarity = _calculate_similarity(normalized_payer, normalized_candidate)
+                token_overlap = _check_token_overlap(payer_tokens, candidate_tokens)
+                
+                # Итоговый скор - взвешенная сумма метрик
+                final_score = (string_similarity * 0.6) + (token_overlap * 0.4)
+                
+                candidates.append({
+                    'zayavka': zayavka,
+                    'payer_name': payer.name,
+                    'normalized_name': normalized_candidate,
+                    'string_similarity': string_similarity,
+                    'token_overlap': token_overlap,
+                    'final_score': final_score
+                })
+                
+                if final_score > best_score:
+                    best_score = final_score
+                    best_match = zayavka
+        
+        # Логирование результатов
+        _logger.info(f"[SWIFT AUTO FUZZY] Найдено кандидатов: {len(candidates)}")
+        
+        # Сортируем кандидатов по скору для логирования топ-5
+        top_candidates = sorted(candidates, key=lambda x: x['final_score'], reverse=True)[:5]
+        
+        for i, candidate in enumerate(top_candidates, 1):
+            _logger.info(f"[SWIFT AUTO FUZZY] Топ-{i}: Заявка {candidate['zayavka'].id}, "
+                        f"плательщик '{candidate['payer_name']}', "
+                        f"строковое сходство: {candidate['string_similarity']:.3f}, "
+                        f"пересечение токенов: {candidate['token_overlap']:.3f}, "
+                        f"итоговый скор: {candidate['final_score']:.3f}")
+        
+        # Устанавливаем минимальный порог для принятия совпадения
+        # Можно вынести в системные параметры для гибкой настройки
+        min_threshold = float(self.env['ir.config_parameter'].sudo().get_param(
+            'amanat.swift_fuzzy_matching_threshold', '0.3'
+        ))
+        
+        if best_score >= min_threshold and best_match:
+            _logger.info(f"[SWIFT AUTO FUZZY] ✅ Лучшее совпадение найдено: заявка {best_match.id}, скор: {best_score:.3f}")
+            return best_match
+        else:
+            _logger.info(f"[SWIFT AUTO FUZZY] ❌ Совпадения не найдены. Лучший скор: {best_score:.3f}, минимальный порог: {min_threshold}")
+            return None
+
+    def _find_best_matching_zayavka_with_validation(self, validation_func):
+        """Улучшенный алгоритм поиска с учетом валидации заявок"""
+        import re
+        from difflib import SequenceMatcher
+        
+        if not self.payer_subagent:
+            return None
+        
+        def _normalize_string(s):
+            """Нормализация строки для сравнения"""
+            if not s:
+                return ""
+            normalized = re.sub(r'[^\w\s]', '', s.lower()).strip()
+            normalized = re.sub(r'\s+', ' ', normalized)
+            return normalized
+        
+        def _calculate_similarity(str1, str2):
+            """Вычисляем сходство между двумя строками (0.0 - 1.0)"""
+            return SequenceMatcher(None, str1, str2).ratio()
+        
+        def _check_token_overlap(tokens1, tokens2):
+            """Проверяем пересечение токенов между двумя наборами"""
+            if not tokens1 or not tokens2:
+                return 0.0
+            
+            common_tokens = set(tokens1) & set(tokens2)
+            total_tokens = len(set(tokens1) | set(tokens2))
+            
+            if total_tokens == 0:
+                return 0.0
+            
+            return len(common_tokens) / total_tokens
+        
+        # Нормализуем исходное имя плательщика
+        normalized_payer = _normalize_string(self.payer_subagent)
+        payer_tokens = set(normalized_payer.split())
+        
+        _logger.info(f"[SWIFT AUTO FUZZY VALID] Ищем ближайшее совпадение для плательщика: '{self.payer_subagent}' с валидацией")
+        
+        # Получаем все заявки с плательщиками субагентов
+        all_zayavkas = self.env['amanat.zayavka'].search([
+            ('subagent_payer_ids', '!=', False)
+        ])
+        
+        best_match = None
+        best_score = 0.0
+        valid_candidates = []
+        
+        for zayavka in all_zayavkas:
+            # Сначала проверяем, проходит ли заявка валидацию
+            if not validation_func(zayavka):
+                continue
+                
+            for payer in zayavka.subagent_payer_ids:
+                if not payer.name:
+                    continue
+                
+                normalized_candidate = _normalize_string(payer.name)
+                candidate_tokens = set(normalized_candidate.split())
+                
+                # Рассчитываем метрики сходства
+                string_similarity = _calculate_similarity(normalized_payer, normalized_candidate)
+                token_overlap = _check_token_overlap(payer_tokens, candidate_tokens)
+                
+                # Итоговый скор
+                final_score = (string_similarity * 0.6) + (token_overlap * 0.4)
+                
+                valid_candidates.append({
+                    'zayavka': zayavka,
+                    'payer_name': payer.name,
+                    'final_score': final_score
+                })
+                
+                if final_score > best_score:
+                    best_score = final_score
+                    best_match = zayavka
+        
+        # Логирование результатов
+        _logger.info(f"[SWIFT AUTO FUZZY VALID] Найдено валидных кандидатов: {len(valid_candidates)}")
+        
+        # Сортируем кандидатов по скору для логирования топ-3
+        top_candidates = sorted(valid_candidates, key=lambda x: x['final_score'], reverse=True)[:3]
+        
+        for i, candidate in enumerate(top_candidates, 1):
+            _logger.info(f"[SWIFT AUTO FUZZY VALID] Топ-{i}: Заявка {candidate['zayavka'].id}, "
+                        f"плательщик '{candidate['payer_name']}', "
+                        f"скор: {candidate['final_score']:.3f}")
+        
+        # Устанавливаем минимальный порог
+        min_threshold = float(self.env['ir.config_parameter'].sudo().get_param(
+            'amanat.swift_fuzzy_matching_threshold', '0.3'
+        ))
+        
+        if best_score >= min_threshold and best_match:
+            _logger.info(f"[SWIFT AUTO FUZZY VALID] ✅ Лучшее валидное совпадение найдено: заявка {best_match.id}, скор: {best_score:.3f}")
+            return best_match
+        else:
+            _logger.info(f"[SWIFT AUTO FUZZY VALID] ❌ Валидные совпадения не найдены. Лучший скор: {best_score:.3f}, порог: {min_threshold}")
+            return None
 
     def _upload_document_to_zayavka(self, zayavka):
         """Загрузка SWIFT документа в заявку"""
@@ -348,6 +552,63 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
                 'tag': 'display_notification',
                 'params': {
                     'message': f'Ошибка при переобработке: {str(e)}',
+                    'type': 'danger',
+                    'sticky': True,
+                }
+            }
+
+    def action_test_fuzzy_matching(self):
+        """Тестирование алгоритма нечеткого поиска"""
+        self.ensure_one()
+        
+        if not self.payer_subagent:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'message': 'Не указан плательщик субагента для тестирования',
+                    'type': 'warning',
+                    'sticky': False,
+                }
+            }
+        
+        try:
+            # Запускаем тестирование алгоритма - используем основной метод поиска
+            best_match = self._find_matching_zayavka()
+            
+            if best_match:
+                # Получаем информацию о найденной заявке
+                payer_names = [p.name for p in best_match.subagent_payer_ids if p.name]
+                message = f"Найдена заявка {best_match.id}.\nПлательщики: {', '.join(payer_names)}\nВалюта: {best_match.currency}\nСумма: {best_match.amount}"
+                
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Результат нечеткого поиска',
+                        'message': message,
+                        'type': 'success',
+                        'sticky': True,
+                    }
+                }
+            else:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Результат нечеткого поиска',
+                        'message': f'Подходящая заявка не найдена для плательщика "{self.payer_subagent}"',
+                        'type': 'warning',
+                        'sticky': True,
+                    }
+                }
+        except Exception as e:
+            _logger.error(f"Ошибка при тестировании нечеткого поиска: {str(e)}")
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'message': f'Ошибка при тестировании: {str(e)}',
                     'type': 'danger',
                     'sticky': True,
                 }

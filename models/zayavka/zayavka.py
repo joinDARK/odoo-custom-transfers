@@ -1,5 +1,5 @@
 
-from odoo import models, fields
+from odoo import models, fields, api
 from ..base_model import AmanatBaseModel
 
 class Zayavka(models.Model, AmanatBaseModel):
@@ -189,6 +189,8 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_payment_cost = fields.Float(
         string='Расход платежа Клиент',
         compute='_compute_client_payment_cost',
+        help="""Если Вид сделки 'Экспорт': Расход платежа Клиент = Сумма заявки × Процент (from Расход платежа по РФ(%))
+        Иначе: Сумма заявки × % Начисления (from Расход за проведение платежа(%))""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -217,6 +219,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_real_operating_expenses = fields.Float(
         string='Расход на операционную деятельность Клиент Реал',
         compute='_compute_client_real_operating_expenses',
+        # help=""""""
         readonly=False,
         store=True,
         tracking=True
@@ -279,6 +282,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_payment_cost_usd = fields.Float(
         string='Расход платежа в $ Клиент',
         compute='_compute_client_payment_cost_usd',
+        help="""Расход платежа в $ Клиент = Расход платежа Совок × Кросс-курс Плательщика $ авто + Фикс за сделку $ (from Расход за проведение платежа(%))""",
         readonly=False,
         store=True,
         tracking=True
@@ -287,6 +291,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_payment_cost_rub = fields.Float(
         string='Расход платежа в ₽ Клиент',
         compute='_compute_client_payment_cost_rub',
+        help="""Расход платежа в ₽ Клиент = Расход платежа в $ Клиент × Кросс-курс Плательщика ₽""",
         readonly=False,
         store=True,
         tracking=True
@@ -1333,6 +1338,13 @@ class Zayavka(models.Model, AmanatBaseModel):
         string="Выписка разнос", 
     )
 
+    # Computed поле для отображения красного индикатора только для Ильзиры  
+    show_red_stripe_for_ilzira_zayavka = fields.Char(
+        string="Индикатор для Ильзиры (Заявки)", 
+        compute="_compute_show_red_stripe_for_ilzira_zayavka", 
+        store=False
+    )
+
     bank_vypiska = fields.Char(
         string='Банк Выписка',
         compute='_compute_bank_vypiska',
@@ -1468,6 +1480,13 @@ class Zayavka(models.Model, AmanatBaseModel):
         'zayavka_id', 
         'attachment_id', 
         string='Cкрин сбер'
+    )
+
+    # Поле для отображения документов договоров контрагента
+    contragent_contract_attachments = fields.Many2many(
+        'ir.attachment',
+        compute='_compute_contragent_contract_attachments',
+        string='Договоры контрагента'
     )
 
     money_ran_out = fields.Boolean(string='Сели деньги', tracking=True, default=False)
@@ -1755,6 +1774,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     payer_profit_rub = fields.Float(
         string='Прибыль плательщика ₽',
         compute='_compute_payer_profit_rub',
+        help="""Прибыль плательщика ₽ = Прибыль плательщика $ × Кросс-курс Плательщика ₽""",
         readonly=False,
         store=True,
         tracking=True
@@ -1951,6 +1971,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     hidden_partner_commission_real = fields.Float(
         string='Скрытая комиссия Партнера Реал',
         compute='_compute_hidden_partner_commission_real',
+        help="""Если стоит галочка 'Заявка со скрытым курсом': Скрытая комиссия Партнера Реал = Заявка по курсу реальный * Сумма всех % начислений от Выплат пратнеров / Курс Джесс
+        Если стоит галочка 'Расчет заявки, как Сбербанк': Скрытая комиссия Партнера Реал = Сумма заявки * Сумма всех % начислений от Выплат пратнеров
+        Иначе: Скрытая комиссия Партнера Реал = Вознаграждение не наше Клиент / Курс Джесс""",
         readonly=False,
         store=True,
         tracking=True
@@ -1959,6 +1982,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     hidden_partner_commission_real_usd = fields.Float(
         string='Скрытая комиссия Партнера Реал $',
         compute='_compute_hidden_partner_commission_real_usd',
+        help="""Скрытая комиссия Партнера Реал $ = Скрытая комиссия Партнера Реал × Кросс-курс Плательщика $ авто""",
         readonly=False,
         store=True,
         tracking=True
@@ -1967,6 +1991,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     hidden_partner_commission_real_rub = fields.Float(
         string='Скрытая комиссия Партнера Реал ₽',
         compute='_compute_hidden_partner_commission_real_rub',
+        help="""Скрытая комиссия Партнера Реал ₽ = Скрытая комиссия Партнера Реал $ × Кросс-курс Плательщика ₽""",
         readonly=False,
         store=True,
         tracking=True
@@ -2066,7 +2091,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     is_sovcombank_contragent = fields.Boolean(
-        string='Расчет заявки, как Совкомбанк',
+        string='Заявка со скрытым курсом',
         default=False,
     )
 
@@ -2292,3 +2317,28 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     link_jess_rate = fields.Boolean(string='Обновить курс Джесс', default=False)
+
+    @api.depends('extract_delivery_ids')
+    def _compute_show_red_stripe_for_ilzira_zayavka(self):
+        """Показывать красный индикатор только для пользователя Ильзира, если выписки разнос не заполнены"""
+        current_user = self.env.user
+        for record in self:
+            # Проверяем имя пользователя и пустое поле выписок разнос
+            if current_user.name == 'Ильзира' and not record.extract_delivery_ids:
+                record.show_red_stripe_for_ilzira_zayavka = "❌ НЕТ ВЫПИСОК"
+            else:
+                record.show_red_stripe_for_ilzira_zayavka = False
+
+    @api.depends('contragent_id', 'contragent_id.contract_ids', 'contragent_id.contract_ids.contract_attachments')
+    def _compute_contragent_contract_attachments(self):
+        """Подтягивает все документы договоров выбранного контрагента"""
+        for record in self:
+            if record.contragent_id and record.contragent_id.contract_ids:
+                # Собираем все attachment из всех договоров контрагента
+                attachments = self.env['ir.attachment'].browse()
+                for contract in record.contragent_id.contract_ids:
+                    if contract.contract_attachments:
+                        attachments |= contract.contract_attachments
+                record.contragent_contract_attachments = attachments
+            else:
+                record.contragent_contract_attachments = self.env['ir.attachment'].browse()

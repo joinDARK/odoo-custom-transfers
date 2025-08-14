@@ -196,6 +196,16 @@ class ZayavkaMethods(models.Model):
                     import traceback
                     _logger.error(f"[METHODS] Traceback: {traceback.format_exc()}")
         
+        # Изменение статуса при появлении подписанного поручения
+        if 'assignment_end_attachments' in vals:
+            for rec in self:
+                # Проверяем, что есть файлы в assignment_end_attachments
+                if rec.assignment_end_attachments:
+                    _logger.info(f"[METHODS] Заявка {rec.id}: обнаружены подписанные документы в assignment_end_attachments, устанавливаем статус '4. Подписано поручение'")
+                    rec.status = '4'
+                else:
+                    _logger.info(f"[METHODS] Заявка {rec.id}: поле assignment_end_attachments очищено")
+        
         # Возвраты
         if 'cross_return_date' in vals:
             for rec in self:
@@ -346,6 +356,11 @@ class ZayavkaMethods(models.Model):
         # Анализ документов с YandexGPT при создании (если есть вложения)
         if vals.get('assignment_attachments'):
             res.analyze_assignment_with_yandex_gpt()
+        
+        # Изменение статуса при создании с подписанным поручением
+        if vals.get('assignment_end_attachments'):
+            _logger.info(f"[CREATE] Заявка {res.id}: создана с подписанными документами в assignment_end_attachments, устанавливаем статус '4. Подписано поручение'")
+            res.status = '4'
         
         if vals.get('payment_order_date_to_client_account'):
             _logger.info("Возврат основной суммы")
@@ -960,7 +975,7 @@ class ZayavkaMethods(models.Model):
         instruction_date_formatted = format_russian_date(self.instruction_signed_date)
         
         # Номер поручения (только цифры)
-        instruction_number = self.zayavka_num or ""
+        instruction_number = self.instruction_number or ""
         if instruction_number:
             # Оставляем только цифры, убираем все буквы и символы
             import re

@@ -19,7 +19,7 @@
               <group>
                 <field name="zayavka_num" />
                 <field name="status" widget="searchable_selection" />
-                <field name="date_placement" />
+                <field name="date_placement"/>
               </group>
               <group>
                 <field name="contragent_id" />
@@ -473,6 +473,11 @@
 
                   <group>
                     <field name="screen_sber_attachments" widget="amanat_attachment"
+                      options="{'no_create': False, 'no_open': True}" />
+                  </group>
+
+                  <group>
+                    <field name="contragent_contract_attachments" widget="amanat_attachment"
                       options="{'no_create': False, 'no_open': True}" />
                   </group>
                 </div>
@@ -1599,16 +1604,20 @@
         <field name="zayavka_id" />
         <field name="zayavka_num" />
         <field name="status" widget="searchable_selection" />
-        <field name="date_placement" />
         <field name="contragent_id" />
         <field name="client_id" />
-        <field name="country_id" />
-        <field name="invoice_date" />
-        <field name="payment_date" />
-        <field name="supplier_currency_paid_date" />
-        <field name="supplier_currency_received_date" />
-        <field name="deal_closed_date" />
-        <field name="deal_cycle_days" />
+        <field name="inn" />
+        <field name="deal_type" />
+        <field name="sum_from_extracts" />
+        <field name="waiting_for_replenishment" />
+        <field name="application_amount_rub_contract" />
+        <field name="contract_reward" />
+        <field name="total_fact" />
+        <field name="date_received_on_pc_payment" />
+        <field name="date_received_on_pc_payment" />
+        <field name="bank_vypiska" />
+        <field name="extract_delivery_ids" />
+        
       </list>
     </field>
   </record>
@@ -1641,6 +1650,12 @@
         <!-- <button width="30" title="Перейти в форму" type="object" name="open_form"
           icon="fa-external-link" /> -->
         <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
+        <!-- Поле для Ильзиры с красным индикатором -->
+        <field name="show_red_stripe_for_ilzira_zayavka" string="" 
+               widget="badge" 
+               decoration-danger="1"
+               invisible="not show_red_stripe_for_ilzira_zayavka"
+               readonly="1" width="150"/>
         <!-- <field name="zayavka_id"/> -->
         <field width="200" name="date_placement" />
         <field width="200" name="zayavka_num" />
@@ -1668,6 +1683,7 @@
         <field width="200" name="best_rate_name" />
         <field width="200" name="hidden_hadge" />
 
+        <field width="200" name="jess_rate_id" groups="!amanat.group_amanat_manager"/>
         <field width="200" name="link_jess_rate" groups="!amanat.group_amanat_manager"/>
 
         <!-- <field width="200" name="date_placement"/> -->
@@ -1741,4 +1757,58 @@
       </search>
     </field>
   </record>
+
+  <!-- Ограниченное представление для Ильзиры (казначей) -->
+  <record id="zayavka_list_view_ilzira" model="ir.ui.view">
+    <field name="name">zayavka.list.ilzira</field>
+    <field name="model">amanat.zayavka</field>
+    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
+    <field name="priority">15</field>
+    <field name="arch" type="xml">
+      <list editable="top" multi_edit="1" create="false">
+        <header>
+          <button name="action_create_new_zayavka"
+            string="Новый"
+            type="object"
+            class="btn-primary"
+            icon="fa-plus"
+            display="always" />
+          <button name="%(action_zayavka_date_range_wizard)d"
+            string="Диапазон"
+            type="action"
+            class="btn-primary"
+            icon="fa-calendar" />
+          <button name="%(action_zayavka_kassa_wizard)d"
+            string="Касса"
+            type="action"
+            class="btn-success"
+            icon="fa-money" />
+        </header>
+        <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
+        <!-- Поле для Ильзиры с красным индикатором -->
+        <field name="show_red_stripe_for_ilzira_zayavka" string="" 
+               widget="badge" 
+               decoration-danger="1"
+               invisible="not show_red_stripe_for_ilzira_zayavka"
+               readonly="1" width="150"/>
+        
+        <!-- Поля только для Ильзиры -->
+        <field width="150" name="zayavka_num" />
+        <field width="120" name="status" widget="searchable_selection" />
+        <field width="150" name="agent_id" />
+        <field width="150" name="client_id" />
+        <field width="120" name="inn" />
+        <field width="120" name="deal_type" />
+        <field width="140" name="sum_from_extracts" />
+        <field width="180" name="application_amount_rub_contract" />
+        <field width="160" name="agent_reward" />
+        <field width="120" name="total_amount" />
+        <field width="150" name="date_placement" />
+        <field width="150" name="taken_in_work_date" />
+        <field width="150" name="bank_vypiska" />
+        <field width="200" name="extract_delivery_ids" widget="many2many_tags" />
+      </list>
+    </field>
+  </record>
+
 </odoo>

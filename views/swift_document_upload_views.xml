@@ -9,6 +9,7 @@
             <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field name="swift_file_name"/>
+                <field name="manager_id"/>
                 <field name="currency"/>
                 <field name="amount"/>
                 <field name="payer_subagent"/>
@@ -26,14 +27,12 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <form string="SWIFT Документы">
-                <header>
-                    <h1>SWIFT Документ</h1>
-                </header>
                 <sheet>
                     <group>
                         <group string="Основная информация">
                             <field name="swift_file" filename="swift_file_name"/>
                             <field name="swift_file_name" invisible="1"/>
+                            <field name="manager_id"/>
                             <field name="currency"/>
                             <field name="amount"/>
                             <field name="payer_subagent"/>

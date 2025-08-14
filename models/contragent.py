@@ -55,6 +55,32 @@ class Contragent(models.Model, AmanatBaseModel):
     )
     inn = fields.Char(string='ИНН', tracking=True)
     
+    # Условия работы - используется как значение по умолчанию для заявок
+    payment_terms = fields.Selection(
+        [
+            ('postpayment', 'Постоплата'),
+            ('prepayment', 'Предоплата'), 
+            ('accred', 'Аккредитив'),
+            ('escrow', 'Эскроу')
+        ],
+        string='Условия работы',
+        tracking=True,
+        help='Условия работы по умолчанию для заявок с данным контрагентом'
+    )
+    
+    # Вид сделки - используется как значение по умолчанию для заявок
+    deal_type = fields.Selection(
+        [
+            ('import', 'Импорт'), 
+            ('export', 'Экспорт'), 
+            ('import_export', 'Импорт-экспорт'), 
+            ('export_import', 'Экспорт-импорт')
+        ],
+        string='Вид сделки',
+        tracking=True,
+        help='Вид сделки по умолчанию для заявок с данным контрагентом'
+    )
+    
     # Связь с договорами
     contract_ids = fields.One2many(
         'amanat.contragent.contract',

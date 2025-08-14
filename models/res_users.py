@@ -53,6 +53,7 @@ class ResUsers(models.Model):
             'is_admin': user.has_group('amanat.group_amanat_admin'),
             'is_inspector': user.has_group('amanat.group_amanat_inspector'),
             'is_transit_only': user.has_group('amanat.group_amanat_transit_only'),
+            'is_treasurer': user.has_group('amanat.group_amanat_treasurer'),
             'is_dilara': user.name == 'Диляра',  # Добавляем проверку имени пользователя
             'user_name': user.name,  # Добавляем имя пользователя для отладки
         }

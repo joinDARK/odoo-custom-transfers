@@ -105,5 +105,21 @@
             <field name="domain_force">[('order_id.transfer_id.is_transit', '=', True)]</field>
             <field name="groups" eval="[(4, ref('amanat.group_amanat_transit_only'))]"/>
         </record>
+
+        <!-- Правило для SWIFT документов - обычные пользователи видят только свои документы -->
+        <record id="amanat_swift_document_user_rule" model="ir.rule">
+            <field name="name">Пользователи видят только свои SWIFT документы</field>
+            <field name="model_id" ref="model_amanat_swift_document_upload"/>
+            <field name="domain_force">[('manager_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_manager')), (4, ref('amanat.group_amanat_inspector')), (4, ref('amanat.group_amanat_fin_manager')), (4, ref('amanat.group_amanat_fin_manager_jess')), (4, ref('amanat.group_amanat_treasurer')), (4, ref('amanat.group_amanat_transit_only'))]"/>
+        </record>
+
+        <!-- Правило для SWIFT документов - администраторы и старшие менеджеры видят все документы -->
+        <record id="amanat_swift_document_admin_rule" model="ir.rule">
+            <field name="name">Администраторы и старшие менеджеры видят все SWIFT документы</field>
+            <field name="model_id" ref="model_amanat_swift_document_upload"/>
+            <field name="domain_force">[]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_admin')), (4, ref('amanat.group_amanat_senior_manager')), (4, ref('amanat.group_amanat_director'))]"/>
+        </record>
     </data>
 </odoo>

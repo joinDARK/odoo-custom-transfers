@@ -84,6 +84,13 @@ class Extract_delivery(models.Model, AmanatBaseModel):
     investment = fields.Many2many('amanat.investment', string="Инвестиция", tracking=True)
     gold_deal = fields.Many2many('amanat.gold_deal', string="Золото сделка", tracking=True)
 
+    # Computed поле для отображения красного индикатора только для Ильзиры
+    show_red_stripe_for_ilzira = fields.Char(
+        string="Индикатор для Ильзиры", 
+        compute="_compute_show_red_stripe_for_ilzira", 
+        store=False
+    )
+
     counterparty1 = fields.Many2one('amanat.contragent', string="Контрагент 1", tracking=True)
     counterparty2 = fields.Many2one('amanat.contragent', string="Контрагент 2", tracking=True)
     wallet1 = fields.Many2one('amanat.wallet', string="Кошелек 1", tracking=True)
@@ -209,6 +216,17 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 record.deal = ", ".join(record.applications.mapped('zayavka_id'))
             else:
                 record.deal = ""
+
+    @api.depends('applications')
+    def _compute_show_red_stripe_for_ilzira(self):
+        """Показывать красный индикатор только для пользователя Ильзира, если заявки не заполнены"""
+        current_user = self.env.user
+        for record in self:
+            # Проверяем имя пользователя и пустое поле заявок
+            if current_user.name == 'Ильзира' and not record.applications:
+                record.show_red_stripe_for_ilzira = "❌ НЕТ ЗАЯВОК"
+            else:
+                record.show_red_stripe_for_ilzira = False
 
     def write(self, vals):
         res = super().write(vals)

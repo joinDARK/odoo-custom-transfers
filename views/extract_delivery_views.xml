@@ -5,6 +5,12 @@
         <field name="model">amanat.extract_delivery</field>
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
+                <!-- Поле для Ильзиры с красным индикатором -->
+                <field name="show_red_stripe_for_ilzira" string="" 
+                       widget="badge" 
+                       decoration-danger="1"
+                       invisible="not show_red_stripe_for_ilzira"
+                       readonly="1" width="150"/>
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <button width="30" title="Принудительное сопоставление" type="object" name="force_application_matching" icon="fa-link" class="btn-secondary"/>
                 <button width="30" title="Диагностика" type="object" name="show_diagnosis_result" icon="fa-search" class="btn-info"/>
@@ -291,6 +297,44 @@
                     <field name="message_ids"/>
                 </chatter>
             </form>
+        </field>
+    </record>
+
+    <!-- Ограниченное представление для Ильзиры (казначей) -->
+    <record id="extract_delivery_list_view_ilzira" model="ir.ui.view">
+        <field name="name">extract_delivery.list.ilzira</field>
+        <field name="model">amanat.extract_delivery</field>
+        <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
+        <field name="priority">15</field>
+        <field name="arch" type="xml">
+            <list editable="top" multi_edit="1">
+                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button width="30" title="Принудительное сопоставление" type="object" name="force_application_matching" icon="fa-link" class="btn-secondary"/>
+                <button width="30" title="Диагностика" type="object" name="show_diagnosis_result" icon="fa-search" class="btn-info"/>
+                
+                <!-- Поле для Ильзиры с красным индикатором -->
+                <field name="show_red_stripe_for_ilzira" string="" 
+                       widget="badge" 
+                       decoration-danger="1"
+                       invisible="not show_red_stripe_for_ilzira"
+                       readonly="1" width="150"/>
+                
+                <!-- Поля только для Ильзиры -->
+                <field width="150" name="name"/>
+                <field width="120" name="serial_number"/>
+                <field width="80" name="assign_bulinan"/>
+                <field width="120" name="date"/>
+                <field width="120" name="amount"/>
+                <field width="150" name="payer"/>
+                <field width="150" name="recipient"/>
+                <field width="200" name="payment_purpose"/>
+                <field width="150" name="document_id"/>
+                <field width="120" name="bank_document"/>
+                <field width="140" name="dds_article"/>
+                <field width="140" name="direction_choice"/>
+                <field width="150" name="deal"/>
+                <field width="200" name="applications" widget="many2many_tags"/>
+            </list>
         </field>
     </record>
 

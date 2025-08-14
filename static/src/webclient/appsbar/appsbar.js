@@ -235,6 +235,34 @@ export class AppsBar extends Component {
     }
 
     getFilteredMenuData() {
+        // Проверка для пользователей с ролью "Казначей" (Ільзіра)
+        if (this.state.userGroups.is_treasurer) {
+            return [
+                {
+                    name: "Справочники",
+                    items: [
+                        { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "SWIFT Документы", action: "amanat.action_swift_document_upload" },
+                        { name: "Плательщики", action: "amanat.payer_action" },
+                        { name: "Страны", action: "amanat.country_action" },
+                        { name: "Менеджеры", action: "amanat.manager_action" },
+                    ],
+                },
+                {
+                    name: "Выписки",
+                    items: [
+                        { name: "Выписки", action: "amanat.action_amanat_extracts" },
+                        { name: "Выписка разнос", action: "amanat.extract_delivery_action" },
+                    ],
+                },
+                {
+                    name: "Заявки",
+                    action: "amanat.zayavka_action",
+                    actionMethod: "openZayvaki",
+                },
+            ];
+        }
+
         // Проверка для пользователей с ролью "Транзитные переводы"
         if (this.state.userGroups.is_transit_only) {
             // Если пользователь также является менеджером, показываем расширенное меню
@@ -279,6 +307,12 @@ export class AppsBar extends Component {
                             { name: "Перевод", action: "amanat.transfer_action" },
                         ],
                     },
+                    {
+                        name: "Справочники",
+                        items: [
+                            { name: "SWIFT Документы", action: "amanat.action_swift_document_upload" },
+                        ],
+                    },
                 ];
             }
         }
@@ -308,6 +342,7 @@ export class AppsBar extends Component {
                     name: "Справочники",
                     items: [
                         { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "SWIFT Документы", action: "amanat.action_swift_document_upload" },
                         { name: "Плательщики", action: "amanat.payer_action" },
                         { name: "Страны", action: "amanat.country_action" },
                         { name: "Менеджеры", action: "amanat.manager_action" },
@@ -386,6 +421,7 @@ export class AppsBar extends Component {
                     name: "Справочники",
                     items: [
                         { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "SWIFT Документы", action: "amanat.action_swift_document_upload" },
                         { name: "Страны", action: "amanat.country_action" },
                         { name: "Плательщики", action: "amanat.payer_action" },
                         { name: "Менеджеры", action: "amanat.manager_action" },
@@ -423,6 +459,7 @@ export class AppsBar extends Component {
                     name: "Справочники",
                     items: [
                         { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "SWIFT Документы", action: "amanat.action_swift_document_upload" },
                         { name: "Страны", action: "amanat.country_action" },
                         { name: "Плательщики", action: "amanat.payer_action" },
                         { name: "Менеджеры", action: "amanat.manager_action" },
@@ -473,6 +510,7 @@ export class AppsBar extends Component {
                     name: "Справочники",
                     items: [
                         { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "SWIFT Документы", action: "amanat.action_swift_document_upload" },
                         { name: "Страны", action: "amanat.country_action" },
                         { name: "Плательщики", action: "amanat.payer_action" },
                         { name: "Менеджеры", action: "amanat.manager_action" },
@@ -505,6 +543,14 @@ export class AppsBar extends Component {
                     ],
                 },
                 {
+                    name: "Кассы",
+                    items: [
+                        { name: "Касса Иван", action: "amanat.kassa_ivan_action" },
+                        { name: "Касса 2", action: "amanat.kassa_2_action" },
+                        { name: "Касса 3", action: "amanat.kassa_3_action" },
+                    ],
+                },
+                {
                     name: "Анализ",
                     items: [
                         { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
@@ -533,6 +579,7 @@ export class AppsBar extends Component {
                     name: "Справочники",
                     items: [
                         { name: "Контрагенты", action: "amanat.contragent_action" },
+                        { name: "SWIFT Документы", action: "amanat.action_swift_document_upload" },
                         { name: "Страны", action: "amanat.country_action" },
                         { name: "Плательщики", action: "amanat.payer_action" },
                         { name: "Менеджеры", action: "amanat.manager_action" },

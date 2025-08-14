@@ -58,7 +58,6 @@ UPDATE_FIELDS = [
     'subagent_ids',
     'exporter_importer_name',
     'country_id',
-    'agent_id',
     'bank_swift',
     'payment_purpose',
     'application_sequence',
@@ -74,6 +73,7 @@ UPDATE_FIELDS = [
     'agent_contract_date',
     'instruction_signed_date',
     'client_id',
+    'agent_id',
 ]
 def _get_yandex_gpt_config(env, is_zayavka=True, is_sber_screen=False, is_assignment=False):
     """Возвращает конфиг YandexGPT из системных параметров с фолбэком к ENV."""
@@ -315,6 +315,15 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             except Exception as e:
                 _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как Excel: {str(e)}")
         
+        # Если не DOCX, пробуем как старый DOC
+        if not text:
+            try:
+                text = self.extract_text_from_doc_attachment(attachment)
+                if text:
+                    _logger.info(f"Заявка {self.id}: извлечён текст из DOC '{attachment.name}'")
+            except Exception as e:
+                _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как DOC: {str(e)}")
+
         # Если текст извлечён, отправляем на анализ
         if text:
             try:
@@ -333,7 +342,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 _logger.error(f"Заявка {self.id}: ошибка анализа PDF '{attachment.name}': {str(e)}")
     
         if not analyzed_any:
-            _logger.info(f"Заявка {self.id}: подходящих документов (DOCX/Excel) с текстом не найдено — анализ пропущен")
+            _logger.info(f"Заявка {self.id}: подходящих документов (DOCX/DOC/Excel) с текстом не найдено — анализ пропущен")
 
     def analyze_assignment_with_yandex_gpt(self):
         attachments = self.assignment_attachments
@@ -354,7 +363,16 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             except Exception as e:
                 _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как DOCX: {str(e)}")
             
-            # Если не DOCX, пробуем как Excel
+            # Если не DOCX, пробуем как старый DOC
+            if not text:
+                try:
+                    text = self.extract_text_from_doc_attachment(attachment)
+                    if text:
+                        _logger.info(f"Заявка {self.id}: извлечён текст из DOC '{attachment.name}'")
+                except Exception as e:
+                    _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как DOC: {str(e)}")
+            
+            # Если не DOCX и не DOC, пробуем как Excel
             if not text:
                 try:
                     text = self.extract_text_from_excel_attachment(attachment)
@@ -381,7 +399,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                     _logger.error(f"Заявка {self.id}: ошибка анализа PDF '{attachment.name}': {str(e)}")
 
             if not analyzed_any:
-                _logger.info(f"Заявка {self.id}: подходящих документов (DOCX/Excel) с текстом не найдено — анализ пропущен")
+                _logger.info(f"Заявка {self.id}: подходящих документов (DOCX/DOC/Excel) с текстом не найдено — анализ пропущен")
 
     def analyze_pdf_attachments_with_yandex_gpt(self, attachment, is_zayavka=True, is_sber_screen=False, is_assignment=False):
         """
@@ -703,12 +721,10 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         try:
             # Обработка country_id (Many2one к amanat.country)
             if 'country_id' in parsed_data and parsed_data['country_id']:
-                country_name = str(parsed_data['country_id']).strip().upper()
+                country_name = str(parsed_data['country_id']).strip()
                 
-                # Ищем страну по названию
-                country = self.env['amanat.country'].search([
-                    ('name', 'ilike', country_name)
-                ], limit=1)
+                # Используем улучшенный поиск страны
+                country = self._advanced_country_search(country_name)
                 
                 if country:
                     update_values['country_id'] = country.id
@@ -722,10 +738,8 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             if 'subagent_payer_ids' in parsed_data and parsed_data['subagent_payer_ids']:
                 payer_name = str(parsed_data['subagent_payer_ids']).strip()
                 
-                # Ищем плательщика по названию
-                payer = self.env['amanat.payer'].search([
-                    ('name', 'ilike', payer_name)
-                ], limit=1)
+                # Используем улучшенный поиск плательщика
+                payer = self._advanced_payer_search(payer_name)
                 
                 if payer:
                     # Очищаем поле subagent_payer_ids и добавляем нового плательщика
@@ -751,19 +765,25 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                         
             if 'agent_id' in parsed_data and parsed_data['agent_id']:
                 agent_name = str(parsed_data['agent_id']).strip()
-                agent = self.env['amanat.contragent'].search([
-                    ('name', 'ilike', agent_name)
-                ], limit=1)
+                
+                # Используем улучшенный поиск контрагента для агента
+                agent = self._advanced_contragent_search(agent_name, context_type="агент")
+                
                 if agent:
                     update_values['agent_id'] = agent.id
+                else:
+                    _logger.warning(f"[_handle_special_fields] Не найден агент: {agent_name}")
             
             if 'client_id' in parsed_data and parsed_data['client_id']:
                 client_name = str(parsed_data['client_id']).strip()
-                client = self.env['amanat.contragent'].search([
-                    ('name', 'ilike', client_name)
-                ], limit=1)
+                
+                # Используем улучшенный поиск контрагента для клиента
+                client = self._advanced_contragent_search(client_name, context_type="клиент")
+                
                 if client:
                     update_values['client_id'] = client.id
+                else:
+                    _logger.warning(f"[_handle_special_fields] Не найден клиент: {client_name}")
             
         except Exception as e:
             _logger.error(f"[_handle_special_fields] Ошибка при обработке специальных полей: {str(e)}")                                   
@@ -908,3 +928,472 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         except Exception as e:
             _logger.error(f"[_send_image_to_yandex_gpt_vision] Ошибка при отправке изображения в Yandex Vision OCR: {str(e)}")
             return None
+    
+    def _normalize_payer_name(self, name):
+        """
+        Нормализует название плательщика для поиска.
+        Убирает лишние символы, приводит к нижнему регистру, убирает лишние пробелы.
+        """
+        if not name:
+            return ""
+        
+        import re
+        
+        # Приводим к строке и убираем лишние пробелы
+        normalized = str(name).strip()
+        
+        # Убираем множественные пробелы и заменяем их одним
+        normalized = re.sub(r'\s+', ' ', normalized)
+        
+        # Убираем специальные символы, оставляем только буквы, цифры, пробелы и основные знаки препинания
+        normalized = re.sub(r'[^\w\s\-\.\,\(\)]', '', normalized, flags=re.UNICODE)
+        
+        # Приводим к нижнему регистру для поиска
+        normalized = normalized.lower()
+        
+        return normalized
+    
+    def _advanced_payer_search(self, search_text):
+        """
+        Расширенный поиск плательщика с несколькими стратегиями:
+        1. Точное совпадение (после нормализации)
+        2. Поиск по началу строки
+        3. Поиск по содержанию
+        4. Поиск по ИНН (если текст похож на ИНН)
+        """
+        if not search_text:
+            return None
+            
+        search_normalized = self._normalize_payer_name(search_text)
+        if not search_normalized:
+            return None
+            
+        _logger.info(f"[_advanced_payer_search] Поиск плательщика: '{search_text}' -> нормализовано: '{search_normalized}'")
+        
+        # Получаем всех плательщиков для поиска
+        all_payers = self.env['amanat.payer'].search([])
+        
+        # Стратегия 1: Точное совпадение (после нормализации)
+        for payer in all_payers:
+            if payer.name:
+                payer_normalized = self._normalize_payer_name(payer.name)
+                if payer_normalized == search_normalized:
+                    _logger.info(f"[_advanced_payer_search] Найден точный матч: '{payer.name}' (ID: {payer.id})")
+                    return payer
+        
+        # Стратегия 2: Поиск по ИНН (если поисковый текст похож на ИНН - только цифры, длина 10 или 12)
+        import re
+        if re.match(r'^\d{10}$|^\d{12}$', search_text.strip()):
+            payer_by_inn = all_payers.filtered(lambda p: p.inn and p.inn.strip() == search_text.strip())
+            if payer_by_inn:
+                _logger.info(f"[_advanced_payer_search] Найден по ИНН: '{payer_by_inn[0].name}' (ID: {payer_by_inn[0].id})")
+                return payer_by_inn[0]
+        
+        # Стратегия 3: Поиск по началу строки
+        exact_start_matches = []
+        for payer in all_payers:
+            if payer.name:
+                payer_normalized = self._normalize_payer_name(payer.name)
+                if payer_normalized.startswith(search_normalized):
+                    exact_start_matches.append(payer)
+        
+        if exact_start_matches:
+            # Сортируем по длине названия (короткие сначала)
+            exact_start_matches.sort(key=lambda p: len(p.name) if p.name else 0)
+            _logger.info(f"[_advanced_payer_search] Найден по началу строки: '{exact_start_matches[0].name}' (ID: {exact_start_matches[0].id})")
+            return exact_start_matches[0]
+        
+        # Стратегия 4: Поиск по содержанию (если поисковый запрос достаточно длинный)
+        if len(search_normalized) >= 3:
+            contains_matches = []
+            for payer in all_payers:
+                if payer.name:
+                    payer_normalized = self._normalize_payer_name(payer.name)
+                    if search_normalized in payer_normalized:
+                        contains_matches.append(payer)
+            
+            if contains_matches:
+                # Сортируем по длине названия (короткие сначала)
+                contains_matches.sort(key=lambda p: len(p.name) if p.name else 0)
+                _logger.info(f"[_advanced_payer_search] Найден по содержанию: '{contains_matches[0].name}' (ID: {contains_matches[0].id})")
+                return contains_matches[0]
+        
+        # Стратегия 5: Нечеткий поиск (если ничего не найдено и текст достаточно длинный)
+        if len(search_normalized) >= 4:
+            fuzzy_matches = []
+            for payer in all_payers:
+                if payer.name:
+                    payer_normalized = self._normalize_payer_name(payer.name)
+                    # Простая эвристика: если больше половины символов совпадают
+                    if self._calculate_similarity(search_normalized, payer_normalized) > 0.6:
+                        fuzzy_matches.append(payer)
+            
+            if fuzzy_matches:
+                # Сортируем по похожести и длине
+                fuzzy_matches.sort(key=lambda p: (
+                    -self._calculate_similarity(search_normalized, self._normalize_payer_name(p.name)),
+                    len(p.name) if p.name else 0
+                ))
+                _logger.info(f"[_advanced_payer_search] Найден нечеткий матч: '{fuzzy_matches[0].name}' (ID: {fuzzy_matches[0].id})")
+                return fuzzy_matches[0]
+        
+        _logger.warning(f"[_advanced_payer_search] Плательщик не найден для: '{search_text}'")
+        return None
+    
+    def _calculate_similarity(self, str1, str2):
+        """
+        Вычисляет улучшенную меру похожести между двумя строками.
+        Учитывает совпадение слов и символов.
+        Возвращает значение от 0 до 1, где 1 - полное совпадение.
+        """
+        if not str1 or not str2:
+            return 0.0
+        
+        # Алгоритм 1: Совпадение по словам (более важно)
+        words1 = set(word.strip() for word in str1.lower().split() if len(word.strip()) >= 2)
+        words2 = set(word.strip() for word in str2.lower().split() if len(word.strip()) >= 2)
+        
+        word_similarity = 0.0
+        if words1 and words2:
+            word_intersection = len(words1.intersection(words2))
+            word_union = len(words1.union(words2))
+            word_similarity = word_intersection / word_union if word_union > 0 else 0.0
+        
+        # Алгоритм 2: Совпадение по символам (менее важно)
+        chars1 = set(str1.lower())
+        chars2 = set(str2.lower())
+        
+        char_similarity = 0.0
+        if chars1 and chars2:
+            char_intersection = len(chars1.intersection(chars2))
+            char_union = len(chars1.union(chars2))
+            char_similarity = char_intersection / char_union if char_union > 0 else 0.0
+        
+        # Комбинированная оценка: 70% вес для слов, 30% для символов
+        combined_similarity = word_similarity * 0.7 + char_similarity * 0.3
+        
+        return combined_similarity
+    
+    def _advanced_country_search(self, search_text):
+        """
+        Расширенный поиск страны с несколькими стратегиями:
+        1. Поиск по коду страны (если текст похож на код - 2-3 символа)
+        2. Точное совпадение по краткому названию (после нормализации)
+        3. Точное совпадение по полному названию (после нормализации)
+        4. Поиск по началу строки (краткое и полное название)
+        5. Поиск по содержанию
+        6. Нечеткий поиск
+        """
+        if not search_text:
+            return None
+            
+        search_original = str(search_text).strip()
+        search_normalized = self._normalize_payer_name(search_text)  # Используем ту же нормализацию
+        
+        if not search_normalized:
+            return None
+            
+        _logger.info(f"[_advanced_country_search] Поиск страны: '{search_text}' -> нормализовано: '{search_normalized}'")
+        
+        # Получаем все страны для поиска
+        all_countries = self.env['amanat.country'].search([])
+        
+        # Стратегия 1: Поиск по коду страны (если текст короткий и похож на код)
+        if len(search_original) <= 3 and search_original.isdigit():
+            try:
+                country_code = int(search_original)
+                country_by_code = all_countries.filtered(lambda c: c.code == country_code)
+                if country_by_code:
+                    _logger.info(f"[_advanced_country_search] Найдена по коду: '{country_by_code[0].name}' (код: {country_by_code[0].code})")
+                    return country_by_code[0]
+            except ValueError:
+                pass
+        
+        # Стратегия 2: Точное совпадение по краткому названию (после нормализации)
+        for country in all_countries:
+            if country.name:
+                country_name_normalized = self._normalize_payer_name(country.name)
+                if country_name_normalized == search_normalized:
+                    _logger.info(f"[_advanced_country_search] Найдена точное совпадение по названию: '{country.name}' (ID: {country.id})")
+                    return country
+        
+        # Стратегия 3: Точное совпадение по полному названию (после нормализации)
+        for country in all_countries:
+            if country.full_name:
+                country_full_normalized = self._normalize_payer_name(country.full_name)
+                if country_full_normalized == search_normalized:
+                    _logger.info(f"[_advanced_country_search] Найдена точное совпадение по полному названию: '{country.name}' (полное: '{country.full_name}')")
+                    return country
+        
+        # Стратегия 4: Поиск по началу строки
+        start_matches = []
+        for country in all_countries:
+            # Проверяем краткое название
+            if country.name:
+                country_name_normalized = self._normalize_payer_name(country.name)
+                if country_name_normalized.startswith(search_normalized):
+                    start_matches.append((country, 'name'))
+            
+            # Проверяем полное название
+            if country.full_name:
+                country_full_normalized = self._normalize_payer_name(country.full_name)
+                if country_full_normalized.startswith(search_normalized):
+                    start_matches.append((country, 'full_name'))
+        
+        if start_matches:
+            # Приоритет: сначала краткие названия, потом полные
+            start_matches.sort(key=lambda x: (
+                0 if x[1] == 'name' else 1,  # Приоритет краткому названию
+                len(x[0].name) if x[0].name else 999  # Потом по длине
+            ))
+            country, match_type = start_matches[0]
+            match_field = 'краткое название' if match_type == 'name' else 'полное название'
+            _logger.info(f"[_advanced_country_search] Найдена по началу строки ({match_field}): '{country.name}' (ID: {country.id})")
+            return country
+        
+        # Стратегия 5: Поиск по содержанию (если поисковый запрос достаточно длинный)
+        if len(search_normalized) >= 3:
+            contains_matches = []
+            for country in all_countries:
+                # Проверяем краткое название
+                if country.name:
+                    country_name_normalized = self._normalize_payer_name(country.name)
+                    if search_normalized in country_name_normalized:
+                        contains_matches.append((country, 'name'))
+                
+                # Проверяем полное название
+                if country.full_name:
+                    country_full_normalized = self._normalize_payer_name(country.full_name)
+                    if search_normalized in country_full_normalized:
+                        contains_matches.append((country, 'full_name'))
+            
+            if contains_matches:
+                # Приоритет: сначала краткие названия, потом полные, потом по длине
+                contains_matches.sort(key=lambda x: (
+                    0 if x[1] == 'name' else 1,
+                    len(x[0].name) if x[0].name else 999
+                ))
+                country, match_type = contains_matches[0]
+                match_field = 'краткое название' if match_type == 'name' else 'полное название'
+                _logger.info(f"[_advanced_country_search] Найдена по содержанию ({match_field}): '{country.name}' (ID: {country.id})")
+                return country
+        
+        # Стратегия 6: Нечеткий поиск (если ничего не найдено и текст достаточно длинный)
+        if len(search_normalized) >= 4:
+            fuzzy_matches = []
+            for country in all_countries:
+                max_similarity = 0.0
+                match_type = 'name'
+                
+                # Проверяем краткое название
+                if country.name:
+                    country_name_normalized = self._normalize_payer_name(country.name)
+                    similarity = self._calculate_similarity(search_normalized, country_name_normalized)
+                    if similarity > max_similarity:
+                        max_similarity = similarity
+                        match_type = 'name'
+                
+                # Проверяем полное название
+                if country.full_name:
+                    country_full_normalized = self._normalize_payer_name(country.full_name)
+                    similarity = self._calculate_similarity(search_normalized, country_full_normalized)
+                    if similarity > max_similarity:
+                        max_similarity = similarity
+                        match_type = 'full_name'
+                
+                if max_similarity > 0.6:
+                    fuzzy_matches.append((country, max_similarity, match_type))
+            
+            if fuzzy_matches:
+                # Сортируем по похожести (убывание) и приоритету поля
+                fuzzy_matches.sort(key=lambda x: (-x[1], 0 if x[2] == 'name' else 1))
+                country, similarity, match_type = fuzzy_matches[0]
+                match_field = 'краткое название' if match_type == 'name' else 'полное название'
+                _logger.info(f"[_advanced_country_search] Найдена нечеткий матч ({match_field}, similarity: {similarity:.2f}): '{country.name}' (ID: {country.id})")
+                return country
+        
+        _logger.warning(f"[_advanced_country_search] Страна не найдена для: '{search_text}'")
+        return None
+    
+    def _advanced_contragent_search(self, search_text, context_type="контрагент"):
+        """
+        Расширенный поиск контрагента с несколькими стратегиями:
+        1. Поиск по ИНН (если текст похож на ИНН - 10 или 12 цифр)
+        2. Точное совпадение по названию (после нормализации)
+        3. Поиск по началу строки
+        4. Поиск по содержанию
+        5. Нечеткий поиск
+        6. Поиск по ИНН плательщиков (payer_inn)
+        
+        context_type: строка для логирования ("агент", "клиент", "контрагент")
+        """
+        if not search_text:
+            return None
+            
+        search_original = str(search_text).strip()
+        search_normalized = self._normalize_payer_name(search_text)  # Используем ту же нормализацию
+        
+        if not search_normalized:
+            return None
+            
+        _logger.info(f"[_advanced_contragent_search] Поиск {context_type}: '{search_text}' -> нормализовано: '{search_normalized}'")
+        
+        # Получаем всех контрагентов для поиска
+        all_contragents = self.env['amanat.contragent'].search([])
+        _logger.info(f"[_advanced_contragent_search] Всего контрагентов в системе: {len(all_contragents)}")
+        
+        # Стратегия 1: Поиск по ИНН (если поисковый текст похож на ИНН - только цифры, длина 10 или 12)
+        import re
+        if re.match(r'^\d{10}$|^\d{12}$', search_original):
+            _logger.info(f"[_advanced_contragent_search] Стратегия 1: Поиск по ИНН '{search_original}'")
+            
+            # Поиск по собственному ИНН контрагента
+            contragent_by_inn = all_contragents.filtered(lambda c: c.inn and c.inn.strip() == search_original)
+            if contragent_by_inn:
+                _logger.info(f"[_advanced_contragent_search] Найден {context_type} по ИНН: '{contragent_by_inn[0].name}' (ИНН: {contragent_by_inn[0].inn})")
+                return contragent_by_inn[0]
+            
+            # Поиск по ИНН плательщиков
+            contragent_by_payer_inn = all_contragents.filtered(lambda c: c.payer_inn and search_original in c.payer_inn)
+            if contragent_by_payer_inn:
+                _logger.info(f"[_advanced_contragent_search] Найден {context_type} по ИНН плательщика: '{contragent_by_payer_inn[0].name}' (payer_inn: {contragent_by_payer_inn[0].payer_inn})")
+                return contragent_by_payer_inn[0]
+            
+            _logger.info(f"[_advanced_contragent_search] Стратегия 1: ИНН '{search_original}' не найден")
+        else:
+            _logger.info(f"[_advanced_contragent_search] Стратегия 1: Пропускаем поиск по ИНН - '{search_original}' не похож на ИНН")
+        
+        # Стратегия 2: Точное совпадение по названию (после нормализации)
+        _logger.info(f"[_advanced_contragent_search] Стратегия 2: Проверяем точное совпадение для '{search_normalized}'")
+        exact_matches_checked = 0
+        for contragent in all_contragents:
+            if contragent.name:
+                contragent_normalized = self._normalize_payer_name(contragent.name)
+                exact_matches_checked += 1
+                if contragent_normalized == search_normalized:
+                    _logger.info(f"[_advanced_contragent_search] Найден {context_type} точное совпадение: '{contragent.name}' (ID: {contragent.id})")
+                    return contragent
+        _logger.info(f"[_advanced_contragent_search] Стратегия 2: Проверено {exact_matches_checked} контрагентов, точных совпадений не найдено")
+        
+        # Стратегия 3: Поиск по началу строки
+        _logger.info(f"[_advanced_contragent_search] Стратегия 3: Проверяем поиск по началу строки для '{search_normalized}'")
+        start_matches = []
+        start_matches_checked = 0
+        for contragent in all_contragents:
+            if contragent.name:
+                contragent_normalized = self._normalize_payer_name(contragent.name)
+                start_matches_checked += 1
+                if contragent_normalized.startswith(search_normalized):
+                    start_matches.append(contragent)
+                    _logger.info(f"[_advanced_contragent_search] DEBUG: Найден кандидат по началу строки: '{contragent.name}' -> '{contragent_normalized}'")
+        
+        _logger.info(f"[_advanced_contragent_search] Стратегия 3: Проверено {start_matches_checked} контрагентов, найдено кандидатов: {len(start_matches)}")
+        
+        if start_matches:
+            # Сортируем по длине названия (короткие сначала), как в существующем name_search
+            start_matches.sort(key=lambda c: len(c.name) if c.name else 999)
+            _logger.info(f"[_advanced_contragent_search] Найден {context_type} по началу строки: '{start_matches[0].name}' (ID: {start_matches[0].id})")
+            return start_matches[0]
+        
+        # Стратегия 3.5: Поиск по частям названия (разбиваем на слова)
+        _logger.info("[_advanced_contragent_search] Стратегия 3.5: Проверяем поиск по частям названия")
+        search_words = [word.strip() for word in search_normalized.split() if len(word.strip()) >= 2]
+        _logger.info(f"[_advanced_contragent_search] Слова для поиска: {search_words}")
+        
+        if search_words:
+            word_matches = []
+            exact_word_matches = []  # Для точных совпадений с отдельными словами
+            
+            for contragent in all_contragents:
+                if contragent.name:
+                    contragent_normalized = self._normalize_payer_name(contragent.name)
+                    contragent_words = set(word.strip() for word in contragent_normalized.split() if len(word.strip()) >= 2)
+                    
+                    # Специальная проверка: если название контрагента точно совпадает с одним из слов поиска
+                    if contragent_normalized in search_words:
+                        exact_word_matches.append(contragent)
+                        _logger.info(f"[_advanced_contragent_search] DEBUG: Точное совпадение с словом '{contragent.name}' -> '{contragent_normalized}'")
+                    
+                    # Проверяем, сколько слов совпадает
+                    matching_words = set(search_words).intersection(contragent_words)
+                    if matching_words:
+                        match_ratio = len(matching_words) / len(search_words)
+                        word_matches.append((contragent, match_ratio, matching_words))
+                        
+                        # Специальное логирование для интересных кандидатов
+                        if match_ratio >= 0.3 or any(word in contragent_normalized for word in ['тдк', 'джевэллэри', 'трейдинг']):
+                            _logger.info(f"[_advanced_contragent_search] DEBUG: Кандидат по словам '{contragent.name}' -> '{contragent_normalized}' (совпадений: {len(matching_words)}/{len(search_words)} = {match_ratio:.2f}, слова: {matching_words})")
+            
+            # Приоритет: сначала точные совпадения с отдельными словами
+            if exact_word_matches:
+                # Сортируем по длине (короткие сначала)
+                exact_word_matches.sort(key=lambda c: len(c.name) if c.name else 999)
+                contragent = exact_word_matches[0]
+                _logger.info(f"[_advanced_contragent_search] Найден {context_type} по точному совпадению со словом: '{contragent.name}' (ID: {contragent.id})")
+                return contragent
+            
+            if word_matches:
+                # Сортируем по проценту совпадающих слов (убывание), потом по длине названия
+                word_matches.sort(key=lambda x: (-x[1], len(x[0].name) if x[0].name else 999))
+                
+                best_match = word_matches[0]
+                if best_match[1] >= 0.5:  # Если совпадает минимум 50% слов
+                    contragent, match_ratio, matching_words = best_match
+                    _logger.info(f"[_advanced_contragent_search] Найден {context_type} по частям названия: '{contragent.name}' (совпадений: {len(matching_words)}/{len(search_words)} = {match_ratio:.2f}, слова: {matching_words})")
+                    return contragent
+                else:
+                    _logger.info(f"[_advanced_contragent_search] Лучший кандидат по словам: '{best_match[0].name}' (совпадений: {best_match[1]:.2f}, но меньше порога 0.5)")
+        
+        # Стратегия 4: Поиск по содержанию (если поисковый запрос достаточно длинный)
+        if len(search_normalized) >= 3:
+            _logger.info(f"[_advanced_contragent_search] Стратегия 4: Проверяем поиск по содержанию для '{search_normalized}'")
+            contains_matches = []
+            contains_matches_checked = 0
+            for contragent in all_contragents:
+                if contragent.name:
+                    contragent_normalized = self._normalize_payer_name(contragent.name)
+                    contains_matches_checked += 1
+                    if search_normalized in contragent_normalized:
+                        contains_matches.append(contragent)
+                        _logger.info(f"[_advanced_contragent_search] DEBUG: Найден кандидат по содержанию: '{contragent.name}' -> '{contragent_normalized}'")
+            
+            _logger.info(f"[_advanced_contragent_search] Стратегия 4: Проверено {contains_matches_checked} контрагентов, найдено кандидатов: {len(contains_matches)}")
+            
+            if contains_matches:
+                # Сортируем по длине названия (короткие сначала)
+                contains_matches.sort(key=lambda c: len(c.name) if c.name else 999)
+                _logger.info(f"[_advanced_contragent_search] Найден {context_type} по содержанию: '{contains_matches[0].name}' (ID: {contains_matches[0].id})")
+                return contains_matches[0]
+        
+        # Стратегия 5: Нечеткий поиск (если ничего не найдено и текст достаточно длинный)
+        if len(search_normalized) >= 4:
+            _logger.info(f"[_advanced_contragent_search] Стратегия 5: Проверяем нечеткий поиск для '{search_normalized}'")
+            fuzzy_matches = []
+            fuzzy_matches_checked = 0
+            for contragent in all_contragents:
+                if contragent.name:
+                    contragent_normalized = self._normalize_payer_name(contragent.name)
+                    similarity = self._calculate_similarity(search_normalized, contragent_normalized)
+                    fuzzy_matches_checked += 1
+                    
+                    if similarity > 0.6:
+                        fuzzy_matches.append((contragent, similarity))
+                        _logger.info(f"[_advanced_contragent_search] DEBUG: Найден кандидат нечеткого поиска: '{contragent.name}' -> '{contragent_normalized}' (similarity: {similarity:.3f})")
+            
+            _logger.info(f"[_advanced_contragent_search] Стратегия 5: Проверено {fuzzy_matches_checked} контрагентов, найдено кандидатов: {len(fuzzy_matches)}")
+            
+            if fuzzy_matches:
+                # Сортируем по похожести (убывание) и длине названия
+                fuzzy_matches.sort(key=lambda x: (-x[1], len(x[0].name) if x[0].name else 999))
+                
+                # Логируем топ-5 кандидатов для анализа
+                _logger.info(f"[_advanced_contragent_search] DEBUG: Топ-{min(5, len(fuzzy_matches))} кандидатов нечеткого поиска:")
+                for i, (candidate, sim) in enumerate(fuzzy_matches[:5]):
+                    _logger.info(f"[_advanced_contragent_search] DEBUG: {i+1}. '{candidate.name}' (similarity: {sim:.3f})")
+                
+                contragent, similarity = fuzzy_matches[0]
+                _logger.info(f"[_advanced_contragent_search] Найден {context_type} нечеткий матч (similarity: {similarity:.2f}): '{contragent.name}' (ID: {contragent.id})")
+                return contragent
+        
+        _logger.warning(f"[_advanced_contragent_search] {context_type.capitalize()} не найден для: '{search_text}'")
+        return None
