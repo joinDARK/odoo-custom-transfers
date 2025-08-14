@@ -98,6 +98,7 @@ export class AppsBar extends Component {
             {
                 name: "Калькуляторы",
                 items: [
+                    { name: "Спред", action: "amanat.action_amanat_calculator_spread" },
                     { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
                     { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                     { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
@@ -263,6 +264,7 @@ export class AppsBar extends Component {
                     {
                         name: "Калькуляторы",
                         items: [
+                            { name: "Спред", action: "amanat.action_amanat_calculator_spread" },
                             { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
                             { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
                         ],
@@ -364,6 +366,7 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
+                        { name: "Спред", action: "amanat.action_amanat_calculator_spread" },
                         { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
                         { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
@@ -405,6 +408,7 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
+                        { name: "Спред", action: "amanat.action_amanat_calculator_spread" },
                         { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
                         { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
@@ -454,6 +458,7 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
+                        { name: "Спред", action: "amanat.action_amanat_calculator_spread" },
                         { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
                         { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
@@ -513,6 +518,7 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
+                        { name: "Спред", action: "amanat.action_amanat_calculator_spread" },
                         { name: "Расчет добавка в $", action: "amanat.action_amanat_calculator_50_usd" },
                         { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
@@ -540,6 +546,7 @@ export class AppsBar extends Component {
                 {
                     name: "Калькуляторы",
                     items: [
+                        { name: "Спред", action: "amanat.action_amanat_calculator_spread" },
                         { name: "Расчет надбавка $", action: "amanat.action_amanat_calculator_50_usd" },
                         { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },

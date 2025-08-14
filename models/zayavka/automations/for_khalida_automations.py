@@ -84,7 +84,7 @@ class ForKhalidaAutomations(models.Model):
         Поиск подходящей записи в модели amanat.price_list_payer_carrying_out
         """
         PriceListCarryingOut = self.env['amanat.price_list_payer_carrying_out']
-        
+
         # Строим домен для поиска
         domain = [
             ('payer_partners', 'in', subagent_payers.ids),
@@ -92,13 +92,30 @@ class ForKhalidaAutomations(models.Model):
             ('date_end', '>=', rate_fixation_date),
             ('min_application_amount', '<=', equivalent_sum),
             ('max_application_amount', '>=', equivalent_sum),
-            ('contragent_zayavka_id', '=', self.contragent_id.id),
-            ('agent_zayavka_id', '=', self.agent_id.id),
-            ('client_zayavka_id', '=', self.client_id.id),
-            ('currency_zayavka', '=', self.currency),
             ('min_percent_accrual', '<=', reward_percent),
             ('max_percent_accrual', '>=', reward_percent),
         ]
+        
+        # Подготавливаем значения для гибкого поиска
+        if self.contragent_id:
+            domain.append(('contragent_zayavka_id', 'in', [self.contragent_id.id]))
+        else:
+            domain.append(('contragent_zayavka_id', '=', False))
+            
+        if self.agent_id:
+            domain.append(('agent_zayavka_id', 'in', [self.agent_id.id]))
+        else:
+            domain.append(('agent_zayavka_id', '=', False))
+            
+        if self.client_id:
+            domain.append(('client_zayavka_id', 'in', [self.client_id.id]))
+        else:
+            domain.append(('client_zayavka_id', '=', False))
+            
+        if self.currency:
+            domain.append(('currency_zayavka', 'in', [self.currency]))
+        else:
+            domain.append(('currency_zayavka', '=', False))
 
         softDomain = [
             ('payer_partners', 'in', subagent_payers.ids),
@@ -112,7 +129,7 @@ class ForKhalidaAutomations(models.Model):
 
         # Ищем первую подходящую запись
         matched_record = PriceListCarryingOut.search(domain, limit=1)
-        
+
         if not matched_record:
             _logger.info(f"[PriceList] Не найден подходящий прайс-лист за проведение для заявки {self.id}, ищем по общим условиям")
             matched_record = PriceListCarryingOut.search(softDomain, limit=1)
@@ -131,6 +148,23 @@ class ForKhalidaAutomations(models.Model):
         """
         PriceListProfit = self.env['amanat.price_list_payer_profit']
         
+        # Подготавливаем значения для гибкого поиска
+        contragent_values = [False]
+        if self.contragent_id:
+            contragent_values.append(self.contragent_id.id)
+            
+        agent_values = [False]
+        if self.agent_id:
+            agent_values.append(self.agent_id.id)
+            
+        client_values = [False]
+        if self.client_id:
+            client_values.append(self.client_id.id)
+            
+        currency_values = [False]
+        if self.currency:
+            currency_values.append(self.currency)
+        
         # Строим домен для поиска
         domain = [
             ('payer_subagent_ids', 'in', subagent_payers.ids),
@@ -138,13 +172,29 @@ class ForKhalidaAutomations(models.Model):
             ('date_end', '>=', rate_fixation_date),
             ('min_zayavka_amount', '<=', equivalent_sum),
             ('max_zayavka_amount', '>=', equivalent_sum),
-            ('contragent_zayavka_id', '=', self.contragent_id.id),
-            ('agent_zayavka_id', '=', self.agent_id.id),
-            ('client_zayavka_id', '=', self.client_id.id),
-            ('currency_zayavka', '=', self.currency),
             ('min_percent_accrual', '<=', reward_percent),
             ('max_percent_accrual', '>=', reward_percent),
         ]
+
+        if self.contragent_id:
+            domain.append(('contragent_zayavka_id', 'in', [self.contragent_id.id]))
+        else:
+            domain.append(('contragent_zayavka_id', '=', False))
+            
+        if self.agent_id:
+            domain.append(('agent_zayavka_id', 'in', [self.agent_id.id]))
+        else:
+            domain.append(('agent_zayavka_id', '=', False))
+            
+        if self.client_id:
+            domain.append(('client_zayavka_id', 'in', [self.client_id.id]))
+        else:
+            domain.append(('client_zayavka_id', '=', False))
+
+        if self.currency:
+            domain.append(('currency_zayavka', 'in', [self.currency]))
+        else:
+            domain.append(('currency_zayavka', '=', False))
 
         softDomain = [
             ('payer_subagent_ids', 'in', subagent_payers.ids),
@@ -177,20 +227,53 @@ class ForKhalidaAutomations(models.Model):
         """
         PriceListPartners = self.env['amanat.price_list_partners']
         
+        # Подготавливаем значения для гибкого поиска
+        contragent_values = [False]
+        if self.contragent_id:
+            contragent_values.append(self.contragent_id.id)
+            
+        agent_values = [False]
+        if self.agent_id:
+            agent_values.append(self.agent_id.id)
+            
+        client_values = [False]
+        if self.client_id:
+            client_values.append(self.client_id.id)
+            
+        currency_values = [False]
+        if self.currency:
+            currency_values.append(self.currency)
+        
         # Строим домен для поиска
         domain = [
             ('payer_partner', 'in', subagent_payers.ids),
             ('date_start', '<=', rate_fixation_date),
             ('date_end', '>=', rate_fixation_date),
-            ('contragent_zayavka_id', '=', self.contragent_id.id),
-            ('agent_zayavka_id', '=', self.agent_id.id),
-            ('client_zayavka_id', '=', self.client_id.id),
-            ('currency_zayavka', '=', self.currency),
             ('min_application_amount', '<=', equivalent_sum),
             ('max_application_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
             ('max_percent_accrual', '>=', reward_percent),
         ]
+
+        if self.contragent_id:
+            domain.append(('contragent_zayavka_id', 'in', [self.contragent_id.id]))
+        else:
+            domain.append(('contragent_zayavka_id', '=', False))
+        
+        if self.agent_id:
+            domain.append(('agent_zayavka_id', 'in', [self.agent_id.id]))
+        else:
+            domain.append(('agent_zayavka_id', '=', False))
+            
+        if self.client_id:
+            domain.append(('client_zayavka_id', 'in', [self.client_id.id]))
+        else:
+            domain.append(('client_zayavka_id', '=', False))
+            
+        if self.currency:
+            domain.append(('currency_zayavka', 'in', [self.currency]))
+        else:
+            domain.append(('currency_zayavka', '=', False))
 
         # Добавляем условия по сумме заявки
         softDomain = [

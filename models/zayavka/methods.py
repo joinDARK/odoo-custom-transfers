@@ -145,8 +145,14 @@ class ZayavkaMethods(models.Model):
             for rec in self:
                 _logger.info(f"Изменена дата фиксации курса для заявки {rec.id}, запускаем автоматизацию привязки прайс-листов")
                 rec.status = '3'
+                rec.link_jess_rate = False
                 rec.run_link_jess_rate_automation()
                 rec.run_price_list_automation()
+        
+        if vals.get('link_jess_rate', False):
+            for rec in self:
+                rec.run_link_jess_rate_automation()
+                rec.link_jess_rate = False
 
         if 'zayavka_attachments' in vals:
             for rec in self:
@@ -278,11 +284,16 @@ class ZayavkaMethods(models.Model):
             res.for_khalida_temp = False
             res.run_for_khalida_automations()
 
+        if vals.get('link_jess_rate', False):
+            res.run_link_jess_rate_automation()
+            res.link_jess_rate = False
+
         # Триггер для автоматизации привязки прайс-листов при создании с датой фиксации курса
         if vals.get('rate_fixation_date'):
             _logger.info(f"Создана заявка {res.id} с датой фиксации курса, запускаем автоматизацию привязки прайс-листов")
             res.status = '3'
             res.run_link_jess_rate_automation()
+            res.link_jess_rate = False
             res.run_price_list_automation()
 
         # ... (остальная логика по period_id и т.п.)
@@ -733,8 +744,8 @@ class ZayavkaMethods(models.Model):
             # Подготавливаем данные для подстановки
             template_data = self._prepare_statement_template_data()
             
-            # Генерируем документ
-            generated_file = self._generate_document_from_template(template, template_data)
+            # Генерируем документ (используем специальный метод для заявлений)
+            generated_file = self._generate_statement_document_from_template(template, template_data)
             
             if generated_file:
                 # Создаем attachment
@@ -1168,33 +1179,28 @@ class ZayavkaMethods(models.Model):
             # Поля которые уже работают (точные совпадения из логов)
             'VALUE DATE*': datetime.now().strftime('%d.%m.%Y'),
             'VALUE DATE *': datetime.now().strftime('%d.%m.%Y'),
-            'AMOUNT': f"{self.amount:.2f}" if self.amount else "0.00",
-            'BILL TO': bill_to,
+            'AMOUNT*': f"{self.amount:.2f}" if self.amount else "0.00",
+            'AMOUNT *': f"{self.amount:.2f}" if self.amount else "0.00",
+            'CURRENCY*': currency_display,
+            'CURRENCY *': currency_display,
+            'BILL TO*': bill_to,
+            'BILL TO *': bill_to,
+            'BENEFICIARY*': beneficiary,
+            'BENEFICIARY *': beneficiary,
+            'BENEFICIARY COUNTRY*': country,
+            'BENEFICIARY COUNTRY *': country,
+            'BENEFICIARY ADDRESS*': beneficiary_addr,
+            'BENEFICIARY ADDRESS *': beneficiary_addr,
+            'ACCOUNT*': self.iban_accc or "",
             'ACCOUNT *': self.iban_accc or "",
+            'BENEF.BANK*': self.beneficiary_bank_name or "",
             'BENEF.BANK *': self.beneficiary_bank_name or "",
             'ADDRESS*': self.bank_address or "",
-            'SWIFT *': self.bank_swift or "",
-            'PAYMENT DETAILS *': payment_details,
-            
-            # ИСПРАВЛЕННЫЕ поля (точные названия из логов)
-            'currency': currency_display,  # Лог: 'currency *валюта'
-            'Beneficiary': beneficiary,    # Лог: 'Beneficiary *получатель'
-            'Beneficiary COUNTRY': country,  # Лог: 'Beneficiary COUNTRY*Страна получателя'
-            'Beneficiary address': str(self.beneficiary_address).strip() if self.beneficiary_address else "",  # Лог: 'Beneficiary address *Адрес получателя'
-            
-            # Дублируем с вариациями для надежности
-            'CURRENCY': currency_display,
-            'BENEFICIARY': beneficiary,
-            'BENEFICIARY COUNTRY*': country,
-            'Beneficiary COUNTRY*': country,
-            'BENEFICIARY ADDRESS*': str(self.beneficiary_address).strip() if self.beneficiary_address else "",
-            'BENEFICIARY ADDRESS *': str(self.beneficiary_address).strip() if self.beneficiary_address else "",
-            'Beneficiary address *': str(self.beneficiary_address).strip() if self.beneficiary_address else "",
-            'ACCOUNT*': self.iban_accc or "",
-            'BENEF.BANK*': self.beneficiary_bank_name or "",
-            'ADDRESS *': self.bank_address or "",
+            'ADDRESS *': self.bank_address or "", 
             'SWIFT*': self.bank_swift or "",
+            'SWIFT *': self.bank_swift or "",
             'PAYMENT DETAILS*': payment_details,
+            'PAYMENT DETAILS *': payment_details,
         }
     
     def _generate_document_from_template(self, template, template_data):
@@ -1223,6 +1229,37 @@ class ZayavkaMethods(models.Model):
                     
         except Exception as e:
             _logger.error(f"Ошибка при генерации документа из шаблона: {str(e)}")
+            return None
+    
+    def _generate_statement_document_from_template(self, template, template_data):
+        """Генерирует документ заявления из шаблона с заполнением таблиц"""
+        import base64
+        import tempfile
+        import os
+        
+        try:
+            # Декодируем файл шаблона
+            template_bytes = base64.b64decode(template.template_file)
+            
+            # Создаем временный файл для работы
+            with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as temp_file:
+                temp_file.write(template_bytes)
+                temp_file_path = temp_file.name
+            
+            try:
+                # Обрабатываем DOCX файл специальным методом для таблиц
+                result_bytes = self._process_statement_docx_template(temp_file_path, template_data)
+                if result_bytes:
+                    return base64.b64encode(result_bytes).decode('utf-8')
+                else:
+                    return None
+            finally:
+                # Удаляем временный файл
+                if os.path.exists(temp_file_path):
+                    os.unlink(temp_file_path)
+                    
+        except Exception as e:
+            _logger.error(f"Ошибка при генерации документа заявления из шаблона: {str(e)}")
             return None
     
     def _process_docx_template(self, docx_path, template_data):
@@ -1737,3 +1774,277 @@ class ZayavkaMethods(models.Model):
         except Exception as e:
             _logger.error(f"[_replace_broken_signature] Ошибка при замене сигнатуры {signature}: {e}")
             return xml_content
+    
+    def _process_statement_docx_template(self, docx_path, template_data):
+        """Обрабатывает DOCX шаблон заявления, заполняя таблицы"""
+        import tempfile
+        import os
+        from zipfile import ZipFile
+        import xml.etree.ElementTree as ET
+        
+        try:
+            _logger.info(f"[_process_statement_docx_template] Начинаем обработку шаблона заявления: {docx_path}")
+            
+            # Создаем временную папку для распаковки
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Распаковываем DOCX
+                with ZipFile(docx_path, 'r') as zip_ref:
+                    zip_ref.extractall(temp_dir)
+                
+                # Обрабатываем document.xml
+                document_path = os.path.join(temp_dir, 'word', 'document.xml')
+                if os.path.exists(document_path):
+                    # Читаем содержимое XML
+                    with open(document_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    _logger.info("=== ОТЛАДКА ОБРАБОТКИ ЗАЯВЛЕНИЯ ===")
+                    _logger.info(f"Данные для замены: {template_data}")
+                    _logger.info(f"Размер XML содержимого: {len(content)} символов")
+                    
+                    # Парсим XML
+                    root = ET.fromstring(content)
+                    
+                    # Ищем таблицы
+                    tables = root.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tbl')
+                    _logger.info(f"Найдено таблиц: {len(tables)}")
+                    
+                    total_replacements = 0
+                    
+                    if tables:
+                        # Обрабатываем первую таблицу (предполагаем что заявление в первой таблице)
+                        table = tables[0]
+                        rows = table.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tr')
+                        _logger.info(f"Строк в таблице: {len(rows)}")
+                        
+                        for row_idx, row in enumerate(rows):
+                            cells = row.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tc')
+                            
+                            if len(cells) >= 2:  # Должно быть минимум 2 колонки
+                                # Первая ячейка - название поля
+                                left_cell = cells[0]
+                                right_cell = cells[1]
+                                
+                                # Извлекаем текст из левой ячейки
+                                left_text = self._extract_cell_text(left_cell)
+                                right_text = self._extract_cell_text(right_cell)
+                                
+                                _logger.info(f"Строка {row_idx + 1}: '{left_text}' | '{right_text}'")
+                                
+                                # Пропускаем пустые строки и заголовки
+                                if not left_text or left_text.lower() in ['заполняется клиентом', '']:
+                                    continue
+                                
+                                # Ищем соответствующее значение в template_data
+                                value = self._find_matching_value(left_text, template_data)
+                                
+                                if value is not None and str(value).strip():
+                                    # Заполняем правую ячейку
+                                    self._fill_cell_with_value(right_cell, value)
+                                    total_replacements += 1
+                                    _logger.info(f"✅ Заполнено поле '{left_text}' значением: '{value}'")
+                                else:
+                                    _logger.info(f"⚠️  Не найдено значение для поля: '{left_text}'")
+                    
+                    _logger.info(f"=== ИТОГИ ОБРАБОТКИ ЗАЯВЛЕНИЯ ===")
+                    _logger.info(f"Всего выполнено замен: {total_replacements}")
+                    
+                    # Конвертируем обратно в строку
+                    content = ET.tostring(root, encoding='unicode', method='xml')
+                    
+                    # Сохраняем изменения
+                    with open(document_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    
+                    # Создаем результирующий DOCX файл
+                    result_path = os.path.join(temp_dir, 'result.docx')
+                    with ZipFile(result_path, 'w') as zip_ref:
+                        for root_dir, dirs, files in os.walk(temp_dir):
+                            for file in files:
+                                if file != 'result.docx':
+                                    file_path = os.path.join(root_dir, file)
+                                    arcname = os.path.relpath(file_path, temp_dir)
+                                    zip_ref.write(file_path, arcname)
+                    
+                    # Читаем результат
+                    with open(result_path, 'rb') as f:
+                        return f.read()
+                        
+        except Exception as e:
+            _logger.error(f"[_process_statement_docx_template] Ошибка обработки DOCX заявления: {e}")
+            import traceback
+            _logger.error(f"[_process_statement_docx_template] Traceback: {traceback.format_exc()}")
+            return None
+    
+    def _extract_cell_text(self, cell):
+        """Извлекает текст из ячейки таблицы"""
+        texts = []
+        for t in cell.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t'):
+            if t.text:
+                texts.append(t.text)
+        return ''.join(texts).strip()
+    
+    def _find_matching_value(self, field_name, template_data):
+        """Находит соответствующее значение для поля в template_data"""
+        # Очищаем поле от звездочек и лишних символов для поиска
+        field_name_clean = field_name.replace('*', '').strip()
+        field_name_lower = field_name_clean.lower()
+        
+        _logger.info(f"[ПОИСК ЗНАЧЕНИЯ] Исходное поле: '{field_name}' -> очищенное: '{field_name_clean}'")
+        
+        # Расширенный маппинг полей из шаблона к ключам в template_data
+        field_mapping = {
+            # VALUE DATE - дата платежа
+            'value date дата платежа': 'VALUE DATE*',
+            'value date': 'VALUE DATE*',
+            'дата платежа': 'VALUE DATE*',
+            
+            # AMOUNT - сумма
+            'amount сумма': 'AMOUNT',
+            'amount': 'AMOUNT',
+            'сумма': 'AMOUNT',
+            
+            # CURRENCY - валюта  
+            'currency валюта': 'CURRENCY',
+            'currency': 'CURRENCY',
+            'валюта': 'CURRENCY',
+            
+            # BILL TO - плательщик
+            'bill to': 'BILL TO',
+            
+            # BENEFICIARY - получатель
+            'beneficiary получатель': 'BENEFICIARY',
+            'beneficiary': 'BENEFICIARY',
+            'получатель': 'Beneficiary',
+            
+            # BENEFICIARY COUNTRY - страна получателя
+            'beneficiary countryстрана получателя': 'Beneficiary COUNTRY',
+            'beneficiary country': 'Beneficiary COUNTRY',
+            'страна получателя': 'Beneficiary COUNTRY',
+            
+            # BENEFICIARY ADDRESS - адрес получателя
+            'beneficiary address адрес получателя (город просьба указать)': 'Beneficiary address',
+            'beneficiary address': 'Beneficiary address',
+            'адрес получателя': 'Beneficiary address',
+            
+            # ACCOUNT - номер счета
+            'account номер счета или iban код': 'ACCOUNT *',
+            'account': 'ACCOUNT *',
+            'номер счета': 'ACCOUNT *',
+            'iban код': 'ACCOUNT *',
+            
+            # BENEF.BANK - банк получателя
+            'benef.bank банк получателя': 'BENEF.BANK *',
+            'benef.bank': 'BENEF.BANK *',
+            'банк получателя': 'BENEF.BANK *',
+            
+            # ADDRESS - адрес банка получателя
+            'addressадрес банка получателя(страну и город просьба указать)': 'ADDRESS*',
+            'address': 'ADDRESS*',
+            'адрес банка получателя': 'ADDRESS*',
+            
+            # SWIFT - свифт банка получателя
+            'swift cвифт банка получателя': 'SWIFT *',
+            'swift': 'SWIFT *',
+            'свифт банка получателя': 'SWIFT *',
+            'cвифт банка получателя': 'SWIFT *',
+            
+            # PAYMENT DETAILS - назначение платежа
+            'payment details назначение платежа(обязательно указать категорию товара!)': 'PAYMENT DETAILS *',
+            'payment details': 'PAYMENT DETAILS *',
+            'назначение платежа': 'PAYMENT DETAILS *'
+        }
+        
+        # Сначала ищем точное совпадение по полному тексту
+        if field_name_lower in field_mapping:
+            template_key = field_mapping[field_name_lower]
+            if template_key in template_data:
+                _logger.info(f"[ПОИСК ЗНАЧЕНИЯ] ✅ Точное совпадение: '{field_name_lower}' -> '{template_key}' = '{template_data[template_key]}'")
+                return template_data[template_key]
+        
+        # Потом ищем частичное совпадение с приоритетом для более длинных ключей
+        # Сортируем ключи по длине (сначала длинные, потом короткие)
+        sorted_mapping = sorted(field_mapping.items(), key=lambda x: len(x[0]), reverse=True)
+        
+        for key_pattern, template_key in sorted_mapping:
+            # Проверяем содержит ли поле ключевые слова из паттерна
+            if self._fields_match(field_name_lower, key_pattern):
+                if template_key in template_data:
+                    _logger.info(f"[ПОИСК ЗНАЧЕНИЯ] ✅ Частичное совпадение: '{field_name_lower}' ~ '{key_pattern}' -> '{template_key}' = '{template_data[template_key]}'")
+                    return template_data[template_key]
+        
+        # Если не нашли в маппинге, пробуем прямое сравнение с ключами template_data
+        for template_key, value in template_data.items():
+            template_key_clean = template_key.replace('*', '').strip().lower()
+            if self._fields_match(field_name_lower, template_key_clean):
+                _logger.info(f"[ПОИСК ЗНАЧЕНИЯ] ✅ Прямое совпадение: '{field_name_lower}' ~ '{template_key_clean}' = '{value}'")
+                return value
+        
+        _logger.info(f"[ПОИСК ЗНАЧЕНИЯ] ❌ Не найдено значение для поля: '{field_name}'")
+        return None
+    
+    def _fields_match(self, field1, field2):
+        """Проверяет совпадение двух полей по ключевым словам с учетом порядка и контекста"""
+        field1_lower = field1.lower().strip()
+        field2_lower = field2.lower().strip()
+        
+        # Сначала проверяем точное совпадение
+        if field1_lower == field2_lower:
+            return True
+        
+        # Разбиваем на слова и убираем короткие слова
+        words1 = [w for w in field1_lower.split() if len(w) > 2]
+        words2 = [w for w in field2_lower.split() if len(w) > 2]
+        
+        if not words1 or not words2:
+            return False
+        
+        # Специальная логика для избежания ложных совпадений
+        # Если один из паттернов содержит "country", а другой нет - не совпадают
+        has_country1 = any('country' in w or 'страна' in w for w in words1)
+        has_country2 = any('country' in w or 'страна' in w for w in words2)
+        
+        if has_country1 != has_country2:
+            return False
+        
+        # Если один из паттернов содержит "address", а другой нет - не совпадают  
+        has_address1 = any('address' in w or 'адрес' in w for w in words1)
+        has_address2 = any('address' in w or 'адрес' in w for w in words2)
+        
+        if has_address1 != has_address2:
+            return False
+        
+        # Для точного совпадения нужно чтобы все значимые слова из более короткого поля 
+        # присутствовали в более длинном поле
+        shorter_words = words1 if len(words1) <= len(words2) else words2
+        longer_words = words2 if len(words1) <= len(words2) else words1
+        
+        # Проверяем что все слова из короткого поля есть в длинном
+        matches = 0
+        for word in shorter_words:
+            if word in longer_words:
+                matches += 1
+        
+        # Требуем совпадения всех ключевых слов из короткого поля
+        return matches == len(shorter_words)
+    
+    def _fill_cell_with_value(self, cell, value):
+        """Заполняет ячейку таблицы значением"""
+        import xml.etree.ElementTree as ET
+        
+        # Очищаем существующий текст
+        for t in cell.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t'):
+            t.text = ''
+        
+        # Ищем первый текстовый элемент или создаем новый
+        text_elements = cell.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t')
+        if text_elements:
+            text_elements[0].text = str(value)
+        else:
+            # Создаем новую структуру для текста
+            paragraph = cell.find('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p')
+            if paragraph is not None:
+                run = ET.SubElement(paragraph, '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r')
+                text_elem = ET.SubElement(run, '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t')
+                text_elem.text = str(value)
+ 

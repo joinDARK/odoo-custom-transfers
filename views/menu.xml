@@ -409,4 +409,31 @@
         action="action_expense_rule"
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
     />
+
+    <!-- Группировака "Калькуляторы"-->
+    <menuitem 
+        id="amanat_menu_calculators_group" 
+        name="Калькуляторы" 
+        parent="amanat_menu_root"
+        sequence="3"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector,amanat.group_amanat_fin_manager"
+    />
+
+    <!-- Меню для калькулятора спреда -->
+    <menuitem 
+        id="amanat_menu_calculator_spread" 
+        name="Спред" 
+        parent="amanat_menu_calculators_group" 
+        action="action_amanat_calculator_spread"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector,amanat.group_amanat_fin_manager"
+    />
+
+    <!-- Меню для калькулятора 50 USD -->
+    <menuitem 
+        id="amanat_menu_calculator_50_usd" 
+        name="Калькулятор сделок" 
+        parent="amanat_menu_calculators_group" 
+        action="action_amanat_calculator_50_usd"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector,amanat.group_amanat_fin_manager"
+    />
 </odoo>

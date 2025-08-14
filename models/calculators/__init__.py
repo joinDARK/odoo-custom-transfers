@@ -3,3 +3,4 @@ from . import calculator_50_usd
 from . import calculator_fixed_fee
 from . import calculator_125_usd 
 from . import calculator_usd_addition_for_all
+from . import calculator_spread

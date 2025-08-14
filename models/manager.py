@@ -9,6 +9,7 @@ class Manager(models.Model, AmanatBaseModel):
     name = fields.Char(string="Имя")
     user_id = fields.Many2one('res.users', string="Пользователь", required=True, tracking=True)
     phone = fields.Char(string="Телефон")
+    telegram_id = fields.Char(string="Telegram ID", help="Идентификатор пользователя в Telegram")
     date = fields.Date(string="Дата рождения")
     # Предполагается, что модель заявок существует (например, manager.application)
     applications = fields.Many2many(

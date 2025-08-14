@@ -39,11 +39,27 @@ class ZayavkaRuleForManagement(models.Model):
                 (date_field_end, '>=', deal_closed_date),
                 ('min_application_amount', '<=', equivalent_sum),
                 ('max_application_amount', '>=', equivalent_sum),
-                ('contragent_zayavka_id', '=', contragent.id),
-                ('agent_zayavka_id', '=', agent.id),
-                ('client_zayavka_id', '=', client.id),
-                ('currency_zayavka', '=', currency),
             ]
+            
+            if contragent:
+                domain.append(('contragent_zayavka_id', 'in', [contragent.id]))
+            else:
+                domain.append(('contragent_zayavka_id', '=', False))
+                
+            if agent:
+                domain.append(('agent_zayavka_id', 'in', [agent.id]))
+            else:
+                domain.append(('agent_zayavka_id', '=', False))
+            
+            if client:
+                domain.append(('client_zayavka_id', 'in', [client.id]))
+            else:
+                domain.append(('client_zayavka_id', '=', False))
+
+            if currency:
+                domain.append(('currency_zayavka', 'in', [currency]))
+            else:
+                domain.append(('currency_zayavka', '=', False))
 
             softDomain = [
                 (date_field_start, '<=', deal_closed_date),
@@ -60,7 +76,7 @@ class ZayavkaRuleForManagement(models.Model):
                     _logger.info(f"[find_matching_rule] не найдена запись {model} для заявки {self.id}, ищем по общим условиям")
                     return
 
-            _logger.info(f"[find_matching_rule] найдена запись {rule.name} для заявки {self.id}")
+            _logger.info(f"[find_matching_rule] найдена запись {rule.id} для заявки {self.id}")
             return rule
 
         payment_rule = find_matching_rule('amanat.payment_order_rule', 'date_start', 'date_end')

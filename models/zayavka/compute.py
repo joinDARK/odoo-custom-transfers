@@ -1,4 +1,3 @@
-import re
 from odoo import api, fields, models
 import logging
 
@@ -1655,16 +1654,3 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.subagent_payer_ids = False
                 rec.domain_return_payer_subagent = []
-
-    @api.onchange('reward_percent')
-    def _onchange_reward_percent(self):
-        """Автоматически заполняет return_commission при изменении reward_percent"""
-        if self.reward_percent:
-            self.return_commission = self.reward_percent
-
-    @api.onchange('subagent_ids')
-    def _onchange_subagent_ids(self):
-        if len(self.subagent_ids) == 1:
-            subagent = self.subagent_ids
-            if len(subagent.payer_ids) == 1:
-                self.subagent_payer_ids = subagent.payer_ids

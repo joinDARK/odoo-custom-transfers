@@ -199,7 +199,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Платежка РФ Клиент',
         compute='_compute_payment_order_rf_client',
         help="""
-        Платежка РФ Клиент = (Заявка по курсу в рублях по договору + Вознаграждение по договору Клиент) * Процент (from Правило платежка)
+        Платежка РФ Клиент = (Заявка по курсу в рублях по договору + Вознаграждение по договору Клиент) × Процент (from Расход платежа по РФ(%))
         """,
         readonly=False,
         store=True,
@@ -241,6 +241,8 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_currency_bought = fields.Float(
         string='Купили валюту Клиент',
         compute='_compute_client_currency_bought',
+        help="""Если Курс после конвертации партнер равен 0: Купили валюту Клиент = 0
+        Иначе: Купили валюту Клиент = (Итого Клиент - Платежка РФ Клиент) ÷ Курс после конвертации партнер""",
         readonly=False,
         store=True,
         tracking=True
@@ -249,6 +251,8 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_currency_bought_real = fields.Float(
         string='Купили валюту Клиент реал',
         compute='_compute_client_currency_bought_real',
+        help="""Если Курс после конвертации реал равен 0: Купили валюту Клиент реал = 0
+        Иначе: Купили валюту Клиент реал = (Итого Клиент - Платежка РФ Клиент) ÷ Курс после конвертации реал""",
         readonly=False,
         store=True,
         tracking=True
@@ -257,6 +261,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_currency_bought_real_usd = fields.Float(
         string='Купили валюту Клиент реал $',
         compute='_compute_client_currency_bought_real_usd',
+        help="""Купили валюту Клиент реал $ = Купили валюту Клиент реал × Кросс-курс Плательщика $ авто""",
         readonly=False,
         store=True,
         tracking=True
@@ -265,6 +270,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     client_currency_bought_real_rub = fields.Float(
         string='Купили валюту Клиент реал ₽',
         compute='_compute_client_currency_bought_real_rub',
+        help="""Купили валюту Клиент реал ₽ = Купили валюту Клиент реал $ × Кросс-курс Плательщика ₽""",
         readonly=False,
         store=True,
         tracking=True
@@ -440,7 +446,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Платежка РФ Сбер',
         compute='_compute_payment_order_rf_sber',
         help="""
-        Платежка РФ Сбер = (Заявка по курсу в рублях по договору + Вознаграждение по договору Сбер) * Процент (from Правило платежка)
+        Платежка РФ Сбер = (Заявка по курсу в рублях по договору + Вознаграждение по договору Сбер) × Процент (from Расход платежа по РФ(%))
         """,
         readonly=False,
         store=True,
@@ -685,7 +691,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Платежка РФ Совок',
         compute='_compute_payment_order_rf_sovok',
         help="""
-        Платежка РФ Совок = (Заявка по курсу в рублях по договору + Вознаграждение по договору Совок) * Процент (from Правило платежка)
+        Платежка РФ Совок = (Заявка по курсу в рублях по договору + Вознаграждение по договору Совок) × Процент (from Расход платежа по РФ(%))
         """,
         readonly=False,
         store=True,
@@ -703,6 +709,11 @@ class Zayavka(models.Model, AmanatBaseModel):
     operating_expenses_sovok_real = fields.Float(
         string='Расход на операционную деятельность Совок реал',
         compute='_compute_operating_expenses_sovok_real',
+        help="""Если Вид сделки 'Экспорт': Расход на операционную деятельность Совок реал = Процент (from Операционные расходы (%)) * Сумма заявки
+        Иначе:
+        — Если Итого Совок = 0 или Курс после конвертации реал = 0: Расход на операционную деятельность Совок реал = 0
+        — Если Агент 'Тезер' или Валюта 'USDT' или Вид сделки 'Импорт-Экспорт' или Вид сделки 'Экспорт-Импорт': Расход на операционную деятельность Совок реал = Сумма заявки × Процент (from Операционные расходы (%))
+        — Иначе: Расход на операционную деятельность Совок реал = ((Процент (from Операционные расходы (%)) - Корректировка) × Итого Совок) ÷ Курс после конвертации реал""",
         readonly=False,
         store=True,
         tracking=True
@@ -711,6 +722,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     operating_expenses_sovok_real_usd = fields.Float(
         string='Расход на операционную деятельность Совок реал $',
         compute='_compute_operating_expenses_sovok_real_usd',
+        help="""Расход на операционную деятельность Совок реал $ = Расход на операционную деятельность Совок реал × Кросс-курс Плательщика $ авто""",
         readonly=False,
         store=True,
         tracking=True
@@ -719,6 +731,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     operating_expenses_sovok_real_rub = fields.Float(
         string='Расход на операционную деятельность Совок реал ₽',
         compute='_compute_operating_expenses_sovok_real_rub',
+        help="""Расход на операционную деятельность Совок реал ₽ = Расход на операционную деятельность Совок реал $ × Кросс-курс Плательщика ₽""",
         readonly=False,
         store=True,
         tracking=True
@@ -790,6 +803,10 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sovok_real = fields.Float(
         string='Себестоимость денег Совок реал',
         compute='_compute_sebestoimost_denej_sovok_real',
+        help="""Если агент "Тезер": Себестоимость денег Совок реал = 0
+        Иначе:
+        — Если Кредитный период (from Себестоимость денег(%)) = 0: Себестоимость денег Совок реал = 0
+        — Иначе: Себестоимость денег Совок реал = ((Дата + Колво доп дней (from Себестоимость денег(%))) ÷ Кредитный период (from Себестоимость денег(%))) × Ставка по кредиту (from Себестоимость денег(%)) × Купили валюту Совок Реал""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -799,6 +816,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sovok_real_usd = fields.Float(
         string='Себестоимость денег Совок реал $',
         compute='_compute_sebestoimost_denej_sovok_real_usd',
+        help="""Себестоимость денег Совок реал $ = Себестоимость денег Совок реал × Кросс-курс Плательщика $ авто""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -808,6 +826,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     sebestoimost_denej_sovok_real_rub = fields.Float(
         string='Себестоимость денег Совок реал ₽',
         compute='_compute_sebestoimost_denej_sovok_real_rub',
+        help="""Себестоимость денег Совок реал ₽ = Себестоимость денег Совок реал $ × Кросс-курс Плательщика ₽""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -977,7 +996,7 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     price_list_profit_id = fields.Many2one(
         'amanat.price_list_payer_profit', 
-        string='Прайс лист Плательщика Прибыль', 
+        string='Процент плательщика', 
         tracking=True,
         domain="[('payer_subagent_ids', 'in', subagent_payer_ids)]"
     )
@@ -1325,7 +1344,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Прибыль Плательщика по валюте заявки',
         compute='_compute_payer_profit_currency',
         help="""
-        Прибыль Плательщика по валюте заявки = Сумма × % Начисления (from Прайс листа Плательщика Прибыль)
+        Прибыль Плательщика по валюте заявки = Сумма × % Начисления (from Процент плательщика)
         """,
         readonly=False,
         store=True,
@@ -1333,7 +1352,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_percent_accrual = fields.Float(
-        string='% Начисления (from Прайс листа Плательщика Прибыль)',
+        string='% Начисления (from Процент плательщика)',
         related='price_list_profit_id.percent_accrual',
         store=True,
         readonly=True,
@@ -1589,13 +1608,13 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     price_list_carrying_out_id = fields.Many2one(
         'amanat.price_list_payer_carrying_out',
-        string='Прайс лист',
+        string='Расход за проведение платежа(%)',
         tracking=True,
         domain="[('payer_partners', 'in', subagent_payer_ids)]"
     )
 
     price_list_carrying_out_accrual_percentage = fields.Float(
-        string='% Начисления (from Прайс лист)',
+        string='% Начисления (from Расход за проведение платежа(%))',
         related='price_list_carrying_out_id.accrual_percentage',
         store=True,
         readonly=True,
@@ -1603,7 +1622,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_carrying_out_fixed_deal_fee = fields.Float(
-        string='Фикс за сделку $ (from Прайс лист)',
+        string='Фикс за сделку $ (from Расход за проведение платежа(%))',
         related='price_list_carrying_out_id.fixed_deal_fee',
         store=True,
         readonly=True,
@@ -1612,7 +1631,7 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     payment_order_rule_id = fields.Many2one(
         'amanat.payment_order_rule',
-        string='Правило платежка',
+        string='Расход платежа по РФ(%)',
         tracking=True
     )
 
@@ -1639,7 +1658,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     percent_from_payment_order_rule = fields.Float(
-        string="Процент (from Правило платежка)",
+        string="Процент (from Расход платежа по РФ(%))",
         related='payment_order_rule_id.percent',
         store=True,
         tracking=True
@@ -1663,7 +1682,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Кросс-курс Плательщика $ авто',
         compute='_compute_payer_cross_rate_usd_auto',
         help="""
-        — если пусты «Кросс-курс Плательщика $» и «Курс XE» и валюта USD / USD КЭШ: Кросс-курс Плательщика $ авто = 1; 
+        — если пусты «Кросс-курс Плательщика $» и «Курс XE» и валюта USD ÷ USD КЭШ: Кросс-курс Плательщика $ авто = 1; 
         — если задан «Кросс-курс Плательщика $»: Кросс-курс Плательщика $ авто = Кросс-курс Плательщика $; 
         — иначе: Кросс-курс Плательщика $ авто = Курс XE
         """,
@@ -1677,7 +1696,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Курс после конвертации реал',
         compute='_compute_real_post_conversion_rate',
         help="""
-        Курс после конвертации реал = Курс Джесс * Кросс-курс Плательщика $ авто
+        Курс после конвертации реал = Курс Джесс × Кросс-курс Плательщика $ авто
         """,
         readonly=False,
         store=True,
@@ -1689,7 +1708,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Курс после конвертации реал $',
         compute='_compute_real_post_conversion_rate_usd',
         help="""
-        Курс после конвертации реал $ = Курс после конвертации реал * Кросс-курс Плательщика $ авто
+        Курс после конвертации реал $ = Курс после конвертации реал × Кросс-курс Плательщика $ авто
         """,
         readonly=False,
         store=True,
@@ -1715,7 +1734,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         readonly=False,
         store=True,
         help="""
-        Курс после конвертации реал ₽ = Курс после конвертации реал $ * Кросс-курс Плательщика ₽
+        Курс после конвертации реал ₽ = Курс после конвертации реал $ × Кросс-курс Плательщика ₽
         """,
         digits=(16, 6),
         tracking=True
@@ -1724,8 +1743,8 @@ class Zayavka(models.Model, AmanatBaseModel):
     payer_profit_usd = fields.Float(
         string='Прибыль плательщика $',
         help="""
-        — если задан «Кросс-курс Плательщика $ авто»: Прибыль плательщика $ = Прибыль Плательщика по валюте заявки × Кросс-курс Плательщика $ авто × Фикс за сделку $ (из Прайс лист Плательщика Прибыль); 
-        — иначе: Прибыль плательщика $ = Фикс за сделку $ (из Прайс лист Плательщика Прибыль)
+        — если задан «Кросс-курс Плательщика $ авто»: Прибыль плательщика $ = Прибыль Плательщика по валюте заявки × Кросс-курс Плательщика $ авто × Фикс за сделку $ (из Процент плательщика); 
+        — иначе: Прибыль плательщика $ = Фикс за сделку $ (из Процент плательщика)
         """,
         compute='_compute_payer_profit_usd',
         readonly=False,
@@ -1777,26 +1796,26 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     money_cost_rule_id = fields.Many2one(
         'amanat.money_cost_rule',
-        string='Правило Себестоимость денег',
+        string='Себестоимость денег(%)',
         tracking=True
     )
 
     money_cost_rule_credit_rate = fields.Float(
-        string="Ставка по кредиту (from Правило Себестоимость денег)",
+        string="Ставка по кредиту (from Себестоимость денег(%))",
         related='money_cost_rule_id.credit_rate',
         store=True,
         tracking=True
     )
 
     money_cost_rule_credit_period = fields.Integer(
-        string="Кредитный период (from Правило Себестоимость денег)",
+        string="Кредитный период (from Себестоимость денег(%))",
         related='money_cost_rule_id.credit_period',
         store=True,
         tracking=True
     )
 
     money_cost_rule_extra_days = fields.Integer(
-        string="Колво доп дней (from Правило Себестоимость денег)",
+        string="Колво доп дней (from Себестоимость денег(%))",
         related='money_cost_rule_id.extra_days',
         store=True,
         tracking=True
@@ -1804,12 +1823,12 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     expense_rule_id = fields.Many2one(
         'amanat.expense_rule',
-        string='Правило расход',
+        string='Операционные расходы (%)',
         tracking=True
     )
 
     percent_from_expense_rule = fields.Float(
-        string="Процент (from Правило расход)",
+        string="Процент (from Операционные расходы (%))",
         related='expense_rule_id.percent',
         store=True,
         tracking=True
@@ -1822,11 +1841,11 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id = fields.Many2one(
-        'amanat.price_list_partners', string='Прайс лист Партнеры'
+        'amanat.price_list_partners', string='Выплата 1-го партнера(%)'
     )
 
     price_list_partners_id_accrual_percentage = fields.Float(
-        string='% Начисления (from Прайс лист Партнеры)',
+        string='% Начисления (from Выплата 1-го партнера(%))',
         related='price_list_partners_id.accrual_percentage',
         store=True,
         readonly=True,
@@ -1834,7 +1853,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id_fixed_deal_fee = fields.Float(
-        string='Фикс за сделку $ (from Прайс лист Партнеры)',
+        string='Фикс за сделку $ (from Выплата 1-го партнера(%))',
         related='price_list_partners_id.fixed_deal_fee',
         store=True,
         readonly=True,
@@ -1842,11 +1861,11 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id_2 = fields.Many2one(
-        'amanat.price_list_partners', string='Прайс лист Партнеры 2'
+        'amanat.price_list_partners', string='Выплата 2-го партнера(%)'
     )
 
     price_list_partners_id_2_accrual_percentage = fields.Float(
-        string='% Начисления (from Прайс лист Партнеры 2)',
+        string='% Начисления (from Выплата 2-го партнера(%))',
         related='price_list_partners_id_2.accrual_percentage',
         store=True,
         readonly=True,
@@ -1854,7 +1873,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id_2_fixed_deal_fee = fields.Float(
-        string='Фикс за сделку $ (from Прайс лист Партнеры 2)',
+        string='Фикс за сделку $ (from Выплата 2-го партнера(%))',
         related='price_list_partners_id_2.fixed_deal_fee',
         store=True,
         readonly=True,
@@ -1862,11 +1881,11 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id_3 = fields.Many2one(
-        'amanat.price_list_partners', string='Прайс лист Партнеры 3'
+        'amanat.price_list_partners', string='Выплата 3-го партнера(%)'
     )
 
     price_list_partners_id_3_accrual_percentage = fields.Float(
-        string='% Начисления (from Прайс лист Партнеры 3)',
+        string='% Начисления (from Выплата 3-го партнера(%))',
         related='price_list_partners_id_3.accrual_percentage',
         store=True,
         readonly=True,
@@ -1874,7 +1893,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id_3_fixed_deal_fee = fields.Float(
-        string='Фикс за сделку $ (from Прайс лист Партнеры 3)',
+        string='Фикс за сделку $ (from Выплата 3-го партнера(%))',
         related='price_list_partners_id_3.fixed_deal_fee',
         store=True,
         readonly=True,
@@ -1882,11 +1901,11 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id_4 = fields.Many2one(
-        'amanat.price_list_partners', string='Прайс лист Партнеры 4'
+        'amanat.price_list_partners', string='Выплата 4-го партнера(%)'
     )
 
     price_list_partners_id_4_accrual_percentage = fields.Float(
-        string='% Начисления (from Прайс лист Партнеры 4)',
+        string='% Начисления (from Выплата 4-го партнера(%))',
         related='price_list_partners_id_4.accrual_percentage',
         store=True,
         readonly=True,
@@ -1894,7 +1913,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id_4_fixed_deal_fee = fields.Float(
-        string='Фикс за сделку $ (from Прайс лист Партнеры 4)',
+        string='Фикс за сделку $ (from Выплата 4-го партнера(%))',
         related='price_list_partners_id_4.fixed_deal_fee',
         store=True,
         readonly=True,
@@ -1902,11 +1921,11 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id_5 = fields.Many2one(
-        'amanat.price_list_partners', string='Прайс лист Партнеры 5'
+        'amanat.price_list_partners', string='Выплата 5-го партнера(%)'
     )
 
     price_list_partners_id_5_accrual_percentage = fields.Float(
-        string='% Начисления (from Прайс лист Партнеры 5)',
+        string='% Начисления (from Выплата 5-го партнера(%))',
         related='price_list_partners_id_5.accrual_percentage',
         store=True,
         readonly=True,
@@ -1914,7 +1933,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     price_list_partners_id_5_fixed_deal_fee = fields.Float(
-        string='Фикс за сделку $ (from Прайс лист Партнеры 5)',
+        string='Фикс за сделку $ (from Выплата 5-го партнера(%))',
         related='price_list_partners_id_5.fixed_deal_fee',
         store=True,
         readonly=True,
@@ -2271,3 +2290,5 @@ class Zayavka(models.Model, AmanatBaseModel):
         domain=[('res_model', '=', 'amanat.zayavka'), ('res_field', '=', 'act_report_attachments')],
         string='Акт Отчет'
     )
+
+    link_jess_rate = fields.Boolean(string='Обновить курс Джесс', default=False)

@@ -56,9 +56,10 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
     zayavka_id = fields.Many2one(
         'amanat.zayavka',
         string='Связанная заявка',
+        compute='_compute_zayavka_id',
         store=True,
         tracking=True,
-        help='Заявка, найденная автоматически по плательщику субагента'
+        help='Заявка, найденная автоматически по плательщику субагента с проверкой валюты, суммы и отсутствия SWIFT файлов'
     )
     
     # Статус обработки
@@ -119,22 +120,46 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
         self.ensure_one()
         
         _logger.info(f"[SWIFT AUTO] Начинаем обработку SWIFT документа {self.id} для плательщика '{self.payer_subagent}'")
+        _logger.info(f"[SWIFT AUTO] Данные SWIFT документа: валюта={self.currency}, сумма={self.amount}, плательщик={self.payer_subagent}")
+        _logger.info(f"[SWIFT AUTO] Текущее состояние zayavka_id: {self.zayavka_id}")
+        _logger.info(f"[SWIFT AUTO] Файл присутствует: {bool(self.swift_file)}, имя файла: {self.swift_file_name}")
+        
+        # Предварительная проверка обязательных полей
+        if not self.payer_subagent:
+            self.processing_status = 'error'
+            self.processing_notes = "Не указан плательщик субагента. Автоматизация невозможна."
+            _logger.error(f"[SWIFT AUTO] ❌ Отсутствует плательщик субагента в SWIFT документе {self.id}")
+            return
+        
+        if not self.currency:
+            self.processing_status = 'error'
+            self.processing_notes = "Не указана валюта в SWIFT документе. Автоматизация невозможна."
+            _logger.error(f"[SWIFT AUTO] ❌ Отсутствует валюта в SWIFT документе {self.id}")
+            return
+        
+        if not self.amount:
+            self.processing_status = 'error'
+            self.processing_notes = "Не указана сумма в SWIFT документе. Автоматизация невозможна."
+            _logger.error(f"[SWIFT AUTO] ❌ Отсутствует сумма в SWIFT документе {self.id}")
+            return
         
         # Шаг 1: Найти СУЩЕСТВУЮЩУЮ заявку (НЕ создавать новую!)
         zayavka = self._find_matching_zayavka()
         
         if not zayavka:
             self.processing_status = 'no_zayavka'
-            self.processing_notes = f"Заявка не найдена для плательщика субагента '{self.payer_subagent}'. Создание новой заявки НЕ разрешено."
-            _logger.warning(f"[SWIFT AUTO] ❌ ЗАЯВКА НЕ НАЙДЕНА для плательщика субагента '{self.payer_subagent}'. Обработка ОСТАНОВЛЕНА.")
+            self.processing_notes = f"Подходящая заявка не найдена для плательщика субагента '{self.payer_subagent}'. Требования: совпадение валюты ({self.currency}), суммы ({self.amount}), отсутствие прикрепленных SWIFT файлов. Создание новой заявки НЕ разрешено."
+            _logger.warning(f"[SWIFT AUTO] ❌ ПОДХОДЯЩАЯ ЗАЯВКА НЕ НАЙДЕНА для плательщика субагента '{self.payer_subagent}' с учетом всех проверок. Обработка ОСТАНОВЛЕНА.")
             _logger.warning("[SWIFT AUTO] ❌ НОВАЯ ЗАЯВКА НЕ БУДЕТ СОЗДАНА! Это правильное поведение.")
             return
         
         _logger.info(f"[SWIFT AUTO] Найдена существующая заявка {zayavka.id} для плательщика '{self.payer_subagent}'")
         
         # Шаг 2: Линкуем swift_document_upload с найденной заявкой
+        _logger.info(f"[SWIFT AUTO] Устанавливаем связь: swift_document_upload {self.id} -> заявка {zayavka.id}")
         self.zayavka_id = zayavka.id
-        _logger.info(f"[SWIFT AUTO] Запись swift_document_upload {self.id} связана с заявкой {zayavka.id}")
+        _logger.info(f"[SWIFT AUTO] ✅ Связь установлена успешно: swift_document_upload {self.id} связан с заявкой {zayavka.id}")
+        _logger.info(f"[SWIFT AUTO] Проверяем установленную связь: self.zayavka_id = {self.zayavka_id}")
         
         # Шаг 3: Загружаем SWIFT документ в заявку (в поле swift_attachments)
         attachment = self._upload_document_to_zayavka(zayavka)
@@ -154,30 +179,79 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
         self.processing_status = 'processed'
         self.processing_notes = f"Успешно обработано. SWIFT документ загружен в заявку {zayavka.zayavka_num or zayavka.id}. Автоматизация заявки запущена."
         
-        _logger.info(f"[SWIFT AUTO] Обработка завершена успешно. Документ {self.id} связан с заявкой {zayavka.id}")
+        _logger.info("[SWIFT AUTO] ✅ Обработка завершена успешно!")
+        _logger.info(f"[SWIFT AUTO] ✅ Документ {self.id} связан с заявкой {zayavka.id}")
+        _logger.info(f"[SWIFT AUTO] ✅ Финальное состояние zayavka_id: {self.zayavka_id}")
+        _logger.info(f"[SWIFT AUTO] ✅ Статус обработки: {self.processing_status}")
+        _logger.info(f"[SWIFT AUTO] ✅ Примечания: {self.processing_notes}")
 
     def _find_matching_zayavka(self):
-        """Поиск существующей заявки по плательщику субагента"""
+        """Поиск существующей заявки по плательщику субагента с дополнительными проверками валюты, суммы и отсутствия файлов"""
         if not self.payer_subagent:
+            _logger.error(f"[SWIFT AUTO] ❌ Плательщик субагента не указан в SWIFT документе {self.id}")
             return None
+        
+        # Функция для проверки дополнительных условий
+        def _validate_zayavka_conditions(zayavka):
+            """Проверяет совпадение валюты, суммы и отсутствие прикрепленных SWIFT файлов"""
+            if not zayavka:
+                return False
+            
+            # СТРОГАЯ проверка валюты - оба поля должны быть заполнены и совпадать
+            if not self.currency:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: валюта не указана в SWIFT документе")
+                return False
+            
+            if not zayavka.currency:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: валюта не указана в заявке")
+                return False
+            
+            if self.currency.lower() != zayavka.currency.lower():
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: валюта не совпадает (SWIFT: {self.currency}, Заявка: {zayavka.currency})")
+                return False
+            
+            # СТРОГАЯ проверка суммы - оба поля должны быть заполнены и совпадать
+            if not self.amount:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: сумма не указана в SWIFT документе")
+                return False
+            
+            if not zayavka.amount:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: сумма не указана в заявке")
+                return False
+            
+            if abs(self.amount - zayavka.amount) > 0.01:  # допускаем погрешность в 0.01
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: сумма не совпадает (SWIFT: {self.amount}, Заявка: {zayavka.amount})")
+                return False
+            
+            # Проверка отсутствия прикрепленных SWIFT файлов
+            if zayavka.swift_attachments:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: уже есть прикрепленные SWIFT документы ({len(zayavka.swift_attachments)} файлов)")
+                return False
+            
+            _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} прошла все проверки: валюта={zayavka.currency}, сумма={zayavka.amount}, SWIFT файлов=0")
+            return True
         
         # Ищем заявку по плательщику субагента с точным совпадением
         zayavka = self.env['amanat.zayavka'].search([
             ('subagent_payer_ids.name', '=', self.payer_subagent)
         ], limit=1)
         
-        if zayavka:
-            _logger.info(f"[SWIFT AUTO] Найдена заявка по плательщику субагента с точным совпадением: {zayavka.id}")
+        if zayavka and _validate_zayavka_conditions(zayavka):
+            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по плательщику субагента с точным совпадением: {zayavka.id}")
             return zayavka
+        elif zayavka:
+            _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по точному совпадению, но не прошла дополнительные проверки")
         
         # Ищем заявку по плательщику субагента с нечетким поиском
         zayavka = self.env['amanat.zayavka'].search([
             ('subagent_payer_ids.name', 'ilike', self.payer_subagent)
         ], limit=1)
         
-        if zayavka:
-            _logger.info(f"[SWIFT AUTO] Найдена заявка по плательщику субагента с нечетким совпадением: {zayavka.id}")
+        if zayavka and _validate_zayavka_conditions(zayavka):
+            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по плательщику субагента с нечетким совпадением: {zayavka.id}")
             return zayavka
+        elif zayavka:
+            _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по нечеткому совпадению, но не прошла дополнительные проверки")
         
         # Дополнительный поиск по частичному совпадению имени плательщика субагента
         payer_words = self.payer_subagent.split()
@@ -188,15 +262,21 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
                 ('subagent_payer_ids.name', 'ilike', f'%{first_word}%')
             ], limit=1)
             
-            if zayavka:
-                _logger.info(f"[SWIFT AUTO] Найдена заявка по частичному совпадению плательщика субагента: {zayavka.id}")
+            if zayavka and _validate_zayavka_conditions(zayavka):
+                _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по частичному совпадению плательщика субагента: {zayavka.id}")
                 return zayavka
+            elif zayavka:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по частичному совпадению, но не прошла дополнительные проверки")
         
-        _logger.warning(f"[SWIFT AUTO] Заявка не найдена для плательщика субагента '{self.payer_subagent}'")
+        _logger.warning(f"[SWIFT AUTO] Подходящая заявка не найдена для плательщика субагента '{self.payer_subagent}' с учетом проверок валюты, суммы и отсутствия SWIFT файлов")
         return None
 
     def _upload_document_to_zayavka(self, zayavka):
         """Загрузка SWIFT документа в заявку"""
+        _logger.info(f"[SWIFT AUTO] Начинаем загрузку файла в заявку {zayavka.id}")
+        _logger.info(f"[SWIFT AUTO] Информация о заявке: ID={zayavka.id}, валюта={zayavka.currency}, сумма={zayavka.amount}")
+        _logger.info(f"[SWIFT AUTO] Текущие SWIFT файлы в заявке: {len(zayavka.swift_attachments)} файлов")
+        
         try:
             # Создаем attachment
             attachment_vals = {
@@ -209,14 +289,18 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
                 'description': f'SWIFT документ от {self.create_date}, плательщик: {self.payer_subagent}'
             }
             
+            _logger.info(f"[SWIFT AUTO] Создаем attachment с данными: {attachment_vals}")
             attachment = self.env['ir.attachment'].create(attachment_vals)
+            _logger.info(f"[SWIFT AUTO] ✅ Attachment создан успешно, ID: {attachment.id}")
             
             # Добавляем attachment к заявке в поле swift_attachments (вкладка SWIFT)
+            _logger.info(f"[SWIFT AUTO] Добавляем attachment {attachment.id} к заявке {zayavka.id} в поле swift_attachments")
             zayavka.write({
                 'swift_attachments': [(4, attachment.id)]  # (4, id) - добавить связь
             })
+            _logger.info(f"[SWIFT AUTO] ✅ Attachment добавлен к заявке. Количество SWIFT файлов теперь: {len(zayavka.swift_attachments)}")
             
-            _logger.info(f"[SWIFT AUTO] Документ успешно загружен в заявку {zayavka.id}, attachment ID: {attachment.id}")
+            _logger.info(f"[SWIFT AUTO] ✅ Документ успешно загружен в заявку {zayavka.id}, attachment ID: {attachment.id}")
             return attachment
             
         except Exception as e:
@@ -225,16 +309,19 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
 
 
 
-    @api.depends('payer_subagent')
+    @api.depends('payer_subagent', 'currency', 'amount')
     def _compute_zayavka_id(self):
-        """Находим связанную заявку по плательщику субагента"""
+        """Находим связанную заявку с учетом всех проверок: плательщик субагента, валюта, сумма, отсутствие SWIFT файлов"""
         for record in self:
             if record.payer_subagent and not record.zayavka_id:
-                # Ищем заявку, где в subagent_payer_ids есть плательщик с таким именем
-                zayavka = self.env['amanat.zayavka'].search([
-                    ('subagent_payer_ids.name', 'ilike', record.payer_subagent)
-                ], limit=1)
+                # Используем нашу строгую логику поиска с проверками
+                zayavka = record._find_matching_zayavka()
                 record.zayavka_id = zayavka if zayavka else False
+                
+                if zayavka:
+                    _logger.info(f"[SWIFT AUTO COMPUTE] Заявка {zayavka.id} автоматически связана с SWIFT документом {record.id} через compute метод")
+                else:
+                    _logger.info(f"[SWIFT AUTO COMPUTE] Подходящая заявка не найдена для SWIFT документа {record.id} (плательщик: {record.payer_subagent}, валюта: {record.currency}, сумма: {record.amount})")
             elif not record.payer_subagent:
                 record.zayavka_id = False
 

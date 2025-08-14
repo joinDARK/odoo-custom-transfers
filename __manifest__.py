@@ -76,6 +76,7 @@
         "views/calculator_fixed_fee_views.xml",
         "views/calculator_125_usd_views.xml",
         "views/calculator_usd_addition_for_all_views.xml",
+        "views/calculator_spread_views.xml",
         "views/welcome_views.xml",
         "views/menu.xml",
         # 6) Остальные файлы

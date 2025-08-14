@@ -217,6 +217,9 @@
                   </group>
                 </div>
               </group>
+              <group>
+                <field name="link_jess_rate" groups="!amanat.group_amanat_manager"/>
+              </group>
               <group invisible="is_sovcombank_contragent or is_sberbank_contragent">
                 <div class="o-form-group-2">
                   <group>
@@ -1665,6 +1668,7 @@
         <field width="200" name="best_rate_name" />
         <field width="200" name="hidden_hadge" />
 
+        <field width="200" name="link_jess_rate" groups="!amanat.group_amanat_manager"/>
 
         <!-- <field width="200" name="date_placement"/> -->
         <!-- Ограниченный доступ: скрываем конфиденциальные поля -->
