@@ -36,8 +36,8 @@ class AmanatCalculatorWizard(models.TransientModel):
     usd_equivalent = fields.Float(string="Эквивалент $", digits=(16, 6), compute="_compute_percent_mode", store=True)
 
     addition = fields.Float(string="Надбавка", digits=(16, 2))
-    addition_percent = fields.Float(string="Надбавка в %", compute="_compute_percent_mode", store=True)
-    total_percent = fields.Float(string="Процент итог", compute="_compute_percent_mode", store=True)
+    addition_percent = fields.Float(string="Надбавка в %", digits=(16, 4), compute="_compute_percent_mode", store=True)
+    total_percent = fields.Float(string="Процент итог", digits=(16, 4), compute="_compute_percent_mode", store=True)
 
     # --- Режим В КУРС ---
     real_rate = fields.Float(string="Курс реал", digits=(16, 6))
