@@ -187,9 +187,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_payment_cost = fields.Float(
-        string='Расход платежа Клиент',
+        string=' Расход за проведение платежа в валюте заявки',
         compute='_compute_client_payment_cost',
-        help="""Если Вид сделки 'Экспорт': Расход платежа Клиент = Сумма заявки × Процент (from Расход платежа по РФ(%))
+        help="""Если Вид сделки 'Экспорт':  Расход за проведение платежа в валюте заявки = Сумма заявки × Процент (from Расход платежа по РФ(%))
         Иначе: Сумма заявки × % Начисления (from Расход за проведение платежа(%))""",
         readonly=False,
         store=True,
@@ -217,7 +217,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_real_operating_expenses = fields.Float(
-        string='Расход на операционную деятельность Клиент Реал',
+        string='Расход на операционную деятельность Клиент в валюте заявки',
         compute='_compute_client_real_operating_expenses',
         # help=""""""
         readonly=False,
@@ -226,7 +226,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_real_operating_expenses_usd = fields.Float(
-        string='Расход на операционную деятельность Клиент Реал $',
+        string='Расход на операционную деятельность Клиент в эквиваленте $',
         compute='_compute_client_real_operating_expenses_usd',
         readonly=False,
         store=True,
@@ -234,7 +234,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_real_operating_expenses_rub = fields.Float(
-        string='Расход на операционную деятельность Клиент Реал ₽',
+        string='Расход на операционную деятельность Клиент ₽',
         compute='_compute_client_real_operating_expenses_rub',
         readonly=False,
         store=True,
@@ -252,46 +252,46 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_currency_bought_real = fields.Float(
-        string='Купили валюту Клиент реал',
+        string='Купили валюту Клиент в валюте заявки',
         compute='_compute_client_currency_bought_real',
-        help="""Если Курс после конвертации реал равен 0: Купили валюту Клиент реал = 0
-        Иначе: Купили валюту Клиент реал = (Итого Клиент - Платежка РФ Клиент) ÷ Курс после конвертации реал""",
+        help="""Если Курс после конвертации в валюте заявки равен 0: Купили валюту Клиент в валюте заявки = 0
+        Иначе: Купили валюту Клиент в валюте заявки = (Итого Клиент - Платежка РФ Клиент) ÷ Курс после конвертации в валюте заявки""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_currency_bought_real_usd = fields.Float(
-        string='Купили валюту Клиент реал $',
+        string='Купили валюту Клиент в эквиваленте $',
         compute='_compute_client_currency_bought_real_usd',
-        help="""Купили валюту Клиент реал $ = Купили валюту Клиент реал × Кросс-курс Плательщика $ авто""",
+        help="""Купили валюту Клиент в эквиваленте $ = Купили валюту Клиент в валюте заявки × Кросс-курс $ к валюте заявки авто""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_currency_bought_real_rub = fields.Float(
-        string='Купили валюту Клиент реал ₽',
+        string='Купили валюту Клиент ₽',
         compute='_compute_client_currency_bought_real_rub',
-        help="""Купили валюту Клиент реал ₽ = Купили валюту Клиент реал $ × Кросс-курс Плательщика ₽""",
+        help="""Купили валюту Клиент ₽ = Купили валюту Клиент в эквиваленте $ × Курс Джес""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_payment_cost_usd = fields.Float(
-        string='Расход платежа в $ Клиент',
+        string='Расход за проведение платежа в $ Клиент',
         compute='_compute_client_payment_cost_usd',
-        help="""Расход платежа в $ Клиент = Расход платежа Совок × Кросс-курс Плательщика $ авто + Фикс за сделку $ (from Расход за проведение платежа(%))""",
+        help="""Расход за проведение платежа в $ Клиент = Расход за проведение платежа Совок × Кросс-курс $ к валюте заявки авто + Фикс за сделку $ (from Расход за проведение платежа(%))""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_payment_cost_rub = fields.Float(
-        string='Расход платежа в ₽ Клиент',
+        string='Расход за проведение платежа в ₽ Клиент',
         compute='_compute_client_payment_cost_rub',
-        help="""Расход платежа в ₽ Клиент = Расход платежа в $ Клиент × Кросс-курс Плательщика ₽""",
+        help="""Расход за проведение платежа в ₽ Клиент = Расход за проведение платежа в $ Клиент × Курс Джес""",
         readonly=False,
         store=True,
         tracking=True
@@ -307,7 +307,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     cost_of_money_client_real = fields.Float(
-        string='Себестоимость денег Клиент реал',
+        string='Себестоимость денег Клиент в валюте заявки',
         compute='_compute_cost_of_money_client_real',
         readonly=False,
         store=True,
@@ -316,7 +316,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     cost_of_money_client_real_usd = fields.Float(
-        string='Себестоимость денег Клиент реал $',
+        string='Себестоимость денег Клиент в эквиваленте $',
         compute='_compute_cost_of_money_client_real_usd',
         readonly=False,
         store=True,
@@ -325,7 +325,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     cost_of_money_client_real_rub = fields.Float(
-        string='Себестоимость денег Клиент реал ₽',
+        string='Себестоимость денег Клиент ₽',
         compute='_compute_cost_of_money_client_real_rub',
         readonly=False,
         store=True,
@@ -343,42 +343,42 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_client_real = fields.Float(
-        string='Фин рез Клиент реал',
+        string='Фин рез Клиент в валюте заявки',
         compute='_compute_fin_res_client_real',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
-        help="""Если вид сделки "Экспорт": Фин рез = (Сумма заявки × % Вознаграждения) - Расход платежа Клиент - Расход на операционную деятельность Клиент Реал
+        help="""Если вид сделки "Экспорт": Фин рез = (Сумма заявки × % Вознаграждения) -  Расход за проведение платежа в валюте заявки - Расход на операционную деятельность Клиент в валюте заявки
         
         Если Агент "Тезер" ИЛИ Валюта "USDT" ИЛИ Вид сделки "Импорт-экспорт/Экспорт-импорт":
-        • Если Контрагент "А7": Фин рез = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Клиент Реал - Расход платежа Клиент
-        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Клиент Реал - Расход платежа Клиент
+        • Если Контрагент "А7": Фин рез = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Клиент в валюте заявки -  Расход за проведение платежа в валюте заявки
+        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Клиент в валюте заявки -  Расход за проведение платежа в валюте заявки
 
-        Обычный расчет: Фин рез = Купили валюту Клиент реал - Расход платежа Клиент - Себестоимость денег Клиент Реал - Скрытая комиссия Партнера Реал - Расход на операционную деятельность Клиент Реал - Сумма заявки - Прибыль плательщика по валюте заявки"""
+        Обычный расчет: Фин рез = Купили валюту Клиент в валюте заявки -  Расход за проведение платежа в валюте заявки - Себестоимость денег Клиент в валюте заявки - Скрытая комиссия Партнера в валюте заявки - Расход на операционную деятельность Клиент в валюте заявки - Сумма заявки - Сумма плательщику по валюте заявки"""
     )
 
     fin_res_client_real_usd = fields.Float(
-        string='Фин рез Клиент реал $',
+        string='Фин рез Клиент в эквиваленте $',
         compute='_compute_fin_res_client_real_usd',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Клиент реал $ = Фин рез Клиент реал × Кросс-курс Плательщика $ авто
+        Фин рез Клиент в эквиваленте $ = Фин рез Клиент в валюте заявки × Кросс-курс $ к валюте заявки авто
         """
     )
 
     fin_res_client_real_rub = fields.Float(
-        string='Фин рез Клиент реал ₽',
+        string='Фин рез Клиент ₽',
         compute='_compute_fin_res_client_real_rub',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Клиент реал ₽ = Фин рез Клиент реал $ × Кросс-курс Плательщика ₽
+        Фин рез Клиент ₽ = Фин рез Клиент в эквиваленте $ × Курс Джес
         """
     )
 
@@ -440,7 +440,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_payment_cost = fields.Float(
-        string='Расход платежа Сбер',
+        string='Расход за проведение платежа Сбер',
         compute='_compute_sber_payment_cost',
         readonly=False,
         store=True,
@@ -467,7 +467,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_operating_expenses_real = fields.Float(
-        string='Расход на операционную деятельность Сбер реал',
+        string='Расход на операционную деятельность Сбер в валюте заявки',
         compute='_compute_sber_operating_expenses_real',
         readonly=False,
         store=True,
@@ -475,7 +475,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_operating_expenses_real_usd = fields.Float(
-        string='Расход на операционную деятельность Сбер реал $',
+        string='Расход на операционную деятельность Сбер в эквиваленте $',
         compute='_compute_sber_operating_expenses_real_usd',
         readonly=False,
         store=True,
@@ -483,7 +483,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_operating_expenses_real_rub = fields.Float(
-        string='Расход на операционную деятельность Сбер реал ₽',
+        string='Расход на операционную деятельность Сбер ₽',
         compute='_compute_sber_operating_expenses_real_rub',
         readonly=False,
         store=True,
@@ -499,7 +499,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sber_real = fields.Float(
-        string='Купили валюту Сбер реал',
+        string='Купили валюту Сбер в валюте заявки',
         compute='_compute_kupili_valyutu_sber_real',
         readonly=False,
         store=True,
@@ -507,7 +507,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sber_real_usd = fields.Float(
-        string='Купили валюту Сбер реал $',
+        string='Купили валюту Сбер в эквиваленте $',
         compute='_compute_kupili_valyutu_sber_real_usd',
         readonly=False,
         store=True,
@@ -515,7 +515,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sber_real_rub = fields.Float(
-        string='Купили валюту Сбер реал ₽',
+        string='Купили валюту Сбер ₽',
         compute='_compute_kupili_valyutu_sber_real_rub',
         readonly=False,
         store=True,
@@ -523,7 +523,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_payment_cost_usd = fields.Float(
-        string='Расход платежа Сбер $',
+        string='Расход за проведение платежа Сбер $',
         compute='_compute_sber_payment_cost_usd',
         readonly=False,
         store=True,
@@ -532,7 +532,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_payment_cost_rub = fields.Float(
-        string='Расход платежа Сбер ₽',
+        string='Расход за проведение платежа Сбер ₽',
         compute='_compute_sber_payment_cost_rub',
         readonly=False,
         store=True,
@@ -541,7 +541,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_payment_cost_on_usd = fields.Float(
-        string='Расход платежа в $ Сбер',
+        string='Расход за проведение платежа в $ Сбер',
         compute='_compute_sber_payment_cost_on_usd',
         readonly=False,
         store=True,
@@ -550,7 +550,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_payment_cost_on_usd_real = fields.Float(
-        string='Расход платежа в $ Сбер реал',
+        string='Расход за проведение платежа в $ Сбер в валюте заявки',
         compute='_compute_sber_payment_cost_on_usd_real',
         readonly=False,
         store=True,
@@ -568,7 +568,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sber_real = fields.Float(
-        string='Себестоимость денег Сбер реал',
+        string='Себестоимость денег Сбер в валюте заявки',
         compute='_compute_sebestoimost_denej_sber_real',
         readonly=False,
         store=True,
@@ -577,7 +577,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sber_real_usd = fields.Float(
-        string='Себестоимость денег Сбер реал $',
+        string='Себестоимость денег Сбер в эквиваленте $',
         compute='_compute_sebestoimost_denej_sber_real_usd',
         readonly=False,
         store=True,
@@ -586,7 +586,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sber_real_rub = fields.Float(
-        string='Себестоимость денег Сбер реал ₽',
+        string='Себестоимость денег Сбер ₽',
         compute='_compute_sebestoimost_denej_sber_real_rub',
         readonly=False,
         store=True,
@@ -604,43 +604,43 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_sber_real = fields.Float(
-        string='Фин рез Сбер реал',
+        string='Фин рез Сбер в валюте заявки',
         compute='_compute_fin_res_sber_real',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Если вид сделки "Экспорт": Фин рез Сбер реал = (Сумма заявки × % Вознаграждения) - Расход платежа Сбер - Расход на операционную деятельность Сбер реал
+        Если вид сделки "Экспорт": Фин рез Сбер в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход за проведение платежа Сбер - Расход на операционную деятельность Сбер в валюте заявки
         
         Если Агент "Тезер" ИЛИ Валюта "USDT" ИЛИ Вид сделки "Импорт-экспорт/Экспорт-импорт":
-        • Если Контрагент "А7": Фин рез Сбер реал = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
-        • Иначе: Фин рез Сбер реал = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
+        • Если Контрагент "А7": Фин рез Сбер в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Сбер в валюте заявки - Расход за проведение платежа Сбер
+        • Иначе: Фин рез Сбер в валюте заявки = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Сбер в валюте заявки - Расход за проведение платежа Сбер
 
-        Обычный расчет: Фин рез Сбер реал = Купили валюту Сбер реал - Расход платежа Сбер - Себестоимость денег Сбер Реал - Скрытая комиссия Партнера Реал - Расход на операционную деятельность Сбер Реал - Сумма заявки - Прибыль плательщика по валюте заявки"""
+        Обычный расчет: Фин рез Сбер в валюте заявки = Купили валюту Сбер в валюте заявки - Расход за проведение платежа Сбер - Себестоимость денег Сбер в валюте заявки - Скрытая комиссия Партнера в валюте заявки - Расход на операционную деятельность Сбер в валюте заявки - Сумма заявки - Сумма плательщику по валюте заявки"""
     )
 
     fin_res_sber_real_usd = fields.Float(
-        string='Фин рез Сбер реал $',
+        string='Фин рез Сбер в эквиваленте $',
         compute='_compute_fin_res_sber_real_usd',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Сбер реал $ = Фин рез Сбер реал × Кросс-курс Плательщика $ авто
+        Фин рез Сбер в эквиваленте $ = Фин рез Сбер в валюте заявки × Кросс-курс $ к валюте заявки авто
         """
     )
 
     fin_res_sber_real_rub = fields.Float(
-        string='Фин рез Сбер реал ₽',
+        string='Фин рез Сбер ₽',
         compute='_compute_fin_res_sber_real_rub',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Сбер реал ₽ = Фин рез Сбер реал $ × Кросс-курс Плательщика ₽
+        Фин рез Сбер ₽ = Фин рез Сбер в эквиваленте $ × Курс Джес
         """
     )
 
@@ -686,7 +686,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_cost_sovok = fields.Float(
-        string='Расход платежа Совок',
+        string='Расход за проведение платежа Совок',
         compute='_compute_payment_cost_sovok',
         readonly=False,
         store=True,
@@ -712,31 +712,31 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     operating_expenses_sovok_real = fields.Float(
-        string='Расход на операционную деятельность Совок реал',
+        string='Расход на операционную деятельность Совок в валюте заявки',
         compute='_compute_operating_expenses_sovok_real',
-        help="""Если Вид сделки 'Экспорт': Расход на операционную деятельность Совок реал = Процент (from Операционные расходы (%)) * Сумма заявки
+        help="""Если Вид сделки 'Экспорт': Расход на операционную деятельность Совок в валюте заявки = Процент (from Операционные расходы (%)) * Сумма заявки
         Иначе:
-        — Если Итого Совок = 0 или Курс после конвертации реал = 0: Расход на операционную деятельность Совок реал = 0
-        — Если Агент 'Тезер' или Валюта 'USDT' или Вид сделки 'Импорт-Экспорт' или Вид сделки 'Экспорт-Импорт': Расход на операционную деятельность Совок реал = Сумма заявки × Процент (from Операционные расходы (%))
-        — Иначе: Расход на операционную деятельность Совок реал = ((Процент (from Операционные расходы (%)) - Корректировка) × Итого Совок) ÷ Курс после конвертации реал""",
+        — Если Итого Совок = 0 или Курс после конвертации в валюте заявки = 0: Расход на операционную деятельность Совок в валюте заявки = 0
+        — Если Агент 'Тезер' или Валюта 'USDT' или Вид сделки 'Импорт-Экспорт' или Вид сделки 'Экспорт-Импорт': Расход на операционную деятельность Совок в валюте заявки = Сумма заявки × Процент (from Операционные расходы (%))
+        — Иначе: Расход на операционную деятельность Совок в валюте заявки = ((Процент (from Операционные расходы (%)) - Корректировка) × Итого Совок) ÷ Курс после конвертации в валюте заявки""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     operating_expenses_sovok_real_usd = fields.Float(
-        string='Расход на операционную деятельность Совок реал $',
+        string='Расход на операционную деятельность Совок в эквиваленте $',
         compute='_compute_operating_expenses_sovok_real_usd',
-        help="""Расход на операционную деятельность Совок реал $ = Расход на операционную деятельность Совок реал × Кросс-курс Плательщика $ авто""",
+        help="""Расход на операционную деятельность Совок в эквиваленте $ = Расход на операционную деятельность Совок в валюте заявки × Кросс-курс $ к валюте заявки авто""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     operating_expenses_sovok_real_rub = fields.Float(
-        string='Расход на операционную деятельность Совок реал ₽',
+        string='Расход на операционную деятельность Совок ₽',
         compute='_compute_operating_expenses_sovok_real_rub',
-        help="""Расход на операционную деятельность Совок реал ₽ = Расход на операционную деятельность Совок реал $ × Кросс-курс Плательщика ₽""",
+        help="""Расход на операционную деятельность Совок ₽ = Расход на операционную деятельность Совок в эквиваленте $ × Курс Джес""",
         readonly=False,
         store=True,
         tracking=True
@@ -752,7 +752,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sovok_real = fields.Float(
-        string='Купили валюту Совок Реал',
+        string='Купили валюту Совок в валюте заявки',
         compute='_compute_kupili_valyutu_sovok_real',
         readonly=False,
         store=True,
@@ -761,7 +761,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sovok_real_usd = fields.Float(
-        string='Купили валюту Совок Реал $',
+        string='Купили валюту Совок в эквиваленте $',
         compute='_compute_kupili_valyutu_sovok_real_usd',
         readonly=False,
         store=True,
@@ -770,7 +770,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sovok_real_rub = fields.Float(
-        string='Купили валюту Совок Реал ₽',
+        string='Купили валюту Совок ₽',
         compute='_compute_kupili_valyutu_sovok_real_rub',
         readonly=False,
         store=True,
@@ -779,7 +779,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_cost_sovok_partner_usd = fields.Float(
-        string='Расход платежа в $ Совок партнер',
+        string='Расход за проведение платежа в $ Совок партнер',
         compute='_compute_payment_cost_sovok_partner_usd',
         readonly=False,
         store=True,
@@ -788,7 +788,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_cost_sovok_real_usd = fields.Float(
-        string='Расход платежа в $ Совок реал',
+        string='Расход за проведение платежа в $ Совок в валюте заявки',
         compute='_compute_payment_cost_sovok_real_usd',
         readonly=False,
         store=True,
@@ -797,7 +797,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_cost_sovok_real_rub = fields.Float(
-        string='Расход платежа в ₽ Совок реал',
+        string='Расход за проведение платежа в ₽ Совок в валюте заявки',
         compute='_compute_payment_cost_sovok_real_rub',
         readonly=False,
         store=True,
@@ -806,12 +806,12 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sovok_real = fields.Float(
-        string='Себестоимость денег Совок реал',
+        string='Себестоимость денег Совок в валюте заявки',
         compute='_compute_sebestoimost_denej_sovok_real',
-        help="""Если агент "Тезер": Себестоимость денег Совок реал = 0
+        help="""Если агент "Тезер": Себестоимость денег Совок в валюте заявки = 0
         Иначе:
-        — Если Кредитный период (from Себестоимость денег(%)) = 0: Себестоимость денег Совок реал = 0
-        — Иначе: Себестоимость денег Совок реал = ((Дата + Колво доп дней (from Себестоимость денег(%))) ÷ Кредитный период (from Себестоимость денег(%))) × Ставка по кредиту (from Себестоимость денег(%)) × Купили валюту Совок Реал""",
+        — Если Кредитный период (from Себестоимость денег(%)) = 0: Себестоимость денег Совок в валюте заявки = 0
+        — Иначе: Себестоимость денег Совок в валюте заявки = ((Дата + Колво доп дней (from Себестоимость денег(%))) ÷ Кредитный период (from Себестоимость денег(%))) × Ставка по кредиту (from Себестоимость денег(%)) × Купили валюту Совок в валюте заявки""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -819,9 +819,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sovok_real_usd = fields.Float(
-        string='Себестоимость денег Совок реал $',
+        string='Себестоимость денег Совок в эквиваленте $',
         compute='_compute_sebestoimost_denej_sovok_real_usd',
-        help="""Себестоимость денег Совок реал $ = Себестоимость денег Совок реал × Кросс-курс Плательщика $ авто""",
+        help="""Себестоимость денег Совок в эквиваленте $ = Себестоимость денег Совок в валюте заявки × Кросс-курс $ к валюте заявки авто""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -829,9 +829,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sovok_real_rub = fields.Float(
-        string='Себестоимость денег Совок реал ₽',
+        string='Себестоимость денег Совок ₽',
         compute='_compute_sebestoimost_denej_sovok_real_rub',
-        help="""Себестоимость денег Совок реал ₽ = Себестоимость денег Совок реал $ × Кросс-курс Плательщика ₽""",
+        help="""Себестоимость денег Совок ₽ = Себестоимость денег Совок в эквиваленте $ × Курс Джес""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -848,42 +848,42 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_sovok_real = fields.Float(
-        string='Фин рез Совок реал',
+        string='Фин рез Совок в валюте заявки',
         compute='_compute_fin_res_sovok_real',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
-        help="""Если вид сделки "Экспорт": Фин рез Совок реал = (Сумма заявки × % Вознаграждения) - Расход платежа Совок - Расход на операционную деятельность Совок реал
+        help="""Если вид сделки "Экспорт": Фин рез Совок в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход за проведение платежа Совок - Расход на операционную деятельность Совок в валюте заявки
         
         Если Агент "Тезер" ИЛИ Валюта "USDT" ИЛИ Вид сделки "Импорт-экспорт/Экспорт-импорт":
-        • Если Контрагент "А7": Фин рез Совок реал = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
-        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
+        • Если Контрагент "А7": Фин рез Совок в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Совок в валюте заявки - Расход за проведение платежа Совок
+        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Совок в валюте заявки - Расход за проведение платежа Совок
 
-        Обычный расчет: Фин рез Совок реал = Купили валюту Совок Реал - Расход платежа Совок - Себестоимость денег Совок Реал - Скрытая комиссия Партнера Реал - Расход на операционную деятельность Совок Реал - Сумма заявки - Прибыль плательщика по валюте заявки"""
+        Обычный расчет: Фин рез Совок в валюте заявки = Купили валюту Совок в валюте заявки - Расход за проведение платежа Совок - Себестоимость денег Совок в валюте заявки - Скрытая комиссия Партнера в валюте заявки - Расход на операционную деятельность Совок в валюте заявки - Сумма заявки - Сумма плательщику по валюте заявки"""
     )
 
     fin_res_sovok_real_usd = fields.Float(
-        string='Фин рез Совок реал $',
+        string='Фин рез Совок в эквиваленте $',
         compute='_compute_fin_res_sovok_real_usd',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Совок реал $ = Фин рез Совок реал × Кросс-курс Плательщика $ авто
+        Фин рез Совок в эквиваленте $ = Фин рез Совок в валюте заявки × Кросс-курс $ к валюте заявки авто
         """
     )
 
     fin_res_sovok_real_rub = fields.Float(
-        string='Фин рез Совок реал ₽',
+        string='Фин рез Совок ₽',
         compute='_compute_fin_res_sovok_real_rub',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Совок реал ₽ = Фин рез Совок реал $ × Кросс-курс Плательщика ₽
+        Фин рез Совок ₽ = Фин рез Совок в эквиваленте $ × Курс Джес
         """
     )
 
@@ -1353,10 +1353,10 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payer_profit_currency = fields.Float(
-        string='Прибыль Плательщика по валюте заявки',
+        string='Сумма плательщику по валюте заявки',
         compute='_compute_payer_profit_currency',
         help="""
-        Прибыль Плательщика по валюте заявки = Сумма × % Начисления (from Процент плательщика)
+        Сумма плательщику по валюте заявки = Сумма × % Начисления (from Процент плательщика)
         """,
         readonly=False,
         store=True,
@@ -1692,18 +1692,18 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payer_cross_rate_usd = fields.Float(
-        string='Кросс-курс Плательщика $',
+        string='Кросс-курс $ к валюте заявки',
         digits=(16, 4),
         tracking=True
     )
 
     payer_cross_rate_usd_auto = fields.Float(
-        string='Кросс-курс Плательщика $ авто',
+        string='Кросс-курс $ к валюте заявки авто',
         compute='_compute_payer_cross_rate_usd_auto',
         help="""
-        — если пусты «Кросс-курс Плательщика $» и «Курс XE» и валюта USD ÷ USD КЭШ: Кросс-курс Плательщика $ авто = 1; 
-        — если задан «Кросс-курс Плательщика $»: Кросс-курс Плательщика $ авто = Кросс-курс Плательщика $; 
-        — иначе: Кросс-курс Плательщика $ авто = Курс XE
+        — если пусты «Кросс-курс $ к валюте заявки» и «Курс XE» и валюта USD ÷ USD КЭШ: Кросс-курс $ к валюте заявки авто = 1; 
+        — если задан «Кросс-курс $ к валюте заявки»: Кросс-курс $ к валюте заявки авто = Кросс-курс $ к валюте заявки; 
+        — иначе: Кросс-курс $ к валюте заявки авто = Курс XE
         """,
         readonly=False,
         store=True,
@@ -1712,10 +1712,10 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     real_post_conversion_rate = fields.Float(
-        string='Курс после конвертации реал',
+        string='Курс после конвертации в валюте заявки',
         compute='_compute_real_post_conversion_rate',
         help="""
-        Курс после конвертации реал = Курс Джесс × Кросс-курс Плательщика $ авто
+        Курс после конвертации в валюте заявки = Курс Джесс × Кросс-курс $ к валюте заявки авто
         """,
         readonly=False,
         store=True,
@@ -1724,10 +1724,10 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     real_post_conversion_rate_usd = fields.Float(
-        string='Курс после конвертации реал $',
+        string='Курс после конвертации в эквиваленте $',
         compute='_compute_real_post_conversion_rate_usd',
         help="""
-        Курс после конвертации реал $ = Курс после конвертации реал × Кросс-курс Плательщика $ авто
+        Курс после конвертации в эквиваленте $ = Курс после конвертации в валюте заявки × Кросс-курс $ к валюте заявки авто
         """,
         readonly=False,
         store=True,
@@ -1736,34 +1736,31 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payer_cross_rate_rub = fields.Float(
-        string='Кросс-курс Плательщика ₽',
+        string='Курс Джес',
         compute='_compute_payer_cross_rate_rub',
         readonly=False,
         store=True,
-        help="""
-        Кросс-курс Плательщика ₽ = Курс Джесс
-        """,
         digits=(16, 6),
         tracking=True
     )
 
     real_post_conversion_rate_rub = fields.Float(
-        string='Курс после конвертации реал ₽',
+        string='Курс после конвертации руб. ₽',
         compute='_compute_real_post_conversion_rate_rub',
         readonly=False,
         store=True,
         help="""
-        Курс после конвертации реал ₽ = Курс после конвертации реал $ × Кросс-курс Плательщика ₽
+        Курс после конвертации руб. ₽ = Курс после конвертации в эквиваленте $ × Курс Джес
         """,
         digits=(16, 6),
         tracking=True
     )
 
     payer_profit_usd = fields.Float(
-        string='Прибыль плательщика $',
+        string='Сумма плательщику $',
         help="""
-        — если задан «Кросс-курс Плательщика $ авто»: Прибыль плательщика $ = Прибыль Плательщика по валюте заявки × Кросс-курс Плательщика $ авто × Фикс за сделку $ (из Процент плательщика); 
-        — иначе: Прибыль плательщика $ = Фикс за сделку $ (из Процент плательщика)
+        — если задан «Кросс-курс $ к валюте заявки авто»: Сумма плательщику $ = Прибыль Плательщика по валюте заявки × Кросс-курс $ к валюте заявки авто × Фикс за сделку $ (из Процент плательщика); 
+        — иначе: Сумма плательщику $ = Фикс за сделку $ (из Процент плательщика)
         """,
         compute='_compute_payer_profit_usd',
         readonly=False,
@@ -1772,9 +1769,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payer_profit_rub = fields.Float(
-        string='Прибыль плательщика ₽',
+        string='Сумма плательщику ₽',
         compute='_compute_payer_profit_rub',
-        help="""Прибыль плательщика ₽ = Прибыль плательщика $ × Кросс-курс Плательщика ₽""",
+        help="""Сумма плательщику ₽ = Сумма плательщику $ × Курс Джес""",
         readonly=False,
         store=True,
         tracking=True
@@ -1969,29 +1966,29 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     hidden_partner_commission_real = fields.Float(
-        string='Скрытая комиссия Партнера Реал',
+        string='Скрытая комиссия Партнера в валюте заявки',
         compute='_compute_hidden_partner_commission_real',
-        help="""Если стоит галочка 'Заявка со скрытым курсом': Скрытая комиссия Партнера Реал = Заявка по курсу реальный * Сумма всех % начислений от Выплат пратнеров / Курс Джесс
-        Если стоит галочка 'Расчет заявки, как Сбербанк': Скрытая комиссия Партнера Реал = Сумма заявки * Сумма всех % начислений от Выплат пратнеров
-        Иначе: Скрытая комиссия Партнера Реал = Вознаграждение не наше Клиент / Курс Джесс""",
+        help="""Если стоит галочка 'Заявка со скрытым курсом': Скрытая комиссия Партнера в валюте заявки = Заявка по курсу реальный * Сумма всех % начислений от Выплат пратнеров / Курс Джесс
+        Если стоит галочка 'Расчет заявки, как Сбербанк': Скрытая комиссия Партнера в валюте заявки = Сумма заявки * Сумма всех % начислений от Выплат пратнеров
+        Иначе: Скрытая комиссия Партнера в валюте заявки = Вознаграждение не наше Клиент / Курс Джесс""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     hidden_partner_commission_real_usd = fields.Float(
-        string='Скрытая комиссия Партнера Реал $',
+        string='Скрытая комиссия Партнера в эквиваленте $',
         compute='_compute_hidden_partner_commission_real_usd',
-        help="""Скрытая комиссия Партнера Реал $ = Скрытая комиссия Партнера Реал × Кросс-курс Плательщика $ авто""",
+        help="""Скрытая комиссия Партнера в эквиваленте $ = Скрытая комиссия Партнера в валюте заявки × Кросс-курс $ к валюте заявки авто""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     hidden_partner_commission_real_rub = fields.Float(
-        string='Скрытая комиссия Партнера Реал ₽',
+        string='Скрытая комиссия Партнера ₽',
         compute='_compute_hidden_partner_commission_real_rub',
-        help="""Скрытая комиссия Партнера Реал ₽ = Скрытая комиссия Партнера Реал $ × Кросс-курс Плательщика ₽""",
+        help="""Скрытая комиссия Партнера ₽ = Скрытая комиссия Партнера в эквиваленте $ × Курс Джес""",
         readonly=False,
         store=True,
         tracking=True

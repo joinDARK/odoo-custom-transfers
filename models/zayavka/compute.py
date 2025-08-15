@@ -175,7 +175,7 @@ class ZayavkaComputes(models.Model):
     def _compute_client_payment_cost(self):
         for rec in self:
             if rec.deal_type == 'export':
-                # ! Расход платежа Клиент = Сумма заявки * Процент (from Правило платежка)
+                # ! Расход платежа Клиент = Сумма заявки * Процент (from Расход платежа по РФ(%))
                 rec.client_payment_cost = rec.amount * (rec.percent_from_payment_order_rule or 0)
             else:
                 # ! Расход платежа Клиент = Сумма заявки * % Начисления (from Прайс лист)
@@ -188,7 +188,7 @@ class ZayavkaComputes(models.Model):
             client_reward = rec.client_reward or 0.0
             percent = rec.percent_from_payment_order_rule or 0.0
 
-            # ! Платежка РФ Клиент = (Заявка по курсу в рублях по договору + Вознаграждение по договору Клиент) * Процент (from Правило платежка)
+            # ! Платежка РФ Клиент = (Заявка по курсу в рублях по договору + Вознаграждение по договору Клиент) * Процент (from Расход платежа по РФ(%))
             rec.payment_order_rf_client = (contract_rub + client_reward) * percent
 
     @api.depends('usd_equivalent', 'total_client', 'partner_post_conversion_rate')
@@ -238,7 +238,7 @@ class ZayavkaComputes(models.Model):
                         # ! Расход на операционную деятельность Клиент Реал = Процент (from Правило расход) * Сумма заявки
                         rec.client_real_operating_expenses = amount * percent_rule
                     else:
-                        # ! Расход на операционную деятельность Клиент Реал = ((Процент (from Правило расход) - Корректировка) * Итого Клиент) / Курс после конвертации реал (если не Тезер)
+                        # ! Расход на операционную деятельность Клиент Реал = ((Процент (from Правило расход) - Корректировка) * Итого Клиент) / Курс после конвертации в валюте заявки (если не Тезер)
                         rec.client_real_operating_expenses = ((percent_rule - correction) * total_client) / real_post_rate
 
     @api.depends('client_real_operating_expenses', 'payer_cross_rate_usd_auto')
@@ -464,7 +464,7 @@ class ZayavkaComputes(models.Model):
             amount = rec.amount or 0.0
             
             if rec.deal_type == 'export':
-                # ! Расход платежа Сбер = Процент (from Правило платежка) * Сумма заявки
+                # ! Расход платежа Сбер = Процент (from Расход платежа по РФ(%)) * Сумма заявки
                 percent = rec.percent_from_payment_order_rule or 0.0
                 rec.sber_payment_cost = percent * amount
             else:
@@ -509,7 +509,7 @@ class ZayavkaComputes(models.Model):
                 # ! Расход на операционную деятельность Сбер реал = Процент (from Правило расход) * Сумма заявки
                 rec.sber_operating_expenses_real = (rec.percent_from_expense_rule or 0.0) * amount
             else:
-                # ! Расход на операционную деятельность Сбер Реал = ((Процент (from Правило расход) - Корректировка) * Итого Сбер) / Курс после конвертации реал
+                # ! Расход на операционную деятельность Сбер Реал = ((Процент (from Правило расход) - Корректировка) * Итого Сбер) / Курс после конвертации в валюте заявки
                 if (rec.total_sber == 0 or
                     rec.real_post_conversion_rate == 0):
                     if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
@@ -567,13 +567,13 @@ class ZayavkaComputes(models.Model):
     @api.depends('sber_payment_cost', 'payer_cross_rate_usd_auto')
     def _compute_sber_payment_cost_usd(self):
         for rec in self:
-            # Формула: {Расход платежа Сбер $} = {Расход платежа Сбер} * {Кросс-курс Плательщика $ авто}
+            # Формула: {Расход платежа Сбер $} = {Расход платежа Сбер} * {Кросс-курс $ к валюте заявки авто}
             rec.sber_payment_cost_usd = (rec.sber_payment_cost or 0.0) * (rec.payer_cross_rate_usd_auto or 0.0)
 
     @api.depends('sber_payment_cost_usd', 'payer_cross_rate_rub')
     def _compute_sber_payment_cost_rub(self):
         for rec in self:
-            # Формула: {Расход платежа Сбер ₽} = {Расход платежа Сбер $} * {Кросс-курс Плательщика ₽}
+            # Формула: {Расход платежа Сбер ₽} = {Расход платежа Сбер $} * {Курс Джес}
             rec.sber_payment_cost_rub = (rec.sber_payment_cost_usd or 0.0) * (rec.payer_cross_rate_rub or 0.0)
 
     @api.depends('payment_cost_sovok', 'payer_cross_rate_usd_auto', 'price_list_carrying_out_fixed_deal_fee')
@@ -761,7 +761,7 @@ class ZayavkaComputes(models.Model):
             amount = record.amount or 0.0
 
             if record.deal_type == 'export':
-                # ! Расход платежа Совок = Процент (from Правило платежка) * Сумма заявки
+                # ! Расход платежа Совок = Процент (from Расход платежа по РФ(%)) * Сумма заявки
                 percent = record.percent_from_payment_order_rule or 0.0
                 record.payment_cost_sovok = percent * amount
             else:
@@ -807,7 +807,7 @@ class ZayavkaComputes(models.Model):
                 # ! Расход на операционную деятельность Совок реал = Процент (from Правило расход) * Сумма заявки
                 rec.operating_expenses_sovok_real = percent * amount
             else:
-                # ! Расход на операционную деятельность Совок реал = ((Процент (from Правило расход) - Корректировка) * Итого Совок) / Курс после конвертации реал
+                # ! Расход на операционную деятельность Совок реал = ((Процент (from Правило расход) - Корректировка) * Итого Совок) / Курс после конвертации в валюте заявки
                 total_sovok = rec.total_sovok or 0.0
                 correction = rec.correction or 0.0
                 real_rate = rec.real_post_conversion_rate or 0.0

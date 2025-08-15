@@ -27,6 +27,9 @@ class ForKhalidaAutomations(models.Model):
         equivalent_sum = self.equivalent_amount_usd
         reward_percent = self.reward_percent
 
+        # Применяем правила
+        self.apply_rules_by_deal_closed_date()
+
         # 3. Проверяем наличие необходимых полей
         if not subagent_payers:
             _logger.warning(f"[PriceList] Пропускаем заявку {self.id}: отсутствует 'Плательщик Субагента' {subagent_payers}")
@@ -43,9 +46,6 @@ class ForKhalidaAutomations(models.Model):
         if reward_percent is None:
             _logger.warning(f"[PriceList] Пропускаем заявку {self.id}: отсутствует 'Процент начисления'")
             return
-
-        # Применяем правила
-        self.apply_rules_by_deal_closed_date()
 
         # 4. Поиск подходящей записи в "Прайс лист проведение"
         matched_carrying_out = self._find_matching_carrying_out_record(

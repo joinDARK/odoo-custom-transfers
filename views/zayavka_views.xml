@@ -852,11 +852,11 @@
                   </group>
                 </div>
               </group>
-              <group string="Правило платежка">
+              <group string="Расход платежа по РФ(%)">
                 <field name="payment_order_rule_id" />
                 <field name="percent_from_payment_order_rule" widget="percentage" />
               </group>
-              <group string="Правило себестоимость денег">
+              <group string="Себестоимость денег(%)">
                 <field name="money_cost_rule_id" />
                 <div class="o-form-group">
                   <group>
@@ -870,15 +870,15 @@
                   </group>
                 </div>
               </group>
-              <group string="Правило расхода платежа">
+              <group string="Операционные расходы (%)">
                 <field name="expense_rule_id" />
                 <field name="percent_from_expense_rule" widget="percentage" />
               </group>
-              <group string="Прайс лист Плательщика Прибыль">
+              <group string="Процент плательщика">
                 <field name="price_list_profit_id" />
                 <field name="price_list_percent_accrual" widget="percentage" />
               </group>
-              <group string="Прайс лист За проведение">
+              <group string="Расход за проведение платежа(%)">
                 <field name="price_list_carrying_out_id" />
                 <div class="o-form-group-2">
                   <group>
@@ -889,7 +889,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Прайс лист Партнеры">
+              <group string="Выплаты партнерам(%)">
                 <field name="price_list_partners_id" />
                 <div class="o-form-group-2">
                   <group>
@@ -936,19 +936,16 @@
                   </group>
                 </div>
               </group>
-              <group string="Курсы и конвертация">
-                <div class="o-form-group-4">
+              <group string="Курсы">
+                <div class="o-form-group">
                   <group>
-                    <field name="real_post_conversion_rate" />
+                    <field name="payment_order_rf_sovok" />
                   </group>
                   <group>
                     <field name="payer_cross_rate_usd" />
                   </group>
                   <group>
                     <field name="payer_cross_rate_rub" />
-                  </group>
-                  <group>
-                    <field name="payment_order_rf_sovok" />
                   </group>
                 </div>
               </group>
@@ -1005,7 +1002,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Расходы платежей Совок">
+              <group string="Расход за проведение платежа Совок">
                 <div class="o-form-group">
                   <group>
                     <field name="payment_cost_sovok" />
@@ -1018,7 +1015,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Прибыль плательщика">
+              <group string="Сумма плательщику">
                 <div class="o-form-group">
                   <group>
                     <field name="payer_profit_currency" />
@@ -1032,12 +1029,15 @@
                 </div>
               </group>
               <group string="Прочие поля">
-                <div class="o-form-group-2">
+                <div class="o-form-group">
                   <group>
                     <field name="currency" readonly="1" />
                   </group>
                   <group>
                     <field name="send_to_reconciliation" />
+                  </group>
+                  <group>
+                    <field name="real_post_conversion_rate" />
                   </group>
                 </div>
               </group>
@@ -1067,11 +1067,11 @@
                   </group>
                 </div>
               </group>
-              <group string="Правило платежка">
+              <group string="Расход платежа по РФ(%)">
                 <field name="payment_order_rule_id" />
                 <field name="percent_from_payment_order_rule" widget="percentage" />
               </group>
-              <group string="Правило себестоимость денег">
+              <group string="Себестоимость денег(%)">
                 <field name="money_cost_rule_id" />
                 <div class="o-form-group">
                   <group>
@@ -1085,15 +1085,15 @@
                   </group>
                 </div>
               </group>
-              <group string="Правило расхода платежа">
+              <group string="Операционные расходы (%)">
                 <field name="expense_rule_id" />
                 <field name="percent_from_expense_rule" widget="percentage" />
               </group>
-              <group string="Прайс лист Плательщика Прибыль">
+              <group string="Процент плательщика">
                 <field name="price_list_profit_id" />
                 <field name="price_list_percent_accrual" widget="percentage" />
               </group>
-              <group string="Прайс лист За проведение">
+              <group string="Расход за проведение платежа(%)">
                 <field name="price_list_carrying_out_id" />
                 <div class="o-form-group-2">
                   <group>
@@ -1104,7 +1104,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Прайс лист Партнеры">
+              <group string="Выплаты партнерам(%)">
                 <field name="price_list_partners_id" />
                 <div class="o-form-group-2">
                   <group>
@@ -1164,7 +1164,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Курсы и конвертация">
+              <group string="Конвертаци">
                 <div class="o-form-group">
                   <group>
                     <field name="real_post_conversion_rate" />
@@ -1230,7 +1230,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Расходы платежей Сбер">
+              <group string="Расход за проведение платежа Сбер">
                 <div class="o-form-group">
                   <group>
                     <field name="sber_payment_cost" />
@@ -1243,7 +1243,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Прибыль плательщика">
+              <group string="Сумма плательщику">
                 <div class="o-form-group">
                   <group>
                     <field name="payer_profit_currency" />
@@ -1296,11 +1296,11 @@
                   </group>
                 </div>
               </group>
-              <group string="Правило платежка">
+              <group string="Расход платежа по РФ(%)">
                 <field name="payment_order_rule_id" />
                 <field name="percent_from_payment_order_rule" widget="percentage" />
               </group>
-              <group string="Правило себестоимость денег">
+              <group string="Себестоимость денег(%)">
                 <field name="money_cost_rule_id" />
                 <div class="o-form-group">
                   <group>
@@ -1314,15 +1314,15 @@
                   </group>
                 </div>
               </group>
-              <group string="Правило расхода платежа">
+              <group string="Операционные расходы (%)">
                 <field name="expense_rule_id" />
                 <field name="percent_from_expense_rule" widget="percentage" />
               </group>
-              <group string="Прайс лист Плательщика Прибыль">
+              <group string="Процент плательщика">
                 <field name="price_list_profit_id" />
                 <field name="price_list_percent_accrual" widget="percentage" />
               </group>
-              <group string="Прайс лист За проведение">
+              <group string="Расход за проведение платежа(%)">
                 <field name="price_list_carrying_out_id" />
                 <div class="o-form-group-2">
                   <group>
@@ -1333,7 +1333,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Прайс лист Партнеры">
+              <group string="Выплаты партнерам(%)">
                 <field name="price_list_partners_id" />
                 <div class="o-form-group-2">
                   <group>
@@ -1459,7 +1459,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Расходы платежей">
+              <group string="Расход за проведение платежа">
                 <div class="o-form-group">
                   <group>
                     <field name="client_payment_cost" />
@@ -1472,7 +1472,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Прибыль плательщика">
+              <group string="Сумма плательщику">
                 <div class="o-form-group">
                   <group>
                     <field name="payer_profit_currency" />
