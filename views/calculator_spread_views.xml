@@ -29,7 +29,7 @@
                             <field name="calculated_usd_rub" readonly="1" digits="[16,4]"/>
                             <field name="spread_absolute" readonly="1" digits="[16,4]"/>
                             <field name="spread_percent" readonly="1" digits="[16,4]" widget="percentage"/>
-                            <field name="spread_direction" readonly="1"/>
+                            <!-- <field name="spread_direction" readonly="1"/> -->
                         </group>
                     </group>
 

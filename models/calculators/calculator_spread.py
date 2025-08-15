@@ -62,11 +62,11 @@ class CalculatorSpreadWizard(models.Model):
             # Рассчитываем USD/RUB через юань: CBR CNY/RUB * XE USD/CNY
             rec.calculated_usd_rub = cbr_cny * xe_usd_cny
             
-            # Спред = разница между CBR USD/RUB и рассчитанным USD/RUB
-            rec.spread_absolute = cbr_usd - rec.calculated_usd_rub
+            # Спред по новой формуле: CBR(USD/RUB) - CBR(CNY/RUB) * XE
+            rec.spread_absolute = cbr_usd - (cbr_cny * xe_usd_cny)
             
-            # Спред в процентах от CBR USD/RUB
-            rec.spread_percent = (rec.spread_absolute / cbr_usd * 100.0) if cbr_usd else 0.0
+            # Спред в процентах от CBR USD/RUB (widget="percentage" умножит на 100 автоматически)
+            rec.spread_percent = (rec.spread_absolute / cbr_usd) if cbr_usd else 0.0
             
             # Прибыль от спреда при заданной сумме операции
             rec.profit_rub = rec.spread_absolute * amount_usd
