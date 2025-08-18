@@ -169,7 +169,7 @@ class Transfer(models.Model, AmanatBaseModel):
         compute='_compute_intermediary_2_sum',
     )
 
-    sending_commission_percent = fields.Float(string='% комиссия', tracking=True, digits=(16, 2))
+    sending_commission_percent = fields.Float(string='% комиссия', tracking=True, digits=(16, 4))
 
     order_ids = fields.Many2many(
         'amanat.order',

@@ -364,3 +364,18 @@ access_amanat_calculator_spread_fin_manager_jess,amanat.calculator.spread.wizard
 access_amanat_calculator_spread_senior_manager,amanat.calculator.spread.wizard,model_amanat_calculator_spread_wizard,group_amanat_senior_manager,1,1,1,1
 access_amanat_calculator_spread_manager,amanat.calculator.spread.wizard,model_amanat_calculator_spread_wizard,group_amanat_manager,1,1,1,1
 access_amanat_calculator_spread_inspector,amanat.calculator.spread.wizard,model_amanat_calculator_spread_wizard,group_amanat_inspector,1,1,1,1
+access_ir_attachment_amanat_admin,ir.attachment amanat admin,base.model_ir_attachment,group_amanat_admin,1,1,1,1
+access_ir_attachment_amanat_director,ir.attachment amanat director,base.model_ir_attachment,group_amanat_director,1,1,1,1
+access_ir_attachment_amanat_senior_manager,ir.attachment amanat senior manager,base.model_ir_attachment,group_amanat_senior_manager,1,1,1,1
+access_ir_attachment_amanat_manager,ir.attachment amanat manager,base.model_ir_attachment,group_amanat_manager,1,1,1,1
+access_ir_attachment_amanat_inspector,ir.attachment amanat inspector,base.model_ir_attachment,group_amanat_inspector,1,1,1,1
+access_ir_attachment_amanat_fin_manager,ir.attachment amanat fin manager,base.model_ir_attachment,group_amanat_fin_manager,1,1,1,1
+access_ir_attachment_amanat_fin_manager_jess,ir.attachment amanat fin manager jess,base.model_ir_attachment,group_amanat_fin_manager_jess,1,1,1,1
+access_ir_attachment_amanat_treasurer,ir.attachment amanat treasurer,base.model_ir_attachment,group_amanat_treasurer,1,1,1,1
+access_ir_attachment_amanat_transit_only,ir.attachment amanat transit only,base.model_ir_attachment,group_amanat_transit_only,1,1,1,1
+access_amanat_zayavka_limited_access,amanat.zayavka limited access,model_amanat_zayavka,group_amanat_limited_access,1,0,0,0
+access_amanat_contragent_limited_access,amanat.contragent limited access,model_amanat_contragent,group_amanat_limited_access,1,0,0,0
+access_amanat_manager_limited_access,amanat.manager limited access,model_amanat_manager,group_amanat_limited_access,1,0,0,0
+access_amanat_country_limited_access,amanat.country limited access,model_amanat_country,group_amanat_limited_access,1,0,0,0
+access_ir_attachment_limited_access,ir.attachment limited access,base.model_ir_attachment,group_amanat_limited_access,1,0,0,0
+access_ir_attachment_alina_manager_files,ir.attachment alina manager files,base.model_ir_attachment,group_amanat_alina_manager_files,1,1,1,1

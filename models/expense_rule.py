@@ -17,7 +17,7 @@ class ExpenseRule(models.Model, AmanatBaseModel):
     date_end = fields.Date(string="Дата конца", tracking=True)
 
     min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)
-    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True)
+    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True, default=999999999)
     is_tezer_percent = fields.Boolean(string="Тезерный процент", tracking=True, default=False)
 
     min_percent_accrual = fields.Float(string="Мин %", tracking=True)

@@ -21,7 +21,7 @@ class PaymentOrderRule(models.Model):
     percent = fields.Float(string="Процент", tracking=True)
 
     min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)
-    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True)
+    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True, default=999999999)
 
     min_percent_accrual = fields.Float(string="Мин %", tracking=True)
     max_percent_accrual = fields.Float(string="Макс %", tracking=True)

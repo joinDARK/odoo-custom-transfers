@@ -188,7 +188,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                     title="YandexGPT",
                     message="Не настроены API ключ и/или Folder ID в Настройках (YandexGPT)",
                     warning=True,
-                    sticky=False,
+                    sticky=True,
                 )
                 _logger.error("[analyze_document_with_yandex_gpt] Не настроены ygpt_api_key/ygpt_folder_id")
                 return None
@@ -683,10 +683,10 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                             for w in special_warnings:
                                 lines.append(f"- {w}")
                         msg = "\n".join(lines)
-                        self._notify_user_simple(title="YandexGPT", message=msg, warning=True, sticky=False)
+                        self._notify_user_simple(title="YandexGPT", message=msg, warning=True, sticky=True)
                 else:
                     _logger.warning(f"[_update_fields_from_gpt_response] Ни одно из полей не найдено в модели: {list(update_values.keys())}")
-                    self._notify_user_simple(title="YandexGPT", message="Ни одно из полученных полей не найдено в модели заявки.", warning=True, sticky=False)
+                    self._notify_user_simple(title="YandexGPT", message="Ни одно из полученных полей не найдено в модели заявки.", warning=True, sticky=True)
             else:
                 _logger.info("[_update_fields_from_gpt_response] Нет данных для обновления в ответе YandexGPT")
                 
@@ -1396,4 +1396,226 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 return contragent
         
         _logger.warning(f"[_advanced_contragent_search] {context_type.capitalize()} не найден для: '{search_text}'")
+        return None
+
+    def analyze_swift_documents_for_approved_date(self):
+        """
+        Анализирует SWIFT документы для извлечения даты из строки "approved at"
+        и автоматически заполняет поле supplier_currency_paid_date
+        """
+        try:
+            _logger.info(f"[analyze_swift_documents_for_approved_date] Начинаем анализ SWIFT документов для заявки {self.zayavka_id}")
+            
+            # Проверяем, есть ли SWIFT документы
+            if not self.swift_attachments:
+                _logger.warning(f"[analyze_swift_documents_for_approved_date] Нет SWIFT документов для анализа в заявке {self.zayavka_id}")
+                return
+            
+            # Проверяем, не заполнено ли уже поле supplier_currency_paid_date
+            if self.supplier_currency_paid_date:
+                _logger.info(f"[analyze_swift_documents_for_approved_date] Поле 'оплачена валюта поставщику' уже заполнено ({self.supplier_currency_paid_date}), пропускаем анализ")
+                return
+            
+            # Анализируем каждый SWIFT документ
+            approved_date = None
+            for attachment in self.swift_attachments:
+                _logger.info(f"[analyze_swift_documents_for_approved_date] Анализируем документ: {attachment.name}")
+                
+                # Извлекаем дату из документа
+                extracted_date = self._extract_approved_date_from_swift(attachment)
+                if extracted_date:
+                    approved_date = extracted_date
+                    _logger.info(f"[analyze_swift_documents_for_approved_date] Найдена дата 'approved at': {approved_date}")
+                    break
+            
+            # Если дата найдена, обновляем поле
+            if approved_date:
+                self.supplier_currency_paid_date = approved_date
+                _logger.info(f"[analyze_swift_documents_for_approved_date] Автоматически установлена дата оплаты валюты поставщику: {approved_date}")
+                
+                # Уведомляем пользователя
+                self._notify_user_simple(
+                    title="SWIFT Анализ",
+                    message=f"Извлечена дата 'approved at' из SWIFT документа: {approved_date.strftime('%d.%m.%Y')}",
+                    warning=False,
+                    sticky=True
+                )
+            else:
+                _logger.warning(f"[analyze_swift_documents_for_approved_date] Не удалось найти дату 'approved at' в SWIFT документах заявки {self.zayavka_id}")
+                
+        except Exception as e:
+            _logger.error(f"[analyze_swift_documents_for_approved_date] Ошибка при анализе SWIFT документов: {str(e)}")
+
+    def _extract_approved_date_from_swift(self, attachment):
+        """
+        Извлекает дату из строки "approved at" в SWIFT документе
+        """
+        try:
+            # Специальный промпт для анализа SWIFT документов
+            swift_prompt = """
+            Проанализируй SWIFT документ и найди дату в строке "approved at" или похожих строках, указывающих на дату одобрения/подтверждения платежа.
+            
+            Верни результат СТРОГО в формате JSON:
+            {
+                "approved_date": "YYYY-MM-DD"
+            }
+            
+            Если дата не найдена, верни:
+            {
+                "approved_date": null
+            }
+            
+            Ищи следующие паттерны:
+            - "approved at" + дата
+            - "approved on" + дата  
+            - "confirmation date" + дата
+            - "value date" + дата
+            - любые другие строки, указывающие на дату подтверждения платежа
+            
+            Дату верни в формате YYYY-MM-DD (например: 2024-01-15).
+            """
+            
+            # Анализируем документ с помощью YandexGPT
+            _logger.info(f"[_extract_approved_date_from_swift] Тип файла: {attachment.mimetype}, имя: {attachment.name}")
+            
+            if attachment.mimetype == 'application/pdf' or (attachment.name and attachment.name.lower().endswith('.pdf')):
+                _logger.info(f"[_extract_approved_date_from_swift] Обрабатываем как PDF документ")
+                # Для PDF используем OCR + GPT
+                gpt_response = self._analyze_pdf_with_custom_prompt(attachment, swift_prompt)
+            else:
+                _logger.info(f"[_extract_approved_date_from_swift] Обрабатываем как текстовый документ")
+                # Для текстовых файлов используем прямой анализ
+                gpt_response = self._analyze_text_with_custom_prompt(attachment, swift_prompt)
+            
+            if not gpt_response:
+                _logger.warning(f"[_extract_approved_date_from_swift] Не получен ответ от YandexGPT для документа {attachment.name}")
+                return None
+            
+            _logger.info(f"[_extract_approved_date_from_swift] Получен ответ от YandexGPT: {gpt_response}")
+            
+            # Парсим ответ GPT
+            import json
+            import re
+            from datetime import datetime
+            
+            # Ищем JSON в ответе
+            json_match = re.search(r'\{.*?\}', gpt_response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+                try:
+                    parsed_data = json.loads(json_str)
+                    approved_date_str = parsed_data.get('approved_date')
+                    
+                    if approved_date_str and approved_date_str != 'null':
+                        # Парсим дату
+                        try:
+                            approved_date = datetime.strptime(approved_date_str, '%Y-%m-%d').date()
+                            return approved_date
+                        except ValueError:
+                            _logger.warning(f"[_extract_approved_date_from_swift] Неверный формат даты: {approved_date_str}")
+                            return None
+                    
+                except json.JSONDecodeError as e:
+                    _logger.error(f"[_extract_approved_date_from_swift] Ошибка парсинга JSON: {e}")
+                    return None
+            
+            _logger.warning(f"[_extract_approved_date_from_swift] Не найден JSON с датой в ответе GPT: {gpt_response}")
+            return None
+            
+        except Exception as e:
+            _logger.error(f"[_extract_approved_date_from_swift] Ошибка при извлечении даты из SWIFT документа: {str(e)}")
+            return None
+
+    def _analyze_pdf_with_custom_prompt(self, attachment, custom_prompt):
+        """
+        Анализирует PDF документ с кастомным промптом
+        """
+        try:
+            # Получаем PDF в base64
+            pdfs_data = self._get_pdf_attachments_base64(attachment)
+            if not pdfs_data:
+                return None
+            
+            pdf_data = pdfs_data[0]  # Берем первый PDF
+            
+            # Отправляем в Yandex Vision OCR для распознавания текста
+            recognized_text = self._send_image_to_yandex_gpt_vision(pdf_data)
+            if not recognized_text:
+                _logger.warning(f"[_analyze_pdf_with_custom_prompt] Не удалось распознать текст из PDF: {attachment.name}")
+                return None
+            
+            _logger.info(f"[_analyze_pdf_with_custom_prompt] Распознанный текст из PDF ({len(recognized_text)} символов): {recognized_text[:200]}...")
+            
+            # Отправляем распознанный текст в YandexGPT с кастомным промптом
+            return self._send_text_to_yandex_gpt_with_prompt(recognized_text, custom_prompt)
+            
+        except Exception as e:
+            _logger.error(f"[_analyze_pdf_with_custom_prompt] Ошибка: {str(e)}")
+            return None
+
+    def _analyze_text_with_custom_prompt(self, attachment, custom_prompt):
+        """
+        Анализирует текстовый документ с кастомным промптом
+        """
+        try:
+            # Читаем содержимое файла
+            if not attachment.datas:
+                return None
+            
+            # Декодируем содержимое
+            import base64
+            file_content = base64.b64decode(attachment.datas).decode('utf-8', errors='ignore')
+            
+            # Отправляем в YandexGPT с кастомным промптом
+            return self._send_text_to_yandex_gpt_with_prompt(file_content, custom_prompt)
+            
+        except Exception as e:
+            _logger.error(f"[_analyze_text_with_custom_prompt] Ошибка: {str(e)}")
+            return None
+
+    def _send_text_to_yandex_gpt_with_prompt(self, text, custom_prompt):
+        """
+        Отправляет текст в YandexGPT с кастомным промптом
+        """
+        try:
+            cfg = _get_yandex_gpt_config(self.env, is_zayavka=False)
+            if not cfg['api_key'] or not cfg['folder_id']:
+                _logger.error("[_send_text_to_yandex_gpt_with_prompt] Не настроены API ключ и/или Folder ID")
+                return None
+
+            user_message = f"{custom_prompt}\n\nДокумент для анализа:\n{text}"
+
+            data = {
+                "modelUri": f"gpt://{cfg['folder_id']}/yandexgpt/latest",
+                "completionOptions": {
+                    "stream": False,
+                    "temperature": 0.1,  # Низкая температура для точности
+                    "maxTokens": 1000
+                },
+                "messages": [
+                    {"role": "user", "text": user_message}
+                ]
+            }
+
+            headers = {
+                'Authorization': f'Api-Key {cfg["api_key"]}',
+                'Content-Type': 'application/json'
+            }
+
+            response = requests.post(URL, headers=headers, json=data, timeout=60)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if 'result' in result and 'alternatives' in result['result']:
+                    alternatives = result['result']['alternatives']
+                    if alternatives and len(alternatives) > 0:
+                        gpt_response = alternatives[0]['message']['text']
+                        _logger.info(f"[_send_text_to_yandex_gpt_with_prompt] YandexGPT ответ: {gpt_response}")
+                        return gpt_response
+            else:
+                _logger.error(f"[_send_text_to_yandex_gpt_with_prompt] Ошибка API: {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            _logger.error(f"[_send_text_to_yandex_gpt_with_prompt] Ошибка: {str(e)}")
+            
         return None

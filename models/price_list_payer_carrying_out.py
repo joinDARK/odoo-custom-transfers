@@ -29,7 +29,7 @@ class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
     accrual_percentage = fields.Float(string="% Начисления", tracking=True)
     fixed_deal_fee = fields.Float(string="Фикс за сделку в $", tracking=True)
     min_application_amount = fields.Float(string="Минимальная сумма заявки $", tracking=True)
-    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True)
+    max_application_amount = fields.Float(string="Максимальная сумма заявки $", tracking=True, default=999999999)
     bind_field = fields.Boolean(string="Привязать", tracking=True)
     zayavka_ids = fields.One2many(
         'amanat.zayavka',               # модель заявок

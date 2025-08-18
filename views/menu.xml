@@ -79,7 +79,7 @@
         name="Контрагенты" 
         parent="amanat_menu_manuals_group" 
         action="contragent_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector,amanat.group_amanat_fin_manager"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector,amanat.group_amanat_fin_manager,amanat.group_amanat_limited_access"
     />
     
     <!-- Меню для договоров контрагентов -->
@@ -214,16 +214,6 @@
         parent="amanat_menu_orders_group"
         action="zayavka_action"
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector,amanat.group_amanat_limited_access"
-    />
-
-    <!-- Меню для заявки (казначеи) -->
-    <menuitem 
-        id="amanat_menu_zayavka_treasurer"
-        name="Заявки"
-        parent="amanat_menu_orders_group"
-        action="zayavka_action_treasurer"
-        groups="amanat.group_amanat_treasurer"
-        sequence="1"
     />
 
     <!-- Меню для резерва -->
@@ -436,4 +426,7 @@
         action="action_amanat_calculator_50_usd"
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector,amanat.group_amanat_fin_manager"
     />
+
+
+
 </odoo>

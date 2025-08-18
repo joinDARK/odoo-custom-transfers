@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import requests
+import xml.etree.ElementTree as ET
 from odoo import models, api, fields
 
 _logger = logging.getLogger(__name__)
@@ -53,38 +54,33 @@ class ZayavkaMethods(models.Model):
                 closing_date = vals['deal_closed_date']
                 _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: установлена дата закрытия {closing_date}")
                 
-                agent_name = rec.agent_id.name if rec.agent_id else ""
-                _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: агент = '{agent_name}'")
-                
-                # Проверяем, что контрагент (агент) = Сбербанк
-                contragent_name = rec.contragent_id.name if rec.contragent_id else ""
-                
-                if not contragent_name or 'сбер' not in contragent_name.lower():
-                    _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: пропускаем автоматизацию, т.к. агент не Сбербанк")
-                    continue
-                
-                _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: агент = Сбербанк, продолжаем автоматизацию")
-                
-                # Устанавливаем статусы
+                # Устанавливаем статусы для ВСЕХ заявок при закрытии сделки
                 rec.swift_status = 'closed'  # Статус SWIFT = "заявка закрыта"
                 rec.status = '21'  # 21. Заявка закрыта
                 _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: установлены статусы - status='21', swift_status='closed'")
                 
-                # Генерируем акт-отчет автоматически
-                try:
-                    _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: запуск генерации акт-отчета")
-                    rec.action_generate_act_report_document()
-                    _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: акт-отчет успешно сгенерирован")
-                    
-                    # В поле "сделка закрыта" уже установлена дата формирования акт-отчета
-                    # (это и есть дата закрытия сделки, которую установил пользователь)
-                    _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: дата формирования акт-отчета = дата закрытия сделки = {closing_date}")
-                    
-                except Exception as e:
-                    _logger.error(f"[CLOSING_AUTOMATION] Заявка {rec.id}: ошибка генерации акт-отчета: {e}")
-                
-                # Применяем правила управления
+                # Применяем правила управления для всех заявок
                 rec.apply_rules_by_deal_closed_date()
+                
+                # Специфичная автоматизация только для Сбербанка
+                contragent_name = rec.contragent_id.name if rec.contragent_id else ""
+                if contragent_name and 'сбер' in contragent_name.lower():
+                    _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: контрагент = Сбербанк, запускаем дополнительную автоматизацию")
+                    
+                    # Генерируем акт-отчет автоматически только для Сбербанка
+                    try:
+                        _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: запуск генерации акт-отчета")
+                        rec.action_generate_act_report_document()
+                        _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: акт-отчет успешно сгенерирован")
+                        
+                        # В поле "сделка закрыта" уже установлена дата формирования акт-отчета
+                        # (это и есть дата закрытия сделки, которую установил пользователь)
+                        _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: дата формирования акт-отчета = дата закрытия сделки = {closing_date}")
+                        
+                    except Exception as e:
+                        _logger.error(f"[CLOSING_AUTOMATION] Заявка {rec.id}: ошибка генерации акт-отчета: {e}")
+                else:
+                    _logger.info(f"[CLOSING_AUTOMATION] Заявка {rec.id}: контрагент не Сбербанк ('{contragent_name}'), пропускаем генерацию акт-отчета")
         
         if 'act_report_attachments' in vals:
             for rec in self:
@@ -103,10 +99,6 @@ class ZayavkaMethods(models.Model):
                             files_added = True
                             break
                 
-                # Устанавливаем дату закрытия только при добавлении файлов
-                # if files_added and not vals.get('deal_closed_date') and not rec.deal_closed_date:
-                    # rec.deal_closed_date = fields.Date.today()
-                    # _logger.info(f"Автоматически установлена дата закрытия сделки для заявки {rec.id}")
                 
                 rec.status = '21'
         
@@ -122,6 +114,9 @@ class ZayavkaMethods(models.Model):
                     rec.swift_received_date = fields.Date.today()
                 rec.status = '12'
                 rec.swift_status = 'swift_received'
+                
+                # Анализируем SWIFT документы для извлечения даты "approved at"
+                rec.analyze_swift_documents_for_approved_date()
 
         if trigger:
             for rec in self:
@@ -181,6 +176,7 @@ class ZayavkaMethods(models.Model):
                     # Проверяем условия для автоподписи
                     should_sign = False
                     if attachments:
+                        rec.status = '4'
                         should_sign = rec.should_auto_sign_document(attachments[0])
                     
                     if should_sign:
@@ -326,6 +322,9 @@ class ZayavkaMethods(models.Model):
                 res.swift_received_date = fields.Date.today()
             res.swift_status = 'swift_received'
             res.status = '12'
+            
+            # Анализируем SWIFT документы для извлечения даты "approved at"
+            res.analyze_swift_documents_for_approved_date()
 
         if vals.get('deal_closed_date'):
             res.swift_status = 'closed'
@@ -534,6 +533,76 @@ class ZayavkaMethods(models.Model):
             'target': 'current',
             'context': dict(self.env.context, default_status='1')
         }
+
+    def action_export_kassa_to_excel(self):
+        """Выгружает данные касс для выбранных заявок в Excel"""
+        _logger.info(f"🔥 МЕТОД action_export_kassa_to_excel ВЫЗВАН! Количество записей: {len(self)}")
+        
+        # Проверяем, что есть выбранные записи
+        if not self:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': "Нет выбранных записей",
+                    'message': "Пожалуйста, выберите заявки для выгрузки в Excel",
+                    'type': 'warning',
+                    'sticky': False,
+                }
+            }
+        
+        # Создаем wizard с правильными значениями по умолчанию
+        wizard = self.env['amanat.zayavka.kassa.wizard'].create({
+            'kassa_type': 'all',
+            'field_name': 'date_placement',
+            'date_from': fields.Date.today(),
+            'date_to': fields.Date.today(),
+        })
+        
+        try:
+            # Отправляем выбранные заявки на сервер используя метод wizard'а
+            server_response_info = wizard._send_data_to_server(self)
+            _logger.info(f"📤 Ответ сервера: {server_response_info}")
+            
+            # Показываем результат пользователю
+            if server_response_info.get('server_status') == 'success':
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': "Успешная выгрузка касс!",
+                        'message': f"Выгружено {server_response_info.get('sent_count', 0)} выбранных заявок в Excel",
+                        'type': 'success',
+                        'sticky': False,
+                    }
+                }
+            else:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': "Ошибка выгрузки",
+                        'message': f"Ошибка при выгрузке: {server_response_info.get('server_response', 'Неизвестная ошибка')}",
+                        'type': 'danger',
+                        'sticky': True,
+                    }
+                }
+        except Exception as e:
+            _logger.error(f"❌ Ошибка при выгрузке касс: {e}")
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': "Ошибка выполнения",
+                    'message': f"Произошла ошибка: {str(e)}",
+                    'type': 'danger',
+                    'sticky': True,
+                }
+            }
+        finally:
+            # Очищаем временный wizard
+            if wizard.exists():
+                wizard.unlink()
 
     def refresh_rates(self):
         """Обновляет курсы инвестинг и ЦБ через API в зависимости от выбранной валюты"""
@@ -1599,7 +1668,6 @@ class ZayavkaMethods(models.Model):
                     
                     # Проверяем валидность XML перед сохранением
                     try:
-                        import xml.etree.ElementTree as ET
                         ET.fromstring(content)
                         _logger.info("XML валидация прошла успешно")
                     except ET.ParseError as e:
@@ -1795,7 +1863,6 @@ class ZayavkaMethods(models.Model):
         import tempfile
         import os
         from zipfile import ZipFile
-        import xml.etree.ElementTree as ET
         
         try:
             _logger.info(f"[_process_statement_docx_template] Начинаем обработку шаблона заявления: {docx_path}")
@@ -2045,7 +2112,6 @@ class ZayavkaMethods(models.Model):
     
     def _fill_cell_with_value(self, cell, value):
         """Заполняет ячейку таблицы значением"""
-        import xml.etree.ElementTree as ET
         
         # Очищаем существующий текст
         for t in cell.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t'):

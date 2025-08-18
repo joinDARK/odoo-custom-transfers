@@ -38,9 +38,9 @@ class Calculator50UsdWizard(models.Model):
     # EUR (кросс к USD) блок
     # ==========================
     eur_invoice_amount = fields.Float(string='Сумма инвойса в EUR')
-    usd_rate_cbr = fields.Float(string='Курс $ ЦБ (RUB/USD)', digits=(16, 6),
+    usd_rate_cbr = fields.Float(string='Курс $ ЦБ (USD/RUB)', digits=(16, 6),
                                 help='Используется для конвертации USD в RUB.')
-    eur_xe_rate = fields.Float(string='Курс XE EUR (USD/EUR)', digits=(16, 6),
+    eur_xe_rate = fields.Float(string='Курс XE EUR (EUR/USD)', digits=(16, 6),
                                help='Кросс EUR→USD по XE.')
 
     eur_cross_client = fields.Float(string='Кросскурс EUR→USD (для клиента)', digits=(16, 6),
@@ -60,11 +60,11 @@ class Calculator50UsdWizard(models.Model):
     # CNY (кросс к USD) блок
     # ==========================
     cny_invoice_amount = fields.Float(string='Сумма инвойса в CNY')
-    usd_rate_investing_cny_cross = fields.Float(string='Курс $ Investing (RUB/USD)', digits=(16, 6))
-    cny_cross = fields.Float(string='Кросс курс юаня (CNY/USD)', digits=(16, 6),
+    usd_rate_investing_cny_cross = fields.Float(string='Курс $ (USD/RUB)', digits=(16, 6))
+    cny_cross = fields.Float(string='Кросс курс юаня (USD/CNY)', digits=(16, 6),
                              help='Кросс CNY→USD. Для клиента увеличивается на % надбавки (авто).')
 
-    cny_cross_client = fields.Float(string='Кросскурс CNY→USD (для клиента)', digits=(16, 6),
+    cny_cross_client = fields.Float(string='Кросскурс USD→CNY (для клиента)', digits=(16, 6),
                                     compute='_compute_all', store=False, readonly=True)
     cny_amount_rub = fields.Float(string='Сумма к оплате в RUB', digits=(16, 2),
                                   compute='_compute_all', store=False, readonly=True)
@@ -81,12 +81,12 @@ class Calculator50UsdWizard(models.Model):
     # USD (обычный) блок — с добавкой $
     # ==========================
     usd_invoice_amount = fields.Float(string='Сумма инвойса в USD')
-    usd_investing_rate = fields.Float(string='Курс $ Investing (RUB/USD)', digits=(16, 6))
+    usd_investing_rate = fields.Float(string='Курс $ (USD/RUB)', digits=(16, 6))
     usd_commission_percent = fields.Float(string='% Агентского вознаграждения')
 
     usd_final_rate_for_payment = fields.Float(string='Итоговый курс для суммы платежа (RUB/USD)', digits=(16, 6),
                                               compute='_compute_all', store=False, readonly=True,
-                                              help='Курс $ Investing с учетом процента агентского.')
+                                              help='Курс $ с учетом процента агентского.')
     usd_payment_amount_rub = fields.Float(string='Сумма платежа (RUB)', digits=(16, 2),
                                           compute='_compute_all', store=False, readonly=True)
 
@@ -103,9 +103,9 @@ class Calculator50UsdWizard(models.Model):
     # CNY (обычный) блок — с добавкой $
     # ==========================
     cny2_invoice_amount = fields.Float(string='Сумма инвойса в CNY')
-    cny2_rate = fields.Float(string='Курс юаня (RUB/CNY)', digits=(16, 6),
+    cny2_rate = fields.Float(string='Курс юаня (CNY/RUB)', digits=(16, 6),
                              help='Прямой курс конверсии CNY→RUB.')
-    cny2_usd_rate = fields.Float(string='Курс $ (RUB/USD)', digits=(16, 6),
+    cny2_usd_rate = fields.Float(string='Курс $ (USD/RUB)', digits=(16, 6),
                                  help='Используется для конвертации добавки $ в рубли.')
     cny2_commission_percent = fields.Float(string='% Агентского вознаграждения')
 
@@ -127,9 +127,9 @@ class Calculator50UsdWizard(models.Model):
     # EUR (обычный) блок — с добавкой $
     # ==========================
     eur2_invoice_amount = fields.Float(string='Сумма инвойса в EUR')
-    eur2_rate = fields.Float(string='Курс евро (RUB/EUR)', digits=(16, 6),
+    eur2_rate = fields.Float(string='Курс евро (EUR/RUB)', digits=(16, 6),
                              help='Прямой курс конверсии EUR→RUB.')
-    eur2_usd_rate = fields.Float(string='Курс $ (RUB/USD)', digits=(16, 6),
+    eur2_usd_rate = fields.Float(string='Курс $ (USD/RUB)', digits=(16, 6),
                                  help='Курс для пересчета добавки $ в RUB.')
     eur2_commission_percent = fields.Float(string='% Агентского вознаграждения')
 

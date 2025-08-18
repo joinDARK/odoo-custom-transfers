@@ -104,7 +104,7 @@ class Price_list_partners(models.Model, AmanatBaseModel):
         'price_list_partners_id_5',
         string='Заявки copy copy copy copy'
     )
-    max_application_amount = fields.Float(string="Максимальная сумма заявки $")
+    max_application_amount = fields.Float(string="Максимальная сумма заявки $", default=999999999)
 
     @api.depends('date_start', 'date_end')
     def _compute_period_days(self):

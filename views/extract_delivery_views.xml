@@ -154,11 +154,11 @@
                         <page string="Линки" groups="!amanat.group_amanat_fin_manager_jess">
                             <group>
                                 <field name="applications"/>
-                                <field name="currency_reserve"/>
-                                <field name="transfer_ids"/>
-                                <field name="conversion"/>
-                                <field name="investment"/>
-                                <field name="gold_deal"/>
+                                <field name="currency_reserve" groups="!amanat.group_amanat_treasurer"/>
+                                <field name="transfer_ids" groups="!amanat.group_amanat_treasurer"/>
+                                <field name="conversion" groups="!amanat.group_amanat_treasurer"/>
+                                <field name="investment" groups="!amanat.group_amanat_treasurer"/>
+                                <field name="gold_deal" groups="!amanat.group_amanat_treasurer"/>
                             </group>
                         </page>
                         <page string="Выписка дробь" groups="!amanat.group_amanat_fin_manager_jess">
@@ -267,7 +267,7 @@
                                 </div>
                             </group>
                         </page>
-                        <page string="Диапазон" groups="!amanat.group_amanat_fin_manager_jess">
+                        <page string="Диапазон" groups="!amanat.group_amanat_fin_manager_jess, !amanat.group_amanat_treasurer">
                             <group>
                                 <field name="range_field"/>
                                 <field name="date_start"/>
@@ -275,7 +275,7 @@
                                 <field name="range_status"/>
                             </group>
                         </page>
-                        <page string="Остальные поля" groups="!amanat.group_amanat_fin_manager_jess">
+                        <page string="Остальные поля" groups="!amanat.group_amanat_fin_manager_jess, !amanat.group_amanat_treasurer">
                             <group string="Заявка">
                                 <field name="applications"/>
                             </group>

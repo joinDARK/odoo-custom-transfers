@@ -59,7 +59,7 @@ class PriceListPayerProfit(models.Model):
 
     # Минимальная и Максимальная сумма заявки $
     min_zayavka_amount = fields.Float(string='Минимальная сумма заявки $', tracking=True)
-    max_zayavka_amount = fields.Float(string='Максимальная сумма заявки $', tracking=True)
+    max_zayavka_amount = fields.Float(string='Максимальная сумма заявки $', tracking=True, default=999999999)
 
     # Привязать — чекбокс, по умолчанию False
     is_bound = fields.Boolean(string='Привязать', default=False, tracking=True)

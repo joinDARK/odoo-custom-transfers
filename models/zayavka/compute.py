@@ -191,6 +191,32 @@ class ZayavkaComputes(models.Model):
             # ! Платежка РФ Клиент = (Заявка по курсу в рублях по договору + Вознаграждение по договору Клиент) * Процент (from Расход платежа по РФ(%))
             rec.payment_order_rf_client = (contract_rub + client_reward) * percent
 
+    @api.depends(
+        'amount', 
+        'is_sberbank_contragent', 
+        'is_sovcombank_contragent',
+        'client_payment_cost',
+        'sber_payment_cost', 
+        'payment_cost_sovok'
+    )
+    def _compute_payment_expense_in_currency(self):
+        for rec in self:
+            amount = rec.amount or 0.0
+            
+            # Определяем какое поле расхода использовать в зависимости от типа контрагента
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                # Для Сбербанка используем sber_payment_cost
+                payment_cost = rec.sber_payment_cost or 0.0
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                # Для Совкомбанка используем payment_cost_sovok
+                payment_cost = rec.payment_cost_sovok or 0.0
+            else:
+                # Для обычных клиентов используем client_payment_cost
+                payment_cost = rec.client_payment_cost or 0.0
+            
+            # ! Расход за платеж в валюте заявки = Сумма заявки × соответствующий расход платежа
+            rec.payment_expense_in_currency = amount * payment_cost
+
     @api.depends('usd_equivalent', 'total_client', 'partner_post_conversion_rate')
     def _compute_client_operating_expenses(self):
         for rec in self:
@@ -1081,10 +1107,20 @@ class ZayavkaComputes(models.Model):
     @api.depends('extract_delivery_ids.bank_document')
     def _compute_bank_vypiska(self):
         for rec in self:
-            # Собираем все уникальные значения bank_document из связанных выписок
-            bank_names = list(filter(None, rec.extract_delivery_ids.mapped('bank_document')))
+            # Получаем человекочитаемые названия банков напрямую из связанных выписок
+            bank_names = []
+            
+            for extract in rec.extract_delivery_ids:
+                if extract.document_id and extract.document_id.bank:
+                    # Получаем человекочитаемое значение через display_name поля Selection
+                    bank_field = extract.document_id._fields['bank']
+                    selection_dict = dict(bank_field._description_selection(extract.document_id.env))
+                    human_readable = selection_dict.get(extract.document_id.bank, extract.document_id.bank)
+                    if human_readable:
+                        bank_names.append(human_readable)
+            
             # Убираем дубли и сортируем
-            bank_names = sorted(set(bank_names))
+            bank_names = sorted(set(filter(None, bank_names)))
             rec.bank_vypiska = ', '.join(bank_names)
 
     @api.depends('amount', 'price_list_profit_id.percent_accrual')

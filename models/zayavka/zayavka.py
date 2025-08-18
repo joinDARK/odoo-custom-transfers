@@ -198,10 +198,10 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_order_rf_client = fields.Float(
-        string='Платежка РФ Клиент',
+        string='Расход платежа по РФ',
         compute='_compute_payment_order_rf_client',
         help="""
-        Платежка РФ Клиент = (Заявка по курсу в рублях по договору + Вознаграждение по договору Клиент) × Процент (from Расход платежа по РФ(%))
+        Расход платежа по РФ = (Заявка по курсу в рублях по договору + Вознаграждение по договору Клиент) × Процент (from Расход платежа по РФ(%))
         """,
         readonly=False,
         store=True,
@@ -209,7 +209,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_operating_expenses = fields.Float(
-        string='Расход на операционную деятельность Клиент',
+        string='Расход на операционную деятельность',
         compute='_compute_client_operating_expenses',
         readonly=False,
         store=True,
@@ -217,16 +217,15 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_real_operating_expenses = fields.Float(
-        string='Расход на операционную деятельность Клиент в валюте заявки',
+        string='Расход на операционную деятельность в валюте заявки',
         compute='_compute_client_real_operating_expenses',
-        # help=""""""
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_real_operating_expenses_usd = fields.Float(
-        string='Расход на операционную деятельность Клиент в эквиваленте $',
+        string='Расход на операционную деятельность в эквиваленте $',
         compute='_compute_client_real_operating_expenses_usd',
         readonly=False,
         store=True,
@@ -234,7 +233,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_real_operating_expenses_rub = fields.Float(
-        string='Расход на операционную деятельность Клиент ₽',
+        string='Расход на операционную деятельность ₽',
         compute='_compute_client_real_operating_expenses_rub',
         readonly=False,
         store=True,
@@ -242,63 +241,63 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_currency_bought = fields.Float(
-        string='Купили валюту Клиент',
+        string='Купили валюту',
         compute='_compute_client_currency_bought',
-        help="""Если Курс после конвертации партнер равен 0: Купили валюту Клиент = 0
-        Иначе: Купили валюту Клиент = (Итого Клиент - Платежка РФ Клиент) ÷ Курс после конвертации партнер""",
+        help="""Если Курс после конвертации партнер равен 0: Купили валюту = 0
+        Иначе: Купили валюту = (Итого Клиент - Расход платежа по РФ) ÷ Курс после конвертации партнер""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_currency_bought_real = fields.Float(
-        string='Купили валюту Клиент в валюте заявки',
+        string='Купили валюту в валюте заявки',
         compute='_compute_client_currency_bought_real',
-        help="""Если Курс после конвертации в валюте заявки равен 0: Купили валюту Клиент в валюте заявки = 0
-        Иначе: Купили валюту Клиент в валюте заявки = (Итого Клиент - Платежка РФ Клиент) ÷ Курс после конвертации в валюте заявки""",
+        help="""Если Курс после конвертации в валюте заявки равен 0: Купили валюту в валюте заявки = 0
+        Иначе: Купили валюту в валюте заявки = (Итого Клиент - Расход платежа по РФ) ÷ Курс после конвертации в валюте заявки""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_currency_bought_real_usd = fields.Float(
-        string='Купили валюту Клиент в эквиваленте $',
+        string='Купили валюту в эквиваленте $',
         compute='_compute_client_currency_bought_real_usd',
-        help="""Купили валюту Клиент в эквиваленте $ = Купили валюту Клиент в валюте заявки × Кросс-курс $ к валюте заявки авто""",
+        help="""Купили валюту в эквиваленте $ = Купили валюту в валюте заявки × Кросс-курс $ к валюте заявки авто""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_currency_bought_real_rub = fields.Float(
-        string='Купили валюту Клиент ₽',
+        string='Купили валюту ₽',
         compute='_compute_client_currency_bought_real_rub',
-        help="""Купили валюту Клиент ₽ = Купили валюту Клиент в эквиваленте $ × Курс Джес""",
+        help="""Купили валюту ₽ = Купили валюту в эквиваленте $ × Курс Джес""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_payment_cost_usd = fields.Float(
-        string='Расход за проведение платежа в $ Клиент',
+        string='Расход за проведение платежа в $',
         compute='_compute_client_payment_cost_usd',
-        help="""Расход за проведение платежа в $ Клиент = Расход за проведение платежа Совок × Кросс-курс $ к валюте заявки авто + Фикс за сделку $ (from Расход за проведение платежа(%))""",
+        help="""Расход за проведение платежа в $ = Расход за проведение платежа × Кросс-курс $ к валюте заявки авто + Фикс за сделку $ (from Расход за проведение платежа(%))""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     client_payment_cost_rub = fields.Float(
-        string='Расход за проведение платежа в ₽ Клиент',
+        string='Расход за проведение платежа в ₽',
         compute='_compute_client_payment_cost_rub',
-        help="""Расход за проведение платежа в ₽ Клиент = Расход за проведение платежа в $ Клиент × Курс Джес""",
+        help="""Расход за проведение платежа в ₽ = Расход за проведение платежа в $ × Курс Джес""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     cost_of_money_client = fields.Float(
-        string='Себестоимость денег Клиент',
+        string='Себестоимость денег',
         compute='_compute_cost_of_money_client',
         readonly=False,
         store=True,
@@ -307,7 +306,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     cost_of_money_client_real = fields.Float(
-        string='Себестоимость денег Клиент в валюте заявки',
+        string='Себестоимость денег в валюте заявки',
         compute='_compute_cost_of_money_client_real',
         readonly=False,
         store=True,
@@ -316,7 +315,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     cost_of_money_client_real_usd = fields.Float(
-        string='Себестоимость денег Клиент в эквиваленте $',
+        string='Себестоимость денег в эквиваленте $',
         compute='_compute_cost_of_money_client_real_usd',
         readonly=False,
         store=True,
@@ -325,7 +324,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     cost_of_money_client_real_rub = fields.Float(
-        string='Себестоимость денег Клиент ₽',
+        string='Себестоимость денег ₽',
         compute='_compute_cost_of_money_client_real_rub',
         readonly=False,
         store=True,
@@ -334,7 +333,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_client = fields.Float(
-        string='Фин рез Клиент',
+        string='Фин рез',
         compute='_compute_fin_res_client',
         readonly=False,
         store=True,
@@ -343,42 +342,42 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_client_real = fields.Float(
-        string='Фин рез Клиент в валюте заявки',
+        string='Фин рез в валюте заявки',
         compute='_compute_fin_res_client_real',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
-        help="""Если вид сделки "Экспорт": Фин рез = (Сумма заявки × % Вознаграждения) -  Расход за проведение платежа в валюте заявки - Расход на операционную деятельность Клиент в валюте заявки
+        help="""Если вид сделки "Экспорт": Фин рез = (Сумма заявки × % Вознаграждения) -  Расход за проведение платежа в валюте заявки - Расход на операционную деятельность в валюте заявки
         
         Если Агент "Тезер" ИЛИ Валюта "USDT" ИЛИ Вид сделки "Импорт-экспорт/Экспорт-импорт":
-        • Если Контрагент "А7": Фин рез = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Клиент в валюте заявки -  Расход за проведение платежа в валюте заявки
-        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Клиент в валюте заявки -  Расход за проведение платежа в валюте заявки
+        • Если Контрагент "А7": Фин рез = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность в валюте заявки -  Расход за проведение платежа в валюте заявки
+        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность в валюте заявки -  Расход за проведение платежа в валюте заявки
 
-        Обычный расчет: Фин рез = Купили валюту Клиент в валюте заявки -  Расход за проведение платежа в валюте заявки - Себестоимость денег Клиент в валюте заявки - Скрытая комиссия Партнера в валюте заявки - Расход на операционную деятельность Клиент в валюте заявки - Сумма заявки - Сумма плательщику по валюте заявки"""
+        Обычный расчет: Фин рез = Купили валюту в валюте заявки -  Расход за проведение платежа в валюте заявки - Себестоимость денег в валюте заявки - Скрытая комиссия Партнера в валюте заявки - Расход на операционную деятельность в валюте заявки - Сумма заявки - Сумма плательщику по валюте заявки"""
     )
 
     fin_res_client_real_usd = fields.Float(
-        string='Фин рез Клиент в эквиваленте $',
+        string='Фин рез в эквиваленте $',
         compute='_compute_fin_res_client_real_usd',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Клиент в эквиваленте $ = Фин рез Клиент в валюте заявки × Кросс-курс $ к валюте заявки авто
+        Фин рез в эквиваленте $ = Фин рез в валюте заявки × Кросс-курс $ к валюте заявки авто
         """
     )
 
     fin_res_client_real_rub = fields.Float(
-        string='Фин рез Клиент ₽',
+        string='Фин рез ₽',
         compute='_compute_fin_res_client_real_rub',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Клиент ₽ = Фин рез Клиент в эквиваленте $ × Курс Джес
+        Фин рез ₽ = Фин рез в эквиваленте $ × Курс Джес
         """
     )
 
@@ -440,7 +439,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_payment_cost = fields.Float(
-        string='Расход за проведение платежа Сбер',
+        string='Расход за проведение платежа',
         compute='_compute_sber_payment_cost',
         readonly=False,
         store=True,
@@ -448,10 +447,10 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_order_rf_sber = fields.Float(
-        string='Платежка РФ Сбер',
+        string='Расход платежа по РФ',
         compute='_compute_payment_order_rf_sber',
         help="""
-        Платежка РФ Сбер = (Заявка по курсу в рублях по договору + Вознаграждение по договору Сбер) × Процент (from Расход платежа по РФ(%))
+        Расход платежа по РФ = (Заявка по курсу в рублях по договору + Вознаграждение по договору) × Процент (from Расход платежа по РФ(%))
         """,
         readonly=False,
         store=True,
@@ -459,7 +458,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_operating_expenses = fields.Float(
-        string='Расход на операционную деятельность Сбер',
+        string='Расход на операционную деятельность',
         compute='_compute_sber_operating_expenses',
         readonly=False,
         store=True,
@@ -467,7 +466,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_operating_expenses_real = fields.Float(
-        string='Расход на операционную деятельность Сбер в валюте заявки',
+        string='Расход на операционную деятельность в валюте заявки',
         compute='_compute_sber_operating_expenses_real',
         readonly=False,
         store=True,
@@ -475,7 +474,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_operating_expenses_real_usd = fields.Float(
-        string='Расход на операционную деятельность Сбер в эквиваленте $',
+        string='Расход на операционную деятельность в эквиваленте $',
         compute='_compute_sber_operating_expenses_real_usd',
         readonly=False,
         store=True,
@@ -483,7 +482,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_operating_expenses_real_rub = fields.Float(
-        string='Расход на операционную деятельность Сбер ₽',
+        string='Расход на операционную деятельность ₽',
         compute='_compute_sber_operating_expenses_real_rub',
         readonly=False,
         store=True,
@@ -491,7 +490,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sber = fields.Float(
-        string='Купили валюту Сбер',
+        string='Купили валюту',
         compute='_compute_kupili_valyutu_sber',
         readonly=False,
         store=True,
@@ -499,7 +498,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sber_real = fields.Float(
-        string='Купили валюту Сбер в валюте заявки',
+        string='Купили валюту в валюте заявки',
         compute='_compute_kupili_valyutu_sber_real',
         readonly=False,
         store=True,
@@ -507,7 +506,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sber_real_usd = fields.Float(
-        string='Купили валюту Сбер в эквиваленте $',
+        string='Купили валюту в эквиваленте $',
         compute='_compute_kupili_valyutu_sber_real_usd',
         readonly=False,
         store=True,
@@ -515,7 +514,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sber_real_rub = fields.Float(
-        string='Купили валюту Сбер ₽',
+        string='Купили валюту ₽',
         compute='_compute_kupili_valyutu_sber_real_rub',
         readonly=False,
         store=True,
@@ -523,7 +522,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_payment_cost_usd = fields.Float(
-        string='Расход за проведение платежа Сбер $',
+        string='Расход за проведение платежа $',
         compute='_compute_sber_payment_cost_usd',
         readonly=False,
         store=True,
@@ -532,7 +531,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sber_payment_cost_rub = fields.Float(
-        string='Расход за проведение платежа Сбер ₽',
+        string='Расход за проведение платежа ₽',
         compute='_compute_sber_payment_cost_rub',
         readonly=False,
         store=True,
@@ -559,7 +558,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sber = fields.Float(
-        string='Себестоимость денег Сбер',
+        string='Себестоимость денег',
         compute='_compute_sebestoimost_denej_sber',
         readonly=False,
         store=True,
@@ -568,7 +567,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sber_real = fields.Float(
-        string='Себестоимость денег Сбер в валюте заявки',
+        string='Себестоимость денег в валюте заявки',
         compute='_compute_sebestoimost_denej_sber_real',
         readonly=False,
         store=True,
@@ -577,7 +576,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sber_real_usd = fields.Float(
-        string='Себестоимость денег Сбер в эквиваленте $',
+        string='Себестоимость денег в эквиваленте $',
         compute='_compute_sebestoimost_denej_sber_real_usd',
         readonly=False,
         store=True,
@@ -586,7 +585,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sber_real_rub = fields.Float(
-        string='Себестоимость денег Сбер ₽',
+        string='Себестоимость денег ₽',
         compute='_compute_sebestoimost_denej_sber_real_rub',
         readonly=False,
         store=True,
@@ -595,7 +594,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_sber = fields.Float(
-        string='Фин рез Сбер',
+        string='Фин рез',
         compute='_compute_fin_res_sber',
         readonly=False,
         store=True,
@@ -604,43 +603,43 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_sber_real = fields.Float(
-        string='Фин рез Сбер в валюте заявки',
+        string='Фин рез в валюте заявки',
         compute='_compute_fin_res_sber_real',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Если вид сделки "Экспорт": Фин рез Сбер в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход за проведение платежа Сбер - Расход на операционную деятельность Сбер в валюте заявки
+        Если вид сделки "Экспорт": Фин рез в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход за проведение платежа - Расход на операционную деятельность в валюте заявки
         
         Если Агент "Тезер" ИЛИ Валюта "USDT" ИЛИ Вид сделки "Импорт-экспорт/Экспорт-импорт":
-        • Если Контрагент "А7": Фин рез Сбер в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Сбер в валюте заявки - Расход за проведение платежа Сбер
-        • Иначе: Фин рез Сбер в валюте заявки = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Сбер в валюте заявки - Расход за проведение платежа Сбер
+        • Если Контрагент "А7": Фин рез в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность в валюте заявки - Расход за проведение платежа
+        • Иначе: Фин рез в валюте заявки = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность в валюте заявки - Расход за проведение платежа
 
-        Обычный расчет: Фин рез Сбер в валюте заявки = Купили валюту Сбер в валюте заявки - Расход за проведение платежа Сбер - Себестоимость денег Сбер в валюте заявки - Скрытая комиссия Партнера в валюте заявки - Расход на операционную деятельность Сбер в валюте заявки - Сумма заявки - Сумма плательщику по валюте заявки"""
+        Обычный расчет: Фин рез в валюте заявки = Купили валюту в валюте заявки - Расход за проведение платежа - Себестоимость денег в валюте заявки - Скрытая комиссия Партнера в валюте заявки - Расход на операционную деятельность в валюте заявки - Сумма заявки - Сумма плательщику по валюте заявки"""
     )
 
     fin_res_sber_real_usd = fields.Float(
-        string='Фин рез Сбер в эквиваленте $',
+        string='Фин рез в эквиваленте $',
         compute='_compute_fin_res_sber_real_usd',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Сбер в эквиваленте $ = Фин рез Сбер в валюте заявки × Кросс-курс $ к валюте заявки авто
+        Фин рез в эквиваленте $ = Фин рез в валюте заявки × Кросс-курс $ к валюте заявки авто
         """
     )
 
     fin_res_sber_real_rub = fields.Float(
-        string='Фин рез Сбер ₽',
+        string='Фин рез ₽',
         compute='_compute_fin_res_sber_real_rub',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Сбер ₽ = Фин рез Сбер в эквиваленте $ × Курс Джес
+        Фин рез ₽ = Фин рез в эквиваленте $ × Курс Джес
         """
     )
 
@@ -686,17 +685,17 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_cost_sovok = fields.Float(
-        string='Расход за проведение платежа Совок',
+        string='Расход за проведение платежа',
         compute='_compute_payment_cost_sovok',
         readonly=False,
         store=True,
     )
 
     payment_order_rf_sovok = fields.Float(
-        string='Платежка РФ Совок',
+        string='Расход платежа по РФ',
         compute='_compute_payment_order_rf_sovok',
         help="""
-        Платежка РФ Совок = (Заявка по курсу в рублях по договору + Вознаграждение по договору Совок) × Процент (from Расход платежа по РФ(%))
+        Расход платежа по РФ = (Заявка по курсу в рублях по договору + Вознаграждение по договору Совок) × Процент (from Расход платежа по РФ(%))
         """,
         readonly=False,
         store=True,
@@ -704,7 +703,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     operating_expenses_sovok_partner = fields.Float(
-        string='Расход на операционную деятельность Совок партнер',
+        string='Расход на операционную деятельность партнер',
         compute='_compute_operating_expenses_sovok_partner',
         readonly=False,
         store=True,
@@ -712,38 +711,38 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     operating_expenses_sovok_real = fields.Float(
-        string='Расход на операционную деятельность Совок в валюте заявки',
+        string='Расход на операционную деятельность в валюте заявки',
         compute='_compute_operating_expenses_sovok_real',
-        help="""Если Вид сделки 'Экспорт': Расход на операционную деятельность Совок в валюте заявки = Процент (from Операционные расходы (%)) * Сумма заявки
+        help="""Если Вид сделки 'Экспорт': Расход на операционную деятельность в валюте заявки = Процент (from Операционные расходы (%)) * Сумма заявки
         Иначе:
-        — Если Итого Совок = 0 или Курс после конвертации в валюте заявки = 0: Расход на операционную деятельность Совок в валюте заявки = 0
-        — Если Агент 'Тезер' или Валюта 'USDT' или Вид сделки 'Импорт-Экспорт' или Вид сделки 'Экспорт-Импорт': Расход на операционную деятельность Совок в валюте заявки = Сумма заявки × Процент (from Операционные расходы (%))
-        — Иначе: Расход на операционную деятельность Совок в валюте заявки = ((Процент (from Операционные расходы (%)) - Корректировка) × Итого Совок) ÷ Курс после конвертации в валюте заявки""",
+        — Если Итого Совок = 0 или Курс после конвертации в валюте заявки = 0: Расход на операционную деятельность в валюте заявки = 0
+        — Если Агент 'Тезер' или Валюта 'USDT' или Вид сделки 'Импорт-Экспорт' или Вид сделки 'Экспорт-Импорт': Расход на операционную деятельность в валюте заявки = Сумма заявки × Процент (from Операционные расходы (%))
+        — Иначе: Расход на операционную деятельность в валюте заявки = ((Процент (from Операционные расходы (%)) - Корректировка) × Итого Совок) ÷ Курс после конвертации в валюте заявки""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     operating_expenses_sovok_real_usd = fields.Float(
-        string='Расход на операционную деятельность Совок в эквиваленте $',
+        string='Расход на операционную деятельность в эквиваленте $',
         compute='_compute_operating_expenses_sovok_real_usd',
-        help="""Расход на операционную деятельность Совок в эквиваленте $ = Расход на операционную деятельность Совок в валюте заявки × Кросс-курс $ к валюте заявки авто""",
+        help="""Расход на операционную деятельность в эквиваленте $ = Расход на операционную деятельность в валюте заявки × Кросс-курс $ к валюте заявки авто""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     operating_expenses_sovok_real_rub = fields.Float(
-        string='Расход на операционную деятельность Совок ₽',
+        string='Расход на операционную деятельность ₽',
         compute='_compute_operating_expenses_sovok_real_rub',
-        help="""Расход на операционную деятельность Совок ₽ = Расход на операционную деятельность Совок в эквиваленте $ × Курс Джес""",
+        help="""Расход на операционную деятельность ₽ = Расход на операционную деятельность в эквиваленте $ × Курс Джес""",
         readonly=False,
         store=True,
         tracking=True
     )
 
     kupili_valyutu_sovok_partner = fields.Float(
-        string='Купили валюту Совок Партнер',
+        string='Купили валюту Партнер',
         compute='_compute_kupili_valyutu_sovok_partner',
         readonly=False,
         store=True,
@@ -752,7 +751,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sovok_real = fields.Float(
-        string='Купили валюту Совок в валюте заявки',
+        string='Купили валюту в валюте заявки',
         compute='_compute_kupili_valyutu_sovok_real',
         readonly=False,
         store=True,
@@ -761,7 +760,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sovok_real_usd = fields.Float(
-        string='Купили валюту Совок в эквиваленте $',
+        string='Купили валюту в эквиваленте $',
         compute='_compute_kupili_valyutu_sovok_real_usd',
         readonly=False,
         store=True,
@@ -770,7 +769,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     kupili_valyutu_sovok_real_rub = fields.Float(
-        string='Купили валюту Совок ₽',
+        string='Купили валюту ₽',
         compute='_compute_kupili_valyutu_sovok_real_rub',
         readonly=False,
         store=True,
@@ -779,7 +778,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_cost_sovok_partner_usd = fields.Float(
-        string='Расход за проведение платежа в $ Совок партнер',
+        string='Расход за проведение платежа в $ Партнер',
         compute='_compute_payment_cost_sovok_partner_usd',
         readonly=False,
         store=True,
@@ -788,7 +787,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_cost_sovok_real_usd = fields.Float(
-        string='Расход за проведение платежа в $ Совок в валюте заявки',
+        string='Расход за проведение платежа в $ в валюте заявки',
         compute='_compute_payment_cost_sovok_real_usd',
         readonly=False,
         store=True,
@@ -797,7 +796,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     payment_cost_sovok_real_rub = fields.Float(
-        string='Расход за проведение платежа в ₽ Совок в валюте заявки',
+        string='Расход за проведение платежа в ₽ в валюте заявки',
         compute='_compute_payment_cost_sovok_real_rub',
         readonly=False,
         store=True,
@@ -806,12 +805,12 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sovok_real = fields.Float(
-        string='Себестоимость денег Совок в валюте заявки',
+        string='Себестоимость денег в валюте заявки',
         compute='_compute_sebestoimost_denej_sovok_real',
-        help="""Если агент "Тезер": Себестоимость денег Совок в валюте заявки = 0
+        help="""Если агент "Тезер": Себестоимость денег в валюте заявки = 0
         Иначе:
-        — Если Кредитный период (from Себестоимость денег(%)) = 0: Себестоимость денег Совок в валюте заявки = 0
-        — Иначе: Себестоимость денег Совок в валюте заявки = ((Дата + Колво доп дней (from Себестоимость денег(%))) ÷ Кредитный период (from Себестоимость денег(%))) × Ставка по кредиту (from Себестоимость денег(%)) × Купили валюту Совок в валюте заявки""",
+        — Если Кредитный период (from Себестоимость денег(%)) = 0: Себестоимость денег в валюте заявки = 0
+        — Иначе: Себестоимость денег в валюте заявки = ((Дата + Колво доп дней (from Себестоимость денег(%))) ÷ Кредитный период (from Себестоимость денег(%))) × Ставка по кредиту (from Себестоимость денег(%)) × Купили валюту в валюте заявки""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -819,9 +818,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sovok_real_usd = fields.Float(
-        string='Себестоимость денег Совок в эквиваленте $',
+        string='Себестоимость денег в эквиваленте $',
         compute='_compute_sebestoimost_denej_sovok_real_usd',
-        help="""Себестоимость денег Совок в эквиваленте $ = Себестоимость денег Совок в валюте заявки × Кросс-курс $ к валюте заявки авто""",
+        help="""Себестоимость денег в эквиваленте $ = Себестоимость денег в валюте заявки × Кросс-курс $ к валюте заявки авто""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -829,9 +828,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sovok_real_rub = fields.Float(
-        string='Себестоимость денег Совок ₽',
+        string='Себестоимость денег ₽',
         compute='_compute_sebestoimost_denej_sovok_real_rub',
-        help="""Себестоимость денег Совок ₽ = Себестоимость денег Совок в эквиваленте $ × Курс Джес""",
+        help="""Себестоимость денег ₽ = Себестоимость денег в эквиваленте $ × Курс Джес""",
         readonly=False,
         store=True,
         digits=(16, 2),
@@ -839,7 +838,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_sovok_partner = fields.Float(
-        string='Фин рез Совок Партнер',
+        string='Фин рез Партнер',
         compute='_compute_fin_res_sovok_partner',
         readonly=False,
         store=True,
@@ -848,23 +847,23 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_sovok_real = fields.Float(
-        string='Фин рез Совок в валюте заявки',
+        string='Фин рез в валюте заявки',
         compute='_compute_fin_res_sovok_real',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
-        help="""Если вид сделки "Экспорт": Фин рез Совок в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход за проведение платежа Совок - Расход на операционную деятельность Совок в валюте заявки
+        help="""Если вид сделки "Экспорт": Фин рез Совок в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход за проведение платежа - Расход на операционную деятельность в валюте заявки
         
         Если Агент "Тезер" ИЛИ Валюта "USDT" ИЛИ Вид сделки "Импорт-экспорт/Экспорт-импорт":
-        • Если Контрагент "А7": Фин рез Совок в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность Совок в валюте заявки - Расход за проведение платежа Совок
-        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность Совок в валюте заявки - Расход за проведение платежа Совок
+        • Если Контрагент "А7": Фин рез Совок в валюте заявки = (Сумма заявки × % Вознаграждения) - Расход на операционную деятельность в валюте заявки - Расход за проведение платежа
+        • Иначе: Фин рез = (Сумма заявки × Скрытая комиссия) - Расход на операционную деятельность в валюте заявки - Расход за проведение платежа
 
-        Обычный расчет: Фин рез Совок в валюте заявки = Купили валюту Совок в валюте заявки - Расход за проведение платежа Совок - Себестоимость денег Совок в валюте заявки - Скрытая комиссия Партнера в валюте заявки - Расход на операционную деятельность Совок в валюте заявки - Сумма заявки - Сумма плательщику по валюте заявки"""
+        Обычный расчет: Фин рез Совок в валюте заявки = Купили валюту в валюте заявки - Расход за проведение платежа - Себестоимость денег в валюте заявки - Скрытая комиссия Партнера в валюте заявки - Расход на операционную деятельность в валюте заявки - Сумма заявки - Сумма плательщику по валюте заявки"""
     )
 
     fin_res_sovok_real_usd = fields.Float(
-        string='Фин рез Совок в эквиваленте $',
+        string='Фин рез в эквиваленте $',
         compute='_compute_fin_res_sovok_real_usd',
         readonly=False,
         store=True,
@@ -876,14 +875,14 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     fin_res_sovok_real_rub = fields.Float(
-        string='Фин рез Совок ₽',
+        string='Фин рез ₽',
         compute='_compute_fin_res_sovok_real_rub',
         readonly=False,
         store=True,
         digits=(16, 2),
         tracking=True,
         help="""
-        Фин рез Совок ₽ = Фин рез Совок в эквиваленте $ × Курс Джес
+        Фин рез ₽ = Фин рез в эквиваленте $ × Курс Джес
         """
     )
 
@@ -997,6 +996,18 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     amount = fields.Float(string='Сумма заявки', tracking=True, digits=(16, 3))
 
+    payment_expense_in_currency = fields.Float(
+        string='Расход платежа в валюте',
+        compute='_compute_payment_expense_in_currency',
+        readonly=False,
+        store=True,
+        tracking=True,
+        help="""Рассчитывается как: Сумма заявки × соответствующий расход платежа
+        - Для Сбербанка: Сумма заявки × Расход за проведение платежа (Сбер)
+        - Для Совкомбанка: Сумма заявки × Расход за проведение платежа (Совок)
+        - Для обычных клиентов: Сумма заявки × Расход за проведение платежа в валюте заявки"""
+    )
+
     vip_conditions = fields.Char(string='Условия VIP', tracking=True)
 
     price_list_profit_id = fields.Many2one(
@@ -1101,10 +1112,16 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     hand_reward_percent = fields.Float(
-        string='% Вознаграждения руками',
+        string='% Вознаграждения ',
         tracking=True,
         digits=(16, 4)
     )
+
+    # reward_percent_in_contract = fields.Float(
+    #     string='% Вознаграждения по договору',
+    #     tracking=True,
+    #     digits=(16, 4)
+    # )
 
     equivalent_amount_usd = fields.Float(
         string='Сумма эквивалент $',
@@ -1803,7 +1820,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     sebestoimost_denej_sovok_partner = fields.Float(
-        string='Себестоимость денег Совок партнер',
+        string='Себестоимость денег Партнер',
         compute='_compute_sebestoimost_denej_sovok_partner',
         readonly=False,
         store=True,
@@ -2326,16 +2343,370 @@ class Zayavka(models.Model, AmanatBaseModel):
             else:
                 record.show_red_stripe_for_ilzira_zayavka = False
 
-    @api.depends('contragent_id', 'contragent_id.contract_ids', 'contragent_id.contract_ids.contract_attachments')
+    @api.depends('contragent_id', 'contragent_id.contract_ids', 'contragent_id.contract_ids.contract_attachments', 'contragent_id.contract_ids.is_actual')
     def _compute_contragent_contract_attachments(self):
-        """Подтягивает все документы договоров выбранного контрагента"""
+        """Подтягивает документы только из актуального договора выбранного контрагента"""
         for record in self:
             if record.contragent_id and record.contragent_id.contract_ids:
-                # Собираем все attachment из всех договоров контрагента
-                attachments = self.env['ir.attachment'].browse()
-                for contract in record.contragent_id.contract_ids:
-                    if contract.contract_attachments:
-                        attachments |= contract.contract_attachments
-                record.contragent_contract_attachments = attachments
+                # Ищем актуальный договор (с галочкой is_actual = True)
+                actual_contract = record.contragent_id.contract_ids.filtered('is_actual')
+                if actual_contract and actual_contract.contract_attachments:
+                    record.contragent_contract_attachments = actual_contract.contract_attachments
+                else:
+                    record.contragent_contract_attachments = self.env['ir.attachment'].browse()
             else:
                 record.contragent_contract_attachments = self.env['ir.attachment'].browse()
+
+    @api.model
+    def action_show_related_zayavkas_by_attachment(self, attachment_id=None):
+        """Показать все заявки, к которым прикреплен данный документ"""
+        print(f"=== action_show_related_zayavkas_by_attachment called with attachment_id={attachment_id} ===")
+        if not attachment_id:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Ошибка!',
+                    'message': 'ID документа не указан',
+                    'type': 'warning',
+                }
+            }
+        
+        # Проверяем, существует ли такой attachment вообще
+        attachment = self.env['ir.attachment'].browse(attachment_id)
+        if not attachment.exists():
+            print(f"DEBUG: Attachment with ID={attachment_id} does not exist!")
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Ошибка!',
+                    'message': f'Документ с ID {attachment_id} не найден в системе',
+                    'type': 'warning',
+                }
+            }
+        
+        # Разделяем поля на Many2many и One2many
+        many2many_fields = [
+            'zayavka_attachments', 'invoice_attachments', 'assignment_attachments',
+            'swift_attachments', 'swift103_attachments', 'swift199_attachments', 
+            'report_attachments', 'zayavka_start_attachments', 'zayavka_end_attachments',
+            'assignment_end_attachments', 'screen_sber_attachments'
+        ]
+        # Note: contragent_contract_attachments исключено, так как это computed поле
+        
+        one2many_fields = [
+            'zayavka_output_attachments', 'act_report_attachments'
+        ]
+        
+        related_zayavkas = self.env['amanat.zayavka'].browse()
+        
+        # РАСШИРЕННАЯ ЛОГИКА ПОИСКА: Ищем ВСЕ attachment'ы с похожими именами
+        print(f"DEBUG: Original attachment name: '{attachment.name}'")
+        
+        # 1. Поиск по точному имени
+        exact_name_attachments = self.env['ir.attachment'].search([
+            ('name', '=', attachment.name),
+        ])
+        print(f"DEBUG: Found {len(exact_name_attachments)} attachments with exact name '{attachment.name}': {exact_name_attachments.ids}")
+        
+        # 2. Поиск по имени без расширения (на случай, если добавляются суффиксы)
+        base_name = attachment.name
+        if '.' in base_name:
+            name_without_ext = base_name.rsplit('.', 1)[0]
+            extension = '.' + base_name.rsplit('.', 1)[1]
+            similar_attachments = self.env['ir.attachment'].search([
+                ('name', 'ilike', f'{name_without_ext}%{extension}'),
+            ])
+            print(f"DEBUG: Found {len(similar_attachments)} attachments with similar name pattern '{name_without_ext}%{extension}': {similar_attachments.ids}")
+        else:
+            similar_attachments = exact_name_attachments
+        
+        # 3. Поиск по размеру файла (если есть)
+        size_attachments = self.env['ir.attachment'].browse()
+        if attachment.file_size and attachment.file_size > 0:
+            size_attachments = self.env['ir.attachment'].search([
+                ('file_size', '=', attachment.file_size),
+                ('name', 'ilike', f'%{base_name.split(".")[0]}%'),
+            ])
+            print(f"DEBUG: Found {len(size_attachments)} attachments with same size {attachment.file_size}: {size_attachments.ids}")
+        
+        # 4. Поиск по CheckSum (если есть)
+        checksum_attachments = self.env['ir.attachment'].browse()
+        if hasattr(attachment, 'checksum') and attachment.checksum:
+            checksum_attachments = self.env['ir.attachment'].search([
+                ('checksum', '=', attachment.checksum),
+            ])
+            print(f"DEBUG: Found {len(checksum_attachments)} attachments with same checksum: {checksum_attachments.ids}")
+        
+        # Объединяем все найденные attachment'ы
+        all_attachments = exact_name_attachments | similar_attachments | size_attachments | checksum_attachments
+        all_attachment_ids = all_attachments.ids
+        print(f"DEBUG: TOTAL found {len(all_attachments)} related attachments: {all_attachment_ids}")
+        
+        # Выводим детальную информацию о найденных attachment'ах
+        for att in all_attachments:
+            checksum_info = f", checksum={att.checksum[:8]}..." if hasattr(att, 'checksum') and att.checksum else ""
+            print(f"DEBUG: Attachment ID={att.id}, name='{att.name}', res_model='{att.res_model}', res_id={att.res_id}, res_field='{att.res_field}', size={att.file_size}{checksum_info}")
+        
+        # 5. ПРОСТЕЙШАЯ ПРОВЕРКА: Найти ВСЕ заявки, которые содержат исходный attachment
+        print(f"DEBUG: === ПРОСТЕЙШАЯ ПРОВЕРКА ===")
+        simple_attachments = [attachment_id]  # Только исходный attachment
+        print(f"DEBUG: Searching for original attachment ID {attachment_id} in all fields...")
+        
+        simple_zayavkas = self.env['amanat.zayavka'].browse()
+        for field in many2many_fields:
+            found = self.search([(field, 'in', simple_attachments)], limit=None)
+            if found:
+                print(f"DEBUG: Field {field} contains attachment {attachment_id} in {len(found)} zayavkas: {[z.id for z in found]}")
+                simple_zayavkas |= found
+        
+        print(f"DEBUG: Simple check found {len(simple_zayavkas)} zayavkas with original attachment:")
+        for z in simple_zayavkas:
+            print(f"  - ID{z.id}: {z.zayavka_num or 'No number'}")
+        print(f"DEBUG: === КОНЕЦ ПРОСТЕЙШЕЙ ПРОВЕРКИ ===")
+        
+        # 1. Поиск в Many2many полях
+        print(f"DEBUG: Searching in Many2many fields: {many2many_fields}")
+        many2many_total = 0
+        for field in many2many_fields:
+            domain = [(field, 'in', all_attachment_ids)]
+            print(f"DEBUG: Searching with domain: {domain}")
+            found_zayavkas = self.search(domain, limit=None, order='id')  # Явно убираем лимит в поиске
+            print(f"DEBUG: Raw search result count: {len(found_zayavkas)}")
+            if found_zayavkas:
+                print(f"DEBUG: Many2many field '{field}' found {len(found_zayavkas)} zayavkas:")
+                for z in found_zayavkas:
+                    print(f"  - ID{z.id}: {z.zayavka_num or 'No number'}")
+                many2many_total += len(found_zayavkas)
+            else:
+                print(f"DEBUG: Many2many field '{field}' found NO zayavkas")
+            related_zayavkas |= found_zayavkas
+        print(f"DEBUG: Total found in Many2many fields: {many2many_total}")
+        print(f"DEBUG: Related zayavkas so far: {len(related_zayavkas)}")
+        
+        # 2. Поиск в One2many полях (по res_id и res_field)
+        print(f"DEBUG: Searching in One2many fields: {one2many_fields}")
+        one2many_total = 0
+        for same_attachment in all_attachments:
+            if same_attachment.res_model == 'amanat.zayavka' and same_attachment.res_field in one2many_fields:
+                found_zayavka = self.browse(same_attachment.res_id)
+                if found_zayavka.exists():
+                    print(f"DEBUG: One2many found zayavka: {found_zayavka.zayavka_num or f'ID{found_zayavka.id}'} (attachment ID: {same_attachment.id})")
+                    related_zayavkas |= found_zayavka
+                    one2many_total += 1
+        print(f"DEBUG: Total found in One2many fields: {one2many_total}")
+        print(f"DEBUG: Total before final check: many2many({many2many_total}) + one2many({one2many_total}) = {many2many_total + one2many_total}")
+        print(f"DEBUG: Actual recordset length: {len(related_zayavkas)}")
+        
+        # СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ CONTRAGENT_CONTRACT_ATTACHMENTS
+        print(f"DEBUG: === SPECIAL SEARCH FOR CONTRACT DOCUMENTS ===")
+        
+        # Сначала находим все контрагенты, у которых есть такие документы в актуальных договорах
+        contract_zayavkas = self.env['amanat.zayavka'].browse()
+        
+        # Ищем все договоры, которые содержат наши attachment'ы
+        contracts_with_attachments = self.env['amanat.contragent.contract'].search([
+            ('contract_attachments', 'in', all_attachment_ids),
+            ('is_actual', '=', True)
+        ])
+        print(f"DEBUG: Found {len(contracts_with_attachments)} contracts with these attachments")
+        
+        if contracts_with_attachments:
+            # Находим всех контрагентов этих договоров
+            contragent_ids = contracts_with_attachments.mapped('contragent_id').ids
+            print(f"DEBUG: Contract contragents: {contragent_ids}")
+            
+            # Ищем все заявки этих контрагентов
+            contract_zayavkas = self.search([('contragent_id', 'in', contragent_ids)], limit=None)
+            print(f"DEBUG: Found {len(contract_zayavkas)} zayavkas with same contragents:")
+            for z in contract_zayavkas:
+                print(f"  - ID{z.id}: {z.zayavka_num or 'No number'} (contragent: {z.contragent_id.name})")
+        
+        # ОСНОВНОЙ ГЛОБАЛЬНЫЙ ПОИСК
+        print(f"DEBUG: === DOING GLOBAL SEARCH ===")
+        print(f"DEBUG: Many2many fields: {many2many_fields}")
+        
+        global_zayavkas = self.env['amanat.zayavka'].browse()
+        if many2many_fields:
+            # Создаем правильный OR domain для всех полей
+            if len(many2many_fields) > 1:
+                global_domain = ['|'] * (len(many2many_fields) - 1)
+                for field in many2many_fields:
+                    global_domain.append((field, 'in', all_attachment_ids))
+            else:
+                global_domain = [(many2many_fields[0], 'in', all_attachment_ids)]
+            
+            print(f"DEBUG: Global domain: {global_domain}")
+            global_zayavkas = self.search(global_domain, limit=None, order='id')
+            print(f"DEBUG: Global search found {len(global_zayavkas)} zayavkas:")
+            for z in global_zayavkas:
+                print(f"  - ID{z.id}: {z.zayavka_num or 'No number'}")
+        
+        # Объединяем все результаты: контракты + глобальный поиск + one2many
+        final_zayavkas = global_zayavkas | related_zayavkas | contract_zayavkas
+        related_zayavkas = final_zayavkas
+        
+        print(f"DEBUG: Final result - found {len(related_zayavkas)} related zayavkas")
+        print(f"DEBUG: Related zayavka IDs: {related_zayavkas.ids}")
+        print(f"DEBUG: Related zayavka numbers: {[z.zayavka_num or f'ID{z.id}' for z in related_zayavkas]}")
+        
+        # ДОПОЛНИТЕЛЬНАЯ ДИАГНОСТИКА - тестируем domain напрямую
+        if related_zayavkas:
+            test_domain = [('id', 'in', related_zayavkas.ids)]
+            print(f"DEBUG: Testing domain directly: {test_domain}")
+            
+            # Тест 1: Поиск с лимитом по умолчанию
+            test_result_default = self.search(test_domain)
+            print(f"DEBUG: Domain search with DEFAULT limit found: {len(test_result_default)} records")
+            
+            # Тест 2: Поиск без лимита
+            test_result_no_limit = self.search(test_domain, limit=None)
+            print(f"DEBUG: Domain search with NO limit found: {len(test_result_no_limit)} records")
+            
+            # Тест 3: Поиск с высоким лимитом
+            test_result_high_limit = self.search(test_domain, limit=10000)
+            print(f"DEBUG: Domain search with HIGH limit found: {len(test_result_high_limit)} records")
+            
+            if len(test_result_default) != len(related_zayavkas):
+                print(f"WARNING: Default search limit is cutting results! Expected {len(related_zayavkas)}, got {len(test_result_default)}")
+        
+        if not related_zayavkas:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Информация',
+                    'message': f'Документ "{attachment.name}" не используется в других заявках',
+                    'type': 'info',
+                }
+            }
+        
+        # Возвращаем действие для открытия списка заявок с найденными записями
+        return {
+            'name': f'Заявки с документом "{attachment.name}" ({len(related_zayavkas)})',
+            'type': 'ir.actions.act_window',
+            'res_model': 'amanat.zayavka',
+            'view_mode': 'list,form',
+            'views': [(False, 'list'), (False, 'form')],  # Указываем представления
+            'domain': [('id', 'in', related_zayavkas.ids)],
+            'context': {
+                'default_search_domain': [('id', 'in', related_zayavkas.ids)],
+                'search_default_attachment_filter': 1,
+            },
+            'target': 'current',
+            'limit': 0,  # Убираем лимит для отображения всех найденных записей
+        }
+
+    def action_show_contract_attachment_usage(self):
+        """Показать все заявки, использующие документы договоров данного контрагента"""
+        print(f"=== action_show_contract_attachment_usage called for zayavka {self.zayavka_num or self.id} ===")
+        if not self.contragent_contract_attachments:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Внимание!',
+                    'message': 'У данного контрагента нет документов в актуальном договоре',
+                    'type': 'warning',
+                }
+            }
+
+        # Получаем ID всех документов контрагента
+        attachment_ids = self.contragent_contract_attachments.ids
+        attachment_names = self.contragent_contract_attachments.mapped('name')
+        
+        print(f"DEBUG: Searching for contract attachments with IDs: {attachment_ids}")
+        print(f"DEBUG: Attachment names: {attachment_names}")
+        
+        # Разделяем поля на Many2many и One2many (ИСКЛЮЧАЕМ contragent_contract_attachments - это computed поле)
+        many2many_fields = [
+            'zayavka_attachments', 'invoice_attachments', 'assignment_attachments',
+            'swift_attachments', 'swift103_attachments', 'swift199_attachments', 
+            'report_attachments', 'zayavka_start_attachments', 'zayavka_end_attachments',
+            'assignment_end_attachments', 'screen_sber_attachments'
+        ]
+        
+        one2many_fields = [
+            'zayavka_output_attachments', 'act_report_attachments'
+        ]
+        
+        related_zayavkas = self.env['amanat.zayavka'].browse()
+        
+        # 1. Поиск в Many2many полях
+        print(f"DEBUG: Contract - Searching in Many2many fields: {many2many_fields}")
+        for field in many2many_fields:
+            domain = [(field, 'in', attachment_ids)]
+            found_zayavkas = self.search(domain, limit=None)  # ИСПРАВЛЕНО: добавил limit=None
+            if found_zayavkas:
+                print(f"DEBUG: Contract Many2many field '{field}' found {len(found_zayavkas)} zayavkas: {[z.zayavka_num or f'ID{z.id}' for z in found_zayavkas]}")
+            related_zayavkas |= found_zayavkas
+        
+        # 2. Поиск в One2many полях 
+        print(f"DEBUG: Contract - Searching in One2many fields: {one2many_fields}")
+        for attachment in self.contragent_contract_attachments:
+            if attachment.res_model == 'amanat.zayavka' and attachment.res_field in one2many_fields:
+                found_zayavka = self.env['amanat.zayavka'].browse(attachment.res_id)
+                if found_zayavka.exists():
+                    print(f"DEBUG: Contract One2many direct link found zayavka: {found_zayavka.zayavka_num or f'ID{found_zayavka.id}'}")
+                    related_zayavkas |= found_zayavka
+        
+        # 3. Дополнительный поиск по именам файлов (дублированные документы)
+        if attachment_names:
+            same_name_attachments = self.env['ir.attachment'].search([
+                ('name', 'in', attachment_names),
+                ('id', 'not in', attachment_ids)  # исключаем оригинальные
+            ])
+            print(f"DEBUG: Contract - Found {len(same_name_attachments)} attachments with same names")
+            
+            if same_name_attachments:
+                # Поиск в Many2many полях
+                for field in many2many_fields:
+                    domain = [(field, 'in', same_name_attachments.ids)]
+                    found_zayavkas = self.search(domain, limit=None)  # ИСПРАВЛЕНО: добавил limit=None
+                    if found_zayavkas:
+                        print(f"DEBUG: Contract Many2many field '{field}' found by name {len(found_zayavkas)} zayavkas")
+                    related_zayavkas |= found_zayavkas
+                
+                # Поиск в One2many полях
+                for same_attachment in same_name_attachments:
+                    if same_attachment.res_model == 'amanat.zayavka' and same_attachment.res_field in one2many_fields:
+                        found_zayavka = self.env['amanat.zayavka'].browse(same_attachment.res_id)
+                        if found_zayavka.exists():
+                            print(f"DEBUG: Contract One2many by name found zayavka: {found_zayavka.zayavka_num or f'ID{found_zayavka.id}'}")
+                            related_zayavkas |= found_zayavka
+        
+        # Включаем ВСЕ найденные заявки, в том числе текущую
+        # related_zayavkas = related_zayavkas.filtered(lambda z: z.id != self.id)  # Убрали фильтрацию
+        print(f"DEBUG: Contract method - found {len(related_zayavkas)} related zayavkas (including current)")
+        print(f"DEBUG: Contract Related zayavka IDs: {related_zayavkas.ids}")
+        print(f"DEBUG: Contract Related zayavka numbers: {[z.zayavka_num or f'ID{z.id}' for z in related_zayavkas]}")
+        
+        if not related_zayavkas:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Информация',
+                    'message': f'Документы контрагента "{self.contragent_id.name or ""}" ({len(attachment_ids)} документов) не используются в других заявках',
+                    'type': 'info',
+                }
+            }
+        
+        # Возвращаем действие для открытия списка заявок с найденными записями
+        return {
+            'name': f'Заявки с документами контрагента "{self.contragent_id.name or ""}" ({len(related_zayavkas)})',
+            'type': 'ir.actions.act_window',
+            'res_model': 'amanat.zayavka',
+            'view_mode': 'list,form',
+            'views': [(False, 'list'), (False, 'form')],  # Указываем представления
+            'domain': [('id', 'in', related_zayavkas.ids)],
+            'context': {
+                'default_search_domain': [('id', 'in', related_zayavkas.ids)],
+                'search_default_contragent_docs_filter': 1,
+            },
+            'target': 'current',
+            'limit': 0,  # Убираем лимит для отображения всех найденных записей
+        }
+    
+    # date_agent_pc = fields.Date(string='Дата агентского на РС')

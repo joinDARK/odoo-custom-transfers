@@ -1,6 +1,5 @@
 import logging
-from odoo import models, api, _
-from odoo.tools import date_utils
+from odoo import models
 
 _logger = logging.getLogger(__name__)
 
@@ -125,6 +124,10 @@ class ForKhalidaAutomations(models.Model):
             ('max_application_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
             ('max_percent_accrual', '>=', reward_percent),
+            ('contragent_zayavka_id', '=', False),
+            ('agent_zayavka_id', '=', False),
+            ('client_zayavka_id', '=', False),
+            ('currency_zayavka', '=', False),
         ]
 
         # Ищем первую подходящую запись
@@ -204,6 +207,10 @@ class ForKhalidaAutomations(models.Model):
             ('max_zayavka_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
             ('max_percent_accrual', '>=', reward_percent),
+            ('contragent_zayavka_id', '=', False),
+            ('agent_zayavka_id', '=', False),
+            ('client_zayavka_id', '=', False),
+            ('currency_zayavka', '=', False),
         ]
 
         # Ищем первую подходящую запись
@@ -284,6 +291,10 @@ class ForKhalidaAutomations(models.Model):
             ('max_application_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
             ('max_percent_accrual', '>=', reward_percent),
+            ('contragent_zayavka_id', '=', False),
+            ('agent_zayavka_id', '=', False),
+            ('client_zayavka_id', '=', False),
+            ('currency_zayavka', '=', False),
         ]
 
         # Ищем первую подходящую запись

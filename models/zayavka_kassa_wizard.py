@@ -1,7 +1,6 @@
 from odoo import models, fields, api
-from datetime import datetime, timedelta
+from datetime import timedelta
 import requests
-import json
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -178,6 +177,20 @@ class ZayavkaKassaWizard(models.TransientModel):
         
         return action
 
+    def _get_total_amount_for_contragent(self, zayavka):
+        """
+        Возвращает правильное поле 'Итого' в зависимости от типа контрагента
+        """
+        if zayavka.is_sberbank_contragent and not zayavka.is_sovcombank_contragent:
+            # Для Сбербанка используем total_sber
+            return zayavka.total_sber or 0.0
+        elif zayavka.is_sovcombank_contragent and not zayavka.is_sberbank_contragent:
+            # Для Совкомбанка используем total_sovok
+            return zayavka.total_sovok or 0.0
+        else:
+            # Для обычных клиентов используем total_client
+            return zayavka.total_client or 0.0
+
     def _send_data_to_server(self, zayavkas):
         """Отправляет данные заявок на внешний сервер"""
         data = []
@@ -198,6 +211,7 @@ class ZayavkaKassaWizard(models.TransientModel):
                 _logger.info(f"Обрабатываем заявку {i+1}/{len(zayavkas)}: {zayavka.zayavka_num}")
                 # Вычисляем дополнительные поля
                 expense_payment_currency = zayavka.amount * (zayavka.percent_from_payment_order_rule / 100) if zayavka.percent_from_payment_order_rule else 0
+                # Рассчитываем разность процентов (в десятичном формате, конвертируем при отправке)
                 reward_percent_minus_hidden = zayavka.hand_reward_percent - zayavka.hidden_commission if zayavka.hand_reward_percent and zayavka.hidden_commission else 0
                 export_reward_currency = zayavka.amount * (zayavka.hand_reward_percent / 100) if zayavka.hand_reward_percent and zayavka.deal_type == 'export' else 0
                 
@@ -262,7 +276,7 @@ class ZayavkaKassaWizard(models.TransientModel):
                 zayavka_data = {
                     # Основные данные
                     'zayavka_id': zayavka.zayavka_id,
-                    'zayavka_num': zayavka.zayavka_num,
+                    'zayavka_num': zayavka.zayavka_num or '',
                     'status': zayavka.status,
                     'date_placement': zayavka.date_placement.isoformat() if zayavka.date_placement else None,
                     'taken_in_work_date': zayavka.taken_in_work_date.isoformat() if zayavka.taken_in_work_date else None,
@@ -288,7 +302,7 @@ class ZayavkaKassaWizard(models.TransientModel):
                     # Суммы и валюты
                     'amount': zayavka.amount,
                     'currency': zayavka.currency,
-                    'total_client': zayavka.total_client,
+                    'total_client': self._get_total_amount_for_contragent(zayavka),
                     'equivalent_amount_usd': zayavka.equivalent_amount_usd,
                     'usd_equivalent_xe': usd_equivalent_xe,
                     
@@ -300,15 +314,15 @@ class ZayavkaKassaWizard(models.TransientModel):
                     'amount_eur': zayavka.amount if zayavka.currency == 'euro' else 0,
                     'amount_idr': zayavka.amount if zayavka.currency == 'idr' else 0,
                     
-                    # Проценты и комиссии
-                    'hand_reward_percent': zayavka.hand_reward_percent,
-                    'hidden_commission': zayavka.hidden_commission,
-                    'reward_percent_minus_hidden': reward_percent_minus_hidden,
+                    # Проценты и комиссии (конвертируем в формат процентов для сервера)
+                    'hand_reward_percent': (zayavka.hand_reward_percent * 100) if zayavka.hand_reward_percent else 0,
+                    'hidden_commission': (zayavka.hidden_partner_commission_real) if zayavka.hidden_partner_commission_real else 0, # TODO: hidden_commission (возможно, нужно обратно переделать на hidden_commission, но пока так)
+                    'reward_percent_minus_hidden': (reward_percent_minus_hidden * 100) if reward_percent_minus_hidden else 0,
                     'hidden_partner_commission_real': zayavka.hidden_partner_commission_real,
                     'plus_dollar': zayavka.plus_dollar,
                     
                     # Курсы
-                    'hidden_rate': zayavka.hidden_rate,
+                    'hidden_rate': zayavka.best_rate,
                     'rate_field': zayavka.rate_field,
                     'jess_rate': zayavka.jess_rate,
                     'jess_rate_usd': jess_rate_usd,
@@ -317,14 +331,15 @@ class ZayavkaKassaWizard(models.TransientModel):
                     'xe_rate': zayavka.xe_rate,
                     
                     # Расходы
-                    'conversion_expenses_currency': zayavka.conversion_expenses_currency,
+                    'conversion_expenses_currency': zayavka.conversion_expenses_rub, # DONE: переделал наconversion_expenses_rub вместо conversion_expenses_currency
                     'payment_order_rf_client': zayavka.payment_order_rf_client,
                     'expense_payment_currency': expense_payment_currency,
                     'client_payment_cost': zayavka.client_payment_cost,
-                    'cost_of_money_client_real': zayavka.cost_of_money_client_real,
+                    'cost_of_money_client_real': zayavka.client_currency_bought_real,  # CHANGED: теперь отправляется "Купили валюту в валюте заявки"
                     'client_real_operating_expenses': zayavka.client_real_operating_expenses,
                     'invoice_operational_expense': invoice_operational_expense,
                     'subagent_expense': subagent_expense,
+                    'payment_expense_in_currency': zayavka.payment_expense_in_currency, # DONE: добавил payment_expense_in_currency (расход платежа в валюте)
                     
                     # Вознаграждения
                     'export_reward_currency': export_reward_currency,
@@ -336,7 +351,7 @@ class ZayavkaKassaWizard(models.TransientModel):
                     # Финансовые результаты
                     'fin_res_client_real': zayavka.fin_res_client_real,
                     'fin_res_client_real_rub': zayavka.fin_res_client_real_rub,
-                    'fin_res_percent': fin_res_percent,
+                    'fin_res_percent': fin_res_percent,  # Уже в формате процентов (рассчитывается * 100)
                     
                     # Условия и типы
                     'payment_conditions': payment_conditions_ru,
@@ -381,7 +396,7 @@ class ZayavkaKassaWizard(models.TransientModel):
             payload = {
                 "data": data,  # Массив заявок в поле data
                 "type": "financial_results",
-                "fileName": self.kassa_type + "_" + self.field_name + "_" + self.date_from.isoformat(),
+                "fileName": "{}_{}_{}.xlsx".format(self.kassa_type, self.field_name, self.date_from.isoformat() if self.date_from else "no_date"),
                 "kassa_type": self.kassa_type,
                 "filter_info": {
                     "field_name": self.field_name,

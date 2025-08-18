@@ -43,6 +43,12 @@
                                 title="Предпросмотр файла">
                             <i class="fa fa-eye"/>
                         </button>
+                        <button class="btn btn-outline-warning btn-sm me-1"
+                                t-att-data-attachment-id="f.id"
+                                t-on-click="onSearchRelatedClick"
+                                title="Найти заявки с этим документом">
+                            <i class="fa fa-link"/>
+                        </button>
                         <button class="btn btn-outline-danger btn-sm"
                                 t-att-data-file-id="f.id"
                                 t-on-click="onRemoveClick">

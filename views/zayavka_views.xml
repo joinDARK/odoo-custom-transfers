@@ -1,55 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <!-- Упрощенное представление для казначеев -->
-  <record id="view_amanat_zayavka_form_treasurer" model="ir.ui.view">
-    <field name="name">amanat.zayavka.form.treasurer</field>
-    <field name="model">amanat.zayavka</field>
-    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]" />
-    <field name="priority">20</field>
-    <field name="arch" type="xml">
-      <form string="Заявки (Казначей)">
-        <header>
-          <h1>
-            <field name="zayavka_id" readonly="1" />
-          </h1>
-        </header>
-        <sheet>
-          <group string="Основная информация">
-            <div class="o-form-group-2">
-              <group>
-                <field name="zayavka_num" />
-                <field name="status" widget="searchable_selection" />
-                <field name="date_placement"/>
-              </group>
-              <group>
-                <field name="contragent_id" />
-                <field name="client_id" />
-                <field name="country_id" />
-              </group>
-            </div>
-            <field name="comment" />
-          </group>
-          <group string="Даты операций">
-            <div class="o-form-group-3">
-              <group>
-                <field name="invoice_date" />
-                <field name="payment_date" />
-              </group>
-              <group>
-                <field name="supplier_currency_paid_date" />
-                <field name="supplier_currency_received_date" />
-              </group>
-              <group>
-                <field name="deal_closed_date" />
-                <field name="deal_cycle_days" />
-              </group>
-            </div>
-          </group>
-        </sheet>
-      </form>
-    </field>
-  </record>
-
   <record id="view_amanat_zayavka_form" model="ir.ui.view">
     <field name="name">amanat.zayavka.form</field>
     <field name="model">amanat.zayavka</field>
@@ -138,7 +88,7 @@
               <group groups="!amanat.group_amanat_limited_access">
                 <div class="rates-section-header">
                   <strong class="rates-section-title">Сравнение курса</strong>
-                  <!-- 🎯 Красивая компактная кнопка справа с анимацией -->
+                  <!-- 🎯 Красивая компактная ю. справа с анимацией -->
                   <button class="btn refresh-rates-btn"
                     title="Обновить курсы валют из API (Инвестинг + ЦБ)"
                     type="object"
@@ -202,6 +152,7 @@
                     <field name="amount" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
+                    <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
                   </group>
@@ -288,6 +239,7 @@
                     <field name="amount" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
+                    <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
                     <field name="jess_rate" groups="!amanat.group_amanat_manager" />
@@ -362,6 +314,7 @@
                     <field name="amount" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
+                    <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
                     <field name="jess_rate" groups="!amanat.group_amanat_manager" />
@@ -841,7 +794,7 @@
             </page>
 
             <page string="Финансовый расчет" invisible="not is_sovcombank_contragent"
-              groups="!amanat.group_amanat_manager">
+              groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer">
               <group>
                 <div class="o-form-group-2">
                   <group>
@@ -855,6 +808,9 @@
               <group string="Расход платежа по РФ(%)">
                 <field name="payment_order_rule_id" />
                 <field name="percent_from_payment_order_rule" widget="percentage" />
+              </group>
+              <group>
+                <field name="payment_order_rf_sovok" />
               </group>
               <group string="Себестоимость денег(%)">
                 <field name="money_cost_rule_id" />
@@ -870,13 +826,36 @@
                   </group>
                 </div>
               </group>
+              <group string="Себестоимость денег">
+                <div class="o-form-group">
+                  <group>
+                    <field name="sebestoimost_denej_sovok_real" />
+                  </group>
+                  <group>
+                    <field name="sebestoimost_denej_sovok_real_usd" />
+                  </group>
+                  <group>
+                    <field name="sebestoimost_denej_sovok_real_rub" />
+                  </group>
+                </div>
+              </group>
               <group string="Операционные расходы (%)">
                 <field name="expense_rule_id" />
                 <field name="percent_from_expense_rule" widget="percentage" />
               </group>
-              <group string="Процент плательщика">
-                <field name="price_list_profit_id" />
-                <field name="price_list_percent_accrual" widget="percentage" />
+              <group string="Операционные расходы">
+                <div class="o-form-group">
+                  <group>
+                    <field name="operating_expenses_sovok_real" />
+                  </group>
+                  <group>
+                    <field name="operating_expenses_sovok_real_usd" />
+                  </group>
+                  <group>
+                    <field name="operating_expenses_sovok_real_rub" />
+                  </group>
+                </div>
+                <field name="correction" />
               </group>
               <group string="Расход за проведение платежа(%)">
                 <field name="price_list_carrying_out_id" />
@@ -886,6 +865,36 @@
                   </group>
                   <group>
                     <field name="price_list_carrying_out_fixed_deal_fee" />
+                  </group>
+                </div>
+              </group>
+              <group string="Расход за проведение платежа">
+                <div class="o-form-group">
+                  <group>
+                    <field name="payment_cost_sovok" />
+                  </group>
+                  <group>
+                    <field name="payment_cost_sovok_real_usd" />
+                  </group>
+                  <group>
+                    <field name="payment_cost_sovok_real_rub" />
+                  </group>
+                </div>
+              </group>
+              <group string="Процент плательщика">
+                <field name="price_list_profit_id" />
+                <field name="price_list_percent_accrual" widget="percentage" />
+              </group>
+              <group string="Сумма плательщику">
+                <div class="o-form-group">
+                  <group>
+                    <field name="payer_profit_currency" />
+                  </group>
+                  <group>
+                    <field name="payer_profit_usd" />
+                  </group>
+                  <group>
+                    <field name="payer_profit_rub" />
                   </group>
                 </div>
               </group>
@@ -937,10 +946,7 @@
                 </div>
               </group>
               <group string="Курсы">
-                <div class="o-form-group">
-                  <group>
-                    <field name="payment_order_rf_sovok" />
-                  </group>
+                <div class="o-form-group-2">
                   <group>
                     <field name="payer_cross_rate_usd" />
                   </group>
@@ -949,7 +955,20 @@
                   </group>
                 </div>
               </group>
-              <group string="Купили валюту Совок реал">
+              <group string="Конвертации">
+                <div class="o-form-group">
+                  <group>
+                    <field name="real_post_conversion_rate" />
+                  </group>
+                  <group>
+                    <field name="real_post_conversion_rate_usd" />
+                  </group>
+                  <group>
+                    <field name="real_post_conversion_rate_rub" />
+                  </group>
+                </div>
+              </group>
+              <group string="Купили валюту">
                 <div class="o-form-group">
                   <group>
                     <field name="kupili_valyutu_sovok_real" />
@@ -962,33 +981,6 @@
                   </group>
                 </div>
               </group>
-              <group string="Себестоимость денег Совок">
-                <div class="o-form-group">
-                  <group>
-                    <field name="sebestoimost_denej_sovok_real" />
-                  </group>
-                  <group>
-                    <field name="sebestoimost_denej_sovok_real_usd" />
-                  </group>
-                  <group>
-                    <field name="sebestoimost_denej_sovok_real_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Операционные расходы Совок">
-                <div class="o-form-group">
-                  <group>
-                    <field name="operating_expenses_sovok_real" />
-                  </group>
-                  <group>
-                    <field name="operating_expenses_sovok_real_usd" />
-                  </group>
-                  <group>
-                    <field name="operating_expenses_sovok_real_rub" />
-                  </group>
-                </div>
-                <field name="correction" />
-              </group>
               <group string="Скрытые комиссии партнера">
                 <div class="o-form-group">
                   <group>
@@ -999,32 +991,6 @@
                   </group>
                   <group>
                     <field name="hidden_partner_commission_real_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Расход за проведение платежа Совок">
-                <div class="o-form-group">
-                  <group>
-                    <field name="payment_cost_sovok" />
-                  </group>
-                  <group>
-                    <field name="payment_cost_sovok_real_usd" />
-                  </group>
-                  <group>
-                    <field name="payment_cost_sovok_real_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Сумма плательщику">
-                <div class="o-form-group">
-                  <group>
-                    <field name="payer_profit_currency" />
-                  </group>
-                  <group>
-                    <field name="payer_profit_usd" />
-                  </group>
-                  <group>
-                    <field name="payer_profit_rub" />
                   </group>
                 </div>
               </group>
@@ -1041,7 +1007,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Финансовые результаты Совок">
+              <group string="Финансовые результаты">
                 <div class="o-form-group">
                   <group>
                     <field name="fin_res_sovok_real" />
@@ -1056,7 +1022,7 @@
               </group>
             </page>
             <page string="Финансовый расчет" invisible="not is_sberbank_contragent"
-              groups="!amanat.group_amanat_manager">
+              groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer">
               <group>
                 <div class="o-form-group-2">
                   <group>
@@ -1070,6 +1036,9 @@
               <group string="Расход платежа по РФ(%)">
                 <field name="payment_order_rule_id" />
                 <field name="percent_from_payment_order_rule" widget="percentage" />
+              </group>
+              <group>
+                <field name="payment_order_rf_sber" />
               </group>
               <group string="Себестоимость денег(%)">
                 <field name="money_cost_rule_id" />
@@ -1085,13 +1054,36 @@
                   </group>
                 </div>
               </group>
+              <group string="Себестоимость денег">
+                <div class="o-form-group">
+                  <group>
+                    <field name="sebestoimost_denej_sber_real" />
+                  </group>
+                  <group>
+                    <field name="sebestoimost_denej_sber_real_usd" />
+                  </group>
+                  <group>
+                    <field name="sebestoimost_denej_sber_real_rub" />
+                  </group>
+                </div>
+              </group>
               <group string="Операционные расходы (%)">
                 <field name="expense_rule_id" />
                 <field name="percent_from_expense_rule" widget="percentage" />
               </group>
-              <group string="Процент плательщика">
-                <field name="price_list_profit_id" />
-                <field name="price_list_percent_accrual" widget="percentage" />
+              <group string="Операционные расходы">
+                <div class="o-form-group">
+                  <group>
+                    <field name="sber_operating_expenses_real" />
+                  </group>
+                  <group>
+                    <field name="sber_operating_expenses_real_usd" />
+                  </group>
+                  <group>
+                    <field name="sber_operating_expenses_real_rub" />
+                  </group>
+                </div>
+                <field name="correction" />
               </group>
               <group string="Расход за проведение платежа(%)">
                 <field name="price_list_carrying_out_id" />
@@ -1101,6 +1093,36 @@
                   </group>
                   <group>
                     <field name="price_list_carrying_out_fixed_deal_fee" />
+                  </group>
+                </div>
+              </group>
+              <group string="Расход за проведение платежа">
+                <div class="o-form-group">
+                  <group>
+                    <field name="sber_payment_cost" />
+                  </group>
+                  <group>
+                    <field name="sber_payment_cost_usd" />
+                  </group>
+                  <group>
+                    <field name="sber_payment_cost_rub" />
+                  </group>
+                </div>
+              </group>
+              <group string="Процент плательщика">
+                <field name="price_list_profit_id" />
+                <field name="price_list_percent_accrual" widget="percentage" />
+              </group>
+              <group string="Сумма плательщику">
+                <div class="o-form-group">
+                  <group>
+                    <field name="payer_profit_currency" />
+                  </group>
+                  <group>
+                    <field name="payer_profit_usd" />
+                  </group>
+                  <group>
+                    <field name="payer_profit_rub" />
                   </group>
                 </div>
               </group>
@@ -1152,19 +1174,16 @@
                 </div>
               </group>
               <group string="Курсы">
-                <div class="o-form-group">
+                <div class="o-form-group-2">
                   <group>
-                    <field name="payment_order_rf_sber" />
+                    <field name="payer_cross_rate_usd"/>
                   </group>
                   <group>
-                    <field name="payer_cross_rate_usd" />
-                  </group>
-                  <group>
-                    <field name="payer_cross_rate_rub" />
+                    <field name="payer_cross_rate_rub"/>
                   </group>
                 </div>
               </group>
-              <group string="Конвертаци">
+              <group string="Конвертации">
                 <div class="o-form-group">
                   <group>
                     <field name="real_post_conversion_rate" />
@@ -1177,7 +1196,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Купили валюту Сбер">
+              <group string="Купили валюту">
                 <div class="o-form-group">
                   <group>
                     <field name="kupili_valyutu_sber_real" />
@@ -1190,33 +1209,6 @@
                   </group>
                 </div>
               </group>
-              <group string="Себестоимость денег Сбер">
-                <div class="o-form-group">
-                  <group>
-                    <field name="sebestoimost_denej_sber_real" />
-                  </group>
-                  <group>
-                    <field name="sebestoimost_denej_sber_real_usd" />
-                  </group>
-                  <group>
-                    <field name="sebestoimost_denej_sber_real_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Операционные расходы Сбер">
-                <div class="o-form-group">
-                  <group>
-                    <field name="sber_operating_expenses_real" />
-                  </group>
-                  <group>
-                    <field name="sber_operating_expenses_real_usd" />
-                  </group>
-                  <group>
-                    <field name="sber_operating_expenses_real_rub" />
-                  </group>
-                </div>
-                <field name="correction" />
-              </group>
               <group string="Скрытые комиссии партнера">
                 <div class="o-form-group">
                   <group>
@@ -1227,32 +1219,6 @@
                   </group>
                   <group>
                     <field name="hidden_partner_commission_real_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Расход за проведение платежа Сбер">
-                <div class="o-form-group">
-                  <group>
-                    <field name="sber_payment_cost" />
-                  </group>
-                  <group>
-                    <field name="sber_payment_cost_usd" />
-                  </group>
-                  <group>
-                    <field name="sber_payment_cost_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Сумма плательщику">
-                <div class="o-form-group">
-                  <group>
-                    <field name="payer_profit_currency" />
-                  </group>
-                  <group>
-                    <field name="payer_profit_usd" />
-                  </group>
-                  <group>
-                    <field name="payer_profit_rub" />
                   </group>
                 </div>
               </group>
@@ -1269,7 +1235,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Финансовые результаты Сбер">
+              <group string="Финансовые результаты">
                 <div class="o-form-group">
                   <group>
                     <field name="fin_res_sber_real" />
@@ -1285,7 +1251,7 @@
             </page>
             <page string="Финансовый расчет"
               invisible="is_sovcombank_contragent or is_sberbank_contragent"
-              groups="!amanat.group_amanat_manager">
+              groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer">
               <group>
                 <div class="o-form-group-2">
                   <group>
@@ -1299,6 +1265,9 @@
               <group string="Расход платежа по РФ(%)">
                 <field name="payment_order_rule_id" />
                 <field name="percent_from_payment_order_rule" widget="percentage" />
+              </group>
+              <group>
+                <field name="payment_order_rf_client" />
               </group>
               <group string="Себестоимость денег(%)">
                 <field name="money_cost_rule_id" />
@@ -1314,13 +1283,36 @@
                   </group>
                 </div>
               </group>
+              <group string="Себестоимость денег">
+                <div class="o-form-group">
+                  <group>
+                    <field name="cost_of_money_client_real" />
+                  </group>
+                  <group>
+                    <field name="cost_of_money_client_real_usd" />
+                  </group>
+                  <group>
+                    <field name="cost_of_money_client_real_rub" />
+                  </group>
+                </div>
+              </group>
               <group string="Операционные расходы (%)">
                 <field name="expense_rule_id" />
                 <field name="percent_from_expense_rule" widget="percentage" />
               </group>
-              <group string="Процент плательщика">
-                <field name="price_list_profit_id" />
-                <field name="price_list_percent_accrual" widget="percentage" />
+              <group string="Операционные расходы">
+                <div class="o-form-group">
+                  <group>
+                    <field name="client_real_operating_expenses" />
+                  </group>
+                  <group>
+                    <field name="client_real_operating_expenses_usd" />
+                  </group>
+                  <group>
+                    <field name="client_real_operating_expenses_rub" />
+                  </group>
+                </div>
+                <field name="correction" />
               </group>
               <group string="Расход за проведение платежа(%)">
                 <field name="price_list_carrying_out_id" />
@@ -1330,6 +1322,36 @@
                   </group>
                   <group>
                     <field name="price_list_carrying_out_fixed_deal_fee" />
+                  </group>
+                </div>
+              </group>
+              <group string="Расход за проведение платежа">
+                <div class="o-form-group">
+                  <group>
+                    <field name="client_payment_cost" />
+                  </group>
+                  <group>
+                    <field name="client_payment_cost_usd" />
+                  </group>
+                  <group>
+                    <field name="client_payment_cost_rub" />
+                  </group>
+                </div>
+              </group>
+              <group string="Процент плательщика">
+                <field name="price_list_profit_id" />
+                <field name="price_list_percent_accrual" widget="percentage" />
+              </group>
+              <group string="Сумма плательщику">
+                <div class="o-form-group">
+                  <group>
+                    <field name="payer_profit_currency" />
+                  </group>
+                  <group>
+                    <field name="payer_profit_usd" />
+                  </group>
+                  <group>
+                    <field name="payer_profit_rub" />
                   </group>
                 </div>
               </group>
@@ -1381,10 +1403,7 @@
                 </div>
               </group>
               <group string="Курсы">
-                <div class="o-form-group">
-                  <group>
-                    <field name="payment_order_rf_client" />
-                  </group>
+                <div class="o-form-group-2">
                   <group>
                     <field name="payer_cross_rate_usd" />
                   </group>
@@ -1393,7 +1412,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Курс после конвертации">
+              <group string="Конвертации">
                 <div class="o-form-group">
                   <group>
                     <field name="real_post_conversion_rate" />
@@ -1419,33 +1438,6 @@
                   </group>
                 </div>
               </group>
-              <group string="Себестоимость денег">
-                <div class="o-form-group">
-                  <group>
-                    <field name="cost_of_money_client_real" />
-                  </group>
-                  <group>
-                    <field name="cost_of_money_client_real_usd" />
-                  </group>
-                  <group>
-                    <field name="cost_of_money_client_real_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Операционные расходы">
-                <div class="o-form-group">
-                  <group>
-                    <field name="client_real_operating_expenses" />
-                  </group>
-                  <group>
-                    <field name="client_real_operating_expenses_usd" />
-                  </group>
-                  <group>
-                    <field name="client_real_operating_expenses_rub" />
-                  </group>
-                </div>
-                <field name="correction" />
-              </group>
               <group string="Скрытые комиссии партнера">
                 <div class="o-form-group">
                   <group>
@@ -1456,32 +1448,6 @@
                   </group>
                   <group>
                     <field name="hidden_partner_commission_real_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Расход за проведение платежа">
-                <div class="o-form-group">
-                  <group>
-                    <field name="client_payment_cost" />
-                  </group>
-                  <group>
-                    <field name="client_payment_cost_usd" />
-                  </group>
-                  <group>
-                    <field name="client_payment_cost_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Сумма плательщику">
-                <div class="o-form-group">
-                  <group>
-                    <field name="payer_profit_currency" />
-                  </group>
-                  <group>
-                    <field name="payer_profit_usd" />
-                  </group>
-                  <group>
-                    <field name="payer_profit_rub" />
                   </group>
                 </div>
               </group>
@@ -1513,7 +1479,7 @@
               </group>
             </page>
             <page string="Нераспределенные"
-              groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director">
+              groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director,!amanat.group_amanat_treasurer">
               <group>
                 <field name="for_khalida_temp" />
                 <field name="bank_cross_rate" />
@@ -1541,10 +1507,11 @@
               </group>
             </page>
             <page string="Compute-поля"
-              groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director">
+              groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director,!amanat.group_amanat_treasurer">
               <group>
                 <field name="usd_equivalent" />
                 <field name="conversion_expenses_rub" />
+                <field name="payment_expense_in_currency" />
                 <field name="real_cross_rate" />
                 <field name="xe_rate_auto" />
                 <field name="client_payment_cost" />
@@ -1590,38 +1557,6 @@
     </field>
   </record>
 
-  <!-- Упрощенное списочное представление для казначеев -->
-  <record id="zayavka_list_view_treasurer" model="ir.ui.view">
-    <field name="name">zayavka.list.treasurer</field>
-    <field name="model">amanat.zayavka</field>
-    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]" />
-    <field name="priority">20</field>
-    <field name="arch" type="xml">
-      <list string="Заявки (Казначей)" delete="false">
-        <!-- <button width="30" title="Перейти в форму" type="object" name="open_form"
-          icon="fa-external-link" /> -->
-        <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
-        <field name="zayavka_id" />
-        <field name="zayavka_num" />
-        <field name="status" widget="searchable_selection" />
-        <field name="contragent_id" />
-        <field name="client_id" />
-        <field name="inn" />
-        <field name="deal_type" />
-        <field name="sum_from_extracts" />
-        <field name="waiting_for_replenishment" />
-        <field name="application_amount_rub_contract" />
-        <field name="contract_reward" />
-        <field name="total_fact" />
-        <field name="date_received_on_pc_payment" />
-        <field name="date_received_on_pc_payment" />
-        <field name="bank_vypiska" />
-        <field name="extract_delivery_ids" />
-        
-      </list>
-    </field>
-  </record>
-
   <record id="zayavka_list_view" model="ir.ui.view">
     <field name="name">zayavka.list</field>
     <field name="model">amanat.zayavka</field>
@@ -1646,9 +1581,13 @@
             type="action"
             class="btn-success"
             icon="fa-money" />
+          <button name="action_export_kassa_to_excel"
+            string="Выгрузить в Excel"
+            type="object"
+            class="btn-info"
+            icon="fa-file-excel-o"
+            help="Выгружает данные касс для выбранных заявок" />
         </header>
-        <!-- <button width="30" title="Перейти в форму" type="object" name="open_form"
-          icon="fa-external-link" /> -->
         <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
         <!-- Поле для Ильзиры с красным индикатором -->
         <field name="show_red_stripe_for_ilzira_zayavka" string="" 
@@ -1656,59 +1595,41 @@
                decoration-danger="1"
                invisible="not show_red_stripe_for_ilzira_zayavka"
                readonly="1" width="150"/>
-        <!-- <field name="zayavka_id"/> -->
-        <field width="200" name="date_placement" />
+        <field width="200" name="date_placement" groups="!amanat.group_amanat_treasurer" />
         <field width="200" name="zayavka_num" />
         <field width="200" name="status" widget="searchable_selection" />
-        <field width="200" name="contragent_id" />
+        <field width="200" name="contragent_id" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="agent_id" />
         <field width="200" name="client_id" />
-        <field width="200" name="payment_conditions" />
-        <field width="200" name="usd_equivalent" />
-        <field width="200" name="xe_rate" />
-        <field width="200" name="currency" />
-        <field width="200" name="rate_field" />
-        <field width="200" name="reward_percent" />
-        <field width="200" name="rate_fixation_date" />
-        <field width="200" name="application_amount_rub_contract" />
-        <field width="200" name="agent_reward" />
-        <field width="200" name="total_amount" />
+        <field width="200" name="inn" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="deal_type" />
-
-
-        <field width="200" name="xe_rate" />
-        <field width="200" name="best_rate" />
-        <field width="200" name="usd_equivalent" />
-        <field width="200" name="comment_hedge" />
-        <field width="200" name="best_rate_name" />
-        <field width="200" name="hidden_hadge" />
-
-        <field width="200" name="jess_rate_id" groups="!amanat.group_amanat_manager"/>
-        <field width="200" name="link_jess_rate" groups="!amanat.group_amanat_manager"/>
-
-        <!-- <field width="200" name="date_placement"/> -->
-        <!-- Ограниченный доступ: скрываем конфиденциальные поля -->
-        <!-- <field width="200" name="taken_in_work_date"
-        groups="!amanat.group_amanat_limited_access"/> -->
-        <!-- <field width="200" name="checker_ids" widget="many2many_tags"/> -->
-
-        <!-- <field width="200" name="inn" groups="!amanat.group_amanat_limited_access"/> -->
-        <!-- <field width="200" name="client_inn"/> -->
+        <field width="140" name="sum_from_extracts" groups="amanat.group_amanat_treasurer"/>
+        <field width="140" name="waiting_for_replenishment" groups="amanat.group_amanat_treasurer"/>
+        <field width="200" name="application_amount_rub_contract" />
+        <field width="200" name="contract_reward" groups="amanat.group_amanat_treasurer"/>
+        <field width="200" name="total_fact" groups="amanat.group_amanat_treasurer"/>
+        <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer"/>
+        <field width="200" name="bank_vypiska" groups="amanat.group_amanat_treasurer"/>
+        <field width="200" name="extract_delivery_ids" widget="many2many_tags" groups="amanat.group_amanat_treasurer"/>
+        <field width="200" name="payment_conditions" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="usd_equivalent" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="xe_rate" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="currency" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="rate_field" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="reward_percent" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="rate_fixation_date" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="agent_reward" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="total_amount" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="xe_rate" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="best_rate" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="usd_equivalent" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="comment_hedge" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="best_rate_name" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="hidden_hadge" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="jess_rate_id" groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer"/>
+        <field width="200" name="link_jess_rate" groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer"/>
       </list>
     </field>
-  </record>
-
-  <!-- Действие для казначеев с упрощенными представлениями -->
-  <record id="zayavka_action_treasurer" model="ir.actions.act_window">
-    <field name="name">Заявки (Казначей)</field>
-    <field name="res_model">amanat.zayavka</field>
-    <field name="view_mode">list,form</field>
-    <field name="view_ids"
-      eval="[(5, 0, 0),
-                                   (0, 0, {'view_mode': 'list', 'view_id': ref('zayavka_list_view_treasurer')}),
-                                   (0, 0, {'view_mode': 'form', 'view_id': ref('view_amanat_zayavka_form_treasurer')})]" />
-    <field name="target">main</field>
-    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]" />
   </record>
 
   <record id="zayavka_action" model="ir.actions.act_window">
@@ -1716,7 +1637,7 @@
     <field name="res_model">amanat.zayavka</field>
     <field name="view_mode">list,form</field>
     <field name="target">main</field>
-    <field name="context">{'default_status': '1_no_chat'}</field>
+    <field name="context">{'default_status': '1_no_chat', 'search_default_filter_active_zayavkas': 1}</field>
     <field name="groups_id"
       eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]" />
   </record>
@@ -1737,6 +1658,8 @@
         <field name="client_id" />
         <field name="deal_type" />
         <!-- <field name="range_id" string="Диапазон"/> -->
+        <separator/>
+        <filter name="filter_active_zayavkas" string="Активные заявки" domain="[('status','not in',['21','22'])]"/>
         <!-- <separator/>
         <filter name="filter_in_range" string="В диапазоне" domain="[('range_id','!=',False)]"/>
         <separator/> -->
@@ -1758,57 +1681,45 @@
     </field>
   </record>
 
-  <!-- Ограниченное представление для Ильзиры (казначей) -->
-  <record id="zayavka_list_view_ilzira" model="ir.ui.view">
-    <field name="name">zayavka.list.ilzira</field>
-    <field name="model">amanat.zayavka</field>
-    <field name="groups_id" eval="[(4, ref('group_amanat_treasurer'))]"/>
-    <field name="priority">15</field>
-    <field name="arch" type="xml">
-      <list editable="top" multi_edit="1" create="false">
-        <header>
-          <button name="action_create_new_zayavka"
-            string="Новый"
-            type="object"
-            class="btn-primary"
-            icon="fa-plus"
-            display="always" />
-          <button name="%(action_zayavka_date_range_wizard)d"
-            string="Диапазон"
-            type="action"
-            class="btn-primary"
-            icon="fa-calendar" />
-          <button name="%(action_zayavka_kassa_wizard)d"
-            string="Касса"
-            type="action"
-            class="btn-success"
-            icon="fa-money" />
-        </header>
-        <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
-        <!-- Поле для Ильзиры с красным индикатором -->
-        <field name="show_red_stripe_for_ilzira_zayavka" string="" 
-               widget="badge" 
-               decoration-danger="1"
-               invisible="not show_red_stripe_for_ilzira_zayavka"
-               readonly="1" width="150"/>
-        
-        <!-- Поля только для Ильзиры -->
-        <field width="150" name="zayavka_num" />
-        <field width="120" name="status" widget="searchable_selection" />
-        <field width="150" name="agent_id" />
-        <field width="150" name="client_id" />
-        <field width="120" name="inn" />
-        <field width="120" name="deal_type" />
-        <field width="140" name="sum_from_extracts" />
-        <field width="180" name="application_amount_rub_contract" />
-        <field width="160" name="agent_reward" />
-        <field width="120" name="total_amount" />
-        <field width="150" name="date_placement" />
-        <field width="150" name="taken_in_work_date" />
-        <field width="150" name="bank_vypiska" />
-        <field width="200" name="extract_delivery_ids" widget="many2many_tags" />
-      </list>
+  <!-- Server Action для показа заявок, связанных с конкретным документом -->
+  <record id="action_show_related_zayavkas_server" model="ir.actions.server">
+    <field name="name">Показать связанные заявки</field>
+    <field name="model_id" ref="base.model_ir_attachment"/>
+    <field name="binding_model_id" ref="base.model_ir_attachment"/>
+    <field name="binding_view_types">list,form</field>
+    <field name="state">code</field>
+    <field name="code">
+# Получаем выбранные attachment'ы
+attachment_ids = records.ids if records else []
+
+if not attachment_ids:
+    action = {
+        'type': 'ir.actions.client',
+        'tag': 'display_notification',
+        'params': {
+            'title': 'Внимание!',
+            'message': 'Выберите документ для поиска связанных заявок',
+            'type': 'warning',
+        }
+    }
+else:
+    # Используем первый выбранный attachment
+    attachment_id = attachment_ids[0]
+    
+    # Вызываем метод из модели заявки
+    zayavka_obj = env['amanat.zayavka']
+    action = zayavka_obj.action_show_related_zayavkas_by_attachment(attachment_id)
     </field>
+  </record>
+
+  <!-- Альтернативное действие для обхода лимитов через XML -->
+  <record id="action_show_related_zayavkas_unlimited" model="ir.actions.act_window">
+    <field name="name">Связанные заявки (без лимитов)</field>
+    <field name="res_model">amanat.zayavka</field>
+    <field name="view_mode">list,form</field>
+    <field name="target">new</field>
+    <field name="limit">0</field>
+    <field name="context">{'search_default_all': 1}</field>
   </record>
 
 </odoo>

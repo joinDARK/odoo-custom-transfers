@@ -198,7 +198,8 @@ class AmanatKassaFiles(models.Model, AmanatBaseModel):
             'server_response': str(server_response),
         }
         
-        kassa_file = self.create(values)
+        # Создаем запись с очищенным контекстом (убираем default_status для заявок)
+        kassa_file = self.with_context(default_status=None).create(values)
         
         # Автоматически скачиваем файл
         if kassa_file.download_url:
