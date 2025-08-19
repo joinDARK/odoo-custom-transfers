@@ -121,7 +121,18 @@ class AmanatZayavkaDocuments(models.Model):
                 text = '\n'.join(all_paragraphs)
                 # Чистим лишние пустые строки
                 text = re.sub(r'\n{3,}', '\n\n', text)
-                return text.strip() if text.strip() else None
+                
+                # Логируем размер извлеченного текста для диагностики
+                if text and text.strip():
+                    final_text = text.strip()
+                    _logger.info(f"[_extract_text_from_docx_bytes] Извлечен текст: {len(final_text)} символов, {len(all_paragraphs)} параграфов")
+                    _logger.info(f"[_extract_text_from_docx_bytes] Первые 200 символов: {final_text[:200]}...")
+                    if len(final_text) > 400:
+                        _logger.info(f"[_extract_text_from_docx_bytes] Последние 200 символов: ...{final_text[-200:]}")
+                    return final_text
+                else:
+                    _logger.warning("[_extract_text_from_docx_bytes] Извлеченный текст пуст")
+                    return None
 
         except zipfile.BadZipFile:
             # Файл не является корректным DOCX

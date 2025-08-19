@@ -17,26 +17,30 @@
 
         <xpath expr="//block[@name='integration']" position="inside">
             <setting id="ygpt_settings" string="YandexGPT" help="Настройки интеграции с YandexGPT">
-				<div class="content-group">
-					<div class="mt16">
+				<div class="row w-100">
+					<div class="col-12 mt16">
 						<label for="ygpt_api_key" class="o_light_label"/>
 						<field name="ygpt_api_key" password="True" placeholder="IAM Token" class="o_light_label"/>
 					</div>
-					<div class="mt16">
+					<div class="col-12 mt16">
 						<label for="ygpt_folder_id" class="o_light_label"/>
 						<field name="ygpt_folder_id" placeholder="Folder ID" class="o_light_label"/>
 					</div>
-					<div class="mt16">
+					<div class="col-12 mt16">
 						<label for="ygpt_prompt_for_zayavka_analyse" class="o_light_label"/>
 						<field name="ygpt_prompt_for_zayavka_analyse" placeholder="Базовый системный промпт для анализа заявки" nolabel="1" widget="text" class="w-100"/>
 					</div>
-					<div class="mt16">
+					<div class="col-12 mt16">
 						<label for="ygpt_prompt_for_sber_screen_analyse" class="o_light_label"/>
 						<field name="ygpt_prompt_for_sber_screen_analyse" placeholder="Базовый системный промпт для анализа сбербанка" nolabel="1" widget="text" class="w-100"/>
 					</div>
-					<div class="mt16">
+					<div class="col-12 mt16">
 						<label for="ygpt_prompt_for_assignment_analyse" class="o_light_label"/>
 						<field name="ygpt_prompt_for_assignment_analyse" placeholder="Базовый системный промпт для анализа поручения" nolabel="1" widget="text" class="w-100"/>
+					</div>
+					<div class="col-12 mt16">
+						<label for="ypgt_prompt_for_assignment_client_analyse" class="o_light_label"/>
+						<field name="ypgt_prompt_for_assignment_client_analyse" placeholder="Базовый системный промпт для анализа поручения клиента (индивидуала)" nolabel="1" widget="text" class="w-100"/>
 					</div>
                 </div>
             </setting>

@@ -66,6 +66,10 @@ class ZayavkaRuleForManagement(models.Model):
                 (date_field_end, '>=', deal_closed_date),
                 ('min_application_amount', '<=', equivalent_sum),
                 ('max_application_amount', '>=', equivalent_sum),
+                ('contragent_zayavka_id', '=', False),
+                ('agent_zayavka_id', '=', False),
+                ('client_zayavka_id', '=', False),
+                ('currency_zayavka', '=', False),
             ]
 
             rule = self.env[model].search(domain, limit=1)

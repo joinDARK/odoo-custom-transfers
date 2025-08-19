@@ -20,5 +20,14 @@
             <field name="description">Шаблон акта выполненных работ или оказанных услуг</field>
             <field name="template_file" type="base64" file="amanat/static/src/template_documents/Акт.docx"/>
         </record>
+
+        <!-- Шаблон индивидуала (реальный файл) -->
+        <record id="demo_template_individual_docx" model="template.library">
+            <field name="name">Индивидуал поручение</field>
+            <field name="template_type">docx</field>
+            <field name="template_filename">Индивидуал.docx</field>
+            <field name="description">Шаблон индивидулов</field>
+            <field name="template_file" type="base64" file="amanat/static/src/template_documents/Акт.docx"/>
+        </record>
     </data>
 </odoo>

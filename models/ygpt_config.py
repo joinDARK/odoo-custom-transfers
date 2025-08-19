@@ -27,6 +27,12 @@ class ResConfigSettingsYandexGPT(models.TransientModel):
     ygpt_prompt_for_assignment_analyse = fields.Char(
         string='YandexGPT промпт для анализа поручения',
         config_parameter='amanat.ygpt.prompt_for_assignment_analyse',
-        size=2000,
+        size=4000,
         help='Базовый системный промпт для анализа поручения, который будет отправляться вместе с сообщением пользователя.'
+    )
+    ypgt_prompt_for_assignment_client_analyse = fields.Char(
+        string='YandexGPT промпт для анализа поручения клиента (индивидуала)',
+        config_parameter='amanat.ygpt.prompt_for_assignment_client_analyse',
+        size=2000,
+        help='Базовый системный промпт для анализа поручения клиента (индивидуала), который будет отправляться вместе с сообщением пользователя.'
     )

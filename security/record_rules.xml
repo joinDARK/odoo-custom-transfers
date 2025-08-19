@@ -122,75 +122,37 @@
             <field name="groups" eval="[(4, ref('amanat.group_amanat_admin')), (4, ref('amanat.group_amanat_senior_manager')), (4, ref('amanat.group_amanat_director'))]"/>
         </record>
 
-        <!-- Правила доступа к вложениям (ir.attachment) -->
-        
-        <!-- УЛУЧШЕННОЕ ГЛОБАЛЬНОЕ ПРАВИЛО: Отключаем все ограничения для amanat групп -->
-        <record id="amanat_attachment_global_access" model="ir.rule">
-            <field name="name">Amanat Global Attachment Access</field>
+        <!-- ЯДЕРНЫЙ ВАРИАНТ: Отключение ВСЕХ record rules для ir.attachment БЕЗ ГРУПП -->
+        <record id="ir_attachment_nuclear_access_rule" model="ir.rule">
+            <field name="name">NUCLEAR - IR Attachment No Rules</field>
             <field name="model_id" ref="base.model_ir_attachment"/>
-            <field name="domain_force">[]</field>
-            <field name="global" eval="True"/>
-            <field name="active" eval="True"/>
-            <field name="groups" eval="[
-                (4, ref('amanat.group_amanat_admin')), 
-                (4, ref('amanat.group_amanat_director')), 
-                (4, ref('amanat.group_amanat_senior_manager')),
-                (4, ref('amanat.group_amanat_manager')), 
-                (4, ref('amanat.group_amanat_inspector')), 
-                (4, ref('amanat.group_amanat_fin_manager')), 
-                (4, ref('amanat.group_amanat_fin_manager_jess')), 
-                (4, ref('amanat.group_amanat_treasurer')), 
-                (4, ref('amanat.group_amanat_transit_only')),
-                (4, ref('amanat.group_amanat_alina_manager_files'))
-            ]"/>
-            <field name="perm_read" eval="1"/>
-            <field name="perm_write" eval="1"/>
-            <field name="perm_create" eval="1"/>
-            <field name="perm_unlink" eval="1"/>
-        </record>
-
-        <!-- ДОПОЛНИТЕЛЬНОЕ ПРАВИЛО: Доступ к файлам связанным с заявками для всех групп Amanat -->
-        <record id="amanat_attachment_zayavka_access" model="ir.rule">
-            <field name="name">Amanat Attachment Zayavka Access</field>
-            <field name="model_id" ref="base.model_ir_attachment"/>
-            <field name="domain_force">['|', '|', '|', 
-                ('res_model', '=', 'amanat.zayavka'),
-                ('res_model', '=', False),
-                ('create_uid', '=', user.id),
-                ('res_id', '=', False)
-            ]</field>
-            <field name="groups" eval="[
-                (4, ref('amanat.group_amanat_admin')), 
-                (4, ref('amanat.group_amanat_director')), 
-                (4, ref('amanat.group_amanat_senior_manager')),
-                (4, ref('amanat.group_amanat_manager')), 
-                (4, ref('amanat.group_amanat_inspector')), 
-                (4, ref('amanat.group_amanat_fin_manager')), 
-                (4, ref('amanat.group_amanat_fin_manager_jess')), 
-                (4, ref('amanat.group_amanat_treasurer')), 
-                (4, ref('amanat.group_amanat_transit_only')),
-                (4, ref('amanat.group_amanat_alina_manager_files'))
-            ]"/>
-            <field name="perm_read" eval="1"/>
-            <field name="perm_write" eval="1"/>
-            <field name="perm_create" eval="1"/>
-            <field name="perm_unlink" eval="1"/>
+            <field name="domain_force">[]</field>  <!-- Пустой домен = доступ ко всем записям -->
+            <!-- НЕТ ГРУПП = применяется ко ВСЕМ -->
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="global" eval="True"/>  
             <field name="active" eval="True"/>
         </record>
 
-        <!-- СПЕЦИАЛЬНОЕ ПРАВИЛО: Полный доступ к файлам для группы Алины -->
-        <record id="amanat_attachment_alina_manager_access" model="ir.rule">
-            <field name="name">Alina Manager Files Access</field>
+        <!-- ДОПОЛНИТЕЛЬНО: Правило с группой base.group_user -->
+        <record id="ir_attachment_override_all_rules" model="ir.rule">
+            <field name="name">OVERRIDE ALL - IR Attachment Full Access</field>
             <field name="model_id" ref="base.model_ir_attachment"/>
-            <field name="domain_force">[]</field>
-            <field name="groups" eval="[(4, ref('amanat.group_amanat_alina_manager_files'))]"/>
-            <field name="perm_read" eval="1"/>
-            <field name="perm_write" eval="1"/>
-            <field name="perm_create" eval="1"/>
-            <field name="perm_unlink" eval="1"/>
-            <field name="global" eval="True"/>
+            <field name="domain_force">[]</field>  <!-- Пустой домен = доступ ко всем записям -->
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>  <!-- Все внутренние пользователи -->
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="global" eval="True"/>  
             <field name="active" eval="True"/>
         </record>
+
+
+
+
 
     </data>
 </odoo>

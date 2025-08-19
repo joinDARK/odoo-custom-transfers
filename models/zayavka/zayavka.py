@@ -187,7 +187,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     client_payment_cost = fields.Float(
-        string=' Расход за проведение платежа в валюте заявки',
+        string='Расход за проведение платежа в валюте заявки',
         compute='_compute_client_payment_cost',
         help="""Если Вид сделки 'Экспорт':  Расход за проведение платежа в валюте заявки = Сумма заявки × Процент (from Расход платежа по РФ(%))
         Иначе: Сумма заявки × % Начисления (from Расход за проведение платежа(%))""",
@@ -1112,7 +1112,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     hand_reward_percent = fields.Float(
-        string='% Вознаграждения ',
+        string='% Вознаграждения',
         tracking=True,
         digits=(16, 4)
     )
@@ -2331,6 +2331,48 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     link_jess_rate = fields.Boolean(string='Обновить курс Джесс', default=False)
+
+    kassa_name = fields.Char(
+        string='Касса',
+        compute='_compute_kassa_name',
+        store=True,
+        readonly=False,
+        tracking=True,
+        help="Касса автоматически подтягивается на основе выбранного контрагента"
+    )
+
+    @api.depends('contragent_id')
+    def _compute_kassa_name(self):
+        """Автоматически определяет кассу при выборе контрагента"""
+        for record in self:
+            if record.contragent_id:
+                kassa_name = False
+                
+                # Ищем в Касса Иван
+                kassa_ivan = self.env['amanat.kassa_ivan'].search([('contragent_id', '=', record.contragent_id.id)], limit=1)
+                if kassa_ivan:
+                    kassa_name = 'Касса Иван'
+                else:
+                    # Ищем в Касса 2
+                    kassa_2 = self.env['amanat.kassa_2'].search([('contragent_id', '=', record.contragent_id.id)], limit=1)
+                    if kassa_2:
+                        kassa_name = 'Касса 2'
+                    else:
+                        # Ищем в Касса 3
+                        kassa_3 = self.env['amanat.kassa_3'].search([('contragent_id', '=', record.contragent_id.id)], limit=1)
+                        if kassa_3:
+                            kassa_name = 'Касса 3'
+                
+                record.kassa_name = kassa_name
+            else:
+                record.kassa_name = False
+
+    @api.onchange('contragent_id')
+    def _onchange_contragent_id_kassa(self):
+        """Обновляет кассу при изменении контрагента в интерфейсе"""
+        if self.contragent_id:
+            # Принудительно вызываем пересчет кассы
+            self._compute_kassa_name()
 
     @api.depends('extract_delivery_ids')
     def _compute_show_red_stripe_for_ilzira_zayavka(self):

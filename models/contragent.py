@@ -55,6 +55,14 @@ class Contragent(models.Model, AmanatBaseModel):
     )
     inn = fields.Char(string='ИНН', tracking=True)
     
+    # Касса - computed поле для отображения
+    kassa_name = fields.Char(
+        string='Касса',
+        compute='_compute_kassa_name',
+        store=False,
+        help="Отображает кассу, в которой участвует данный контрагент"
+    )
+    
     # Условия работы - используется как значение по умолчанию для заявок
     payment_terms = fields.Selection(
         [
@@ -119,6 +127,28 @@ class Contragent(models.Model, AmanatBaseModel):
             # Фильтруем связанные записи, чтобы исключить несуществующие или пустые ИНН
             valid_payers = record.payer_ids.filtered(lambda r: r.exists() and r.inn)
             record.payer_inn = ", ".join(valid_payers.mapped('inn')) if valid_payers else ''
+
+    def _compute_kassa_name(self):
+        """Определяет кассу контрагента по существующим моделям касс"""
+        for record in self:
+            kassa_name = False
+            
+            # Ищем в Касса Иван
+            kassa_ivan = self.env['amanat.kassa_ivan'].search([('contragent_id', '=', record.id)], limit=1)
+            if kassa_ivan:
+                kassa_name = 'Касса Иван'
+            else:
+                # Ищем в Касса 2
+                kassa_2 = self.env['amanat.kassa_2'].search([('contragent_id', '=', record.id)], limit=1)
+                if kassa_2:
+                    kassa_name = 'Касса 2'
+                else:
+                    # Ищем в Касса 3
+                    kassa_3 = self.env['amanat.kassa_3'].search([('contragent_id', '=', record.id)], limit=1)
+                    if kassa_3:
+                        kassa_name = 'Касса 3'
+            
+            record.kassa_name = kassa_name
     
     @api.depends('contract_ids.is_actual', 'contract_ids.start_date', 'contract_ids.end_date')
     def _compute_contract_dates(self):

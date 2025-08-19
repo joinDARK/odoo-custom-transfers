@@ -74,42 +74,9 @@ UPDATE_FIELDS = [
     'instruction_signed_date',
     'client_id',
     'agent_id',
+    'hand_reward_percent',
+    'rate_fixation_date'
 ]
-def _get_yandex_gpt_config(env, is_zayavka=True, is_sber_screen=False, is_assignment=False):
-    """Возвращает конфиг YandexGPT из системных параметров с фолбэком к ENV."""
-    try:
-        icp = env['ir.config_parameter'].sudo()
-        api_key = icp.get_param('amanat.ygpt.api_key') or os.getenv('YANDEX_GPT_API_KEY', '')
-        folder_id = icp.get_param('amanat.ygpt.folder_id') or os.getenv('YANDEX_GPT_FOLDER_ID', '')
-        if is_zayavka:
-            prompt = icp.get_param('amanat.ygpt.prompt_for_zayavka_analyse') or PROMPT
-        elif is_sber_screen:
-            prompt = icp.get_param('amanat.ygpt.prompt_for_sber_screen_analyse') or PROMPT
-        elif is_assignment:
-            prompt = icp.get_param('amanat.ygpt.prompt_for_assignment_analyse') or PROMPT
-        else:
-            prompt = PROMPT
-        _logger.info(f"[_get_yandex_gpt_config] prompt: {prompt}")
-        return {
-            'api_key': api_key or '',
-            'folder_id': folder_id or '',
-            'prompt': prompt or PROMPT,
-        }
-    except Exception as e:
-        _logger.error(f"[_get_yandex_gpt_config] Ошибка получения конфигурации: {e}")
-        return {
-            'api_key': os.getenv('YANDEX_GPT_API_KEY', ''),
-            'folder_id': os.getenv('YANDEX_GPT_FOLDER_ID', ''),
-            'prompt': PROMPT,
-        }
-
-def _make_headers(api_key, folder_id):
-    return {
-        "Authorization": f"Api-Key {api_key}",
-        "Content-Type": "application/json",
-        "X-Folder-Id": folder_id,
-    }
-
 FIELD_MAPPING = {
     'amount': 'amount',  # Сумма заявки (строка 965)
     'currency': 'currency',  # Валюта (строка 895)
@@ -132,7 +99,46 @@ FIELD_MAPPING = {
     'agent_contract_date': 'agent_contract_date',  # Дата контракта агента
     'instruction_signed_date': 'instruction_signed_date',  # Дата подписания поручения
     'client_id': None,  # Это Many2one поле, обработаем отдельно
+    'hand_reward_percent': 'hand_reward_percent', # % Вознаграждения
+    'rate_fixation_date': 'rate_fixation_date', # Дата фиксации курса
 }
+
+def _get_yandex_gpt_config(env, prompt_type=None):
+    """Возвращает конфиг YandexGPT из системных параметров с фолбэком к ENV."""
+    try:
+        icp = env['ir.config_parameter'].sudo()
+        api_key = icp.get_param('amanat.ygpt.api_key') or os.getenv('YANDEX_GPT_API_KEY', '')
+        folder_id = icp.get_param('amanat.ygpt.folder_id') or os.getenv('YANDEX_GPT_FOLDER_ID', '')
+        match prompt_type:
+            case 'zayavka':
+                prompt = icp.get_param('amanat.ygpt.prompt_for_zayavka_analyse') or PROMPT
+            case 'sber_screen':
+                prompt = icp.get_param('amanat.ygpt.prompt_for_sber_screen_analyse') or PROMPT
+            case 'assignment':
+                prompt = icp.get_param('amanat.ygpt.prompt_for_assignment_analyse') or PROMPT
+            case _:
+                prompt = PROMPT
+
+        _logger.info(f"[_get_yandex_gpt_config] prompt: {prompt}")
+        return {
+            'api_key': api_key or '',
+            'folder_id': folder_id or '',
+            'prompt': prompt or PROMPT,
+        }
+    except Exception as e:
+        _logger.error(f"[_get_yandex_gpt_config] Ошибка получения конфигурации: {e}")
+        return {
+            'api_key': os.getenv('YANDEX_GPT_API_KEY', ''),
+            'folder_id': os.getenv('YANDEX_GPT_FOLDER_ID', ''),
+            'prompt': PROMPT,
+        }
+
+def _make_headers(api_key, folder_id):
+    return {
+        "Authorization": f"Api-Key {api_key}",
+        "Content-Type": "application/json",
+        "X-Folder-Id": folder_id,
+    }
 
 class ZayavkaYandexGPTAnalyse(models.Model):
     _inherit = 'amanat.zayavka'
@@ -153,7 +159,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         except Exception as notify_err:
             _logger.warning(f"[_notify_user_simple] Не удалось отправить уведомление пользователю: {notify_err}")
 
-    def analyze_document_with_yandex_gpt(self, content, is_zayavka=True, is_sber_screen=False, is_assignment=False):
+    def analyze_document_with_yandex_gpt(self, content, prompt_type="zayavka"):
         try:
 
             # Подготавливаем содержимое: поддержка как JSON/словаря, так и обычного текста
@@ -182,7 +188,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             # Формируем сообщение для GPT
             user_message = f"{label}:\n{prepared_text}"
 
-            cfg = _get_yandex_gpt_config(self.env, is_zayavka, is_sber_screen, is_assignment)
+            cfg = _get_yandex_gpt_config(self.env, prompt_type)
             if not cfg['api_key'] or not cfg['folder_id']:
                 self._notify_user_simple(
                     title="YandexGPT",
@@ -263,7 +269,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                     
                     # Отправляем распознанный текст в YandexGPT для анализа
                     _logger.info(f"[analyze_screen_sber_images_with_yandex_gpt] Отправляем текст из {image_info['name']} в YandexGPT для анализа...")
-                    self.analyze_document_with_yandex_gpt(recognized_text, is_zayavka=False, is_sber_screen=True, is_assignment=False)
+                    self.analyze_document_with_yandex_gpt(recognized_text, "sber_screen")
                     
                 else:
                     _logger.warning(f"[analyze_screen_sber_images_with_yandex_gpt] Не удалось распознать текст из {image_info['name']}")
@@ -384,7 +390,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             # Если текст извлечён, отправляем на анализ
             if text:
                 try:
-                    self.analyze_document_with_yandex_gpt(text, is_zayavka=False, is_sber_screen=False, is_assignment=True)
+                    self.analyze_document_with_yandex_gpt(text, "assignment")
                     analyzed_any = True
                     _logger.info(f"Заявка {self.id}: успешно проанализирован документ '{attachment.name}'")
                 except Exception as e:
@@ -392,7 +398,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             else:
                 # Если не удалось извлечь текст из DOCX/Excel, пробуем PDF через OCR
                 try:
-                    self.analyze_pdf_attachments_with_yandex_gpt(attachment, is_zayavka=False, is_sber_screen=False, is_assignment=True)
+                    self.analyze_pdf_attachments_with_yandex_gpt(attachment, "assignment")
                     analyzed_any = True
                     _logger.info(f"Заявка {self.id}: успешно проанализирован PDF '{attachment.name}' через OCR")
                 except Exception as e:
@@ -401,7 +407,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             if not analyzed_any:
                 _logger.info(f"Заявка {self.id}: подходящих документов (DOCX/DOC/Excel) с текстом не найдено — анализ пропущен")
 
-    def analyze_pdf_attachments_with_yandex_gpt(self, attachment, is_zayavka=True, is_sber_screen=False, is_assignment=False):
+    def analyze_pdf_attachments_with_yandex_gpt(self, attachment, prompt_type="zayavka"):
         """
         Анализирует PDF-файлы из zayavka_attachments с помощью Yandex Vision OCR API и выводит распознанный текст.
         Дополнительно отправляет распознанный текст в YandexGPT для структурного анализа.
@@ -427,7 +433,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
 
                     # Отправляем распознанный текст в YandexGPT для структурного анализа
                     try:
-                        self.analyze_document_with_yandex_gpt(recognized_text, is_zayavka=is_zayavka, is_sber_screen=is_sber_screen, is_assignment=is_assignment)
+                        self.analyze_document_with_yandex_gpt(recognized_text, prompt_type)
                     except Exception as gpt_err:
                         _logger.warning(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось отправить распознанный PDF-текст в YandexGPT: {gpt_err}")
                 else:
@@ -522,7 +528,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                             deal_type_code = deal_type_mapping.get(value, value)
                             update_values[model_field] = deal_type_code
                         
-                        elif model_field in ['payment_date', 'agent_contract_date', 'instruction_signed_date'] and value:
+                        elif model_field in ['payment_date', 'agent_contract_date', 'instruction_signed_date', 'rate_fixation_date'] and value:
                             # Для полей дат нужно преобразовать строку в дату
                             try:
                                 from datetime import datetime
@@ -1479,11 +1485,11 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             _logger.info(f"[_extract_approved_date_from_swift] Тип файла: {attachment.mimetype}, имя: {attachment.name}")
             
             if attachment.mimetype == 'application/pdf' or (attachment.name and attachment.name.lower().endswith('.pdf')):
-                _logger.info(f"[_extract_approved_date_from_swift] Обрабатываем как PDF документ")
+                _logger.info("[_extract_approved_date_from_swift] Обрабатываем как PDF документ")
                 # Для PDF используем OCR + GPT
                 gpt_response = self._analyze_pdf_with_custom_prompt(attachment, swift_prompt)
             else:
-                _logger.info(f"[_extract_approved_date_from_swift] Обрабатываем как текстовый документ")
+                _logger.info("[_extract_approved_date_from_swift] Обрабатываем как текстовый документ")
                 # Для текстовых файлов используем прямой анализ
                 gpt_response = self._analyze_text_with_custom_prompt(attachment, swift_prompt)
             
@@ -1578,7 +1584,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         Отправляет текст в YandexGPT с кастомным промптом
         """
         try:
-            cfg = _get_yandex_gpt_config(self.env, is_zayavka=False)
+            cfg = _get_yandex_gpt_config(self.env, "zayavka")
             if not cfg['api_key'] or not cfg['folder_id']:
                 _logger.error("[_send_text_to_yandex_gpt_with_prompt] Не настроены API ключ и/или Folder ID")
                 return None

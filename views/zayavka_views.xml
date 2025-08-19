@@ -7,9 +7,6 @@
       eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]" />
     <field name="arch" type="xml">
       <form string="Заявки" create="false">
-        <header>
-          <!-- <h1><field name="zayavka_id" readonly="1"/></h1> -->
-        </header>
         <sheet>
           <notebook>
             <!-- Упрощенная страница для ограниченного доступа -->
@@ -1003,7 +1000,7 @@
                     <field name="send_to_reconciliation" />
                   </group>
                   <group>
-                    <field name="real_post_conversion_rate" />
+                    <field name="kassa_name" />
                   </group>
                 </div>
               </group>
@@ -1231,7 +1228,7 @@
                     <field name="send_to_reconciliation" />
                   </group>
                   <group>
-                    <field name="conversion_expenses_currency" />
+                    <field name="kassa_name" />
                   </group>
                 </div>
               </group>
@@ -1460,7 +1457,7 @@
                     <field name="send_to_reconciliation" />
                   </group>
                   <group>
-                    <field name="conversion_expenses_currency" />
+                    <field name="kassa_name" />
                   </group>
                 </div>
               </group>

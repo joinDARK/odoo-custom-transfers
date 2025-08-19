@@ -19,10 +19,6 @@ class ZayavkaMethods(models.Model):
         if 'extract_delivery_ids' in vals:
             for rec in self:
                 old_values[rec.id] = rec.extract_delivery_ids.ids.copy()
-        
-        old_payment_rule = self.payment_order_rule_id
-        old_expense_rule = self.expense_rule_id
-        old_money_cost_rule = self.money_cost_rule_id
 
         res = super().write(vals)  # <-- Исправлено!
 
@@ -30,11 +26,6 @@ class ZayavkaMethods(models.Model):
             for rec in self:
                 rec.status = '3'
                 rec.rate_fixation_date = fields.Date.today()
-
-        # if vals.get('status', False) == '6':
-        #     for rec in self:
-        #         _logger.info("Изменился на нужный статус")
-        #         rec.run_all_fix_course_automations()
 
         if 'extract_delivery_ids' in vals:
             _logger.info(f"Обнаружено изменение extract_delivery_ids в vals: {vals.get('extract_delivery_ids')}")
@@ -270,10 +261,6 @@ class ZayavkaMethods(models.Model):
         trigger2 = vals.get('for_khalida_temp', False)
         send_to_reconciliation = vals.get('send_to_reconciliation', False)
         res = super().create(vals)
-
-        # if vals.get('status', False) == '6':
-        #     _logger.info("Изменился на нужный статус")
-        #     res.run_all_fix_course_automations()
 
         if trigger:
             # Запуск основной логики (вместо print потом будут скрипты)
@@ -2000,14 +1987,14 @@ class ZayavkaMethods(models.Model):
             'получатель': 'Beneficiary',
             
             # BENEFICIARY COUNTRY - страна получателя
-            'beneficiary countryстрана получателя': 'Beneficiary COUNTRY',
-            'beneficiary country': 'Beneficiary COUNTRY',
-            'страна получателя': 'Beneficiary COUNTRY',
+            'beneficiary countryстрана получателя': 'BENEFICIARY COUNTRY*',
+            'beneficiary country': 'BENEFICIARY COUNTRY*',
+            'страна получателя': 'BENEFICIARY COUNTRY*',
             
             # BENEFICIARY ADDRESS - адрес получателя
-            'beneficiary address адрес получателя (город просьба указать)': 'Beneficiary address',
-            'beneficiary address': 'Beneficiary address',
-            'адрес получателя': 'Beneficiary address',
+            'beneficiary address адрес получателя (город просьба указать)': 'BENEFICIARY ADDRESS*',
+            'beneficiary address': 'BENEFICIARY ADDRESS*',
+            'адрес получателя': 'BENEFICIARY ADDRESS*',
             
             # ACCOUNT - номер счета
             'account номер счета или iban код': 'ACCOUNT *',

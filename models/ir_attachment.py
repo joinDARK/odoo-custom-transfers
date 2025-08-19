@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
 import io
 import base64
+import logging
 import requests
 from io import BytesIO
+from collections import defaultdict
 
 import pandas as pd
 from docx import Document as DocxDocument
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+from odoo.exceptions import AccessError
+
+# Инициализируем logger ПЕРВЫМ!
+_logger = logging.getLogger(__name__)
+
+# ДИАГНОСТИЧЕСКОЕ СООБЩЕНИЕ - ПРОВЕРЯЕМ ЗАГРУЖАЕТСЯ ЛИ ФАЙЛ
+_logger.info("🚨 AMANAT: ir_attachment.py module is being loaded!")
+print("🚨 AMANAT: ir_attachment.py module is being loaded!")  # Дублируем в print
 
 # Попытка импорта различных движков для чтения Excel
 try:
@@ -26,53 +36,117 @@ class IrAttachment(models.Model):
     """Extended Attachment Model for Amanat Sverka Files"""
     _inherit = 'ir.attachment'
 
-    @api.model 
+    
+
+
+    
+    def _filter_access_rules(self, operation):
+        """ЯДЕРНЫЙ ОБХОД: Полностью отключаем record rules для внутренних пользователей"""
+        _logger.info(f"AMANAT _filter_access_rules called for IDs: {self.ids}, operation: {operation}, user: {self.env.user.name}")
+        
+        if self.env.user._is_internal():
+            _logger.info(f"AMANAT: Internal user {self.env.user.name} - BYPASSING ALL RECORD RULES for {self.ids}")
+            # Возвращаем все записи без фильтрации
+            return self
+        else:
+            _logger.info(f"AMANAT: External user {self.env.user.name} - applying standard rules")
+            # Для внешних пользователей применяем стандартную логику
+            return super()._filter_access_rules(operation)
+
+    def read(self, fields=None, load='_classic_read'):
+        """
+        AMANAT: Агрессивное переопределение read() для обхода record rules
+        """
+        _logger.info("AMANAT ir.attachment.read() called for IDs: %s, user: %s", self.ids, self.env.user.name)
+        
+        if self.env.user._is_superuser():
+            _logger.info("AMANAT: Superuser - using normal read() for %s", self.ids)
+            return super().read(fields, load)
+            
+        if self.env.user.has_group('base.group_user'):
+            _logger.info("AMANAT: Internal user %s - BYPASSING RECORD RULES with sudo() for %s", self.env.user.name, self.ids)
+            # Используем sudo() для обхода record rules, но вызываем оригинальный метод
+            return super(IrAttachment, self.sudo()).read(fields, load)
+            
+        _logger.info("AMANAT: External user %s - using normal read() for %s", self.env.user.name, self.ids)
+        return super().read(fields, load)
+
     def check(self, mode, values=None):
         """
-        ЭКСТРЕННОЕ переопределение: разрешаем доступ пользователям групп amanat к файлам
+        ЭКСТРЕМАЛЬНОЕ переопределение: Разрешаем доступ всем внутренним пользователям
+        к файлам, связанным с заявками amanat.zayavka 
         """
+        _logger.info(f"AMANAT ir.attachment.check() called for IDs: {self.ids}, mode: {mode}, user: {self.env.user.name}")
         
-        # ЯДЕРНЫЙ ВАРИАНТ: Временно разрешаем доступ ВСЕМ (для диагностики)
-        # TODO: Убрать после решения проблемы с доступом!
+        # Супер-пользователи всегда проходят
+        if self.env.is_superuser():
+            _logger.info(f"AMANAT: Superuser access granted for {self.ids}")
+            return True
+        
+        # Только внутренние пользователи могут работать с вложениями
+        if not (self.env.is_admin() or self.env.user._is_internal()):
+            _logger.warning(f"AMANAT: User {self.env.user.name} is not internal user - DENIED")
+            raise AccessError(_("Sorry, you are not allowed to access this document."))
+
+        # ЭКСТРЕМАЛЬНАЯ ЛОГИКА: разрешаем доступ ко всем файлам связанным с amanat.zayavka
+        if self:
+            self.env['ir.attachment'].flush_model(['res_model', 'res_id', 'create_uid', 'public', 'res_field'])
+            self._cr.execute('SELECT res_model, res_id, create_uid, public, res_field FROM ir_attachment WHERE id IN %s', [tuple(self.ids)])
+            
+            for res_model, res_id, create_uid, public, res_field in self._cr.fetchall():
+                _logger.info(f"AMANAT: Checking attachment {self.ids} - res_model={res_model}, res_id={res_id}, create_uid={create_uid}")
+                
+                # Публичные файлы при чтении всегда разрешены
+                if public and mode == 'read':
+                    _logger.info(f"AMANAT: Public file access granted for {self.ids}")
+                    continue
+                
+                # КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Если файл связан с заявкой - разрешаем доступ ВСЕМ
+                if res_model == 'amanat.zayavka' and res_id:
+                    _logger.info(f"AMANAT: amanat.zayavka attachment - access GRANTED for {self.ids}")
+                    try:
+                        # Проверяем только доступ к самой заявке
+                        zayavka = self.env['amanat.zayavka'].browse(res_id).exists()
+                        if zayavka:
+                            # Если заявка существует и пользователь может её читать - разрешаем доступ к файлу
+                            zayavka.check_access('read')
+                            _logger.info(f"AMANAT: Access to zayavka {res_id} confirmed - file access granted")
+                            continue
+                    except AccessError as e:
+                        _logger.warning(f"AMANAT: No access to zayavka {res_id} - {e}")
+                        raise AccessError(_("Sorry, you are not allowed to access this document."))
+                
+                # Для других типов файлов - стандартная логика
+                if not self.env.is_system():
+                    # УБИРАЕМ стандартную проверку владельца: if not res_id and create_uid != self.env.uid:
+                    # Проверяем только доступность поля
+                    if res_field:
+                        try:
+                            field = self.env[res_model]._fields[res_field]
+                            if not field.is_accessible(self.env):
+                                _logger.warning(f"AMANAT: Field {res_field} not accessible")
+                                raise AccessError(_("Sorry, you are not allowed to access this document."))
+                        except KeyError:
+                            _logger.warning(f"AMANAT: Field {res_field} not found in model {res_model}")
+                            # Если поле не найдено, разрешаем доступ
+                            pass
+                
+                # Проверяем доступ к связанной записи (если она не заявка amanat)
+                if res_model and res_id and res_model != 'amanat.zayavka':
+                    try:
+                        if res_model in self.env:
+                            records = self.env[res_model].browse(res_id).exists()
+                            if records:
+                                access_mode = 'write' if mode in ('create', 'unlink') else mode
+                                records.check_access(access_mode)
+                                _logger.info(f"AMANAT: Access to {res_model}({res_id}) confirmed")
+                    except AccessError as e:
+                        _logger.warning(f"AMANAT: No access to {res_model}({res_id}) - {e}")
+                        raise AccessError(_("Sorry, you are not allowed to access this document."))
+        
+        _logger.info(f"AMANAT: All checks passed for {self.ids} - ACCESS GRANTED")
         return True
         
-        # СПОСОБ 1: Проверяем по ID пользователя (для Рахматуллиной Алины)
-        if self.env.user.id == 22:  # ID пользователя Рахматуллина Алина
-            return True
-        
-        # СПОСОБ 2: Проверяем по имени пользователя
-        if 'Алина' in (self.env.user.name or '') or 'Рахматуллина' in (self.env.user.name or ''):
-            return True
-        
-        # СПОСОБ 3: Проверяем группы пользователя более детально
-        user_groups = self.env.user.groups_id
-        group_names = user_groups.mapped('name')
-        group_xmlids = user_groups.mapped('full_name')
-        
-        # Проверяем группы amanat по названиям
-        amanat_keywords = ['amanat', 'Manager', 'Director', 'Inspector', 'Алина']
-        if any(keyword.lower() in str(group_names).lower() for keyword in amanat_keywords):
-            return True
-            
-        # Проверяем группы amanat по XML ID
-        amanat_group_xmlids = [
-            'amanat.group_amanat_admin',
-            'amanat.group_amanat_manager', 
-            'amanat.group_amanat_director',
-            'amanat.group_amanat_senior_manager',
-            'amanat.group_amanat_inspector',
-            'amanat.group_amanat_fin_manager',
-            'amanat.group_amanat_alina_manager_files'
-        ]
-        if any(xmlid in group_xmlids for xmlid in amanat_group_xmlids):
-            return True
-        
-        # СПОСОБ 4: Проверяем базовые группы Odoo
-        if user_groups.filtered(lambda g: g.name in ['User', 'Internal User', 'Settings']):
-            return True
-        
-        # Иначе стандартная проверка
-        return super().check(mode, values)
 
     @api.model
     def get_hidden_columns_and_data_range(self, xlsx_data):

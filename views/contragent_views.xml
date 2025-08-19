@@ -37,6 +37,7 @@
                 <field width="200" name="cash_usd"/> -->
                 <field name="payer_ids" width="300" widget="many2many_tags" options="{'no_create': True, 'searchable': True}"/>
                 <field width="200" name="payer_inn"/>
+                <field width="200" name="kassa_name"/>
                 <field width="150" name="payment_terms"/>
                 <field width="150" name="deal_type"/>
                 <!-- <field width="200" name="inn"/>
@@ -64,6 +65,7 @@
                             <group>
                                 <field name="payer_ids"/>
                                 <field name="payer_inn"/>
+                                <field name="kassa_name"/>
                                 <field name="payment_terms"/>
                                 <field name="deal_type"/>
                             </group>
