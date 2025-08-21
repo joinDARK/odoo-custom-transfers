@@ -37,5 +37,23 @@
             <field name="default_height">50</field>
             <field name="image" type="base64" file="amanat/static/demo/tdk_sign.png"/>
         </record>
+
+        <record id="demo_signature_indotrade_stamp" model="signature.library">
+            <field name="name">ИНОТРЕЙД Печать</field>
+            <field name="signature_type">stamp</field>
+            <field name="active">True</field>
+            <field name="default_width">100</field>
+            <field name="default_height">100</field>
+            <field name="image" type="base64" file="amanat/static/demo/indotrade_stamp.png"/>
+        </record>
+
+        <record id="demo_signature_indotrade_sign" model="signature.library">
+            <field name="name">ИНОТРЕЙД Подпись</field>
+            <field name="signature_type">signature</field>
+            <field name="active">True</field>
+            <field name="default_width">150</field>
+            <field name="default_height">50</field>
+            <field name="image" type="base64" file="amanat/static/demo/indotrade_sign.png"/>
+        </record>
     </data>
 </odoo> 

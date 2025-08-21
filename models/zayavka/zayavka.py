@@ -1458,6 +1458,14 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     report_link = fields.Char(string='Акт-отчет ссылка', tracking=True)
 
+    other_documents_attachments = fields.Many2many(
+        'ir.attachment', 
+        'other_documents_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Прочие документы'
+    )
+
     # TODO: Удалить Заявку Вход
     zayavka_start_attachments = fields.Many2many(
         'ir.attachment', 
@@ -2341,6 +2349,8 @@ class Zayavka(models.Model, AmanatBaseModel):
         help="Касса автоматически подтягивается на основе выбранного контрагента"
     )
 
+    agency_agreement = fields.Char(string='Агентский договор')
+
     @api.depends('contragent_id')
     def _compute_kassa_name(self):
         """Автоматически определяет кассу при выборе контрагента"""
@@ -2432,8 +2442,8 @@ class Zayavka(models.Model, AmanatBaseModel):
         many2many_fields = [
             'zayavka_attachments', 'invoice_attachments', 'assignment_attachments',
             'swift_attachments', 'swift103_attachments', 'swift199_attachments', 
-            'report_attachments', 'zayavka_start_attachments', 'zayavka_end_attachments',
-            'assignment_end_attachments', 'screen_sber_attachments'
+            'report_attachments', 'other_documents_attachments', 'zayavka_start_attachments', 
+            'zayavka_end_attachments', 'assignment_end_attachments', 'screen_sber_attachments'
         ]
         # Note: contragent_contract_attachments исключено, так как это computed поле
         
@@ -2665,8 +2675,8 @@ class Zayavka(models.Model, AmanatBaseModel):
         many2many_fields = [
             'zayavka_attachments', 'invoice_attachments', 'assignment_attachments',
             'swift_attachments', 'swift103_attachments', 'swift199_attachments', 
-            'report_attachments', 'zayavka_start_attachments', 'zayavka_end_attachments',
-            'assignment_end_attachments', 'screen_sber_attachments'
+            'report_attachments', 'other_documents_attachments', 'zayavka_start_attachments', 
+            'zayavka_end_attachments', 'assignment_end_attachments', 'screen_sber_attachments'
         ]
         
         one2many_fields = [
@@ -2752,3 +2762,16 @@ class Zayavka(models.Model, AmanatBaseModel):
         }
     
     # date_agent_pc = fields.Date(string='Дата агентского на РС')
+    
+    # Поле для выбора формата генерируемого документа
+    document_format = fields.Selection([
+        # ('pdf', 'PDF'),
+        ('docx', 'Word')
+    ], string='Формат документа', default='docx', help='Выберите формат для генерации документа "Индивидуал"')
+    
+    # Вычисляемое поле для проверки разрешения генерации
+    can_generate_individual = fields.Boolean(
+        string='Может генерировать Индивидуал',
+        compute='_compute_can_generate_individual',
+        help='Показывает, может ли текущий агент генерировать документ "Индивидуал"'
+    )

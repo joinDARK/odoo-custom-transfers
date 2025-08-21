@@ -873,6 +873,469 @@ class ZayavkaMethods(models.Model):
                 }
             }
     
+    def _is_agent_allowed_for_individual_document(self):
+        """Проверяет, разрешена ли генерация документа 'Индивидуал' для текущего агента"""
+        if not self.agent_id or not self.agent_id.name:
+            return False, "Агент не выбран"
+        
+        agent_name = str(self.agent_id.name).strip().lower()
+        
+        # Список разрешенных агентов с вариантами написания
+        allowed_agents = [
+            # СТЕЛЛАР
+            ['стеллар', 'stellar', 'стелар', 'stelllar'],
+            # ИНДО ТРЕЙД  
+            ['индо трейд', 'indo trade', 'индотрейд', 'indo-trade', 'индо-трейд'],
+            # ТДК
+            ['тдк', 'tdk', 'т.д.к.', 't.d.k.', 'тдк.']
+        ]
+        
+        # Проверяем точные совпадения и нечеткие
+        for agent_group in allowed_agents:
+            for variant in agent_group:
+                # Точное совпадение
+                if variant in agent_name:
+                    _logger.info(f"✅ Агент '{self.agent_id.name}' разрешен для генерации (точное совпадение: '{variant}')")
+                    return True, f"Разрешен (совпадение: {variant})"
+                
+                # Нечеткое совпадение (расстояние Левенштейна)
+                similarity = self._calculate_similarity(agent_name, variant)
+                if similarity > 0.8:  # 80% схожести
+                    _logger.info(f"✅ Агент '{self.agent_id.name}' разрешен для генерации (нечеткое совпадение: '{variant}', схожесть: {similarity:.2f})")
+                    return True, f"Разрешен (нечеткое совпадение: {variant}, {similarity:.0%})"
+        
+        _logger.warning(f"❌ Агент '{self.agent_id.name}' НЕ разрешен для генерации документа 'Индивидуал'")
+        return False, f"Агент '{self.agent_id.name}' не входит в список разрешенных (СТЕЛЛАР, ИНДО ТРЕЙД, ТДК)"
+    
+    def _calculate_similarity(self, str1, str2):
+        """Вычисляет схожесть строк (расстояние Левенштейна)"""
+        if len(str1) < len(str2):
+            return self._calculate_similarity(str2, str1)
+        
+        if len(str2) == 0:
+            return 0.0
+        
+        previous_row = list(range(len(str2) + 1))
+        for i, c1 in enumerate(str1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(str2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        
+                # Возвращаем схожесть как долю от 0 до 1
+        max_len = max(len(str1), len(str2))
+        return 1.0 - (previous_row[-1] / max_len)
+    
+    def _compute_can_generate_individual(self):
+        """Вычисляет, может ли текущий агент генерировать документ 'Индивидуал'"""
+        for record in self:
+            is_allowed, _ = record._is_agent_allowed_for_individual_document()
+            record.can_generate_individual = is_allowed
+    
+    def action_generate_individual_document(self):
+        """Генерация документа Индивидуал по шаблону"""
+        try:
+            # Проверяем, разрешен ли агент для генерации
+            is_allowed, reason = self._is_agent_allowed_for_individual_document()
+            if not is_allowed:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Доступ ограничен',
+                        'message': f'Генерация документа "Индивидуал" доступна только для агентов: СТЕЛЛАР, ИНДО ТРЕЙД, ТДК.\n\n{reason}',
+                        'type': 'warning',
+                        'sticky': True,
+                    }
+                }
+            
+            # Получаем формат из поля записи
+            output_format = self.document_format or 'pdf'
+            _logger.info(f"=== ГЕНЕРАЦИЯ ДОКУМЕНТА ИНДИВИДУАЛ ДЛЯ ЗАЯВКИ ID {self.id} ===")
+            _logger.info(f"Агент проверен: {reason}")
+            _logger.info(f"Формат вывода: {output_format} (из поля document_format)")
+            
+            # Ищем шаблон Индивидуал
+            template = self.env['template.library'].search([
+                ('name', '=', 'Индивидуал'),
+                ('template_type', '=', 'docx')
+            ], limit=1)
+            
+            if not template:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Ошибка',
+                        'message': 'Шаблон "Индивидуал" не найден в библиотеке шаблонов',
+                        'type': 'danger',
+                        'sticky': True,
+                    }
+                }
+            
+            # Подготавливаем данные для подстановки
+            template_data = self._prepare_individual_template_data()
+            
+            # Генерируем документ
+            generated_file = self._generate_document_from_template(template, template_data)
+            
+            if generated_file:
+                # Определяем имя файла и mimetype в зависимости от формата
+                if output_format == 'pdf':
+                    # Конвертируем в PDF с подписанием
+                    pdf_file = self._convert_docx_to_pdf_base64(generated_file, sign_individual=True)
+                    if pdf_file:
+                        file_name = f'Индивидуал_{self.zayavka_num or self.zayavka_id}.pdf'
+                        file_data = pdf_file
+                        mimetype = 'application/pdf'
+                    else:
+                        return {
+                            'type': 'ir.actions.client',
+                            'tag': 'display_notification',
+                            'params': {
+                                'title': 'Ошибка',
+                                'message': 'Не удалось конвертировать документ в PDF',
+                                'type': 'danger',
+                                'sticky': True,
+                            }
+                        }
+                elif output_format == 'docx':
+                    file_name = f'Индивидуал_{self.zayavka_num or self.zayavka_id}.docx'
+                    file_data = generated_file
+                    mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                else:
+                    # Fallback на PDF если формат неизвестен
+                    pdf_file = self._convert_docx_to_pdf_base64(generated_file, sign_individual=True)
+                    if pdf_file:
+                        file_name = f'Индивидуал_{self.zayavka_num or self.zayavka_id}.pdf'
+                        file_data = pdf_file
+                        mimetype = 'application/pdf'
+                    else:
+                        file_name = f'Индивидуал_{self.zayavka_num or self.zayavka_id}.docx'
+                        file_data = generated_file
+                        mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                
+                # Создаем attachment
+                attachment = self.env['ir.attachment'].create({
+                    'name': file_name,
+                    'type': 'binary',
+                    'datas': file_data,
+                    'res_model': self._name,
+                    'res_id': self.id,
+                    'mimetype': mimetype,
+                })
+                
+                # Добавляем attachment к полю assignment_end_attachments
+                self.assignment_end_attachments = [(4, attachment.id)]
+                
+                # Увеличиваем счетчик использования шаблона
+                template.increment_usage()
+                
+                # Обновляем запись для автообновления интерфейса
+                self.env['amanat.zayavka'].browse(self.id).invalidate_recordset()
+                
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'reload',
+                    'params': {
+                        'notification': {
+                            'title': 'Успешно',
+                            'message': f'Документ "{attachment.name}" успешно сгенерирован',
+                            'type': 'success',
+                            'sticky': False,
+                        }
+                    }
+                }
+            else:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Ошибка',
+                        'message': 'Не удалось сгенерировать документ',
+                        'type': 'danger',
+                        'sticky': True,
+                    }
+                }
+                
+        except Exception as e:
+            _logger.error(f"Ошибка при генерации документа Индивидуал: {str(e)}")
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Ошибка',
+                    'message': f'Ошибка при генерации документа: {str(e)}',
+                    'type': 'danger',
+                    'sticky': True,
+                }
+            }
+    
+    def _prepare_individual_template_data(self):
+        """Подготавливает данные для подстановки в шаблон Индивидуал"""
+        from datetime import datetime
+        
+        # Русские и английские названия месяцев
+        russian_months = {
+            1: 'Января', 2: 'Февраля', 3: 'Марта', 4: 'Апреля',
+            5: 'Мая', 6: 'Июня', 7: 'Июля', 8: 'Августа',
+            9: 'Сентября', 10: 'Октября', 11: 'Ноября', 12: 'Декабря'
+        }
+        
+        english_months = {
+            1: 'January', 2: 'February', 3: 'March', 4: 'April',
+            5: 'May', 6: 'June', 7: 'July', 8: 'August',
+            9: 'September', 10: 'October', 11: 'November', 12: 'December'
+        }
+        
+        def format_russian_date(date_obj):
+            """Форматирует дату в русском формате: "18" Августа 2025"""
+            if not date_obj:
+                return ""
+            try:
+                day = date_obj.day
+                month = russian_months.get(date_obj.month, date_obj.strftime('%B'))
+                year = date_obj.year
+                return f'«{day}» {month} {year}'
+            except (AttributeError, ValueError):
+                return str(date_obj)
+        
+        def format_english_date(date_obj):
+            """Форматирует дату в английском формате: August 18, 2025"""
+            if not date_obj:
+                return ""
+            try:
+                day = date_obj.day
+                month = english_months.get(date_obj.month, date_obj.strftime('%B'))
+                year = date_obj.year
+                return f'{month} {day}, {year}'
+            except (AttributeError, ValueError):
+                return str(date_obj)
+        
+        def format_simple_date(date_obj):
+            """Форматирует дату в простом формате: дд.мм.гггг"""
+            if not date_obj:
+                return ""
+            try:
+                return date_obj.strftime('%d.%m.%Y')
+            except (AttributeError, ValueError):
+                return str(date_obj)
+        
+        # Номер поручения
+        instruction_number = self.instruction_number or ""
+
+        # Агентский договор
+        agency_agreement = self.agency_agreement or ""
+        
+        # Дата подписания агент-субагент (простой формат дд.мм.гггг)
+        agent_contract_date_formatted = format_simple_date(self.agent_contract_date)
+        
+        # Дата подписания поручения (русский и английский форматы)
+        instruction_signed_date_ru = format_russian_date(self.instruction_signed_date)
+        instruction_signed_date_en = format_english_date(self.instruction_signed_date)
+        
+        # Агент (русский и английский)
+        agent_name_ru = ""
+        agent_name_en = ""
+        if self.agent_id and self.agent_id.name:
+            agent_name_ru = str(self.agent_id.name).strip()
+            # Переводим через YandexGPT
+            agent_name_en = self._translate_text_via_yandex_gpt(agent_name_ru)
+        
+        # Клиент (русский и английский)
+        client_name_ru = ""
+        client_name_en = ""
+        if self.client_id and self.client_id.name:
+            client_name_ru = str(self.client_id.name).strip()
+            # Переводим через YandexGPT
+            client_name_en = self._translate_text_via_yandex_gpt(client_name_ru)
+        
+        # Остальные поля
+        exporter_importer_name = str(self.exporter_importer_name).strip() if self.exporter_importer_name else ""
+        beneficiary_address = str(self.beneficiary_address).strip() if self.beneficiary_address else ""
+        beneficiary_bank_name = str(self.beneficiary_bank_name).strip() if self.beneficiary_bank_name else ""
+        bank_address = str(self.bank_address).strip() if self.bank_address else ""
+        bank_swift = str(self.bank_swift).strip() if self.bank_swift else ""
+        amount = f"{self.amount:.2f}" if self.amount else "0.00"
+        currency = str(self.currency).upper() if self.currency else ""
+        rate = f"{self.rate_field:.4f}" if self.rate_field else ""
+        
+        _logger.info("=== ДАННЫЕ ДЛЯ ШАБЛОНА ИНДИВИДУАЛ ===")
+        _logger.info(f"Номер поручения: '{instruction_number}'")
+        _logger.info(f"Дата агент-субагент: '{agent_contract_date_formatted}'")
+        _logger.info(f"Дата поручения (RU): '{instruction_signed_date_ru}'")
+        _logger.info(f"Дата поручения (EN): '{instruction_signed_date_en}'")
+        _logger.info(f"Агент (RU): '{agent_name_ru}'")
+        _logger.info(f"Агент (EN): '{agent_name_en}'")
+        _logger.info(f"Клиент (RU): '{client_name_ru}'")
+        _logger.info(f"Клиент (EN): '{client_name_en}'")
+        
+        # Создаем данные для docxtpl шаблона (формат {{переменная}})
+        template_data = {
+            # ✅ ОСНОВНЫЕ сигнатуры:
+            'номер_п': instruction_number,
+            'подписан_а_с': agent_contract_date_formatted,
+            'наименование_покупателя_продавца': exporter_importer_name,
+            'адрес_получателя': beneficiary_address,
+            'банк_получателя': beneficiary_bank_name,
+            'адрес_банка_получателя': bank_address,
+            'swift_код': bank_swift,
+            'подписано_п': instruction_signed_date_ru,
+            'order_s': instruction_signed_date_en,
+            'сумма': amount,
+            'валюта': currency,
+            'курс': rate,
+            'агентский_д': agency_agreement,
+            
+            # ✅ ДОПОЛНИТЕЛЬНЫЕ сигнатуры:
+            'агент': agent_name_ru,
+            'agent': agent_name_en,
+            'клиент': client_name_ru,
+            'client': client_name_en,
+        }
+        
+        # Логируем все подготовленные данные для отладки
+        _logger.info("=== ВСЕ ПОДГОТОВЛЕННЫЕ ДАННЫЕ ДЛЯ ШАБЛОНА ===")
+        for key, value in template_data.items():
+            _logger.info(f"'{key}' -> '{value}' (длина: {len(str(value))})")
+        _logger.info("=== КОНЕЦ СПИСКА ДАННЫХ ===")
+        
+        return template_data
+    
+    def _translate_text_via_yandex_gpt(self, text):
+        """Переводит текст с русского на английский через YandexGPT"""
+        if not text or not text.strip():
+            return ""
+        
+        try:
+            # Используем прямой вызов YandexGPT API для перевода
+            try:
+                from odoo.addons.amanat.models.zayavka.automations.ygpt_analyse import _get_yandex_gpt_config
+                cfg = _get_yandex_gpt_config(self.env, "zayavka")
+            except ImportError:
+                _logger.error("[ПЕРЕВОД] Не удалось импортировать _get_yandex_gpt_config")
+                return text
+            if not cfg['api_key'] or not cfg['folder_id']:
+                _logger.error("[ПЕРЕВОД] Не настроены API ключ и/или Folder ID")
+                return text
+
+            # Специальные случаи для известных сокращений
+            special_translations = {
+                'ТДК': 'TDK',
+                'СТЕЛЛАР': 'STELLAR',
+                'ООО': 'LLC',
+                'АО': 'JSC',
+                'ЗАО': 'CJSC',
+                'ПАО': 'PJSC',
+                'ИП': 'IE',  # Individual Entrepreneur
+            }
+            
+            # Проверяем точные совпадения
+            if text.strip() in special_translations:
+                result = special_translations[text.strip()]
+                _logger.info(f"[ПЕРЕВОД] Специальный перевод '{text}' -> '{result}'")
+                return result
+
+            # Простой и четкий промпт для перевода
+            user_message = f"""Переведи название компании с русского на английский: {text}
+
+ВАЖНО:
+- Если это аббревиатура (ТДК, СТЕЛЛАР) - переведи буквы в латиницу
+- ООО = LLC, АО = JSC, ЗАО = CJSC, ПАО = PJSC, ИП = IE
+- Верни ТОЛЬКО переведенное название без объяснений, ссылок и комментариев"""
+
+            data = {
+                "modelUri": f"gpt://{cfg['folder_id']}/yandexgpt/latest",
+                "completionOptions": {
+                    "stream": False,
+                    "temperature": 0.1,
+                    "maxTokens": 200
+                },
+                "messages": [
+                    {"role": "user", "text": user_message}
+                ]
+            }
+
+            headers = {
+                'Authorization': f'Api-Key {cfg["api_key"]}',
+                'Content-Type': 'application/json'
+            }
+
+            import requests
+            response = requests.post(
+                'https://llm.api.cloud.yandex.net/foundationModels/v1/completion',
+                headers=headers,
+                json=data,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                if 'result' in result and 'alternatives' in result['result']:
+                    translated_text = result['result']['alternatives'][0]['message']['text'].strip()
+                    
+                    # Проверяем качество перевода - не должно быть ссылок или лишнего текста
+                    if ('[' in translated_text and ']' in translated_text) or \
+                       'http' in translated_text.lower() or \
+                       'ya.ru' in translated_text.lower() or \
+                       'поиск' in translated_text.lower() or \
+                       len(translated_text) > 100:  # Слишком длинный результат
+                        _logger.warning(f"[ПЕРЕВОД] Некачественный перевод для '{text}', возвращаем оригинал")
+                        return text
+                    
+                    _logger.info(f"[ПЕРЕВОД] '{text}' -> '{translated_text}'")
+                    return translated_text
+                else:
+                    _logger.error(f"[ПЕРЕВОД] Неожиданный формат ответа: {result}")
+                    return text
+            else:
+                _logger.error(f"[ПЕРЕВОД] Ошибка API: {response.status_code} - {response.text}")
+                return text
+                
+        except Exception as e:
+            _logger.error(f"[ПЕРЕВОД] Ошибка при переводе '{text}': {str(e)}")
+            return text
+    
+    def _convert_docx_to_pdf_base64(self, docx_base64, sign_individual=False):
+        """Конвертирует DOCX в PDF и возвращает base64. Если sign_individual=True, добавляет подписи агента."""
+        import base64
+        try:
+            # Декодируем DOCX
+            docx_bytes = base64.b64decode(docx_base64)
+            
+            # Используем существующую функцию конвертации
+            pdf_base64 = self._convert_docx_to_pdf(docx_bytes)
+            
+            # Если нужно подписать документ "Индивидуал"
+            if sign_individual and pdf_base64:
+                try:
+                    # Декодируем PDF для подписания
+                    pdf_bytes = base64.b64decode(pdf_base64)
+                    
+                    # Определяем тип агента
+                    agent_type = self._detect_agent_type_from_record()
+                    _logger.info(f"[_convert_docx_to_pdf_base64] Detected agent type for individual document: {agent_type}")
+                    
+                    # Подписываем документ
+                    signed_pdf_bytes = self._sign_individual_document(pdf_bytes, agent_type)
+                    
+                    # Кодируем обратно в base64
+                    pdf_base64 = base64.b64encode(signed_pdf_bytes).decode('utf-8')
+                    _logger.info(f"[_convert_docx_to_pdf_base64] Successfully signed individual document with {agent_type} signatures")
+                    
+                except Exception as sign_error:
+                    _logger.error(f"[_convert_docx_to_pdf_base64] Error signing individual document: {sign_error}")
+                    # Возвращаем неподписанный PDF в случае ошибки
+            
+            return pdf_base64
+            
+        except Exception as e:
+            _logger.error(f"Ошибка при конвертации DOCX в PDF: {str(e)}")
+            return None
+    
     def action_generate_act_report_document(self):
         """Генерация документа акта-отчета по шаблону"""
         try:
@@ -890,6 +1353,8 @@ class ZayavkaMethods(models.Model):
             _logger.error(f"Ошибка при отладке полей акта: {debug_error}")
         
         try:
+            _logger.info(f"=== ГЕНЕРАЦИЯ ДОКУМЕНТА АКТ-ОТЧЕТ ДЛЯ ЗАЯВКИ ID {self.id} ===")
+            
             # Ищем шаблон акта
             template = self.env['template.library'].search([
                 ('name', '=', 'Акт'),
@@ -911,19 +1376,23 @@ class ZayavkaMethods(models.Model):
             # Подготавливаем данные для подстановки
             template_data = self._prepare_act_report_template_data()
             
-            # Генерируем документ
+            # Генерируем документ с использованием современного метода (как в индивидуалах)
             generated_file = self._generate_document_from_template(template, template_data)
             
             if generated_file:
+                file_name = f'Акт-отчет_{self.zayavka_num or self.zayavka_id}.docx'
+                file_data = generated_file
+                mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                
                 # Создаем attachment
                 attachment = self.env['ir.attachment'].create({
-                    'name': f'Акт-отчет_{self.zayavka_num or self.zayavka_id}.docx',
+                    'name': file_name,
                     'type': 'binary',
-                    'datas': generated_file,
+                    'datas': file_data,
                     'res_model': self._name,
                     'res_id': self.id,
                     'res_field': 'act_report_attachments',
-                    'mimetype': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'mimetype': mimetype,
                 })
                 
                 # Увеличиваем счетчик использования шаблона
@@ -1101,21 +1570,22 @@ class ZayavkaMethods(models.Model):
         _logger.info(f"sber_reward_text: '{sber_reward_text}'")
         
         # Подготавливаем финальные данные для замены
+        # Для docxtpl используем простые имена переменных без скобок
         final_data = {
-            '{{номер_поручения}}': instruction_number,
-            '{{дата_генерации_документа}}': generation_date_formatted,
-            '{{дата_подписания_поручения}}': instruction_date_formatted,
-            '{{клиент}}': client_name,
-            '{{агент}}': agent_name,
-            '{{покупатель_продавец}}': buyer_seller,
-            '{{номер_контракта}}': contract_number,
-            '{{вид_сделки}}': deal_type_text,
-            '{{получен_swift}}': swift_received_formatted,
-            '{{заявка_по_курсу}}': application_amount_rub_formatted,
-            '{{сумма_валюта}}': amount_with_currency,
-            '{{вознагрождение_сбер}}': sber_reward_formatted,
-            '{{итого_сбер}}': total_sber_formatted,
-            '{{подитог_текст}}': sber_reward_text,
+            'номер_поручения': instruction_number,
+            'дата_генерации_документа': generation_date_formatted,
+            'дата_подписания_поручения': instruction_date_formatted,
+            'клиент': client_name,
+            'агент': agent_name,
+            'покупатель_продавец': buyer_seller,
+            'номер_контракта': contract_number,
+            'вид_сделки': deal_type_text,
+            'получен_swift': swift_received_formatted,
+            'заявка_по_курсу': application_amount_rub_formatted,
+            'сумма_валюта': amount_with_currency,
+            'вознагрождение_сбер': sber_reward_formatted,
+            'итого_сбер': total_sber_formatted,
+            'подитог_текст': sber_reward_text,
         }
         
         _logger.info("=== ФИНАЛЬНЫЕ ДАННЫЕ ИЗ ODOO ДЛЯ ЗАМЕНЫ ===")
@@ -1124,7 +1594,7 @@ class ZayavkaMethods(models.Model):
         
         for key, value in final_data.items():
             has_data = value and str(value).strip()
-            if key == '{{подитог_текст}}':
+            if key == 'подитог_текст':
                 _logger.info(f"🎯 [ПОДИТОГ_ТЕКСТ] {key}: '{value}' (длина: {len(str(value))}, has_data: {has_data})")
             
             if has_data:
@@ -1291,7 +1761,31 @@ class ZayavkaMethods(models.Model):
             
             try:
                 # Обрабатываем DOCX файл
-                result_bytes = self._process_docx_template(temp_file_path, template_data)
+                processed_doc = self._process_docx_template(temp_file_path, template_data)
+                
+                # Если получили объект DocxTemplate, сохраняем его в байты
+                if hasattr(processed_doc, 'save'):
+                    # docxtpl возвращает объект DocxTemplate
+                    # Используем delete=False чтобы файл не удалился преждевременно
+                    with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as result_file:
+                        result_file_path = result_file.name
+                    
+                    try:
+                        # Сохраняем документ
+                        processed_doc.save(result_file_path)
+                        # Читаем байты
+                        with open(result_file_path, 'rb') as f:
+                            result_bytes = f.read()
+                    finally:
+                        # Удаляем временный файл
+                        try:
+                            os.unlink(result_file_path)
+                        except Exception:
+                            pass
+                else:
+                    # Старый метод возвращает байты напрямую
+                    result_bytes = processed_doc
+                
                 return base64.b64encode(result_bytes).decode('utf-8')
             finally:
                 # Удаляем временный файл
@@ -1334,13 +1828,45 @@ class ZayavkaMethods(models.Model):
             return None
     
     def _process_docx_template(self, docx_path, template_data):
-        """Обрабатывает DOCX шаблон, заменяя сигнатуры на значения"""
+        """Обрабатывает DOCX шаблон с помощью docxtpl - современный и надежный подход"""
+        try:
+            _logger.info(f"[_process_docx_template] Начинаем обработку шаблона с docxtpl: {docx_path}")
+            
+            # Импортируем docxtpl
+            try:
+                from docxtpl import DocxTemplate
+            except ImportError:
+                _logger.error("docxtpl не установлен! Используем старый метод...")
+                return self._process_docx_template_legacy(docx_path, template_data)
+            
+            # Создаем объект шаблона
+            doc = DocxTemplate(docx_path)
+            
+            _logger.info("=== ОТЛАДКА DOCXTPL ОБРАБОТКИ ===")
+            _logger.info(f"Данные для замены: {template_data}")
+            _logger.info(f"Количество переменных: {len(template_data)}")
+            
+            # Рендерим шаблон с данными
+            doc.render(template_data)
+            
+            _logger.info("✅ docxtpl успешно обработал шаблон!")
+            _logger.info("=== КОНЕЦ ОТЛАДКИ DOCXTPL ===")
+            
+            return doc
+            
+        except Exception as e:
+            _logger.error(f"[_process_docx_template] Ошибка при обработке с docxtpl: {e}")
+            _logger.info("Переходим на резервный метод...")
+            return self._process_docx_template_legacy(docx_path, template_data)
+    
+    def _process_docx_template_legacy(self, docx_path, template_data):
+        """РЕЗЕРВНЫЙ метод: Обрабатывает DOCX шаблон через XML (старый подход)"""
         import tempfile
         import os
         from zipfile import ZipFile
         
         try:
-            _logger.info(f"[_process_docx_template] Начинаем обработку шаблона: {docx_path}")
+            _logger.info(f"[_process_docx_template_legacy] Начинаем обработку шаблона: {docx_path}")
             
             # Создаем временную папку для распаковки
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -1366,209 +1892,77 @@ class ZayavkaMethods(models.Model):
                     # Счетчик замен
                     total_replacements = 0
                     
+                    # Импортируем re для обработки разбитых сигнатур
+                    import re
+                    
                     # Экранируем XML символы в значениях И фигурные скобки (чтобы они не воспринимались как новые сигнатуры)
                     def escape_xml(text):
                         """Экранирует XML символы и фигурные скобки в значениях"""
                         if not isinstance(text, str):
                             text = str(text)
-                        return (text.replace('&', '&amp;')
+                        # Сначала проверяем, не экранирован ли уже символ &
+                        if '&amp;' not in text:
+                            text = text.replace('&', '&amp;')
+                        return (text.replace('<', '&lt;')
+                               .replace('>', '&gt;')
                                .replace('"', '&quot;')
-                               .replace("'", '&apos;')
-                               .replace('{', '&#123;')
-                               .replace('}', '&#125;'))
-                        # НЕ экранируем круглые скобки - они не являются специальными XML-символами
+                               .replace("'", '&apos;'))
+                        # НЕ экранируем фигурные скобки в данных - это может сломать XML
                     
-                    # Сначала найдем все сигнатуры в документе с помощью regex
-                    import re
-                    
-                    # Убираем XML-теги для поиска сигнатур
-                    clean_text = re.sub(r'<[^>]+>', '', content)
-                    signature_pattern = r'\{\{[^}]+\}\}'  # Ищем все {{что-то}}
-                    bracket_pattern = r'\[[^\]]+\]'  # Ищем все [что-то]
-                    found_signatures = re.findall(signature_pattern, clean_text)
-                    found_bracket_signatures = re.findall(bracket_pattern, clean_text)
-                    _logger.info(f"Найдены сигнатуры в очищенном тексте: {found_signatures}")
-                    _logger.info(f"Найдены квадратные сигнатуры: {found_bracket_signatures}")
-                    
-                    # Специальная проверка для подитог_текст (фигурные и квадратные скобки)
-                    if '{{подитог_текст}}' in found_signatures:
-                        _logger.info(f"🎯 [ПОДИТОГ_ТЕКСТ] Сигнатура '{{подитог_текст}}' НАЙДЕНА в документе!")
-                    elif '[подитог_текст]' in found_bracket_signatures:
-                        _logger.info(f"🎯 [ПОДИТОГ_ТЕКСТ] Квадратная сигнатура '[подитог_текст]' НАЙДЕНА в документе!")
-                    else:
-                        _logger.info(f"❌ [ПОДИТОГ_ТЕКСТ] Сигнатура '{{подитог_текст}}' или '[подитог_текст]' НЕ НАЙДЕНА в документе")
-                        _logger.info(f"❌ [ПОДИТОГ_ТЕКСТ] Проверяем похожие сигнатуры:")
-                        for sig in found_signatures + found_bracket_signatures:
-                            if 'подитог' in sig.lower() or 'текст' in sig.lower():
-                                _logger.info(f"❌ [ПОДИТОГ_ТЕКСТ] Похожая сигнатура: '{sig}'")
-                    
-                    # Также найдем разбитые сигнатуры в XML
-                    fragmented_pattern = r'\{\{[^}]*</[^>]+>[^{}]*\}\}'
-                    fragmented_signatures = re.findall(fragmented_pattern, content)
-                    _logger.info(f"Найдены разбитые сигнатуры в XML: {fragmented_signatures}")
-                    
-                    # Создаем маппинг найденных сигнатур к нашим данным
-                    signature_mapping = {}
-                    
-                    # Сначала обрабатываем фигурные скобки {{}}
-                    for found_sig in found_signatures:
-                        # Попробуем сопоставить с нашими данными
-                        if found_sig in template_data:
-                            signature_mapping[found_sig] = template_data[found_sig]
+                    # УПРОЩЕННАЯ ЛОГИКА: Используем только наши данные для замены
+                    _logger.info("=== ПРОВЕРКА НАШИХ СИГНАТУР В ДОКУМЕНТЕ ===")
+                    for template_key in template_data.keys():
+                        if template_key in content:
+                            _logger.info(f"✅ НАЙДЕНА В ДОКУМЕНТЕ: '{template_key}'")
                         else:
-                            # Попробуем найти по содержимому (например {{Т-13488}} -> номер поручения)
-                            inner_text = found_sig.strip('{}')
+                            _logger.info(f"❌ НЕ НАЙДЕНА В ДОКУМЕНТЕ: '{template_key}'")
                             
-                            # Специальные случаи для известных сигнатур (проверяем точные совпадения ПЕРВЫМИ)
-                            if inner_text == 'подитог_текст':
-                                signature_mapping[found_sig] = template_data.get('{{подитог_текст}}', '')
-                                _logger.info(f"🎯 [ПОДИТОГ_ТЕКСТ] ТОЧНОЕ СОВПАДЕНИЕ: '{found_sig}' -> '{template_data.get('{{подитог_текст}}', '')}')")
-                                _logger.info(f"🎯 [ПОДИТОГ_ТЕКСТ] Длина значения: {len(str(template_data.get('{{подитог_текст}}', '')))}")
-                            elif inner_text == 'вознагрождение_сбер':
-                                signature_mapping[found_sig] = template_data.get('{{вознагрождение_сбер}}', '')
-                                _logger.info(f"🎯 ТОЧНОЕ СОВПАДЕНИЕ для вознагрождение_сбер: '{found_sig}' -> '{template_data.get('{{вознагрождение_сбер}}', '')}')")
-                            elif inner_text == 'итого_сбер':
-                                signature_mapping[found_sig] = template_data.get('{{итого_сбер}}', '')
-                            elif inner_text == 'вид_сделки':
-                                signature_mapping[found_sig] = template_data.get('{{вид_сделки}}', '')
-                            elif inner_text == 'получен_swift':
-                                signature_mapping[found_sig] = template_data.get('{{получен_swift}}', '')
-                            elif any(char.isdigit() for char in inner_text) and 'Т-' in inner_text:
-                                # Это похоже на номер поручения
-                                signature_mapping[found_sig] = template_data.get('{{номер_поручения}}', '')
-                            elif inner_text in ['ТДК', 'СТЕЛЛАР']:
-                                # Это агент
-                                signature_mapping[found_sig] = template_data.get('{{агент}}', '')
-                            elif 'Августа' in inner_text or 'г.' in inner_text:
-                                # Это дата
-                                signature_mapping[found_sig] = template_data.get('{{дата_генерации_документа}}', '')
-                            elif any(word in inner_text for word in ['Транзакции', 'Расчеты']):
-                                # Это клиент
-                                signature_mapping[found_sig] = template_data.get('{{клиент}}', '')
-                            elif 'ZHEJIANG' in inner_text or 'INDUSTRY' in inner_text:
-                                # Это покупатель/продавец
-                                signature_mapping[found_sig] = template_data.get('{{покупатель_продавец}}', '')
-                            elif 'DM-' in inner_text or 'контракт' in inner_text:
-                                # Это номер контракта
-                                signature_mapping[found_sig] = template_data.get('{{номер_контракта}}', '')
-                            elif 'CNY' in inner_text or '$' in inner_text:
-                                # Это сумма с валютой
-                                signature_mapping[found_sig] = template_data.get('{{сумма_валюта}}', '')
-                            elif any(char.isdigit() for char in inner_text) and (',' in inner_text or '.' in inner_text):
-                                # Это числовое значение
-                                if 'сбер' in found_sig.lower():
-                                    if 'текст' in found_sig.lower():
-                                        signature_mapping[found_sig] = template_data.get('{{подитог_текст}}', '')
-                                        _logger.info(f"🎯 ЧИСЛОВАЯ ЛОГИКА для подитог_текст: '{found_sig}' -> '{template_data.get('{{подитог_текст}}', '')}')")
-                                    elif 'итого' in found_sig.lower():
-                                        signature_mapping[found_sig] = template_data.get('{{итого_сбер}}', '')
-                                        _logger.info(f"🎯 ЧИСЛОВАЯ ЛОГИКА для итого_сбер: '{found_sig}' -> '{template_data.get('{{итого_сбер}}', '')}')")
-                                    else:
-                                        signature_mapping[found_sig] = template_data.get('{{вознагрождение_сбер}}', '')
-                                        _logger.info(f"🎯 ЧИСЛОВАЯ ЛОГИКА для вознагрождение_сбер: '{found_sig}' -> '{template_data.get('{{вознагрождение_сбер}}', '')}')")
-                                else:
-                                    signature_mapping[found_sig] = template_data.get('{{заявка_по_курсу}}', '')
+                            # ДИАГНОСТИКА: Ищем части сигнатуры
+                            inner_text = template_key.strip('{}[]')
+                            if inner_text in content:
+                                _logger.info(f"🔍 НАЙДЕН ВНУТРЕННИЙ ТЕКСТ: '{inner_text}' (сигнатура разбита!)")
+                                
+                                # Ищем контекст вокруг найденного текста
+                                pattern = f'.{{0,50}}{re.escape(inner_text)}.{{0,50}}'
+                                matches = re.findall(pattern, content, re.DOTALL)
+                                if matches:
+                                    for i, match in enumerate(matches[:2]):  # Показываем первые 2 совпадения
+                                        clean_match = match.replace('\n', ' ').replace('\r', ' ')
+                                        _logger.info(f"📍 КОНТЕКСТ {i+1}: ...{clean_match}...")
                             else:
-                                # Если не можем определить тип, оставляем пустым - удалим сигнатуру
-                                signature_mapping[found_sig] = ''
+                                _logger.info(f"🚫 ВНУТРЕННИЙ ТЕКСТ '{inner_text}' ТОЖЕ НЕ НАЙДЕН!")
                     
-                    # Теперь обрабатываем квадратные скобки []
-                    for bracket_sig in found_bracket_signatures:
-                        # Убираем квадратные скобки и проверяем содержимое
-                        inner_text = bracket_sig.strip('[]')
-                        
-                        if inner_text == 'подитог_текст':
-                            signature_mapping[bracket_sig] = template_data.get('{{подитог_текст}}', '')
-                            _logger.info(f"🎯 [КВАДРАТНАЯ СКОБКА] ТОЧНОЕ СОВПАДЕНИЕ для подитог_текст: '{bracket_sig}' -> '{template_data.get('{{подитог_текст}}', '')}')")
-                        else:
-                            # Для других квадратных скобок пока оставляем пустыми
-                            signature_mapping[bracket_sig] = ''
-                            _logger.info(f"❌ [КВАДРАТНАЯ СКОБКА] Неизвестная сигнатура: '{bracket_sig}'")
-                    
-                    _logger.info(f"=== СОПОСТАВЛЕНИЕ СИГНАТУР ИЗ ДОКУМЕНТА С ДАННЫМИ ODOO ===")
-                    _logger.info(f"Найдено сигнатур в документе: {len(signature_mapping)}")
-                    _logger.info(f"Доступно данных из Odoo: {len(template_data)}")
-                    
-                    # Детальная отладка каждой сигнатуры
-                    for sig, val in signature_mapping.items():
-                        has_data = val and str(val).strip()
-                        if has_data:
-                            _logger.info(f"✅ '{sig}' -> '{val}' (ЗАМЕНИМ)")
-                        else:
-                            _logger.info(f"❌ '{sig}' -> '{val}' (УДАЛИМ)")
-                    
-                    # Заменяем каждую найденную сигнатуру
-                    for signature, value in signature_mapping.items():
+                    # ПРОСТАЯ ЗАМЕНА КАК В АКТ-ОТЧЕТЕ: Заменяем каждую сигнатуру
+                    _logger.info("=== ПРОСТАЯ ЗАМЕНА СИГНАТУР (КАК В АКТ-ОТЧЕТЕ) ===")
+                    for signature, value in template_data.items():
                         # Если значение пустое - просто убираем сигнатуру
                         if not value or str(value).strip() == "":
-                            _logger.info(f"[ПУСТОЕ ЗНАЧЕНИЕ] Убираем сигнатуру: '{signature}' (значение: '{value}')")
-                            # Используем regex для удаления разбитых сигнатур
-                            inner_text = signature.strip('{}')
-                            # Паттерн для поиска разбитой сигнатуры с XML-тегами внутри
-                            pattern = r'\{\{[^}]*?(?:<[^>]*>)*?' + re.escape(inner_text) + r'(?:<[^>]*>)*?[^}]*?\}\}'
-                            matches = re.findall(pattern, content, re.DOTALL)
-                            for match in matches:
-                                content = content.replace(match, "")
-                                total_replacements += 1
-                                _logger.info(f"Убрали разбитую сигнатуру: '{match[:100]}...'")
-                            
-                            # Также попробуем простую замену для целых сигнатур
+                            _logger.info(f"[УДАЛЕНИЕ] Убираем пустую сигнатуру: '{signature}'")
                             if signature in content:
                                 content = content.replace(signature, "")
                                 total_replacements += 1
-                                _logger.info(f"Убрали целую сигнатуру: '{signature}'")
+                                _logger.info(f"✅ Удалена: '{signature}'")
                             continue
                         
                         # Экранируем значение для безопасности XML
                         safe_value = escape_xml(str(value))
                         
-                        # Ищем ТОЛЬКО сигнатуры в фигурных скобках (не обычный текст)
-                        signature_variants = [
-                            signature,  # {{номер_поручения}}
-                            signature.replace('{', '&#123;').replace('}', '&#125;'),  # &#123;&#123;номер_поручения&#125;&#125;
-                        ]
-                        
-                        # ВАЖНО: НЕ заменяем обычный текст без фигурных скобок!
-                        
-                        replaced = False
-                        
-                        # Сначала пробуем найти разбитую сигнатуру с помощью regex
-                        inner_text = signature.strip('{}')
-                        # Паттерн для поиска разбитой сигнатуры с XML-тегами внутри
-                        pattern = r'\{\{[^}]*?(?:<[^>]*>)*?' + re.escape(inner_text) + r'(?:<[^>]*>)*?[^}]*?\}\}'
-                        matches = re.findall(pattern, content, re.DOTALL)
-                        
-                        for match in matches:
-                            _logger.info(f"[НАЙДЕНА РАЗБИТАЯ] Сигнатура: '{match[:100]}...' -> заменяем на '{safe_value}'")
-                            content = content.replace(match, safe_value)
-                            total_replacements += 1
-                            _logger.info(f"[УСПЕШНАЯ ЗАМЕНА РАЗБИТОЙ] '{match[:50]}...' -> '{safe_value}'")
-                            replaced = True
-                        
-                        # Если не нашли разбитую, пробуем обычную замену
-                        if not replaced:
-                            for variant in signature_variants:
-                                if variant in content:
-                                    _logger.info(f"[НАЙДЕНА ЦЕЛАЯ] Сигнатура: '{variant}' -> заменяем на '{safe_value}'")
-                                    # Подсчитываем количество замен ДО замены
-                                    replacements_count = content.count(variant)
-                                    if replacements_count > 0:
-                                        # Используем точную замену
-                                        content = content.replace(variant, safe_value)
-                                        total_replacements += replacements_count
-                                        _logger.info(f"[УСПЕШНАЯ ЗАМЕНА ЦЕЛОЙ] '{variant}' -> '{safe_value}' ({replacements_count} раз)")
-                                        replaced = True
-                                        break
-                        
-                        if not replaced:
-                            # Попробуем найти разбитую сигнатуру
+                        # Простая замена - как в акт-отчете
+                        if signature in content:
+                            replacements_count = content.count(signature)
+                            content = content.replace(signature, safe_value)
+                            total_replacements += replacements_count
+                            _logger.info(f"✅ [ПРОСТАЯ ЗАМЕНА] '{signature}' -> '{safe_value}' ({replacements_count} раз)")
+                        else:
+                            # Если простая замена не сработала, пробуем разбитую сигнатуру
+                            _logger.info(f"[РАЗБИТАЯ] Пробуем разбитую сигнатуру для: '{signature}'")
                             replaced_content = self._replace_broken_signature(content, signature, safe_value, escape_xml)
                             if replaced_content != content:
                                 content = replaced_content
                                 total_replacements += 1
-                                _logger.info(f"ЗАМЕНА РАЗБИТОЙ СИГНАТУРЫ! '{signature}' -> '{safe_value}'")
+                                _logger.info(f"✅ [РАЗБИТАЯ ЗАМЕНА] '{signature}' -> '{safe_value}'")
                             else:
-                                _logger.info(f"НЕТ ЗАМЕНЫ для '{signature}' - сигнатура не найдена в документе")
+                                _logger.info(f"❌ [НЕ НАЙДЕНА] '{signature}' отсутствует в документе")
                     
                     _logger.info(f"=== ИТОГИ ОБРАБОТКИ СИГНАТУР ===")
                     _logger.info(f"Всего выполнено замен: {total_replacements}")
@@ -1586,76 +1980,55 @@ class ZayavkaMethods(models.Model):
                             continue
                         remaining_signatures.append(sig)
                     
-                    # Добавляем квадратные скобки к оставшимся сигнатурам
+                    # Квадратные скобки ВКЛЮЧЕНЫ - они есть в шаблоне!
                     for bracket_sig in all_bracket_signatures:
                         remaining_signatures.append(bracket_sig)
                     if remaining_signatures:
                         _logger.warning(f"⚠️  ОСТАЛИСЬ НЕОБРАБОТАННЫЕ СИГНАТУРЫ: {len(remaining_signatures)} штук")
-                        _logger.info("🧹 Начинаем агрессивную очистку оставшихся сигнатур...")
+                        _logger.info("🧹 ОТКЛЮЧАЕМ агрессивную очистку - основная замена работает хорошо")
                         
-                        # Агрессивная очистка всех оставшихся сигнатур
-                        cleaned_count = 0
-                        for remaining_sig in remaining_signatures:
-                            if remaining_sig in content:
-                                # Попробуем найти ключевые слова для определения типа
-                                clean_sig = re.sub(r'<[^>]+>', '', remaining_sig)
-                                # Убираем фигурные или квадратные скобки
-                                if remaining_sig.startswith('[') and remaining_sig.endswith(']'):
-                                    inner_content = clean_sig.strip('[]')
-                                    _logger.info(f"🔧 [АГРЕССИВНАЯ КВАДРАТНАЯ] Обрабатываем: '{remaining_sig}' -> внутренний текст: '{inner_content}'")
-                                else:
-                                    inner_content = clean_sig.strip('{}')
-                                
-                                # Определяем значение по ключевым словам
-                                replacement_value = ""
-                                if inner_content == 'подитог_текст':
-                                    replacement_value = template_data.get('{{подитог_текст}}', '')
-                                    _logger.info(f"🔧 [АГРЕССИВНАЯ КВАДРАТНАЯ] ТОЧНОЕ СОВПАДЕНИЕ для подитог_текст: '{remaining_sig}' -> '{replacement_value}'")
-                                elif 'дата_подписания' in inner_content:
-                                    replacement_value = template_data.get('{{дата_подписания_поручения}}', '')
-                                elif 'контракт' in inner_content:
-                                    replacement_value = template_data.get('{{номер_контракта}}', '')
-                                elif 'вид' in inner_content and 'сделк' in inner_content:
-                                    replacement_value = template_data.get('{{вид_сделки}}', '')
-                                elif 'получен' in inner_content and 'swift' in inner_content:
-                                    replacement_value = template_data.get('{{получен_swift}}', '')
-                                elif 'вознагрождение' in inner_content and 'сбер' in inner_content:
-                                    if 'текст' in inner_content:
-                                        replacement_value = template_data.get('{{подитог_текст}}', '')
-                                        _logger.info(f"🔧 АГРЕССИВНАЯ ЗАМЕНА для подитог_текст: '{clean_sig}' -> '{replacement_value}'")
-                                    else:
-                                        replacement_value = template_data.get('{{вознагрождение_сбер}}', '')
-                                        _logger.info(f"🔧 АГРЕССИВНАЯ ЗАМЕНА для вознагрождение_сбер: '{clean_sig}' -> '{replacement_value}'")
-                                elif 'итого' in inner_content and 'сбер' in inner_content:
-                                    replacement_value = template_data.get('{{итого_сбер}}', '')
-                                
-                                # Заменяем или удаляем
-                                if replacement_value and str(replacement_value).strip():
-                                    content = content.replace(remaining_sig, escape_xml(str(replacement_value)))
-                                    _logger.info(f"🔧 Агрессивно заменили: '{clean_sig}' -> '{replacement_value}'")
-                                else:
-                                    content = content.replace(remaining_sig, "")
-                                    _logger.info(f"🗑️  Агрессивно удалили: '{clean_sig}'")
-                                
-                                cleaned_count += 1
-                                total_replacements += 1
-                        
-                        _logger.info(f"🧹 Агрессивная очистка завершена: обработано {cleaned_count} сигнатур")
-                        
-                        # Финальная проверка
-                        final_remaining = re.findall(r'\{\{[^}]+\}\}', content)
-                        if final_remaining:
-                            _logger.warning(f"⚠️  ВСЕГО ОСТАЕТСЯ НЕОБРАБОТАННЫХ: {len(final_remaining)} сигнатур")
-                        else:
-                            _logger.info("✅ Все сигнатуры успешно обработаны после агрессивной очистки!")
+                        # АГРЕССИВНАЯ ОЧИСТКА ОТКЛЮЧЕНА - основная замена работает хорошо
+                        _logger.info("✅ Основная замена завершена успешно - агрессивная очистка не требуется")
                     else:
                         _logger.info("✅ Все сигнатуры успешно обработаны!")
                     
                     _logger.info("=== КОНЕЦ ОБРАБОТКИ СИГНАТУР ===")
                     
+                    # ФИНАЛЬНАЯ ОЧИСТКА: Удаляем оставшиеся пустые скобки
+                    _logger.info("🧹 Финальная очистка оставшихся скобок...")
+                    
+                    import re
+                    # Удаляем пустые скобки всех типов
+                    cleanup_patterns = [
+                        r'\{\{\s*\}\}',  # {{}}
+                        r'\[\[\s*\]\]',  # [[]]
+                        r'\[\s*\]',      # []
+                        r'\{\s*\}',      # {}
+                    ]
+                    
+                    cleaned_count = 0
+                    for pattern in cleanup_patterns:
+                        matches = re.findall(pattern, content)
+                        if matches:
+                            content = re.sub(pattern, '', content)
+                            cleaned_count += len(matches)
+                            _logger.info(f"🗑️  Удалено {len(matches)} пустых скобок: {pattern}")
+                    
+                    if cleaned_count > 0:
+                        _logger.info(f"✅ Финальная очистка завершена: удалено {cleaned_count} пустых скобок")
+                    else:
+                        _logger.info("✅ Пустых скобок не найдено")
+                    
                     # Проверяем валидность XML перед сохранением
                     try:
-                        ET.fromstring(content)
+                        # Дополнительная очистка XML перед валидацией
+                        # Убираем возможные проблемные символы
+                        content_clean = content.replace('&amp;amp;', '&amp;')  # Двойное экранирование
+                        content_clean = content_clean.replace('&lt;lt;', '&lt;')  # Двойное экранирование
+                        content_clean = content_clean.replace('&gt;gt;', '&gt;')  # Двойное экранирование
+                        
+                        ET.fromstring(content_clean)
+                        content = content_clean  # Используем очищенную версию
                         _logger.info("XML валидация прошла успешно")
                     except ET.ParseError as e:
                         _logger.error(f"XML поврежден после замены: {e}")
@@ -1735,115 +2108,102 @@ class ZayavkaMethods(models.Model):
             return None
     
     def _replace_broken_signature(self, xml_content, signature, value, escape_xml_func):
-        """Заменяет сигнатуру, которая может быть разбита на несколько XML элементов"""
+        """ПРОСТОЙ И НАДЕЖНЫЙ алгоритм замены разбитых сигнатур"""
         import re
+        import xml.etree.ElementTree as ET
         
         try:
             _logger.info(f"[_replace_broken_signature] Ищем разбитую сигнатуру: {signature}")
             
-            # Простой подход - ищем внутренний текст сигнатуры без фигурных скобок
-            inner_text = signature.strip('{}')
+            # Получаем внутренний текст без скобок
+            inner_text = signature.strip('{}[]')
             _logger.info(f"[_replace_broken_signature] Внутренний текст: {inner_text}")
             
-            if inner_text in xml_content:
-                _logger.info(f"[_replace_broken_signature] Найден внутренний текст в XML")
-                # Заменяем внутренний текст на значение, но только внутри тегов <w:t>
-                import re
-                # Ищем паттерн: <w:t>...inner_text...</w:t> и заменяем только содержимое
-                pattern = r'(<w:t[^>]*>)([^<]*' + re.escape(inner_text) + r'[^<]*)(<\/w:t>)'
-                
-                def replace_in_tag(match):
-                    start_tag = match.group(1)
-                    content = match.group(2)
-                    end_tag = match.group(3)
-                    # Используем центральную функцию экранирования
-                    escaped_value = escape_xml_func(value)
-                    new_content = content.replace(inner_text, escaped_value)
-                    return start_tag + new_content + end_tag
-                
-                if re.search(pattern, xml_content):
-                    xml_content = re.sub(pattern, replace_in_tag, xml_content)
-                    _logger.info(f"[_replace_broken_signature] Замена выполнена через regex паттерн")
-                    return xml_content
-                else:
-                    # Если паттерн не найден, попробуем простую замену
-                    escaped_value = escape_xml_func(value)
-                    xml_content = xml_content.replace(inner_text, escaped_value)
-                    _logger.info(f"[_replace_broken_signature] Замена выполнена простым методом с экранированием")
-                    return xml_content
+            escaped_value = escape_xml_func(value)
+            original_content = xml_content
             
-            # Продвинутый поиск разбитых сигнатур
-            # Ищем фрагменты сигнатуры в XML, учитывая что они могут быть разбиты
-            _logger.info(f"[_replace_broken_signature] Ищем фрагменты сигнатуры...")
+            # ОТКЛЮЧАЕМ REGEX - он портит XML структуру!
+            # Используем только безопасную замену по частям
             
-            # Создаем regex для поиска разбитой сигнатуры
-            # Например, для "номер_контрактка" ищем "номер.*контрактка" с учетом XML тегов
-            signature_parts = inner_text.split('_')
-            if len(signature_parts) > 1:
-                # Создаем паттерн, который учитывает возможные XML теги между частями
-                pattern_parts = []
-                for i, part in enumerate(signature_parts):
-                    if part:  # Пропускаем пустые части
-                        escaped_part = re.escape(part)
-                        if i == 0:
-                            # Первая часть может быть в отдельном теге
-                            pattern_parts.append(f'(<w:t[^>]*>[^<]*?{escaped_part}[^<]*?</w:t>)')
-                        else:
-                            # Последующие части могут быть в других тегах, с подчеркиванием или без
-                            pattern_parts.append(f'((?:<w:t[^>]*>[^<]*?_?{escaped_part}[^<]*?</w:t>)|(?:[^<]*?_?{escaped_part}[^<]*?))')
-                
-                if len(pattern_parts) >= 2:
-                    # Объединяем части с возможными XML тегами между ними
-                    full_pattern = '.*?'.join(pattern_parts)
-                    _logger.info(f"[_replace_broken_signature] Паттерн для поиска: {full_pattern[:100]}...")
-                    
-                    match = re.search(full_pattern, xml_content, re.DOTALL)
-                    if match:
-                        _logger.info(f"[_replace_broken_signature] Найдена разбитая сигнатура!")
-                        # Заменяем найденную область на значение
-                        matched_text = match.group(0)
-                        _logger.info(f"[_replace_broken_signature] Найденный текст: {matched_text[:100]}...")
-                        
-                        # Простая замена всего найденного блока на значение в теге <w:t>
-                        escaped_value = escape_xml_func(value)
-                        replacement = f'<w:t>{escaped_value}</w:t>'
-                        xml_content = xml_content.replace(matched_text, replacement)
-                        _logger.info(f"[_replace_broken_signature] Замена разбитой сигнатуры выполнена")
-                        _logger.info(f"🔧 [ПОДИТОГ_ТЕКСТ] Экранированное значение: '{escaped_value}'")
-                        return xml_content
-            
-            # Если ничего не найдено, попробуем поиск по частям
-            parts = inner_text.split('_')
-            if len(parts) > 1:
+            # МЕТОД 3: Разбиваем по частям (только если есть подчеркивания)
+            if '_' in inner_text:
+                parts = inner_text.split('_')
                 _logger.info(f"[_replace_broken_signature] Ищем части сигнатуры: {parts}")
                 
                 # Проверяем, есть ли все части в документе
-                all_parts_found = all(part in xml_content for part in parts if part)
-                if all_parts_found:
-                    _logger.info(f"[_replace_broken_signature] Все части найдены, выполняем замену")
-                    # Заменяем каждую часть последовательно
-                    temp_placeholder = f"__TEMP_REPLACEMENT_{hash(signature)}__"
+                found_parts = []
+                for part in parts:
+                    if part and part in xml_content:
+                        found_parts.append(part)
+                
+                if len(found_parts) >= 2:  # Нужно минимум 2 части
+                    _logger.info(f"[_replace_broken_signature] Найдены части: {found_parts}")
                     
-                    # Сначала заменяем первую часть на временный placeholder
-                    if parts[0]:
-                        xml_content = xml_content.replace(parts[0], temp_placeholder, 1)
+                    # Заменяем первую часть на значение
+                    xml_content = xml_content.replace(found_parts[0], escaped_value, 1)
                     
-                    # Затем удаляем остальные части
-                    for part in parts[1:]:
-                        if part:
-                            xml_content = xml_content.replace('_' + part, '', 1)
+                    # Удаляем остальные части
+                    for part in found_parts[1:]:
+                        xml_content = xml_content.replace('_' + part, '', 1)
+                        xml_content = xml_content.replace(part, '', 1)
                     
-                    # Заменяем placeholder на итоговое значение
-                    escaped_value = escape_xml_func(value)
-                    xml_content = xml_content.replace(temp_placeholder, escaped_value)
-                    return xml_content
+                    # НЕ УДАЛЯЕМ скобки глобально - это портит XML структуру!
+                    # Скобки могут быть частью других XML элементов
+                    
+                    # Проверяем валидность XML
+                    try:
+                        ET.fromstring(xml_content)
+                        _logger.info(f"[_replace_broken_signature] Замена по частям выполнена успешно")
+                        return xml_content
+                    except ET.ParseError as e:
+                        _logger.warning(f"[_replace_broken_signature] XML поврежден: {e}")
+                        return original_content
+            else:
+                # ДЛЯ СИГНАТУР БЕЗ ПОДЧЕРКИВАНИЙ: Пробуем точную замену XML тега
+                if inner_text in xml_content:
+                    _logger.info(f"[_replace_broken_signature] Найден цельный внутренний текст: {inner_text}")
+                    
+                    # ТОЧНАЯ замена XML тега: <w:t>inner_text</w:t> → <w:t>escaped_value</w:t>
+                    import re
+                    pattern = f'<w:t>{re.escape(inner_text)}</w:t>'
+                    replacement = f'<w:t>{escaped_value}</w:t>'
+                    
+                    if re.search(pattern, xml_content):
+                        xml_content = re.sub(pattern, replacement, xml_content, count=1)
+                        _logger.info(f"[_replace_broken_signature] Выполнена точная замена XML тега")
+                        
+                        # Проверяем валидность XML
+                        try:
+                            ET.fromstring(xml_content)
+                            _logger.info(f"[_replace_broken_signature] ✅ Точная замена XML тега выполнена успешно")
+                            return xml_content
+                        except ET.ParseError as e:
+                            _logger.warning(f"[_replace_broken_signature] XML поврежден после точной замены: {e}")
+                            return original_content
+                    else:
+                        _logger.info(f"[_replace_broken_signature] XML тег <w:t>{inner_text}</w:t> не найден, пробуем простую замену")
+                        
+                        # Fallback: простая замена как последняя попытка
+                        xml_content = xml_content.replace(inner_text, escaped_value, 1)
+                        
+                        # Проверяем валидность XML
+                        try:
+                            ET.fromstring(xml_content)
+                            _logger.info(f"[_replace_broken_signature] ✅ Простая замена выполнена успешно")
+                            return xml_content
+                        except ET.ParseError as e:
+                            _logger.warning(f"[_replace_broken_signature] XML поврежден после простой замены: {e}")
+                            return original_content
             
             _logger.info(f"[_replace_broken_signature] Не удалось найти сигнатуру: {signature}")
             return xml_content
             
         except Exception as e:
-            _logger.error(f"[_replace_broken_signature] Ошибка при замене сигнатуры {signature}: {e}")
+            _logger.error(f"[_replace_broken_signature] Ошибка: {e}")
             return xml_content
+    
+
+
     
     def _process_statement_docx_template(self, docx_path, template_data):
         """Обрабатывает DOCX шаблон заявления, заполняя таблицы"""

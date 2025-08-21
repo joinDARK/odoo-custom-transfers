@@ -21,6 +21,14 @@ try:
 except ImportError:
     OPENPYXL_AVAILABLE = False
 
+try:
+    from docx import Document
+    from docx.shared import Inches
+    from docx.enum.table import WD_ALIGN_VERTICAL
+    PYTHON_DOCX_AVAILABLE = True
+except ImportError:
+    PYTHON_DOCX_AVAILABLE = False
+
 
 
 _logger = logging.getLogger(__name__)
@@ -181,27 +189,108 @@ class AmanatZayavkaDocuments(models.Model):
             _logger.error(f"[_detect_file_type] Error detecting file type: {e}")
             return 'unknown'
 
+    def _fix_table_formatting(self, docx_path):
+        """Исправляет форматирование таблиц в DOCX для лучшей конвертации в PDF"""
+        if not PYTHON_DOCX_AVAILABLE:
+            _logger.warning("python-docx недоступен, пропускаем исправление форматирования таблиц")
+            return docx_path
+            
+        try:
+            _logger.info("🔧 Исправляем форматирование таблиц...")
+            doc = Document(docx_path)
+            
+            # Обрабатываем все таблицы в документе
+            for table in doc.tables:
+                # Устанавливаем фиксированную ширину таблицы
+                table.autofit = False
+                
+                for row in table.rows:
+                    # Устанавливаем минимальную высоту строки
+                    row.height = Inches(0.3)
+                    
+                    for cell in row.cells:
+                        # Выравнивание по верхнему краю для всех ячеек
+                        cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
+                        
+                        # Устанавливаем отступы в ячейках
+                        cell.margin_top = Inches(0.05)
+                        cell.margin_bottom = Inches(0.05)
+                        cell.margin_left = Inches(0.1)
+                        cell.margin_right = Inches(0.1)
+                        
+                        # Обрабатываем параграфы в ячейке
+                        for paragraph in cell.paragraphs:
+                            # Устанавливаем интервал между строками
+                            paragraph.paragraph_format.line_spacing = 1.0
+                            paragraph.paragraph_format.space_before = 0
+                            paragraph.paragraph_format.space_after = 0
+            
+            # Сохраняем исправленный документ
+            fixed_path = docx_path.replace('.docx', '_fixed.docx')
+            doc.save(fixed_path)
+            _logger.info("✅ Форматирование таблиц исправлено")
+            return fixed_path
+            
+        except Exception as e:
+            _logger.warning(f"⚠️ Не удалось исправить форматирование таблиц: {e}")
+            return docx_path
+
     def _convert_docx_to_pdf(self, docx_data):
-        """Convert DOCX (base64 or bytes) to PDF using LibreOffice (headless)."""
+        """Convert DOCX (base64 or bytes) to PDF using LibreOffice with preserved formatting."""
         if not docx_data:
             raise ValueError('DOCX data is empty')
 
         try:
             raw = base64.b64decode(docx_data) if isinstance(docx_data, str) else docx_data
-            with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as docx_temp:
+            
+            # Создаем временный файл с правильным именем (важно для LibreOffice)
+            with tempfile.NamedTemporaryFile(suffix='.docx', delete=False, prefix='odoo_convert_') as docx_temp:
                 docx_temp.write(raw)
                 docx_path = docx_temp.name
+            
+            # Исправляем форматирование таблиц перед конвертацией
+            fixed_docx_path = self._fix_table_formatting(docx_path)
 
             out_dir = tempfile.mkdtemp()
             try:
-                cmd = [
-                    'libreoffice', '--headless', '--convert-to', 'pdf', '--outdir', out_dir, docx_path
+                # Оптимизированная команда LibreOffice для сохранения форматирования
+                _logger.info(f"Конвертируем DOCX в PDF: {fixed_docx_path}")
+                
+                # Метод 1: Точная конвертация с сохранением форматирования таблиц
+                cmd_precise = [
+                    'libreoffice', '--headless', '--invisible', '--nodefault', '--nolockcheck',
+                    '--convert-to', 'pdf:writer_pdf_Export:{"EmbedStandardFonts":true,"ExportFormFields":false,"FormsType":0,"ExportBookmarks":false,"ExportNotes":false,"ExportNotesPages":false,"ExportOnlyNotesPages":false,"UseTransitionEffects":false,"IsSkipEmptyPages":false,"IsAddStream":false,"SelectPdfVersion":0,"CompressMode":2,"JPEGQuality":90,"ImageResolution":300}',
+                    '--outdir', out_dir,
+                    fixed_docx_path
                 ]
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                
+                # Метод 2: Простая конвертация (fallback)
+                cmd_simple = [
+                    'libreoffice', '--headless', '--convert-to', 'pdf',
+                    '--outdir', out_dir, fixed_docx_path
+                ]
+                
+                # Пробуем точную конвертацию
+                result = None
+                try:
+                    _logger.info("Пробуем точную конвертацию...")
+                    result = subprocess.run(cmd_precise, capture_output=True, text=True, timeout=90)
+                    if result.returncode == 0:
+                        _logger.info("✅ Точная конвертация успешна!")
+                    else:
+                        _logger.warning(f"Точная конвертация не удалась: {result.stderr}")
+                        raise RuntimeError("Fallback to simple conversion")
+                except Exception as e:
+                    _logger.warning(f"Ошибка точной конвертации: {e}, переходим на простую...")
+                    result = subprocess.run(cmd_simple, capture_output=True, text=True, timeout=60)
+                    if result.returncode == 0:
+                        _logger.info("✅ Простая конвертация успешна!")
+                    else:
+                        _logger.error(f"❌ Простая конвертация тоже не удалась: {result.stderr}")
                 if result.returncode != 0:
                     raise RuntimeError(f'LibreOffice error: {result.stderr}')
 
-                pdf_filename = os.path.splitext(os.path.basename(docx_path))[0] + '.pdf'
+                pdf_filename = os.path.splitext(os.path.basename(fixed_docx_path))[0] + '.pdf'
                 pdf_path = os.path.join(out_dir, pdf_filename)
                 if not os.path.exists(pdf_path):
                     raise FileNotFoundError('Converted PDF not found')
@@ -210,12 +299,18 @@ class AmanatZayavkaDocuments(models.Model):
                     pdf_bytes = f.read()
                 return base64.b64encode(pdf_bytes)
             finally:
+                # Очищаем временные файлы
                 try:
                     os.unlink(docx_path)
                 except Exception:
                     pass
                 try:
-                    pdf_filename = os.path.splitext(os.path.basename(docx_path))[0] + '.pdf'
+                    if fixed_docx_path != docx_path:
+                        os.unlink(fixed_docx_path)
+                except Exception:
+                    pass
+                try:
+                    pdf_filename = os.path.splitext(os.path.basename(fixed_docx_path))[0] + '.pdf'
                     pdf_path_cleanup = os.path.join(out_dir, pdf_filename)
                     if os.path.exists(pdf_path_cleanup):
                         os.unlink(pdf_path_cleanup)
@@ -855,3 +950,379 @@ class AmanatZayavkaDocuments(models.Model):
         except Exception as e:
             _logger.error(f"[_extract_text_from_excel_bytes] ошибка извлечения текста из Excel: {str(e)}")
             return None
+
+    def _find_agent_signature_position_in_pdf(self, pdf_bytes):
+        """
+        Ищет места для подписи агента в PDF документе "Индивидуал".
+        Ищет ТОЛЬКО конкретные блоки с "АГЕНТ" + "Подпись:" или "THE AGENT" + "By:".
+        Возвращает список позиций для подписи.
+        """
+        if not PYMUPDF_AVAILABLE or not pdf_bytes:
+            return []
+        
+        matches = []
+        try:
+            doc = pymupdf.open(stream=pdf_bytes, filetype='pdf')
+            
+            for page_index in range(len(doc)):
+                page = doc[page_index]
+                text_dict = page.get_text('dict')
+                
+                # Собираем все блоки текста на странице
+                page_blocks = []
+                for block in text_dict.get('blocks', []):
+                    block_text = ''
+                    block_bbox = None
+                    
+                    for line in block.get('lines', []):
+                        for span in line.get('spans', []):
+                            span_text = (span.get('text') or '').strip()
+                            if span_text:
+                                block_text += span_text + ' '
+                                if block_bbox is None:
+                                    block_bbox = span.get('bbox')
+                    
+                    if block_text.strip():
+                        page_blocks.append({
+                            'text': block_text.strip(),
+                            'bbox': block_bbox
+                        })
+                
+                # Собираем весь текст страницы для поиска контекста
+                page_text = ' '.join([block['text'] for block in page_blocks])
+                
+                # Ищем ТОЛЬКО конкретные паттерны подписи
+                for block in page_blocks:
+                    block_text = block['text']
+                    
+                    # Логируем все блоки для отладки
+                    if any(word in block_text.upper() for word in ['АГЕНТ', 'THE AGENT', 'ПОДПИСЬ', 'BY:']):
+                        _logger.info(f"[DEBUG] Found potential signature block: '{block_text[:150]}'")
+                    
+                    # СТРОГИЕ паттерны - ищем только блоки подписи в конце документа
+                    
+                    # Паттерн 1: Блок "ПРИНЦИПАЛ" с подписью (пропускаем)
+                    if 'ПРИНЦИПАЛ' in block_text and ('Подпись:' in block_text or 'By:' in block_text):
+                        _logger.info(f"[SKIP] Skipping PRINCIPAL signature block: '{block_text[:50]}...'")
+                        continue
+                    
+                    # Паттерн 2: Русский блок агента - ТОЛЬКО если есть "АГЕНТ" + "Подпись:" + подчеркивания + "МП"
+                    russian_agent_signature = (
+                        'АГЕНТ' in block_text and 
+                        'Подпись:' in block_text and 
+                        '_' in block_text and
+                        'МП' in block_text and
+                        'Директор' in block_text  # Дополнительная проверка
+                    )
+                    
+                    # Паттерн 3: Английский блок агента - ТОЛЬКО если есть "THE AGENT" + "By:" + подчеркивания + "Director"
+                    english_agent_signature = (
+                        'THE AGENT' in block_text and 
+                        'By:' in block_text and 
+                        '_' in block_text and
+                        'Director' in block_text  # Дополнительная проверка
+                    )
+                    
+                    if russian_agent_signature or english_agent_signature:
+                        _logger.info(f"[_find_agent_signature_position_in_pdf] Found AGENT signature block: '{block_text[:100]}...'")
+                        _logger.info(f"[_find_agent_signature_position_in_pdf] Patterns - Russian: {russian_agent_signature}, English: {english_agent_signature}")
+                        matches.append({
+                            'page_number': page_index + 1,
+                            'bbox': tuple(block['bbox']),
+                            'text': block_text,
+                            'is_russian': russian_agent_signature,
+                            'is_english': english_agent_signature
+                        })
+            
+            doc.close()
+            _logger.info(f"[_find_agent_signature_position_in_pdf] Found {len(matches)} agent signature positions")
+            
+            # Если ничего не найдено, попробуем старую логику как fallback
+            if not matches:
+                _logger.warning("[_find_agent_signature_position_in_pdf] No matches with new logic, trying fallback...")
+                matches = self._find_agent_signature_position_fallback(pdf_bytes)
+            
+        except Exception as e:
+            _logger.error(f"[_find_agent_signature_position_in_pdf] Error searching for agent signature position: {e}")
+        
+        return matches
+    
+    def _find_agent_signature_position_fallback(self, pdf_bytes):
+        """Fallback метод поиска позиций для подписи - старая логика"""
+        if not PYMUPDF_AVAILABLE or not pdf_bytes:
+            return []
+        
+        matches = []
+        try:
+            doc = pymupdf.open(stream=pdf_bytes, filetype='pdf')
+            
+            for page_index in range(len(doc)):
+                page = doc[page_index]
+                text_dict = page.get_text('dict')
+                
+                for block in text_dict.get('blocks', []):
+                    for line in block.get('lines', []):
+                        # Собираем весь текст строки
+                        line_text = ''
+                        line_bbox = None
+                        
+                        for span in line.get('spans', []):
+                            span_text = (span.get('text') or '').strip()
+                            if span_text:
+                                line_text += span_text + ' '
+                                if line_bbox is None:
+                                    line_bbox = span.get('bbox')
+                        
+                        line_text = line_text.strip()
+                        
+                        # БОЛЕЕ ИЗБИРАТЕЛЬНАЯ FALLBACK ЛОГИКА
+                        # Ищем только строки с подписями агента, исключая принципала
+                        
+                        # Пропускаем строки с ПРИНЦИПАЛ
+                        if 'ПРИНЦИПАЛ' in line_text or 'PRINCIPAL' in line_text:
+                            continue
+                            
+                        # Пропускаем заголовки и общие упоминания
+                        if 'АГЕНТСКОМУ ДОГОВОРУ' in line_text or 'AGENCY CONTRACT' in line_text:
+                            continue
+                        
+                        # Ищем конкретные паттерны подписи агента
+                        russian_agent_line = (
+                            'АГЕНТ' in line_text and 
+                            ('Подпись:' in line_text or ('_' in line_text and 'МП' in line_text))
+                        )
+                        
+                        english_agent_line = (
+                            'THE AGENT' in line_text and 
+                            ('By:' in line_text or '_' in line_text)
+                        )
+                        
+                        # Отдельные строки с подписями (только если рядом нет ПРИНЦИПАЛ)
+                        signature_line = (
+                            ('Подпись:' in line_text or 'By:' in line_text) and 
+                            '_' in line_text and
+                            'ПРИНЦИПАЛ' not in line_text and 'PRINCIPAL' not in line_text
+                        )
+                        
+                        # Ищем строки только с "АГЕНТ" (для русского) или "THE AGENT" (для английского)
+                        standalone_agent_russian = (
+                            line_text.strip() == 'АГЕНТ' or 
+                            (line_text.strip().startswith('АГЕНТ') and len(line_text.strip()) < 10)
+                        )
+                        
+                        standalone_agent_english = (
+                            line_text.strip() == 'THE AGENT' or
+                            (line_text.strip().startswith('THE AGENT') and len(line_text.strip()) < 15)
+                        )
+                        
+                        if russian_agent_line or english_agent_line or signature_line or standalone_agent_russian or standalone_agent_english:
+                            _logger.info(f"[FALLBACK] Found agent signature line: '{line_text}'")
+                            if line_bbox:
+                                matches.append({
+                                    'page_number': page_index + 1,
+                                    'bbox': tuple(line_bbox),
+                                    'text': line_text,
+                                    'is_russian': russian_agent_line or (signature_line and 'Подпись:' in line_text) or standalone_agent_russian,
+                                    'is_english': english_agent_line or (signature_line and 'By:' in line_text) or standalone_agent_english
+                                })
+            
+            doc.close()
+            _logger.info(f"[FALLBACK] Found {len(matches)} signature positions")
+            
+        except Exception as e:
+            _logger.error(f"[FALLBACK] Error: {e}")
+        
+        return matches
+
+    def _detect_agent_type_from_record(self):
+        """
+        Определяет тип агента из записи заявки для документа "Индивидуал".
+        Возвращает 'ТДК', 'ИНДО ТРЕЙД' или 'СТЕЛЛАР'.
+        """
+        try:
+            # Получаем название агента из записи
+            agent_name = ''
+            if self.agent_id and self.agent_id.name:
+                agent_name = self.agent_id.name.upper()
+            
+            _logger.info(f"[_detect_agent_type_from_record] Agent name from record: '{agent_name}'")
+            
+            # Определяем тип агента по названию
+            if any(keyword in agent_name for keyword in ['ТДК', 'TDK']):
+                return 'ТДК'
+            elif any(keyword in agent_name for keyword in ['ИНДО', 'INDO', 'ТРЕЙД', 'TRADE']):
+                return 'ИНДО ТРЕЙД'
+            elif any(keyword in agent_name for keyword in ['СТЕЛЛАР', 'STELLAR']):
+                return 'СТЕЛЛАР'
+            else:
+                _logger.info(f"[_detect_agent_type_from_record] Unknown agent type, defaulting to СТЕЛЛАР")
+                return 'СТЕЛЛАР'
+                
+        except Exception as e:
+            _logger.error(f"[_detect_agent_type_from_record] Error detecting agent type: {e}")
+            return 'СТЕЛЛАР'
+
+    def _find_agent_signature_and_stamp_records(self, agent_type):
+        """
+        Находит записи подписи и печати для указанного типа агента.
+        Возвращает кортеж (signature_record, stamp_record).
+        """
+        if agent_type == 'ТДК':
+            search_terms = ['ТДК', 'TDK']
+        elif agent_type == 'ИНДО ТРЕЙД':
+            search_terms = ['ИНОТРЕЙД', 'INDOTRADE', 'INDO']
+        else:  # СТЕЛЛАР
+            search_terms = ['СТЕЛЛАР', 'STELLAR']
+        
+        sig_record = None
+        stamp_record = None
+        
+        # Ищем подпись
+        for term in search_terms:
+            sig_record = self.env['signature.library'].search([
+                ('name', 'ilike', term),
+                ('signature_type', '=', 'signature'),
+                ('active', '=', True)
+            ], limit=1)
+            if sig_record:
+                break
+        
+        # Ищем печать
+        for term in search_terms:
+            stamp_record = self.env['signature.library'].search([
+                ('name', 'ilike', term),
+                ('signature_type', '=', 'stamp'),
+                ('active', '=', True)
+            ], limit=1)
+            if stamp_record:
+                break
+        
+        _logger.info(f"[_find_agent_signature_and_stamp_records] Found signature: {sig_record.name if sig_record else 'None'}")
+        _logger.info(f"[_find_agent_signature_and_stamp_records] Found stamp: {stamp_record.name if stamp_record else 'None'}")
+        
+        return sig_record, stamp_record
+
+    def _sign_individual_document(self, pdf_bytes, agent_type):
+        """
+        Подписывает PDF документ "Индивидуал" подписью и печатью агента.
+        Ищет места с "АГЕНТ"/"THE AGENT" и "Подпись:"/"By:" и ставит подписи правее.
+        """
+        _logger.info(f"[_sign_individual_document] Starting signature process for agent type: {agent_type}")
+        
+        if not PYMUPDF_AVAILABLE or not pdf_bytes:
+            _logger.warning("[_sign_individual_document] PyMuPDF not available or no PDF data")
+            return pdf_bytes
+        
+        try:
+            # Находим позиции для подписи
+            _logger.info("[_sign_individual_document] Searching for signature positions...")
+            matches = self._find_agent_signature_position_in_pdf(pdf_bytes)
+            _logger.info(f"[_sign_individual_document] Found {len(matches)} signature positions")
+            
+            if not matches:
+                _logger.warning("[_sign_individual_document] No agent signature positions found - returning unsigned PDF")
+                return pdf_bytes
+            
+            # Получаем записи подписи и печати
+            sig_record, stamp_record = self._find_agent_signature_and_stamp_records(agent_type)
+            if not sig_record or not stamp_record:
+                _logger.warning(f"[_sign_individual_document] {agent_type} signature/stamp not found")
+                return pdf_bytes
+            
+            doc = pymupdf.open(stream=pdf_bytes, filetype='pdf')
+            
+            # Группируем совпадения по страницам
+            pages_to_sign = {}
+            for match in matches:
+                page_num = match['page_number'] - 1
+                if page_num not in pages_to_sign:
+                    pages_to_sign[page_num] = []
+                pages_to_sign[page_num].append(match)
+            
+            # Подписываем каждую страницу
+            for page_num, page_matches in pages_to_sign.items():
+                page = doc[page_num]
+                
+                # Обрабатываем каждый найденный блок подписи
+                for match in page_matches:
+                    text = match['text']
+                    bbox = match['bbox']
+                    
+                    _logger.info(f"[_sign_individual_document] Processing signature block: '{text[:50]}...'")
+                    
+                    # Размеры подписи и печати
+                    sig_w = sig_record.default_width or 120
+                    sig_h = sig_record.default_height or 40
+                    stamp_w = stamp_record.default_width or 80
+                    stamp_h = stamp_record.default_height or 80
+                    
+                    # Определяем позицию для подписи и печати более точно
+                    if match.get('is_russian'):
+                        if 'Подпись:' in text:
+                            # Строка с "Подпись: _______"
+                            sig_x = bbox[0] + 80   # После "Подпись:"
+                            sig_y = bbox[1] - 5    # На той же высоте
+                            
+                            # Печать правее подписи, где должно быть "МП"
+                            stamp_x = bbox[0] + 250  # Где обычно "МП"
+                            stamp_y = bbox[1] - 10   # Немного выше для центрирования
+                        else:
+                            # Строка только с "АГЕНТ" - ищем место для подписи ниже
+                            sig_x = bbox[0] + 80   # Отступ от левого края
+                            sig_y = bbox[3] + 10   # Ниже строки "АГЕНТ"
+                            
+                            # Печать правее
+                            stamp_x = sig_x + sig_w + 30
+                            stamp_y = sig_y - 5
+                        
+                    elif match.get('is_english'):
+                        if 'By:' in text:
+                            # Строка с "By: _______"
+                            sig_x = bbox[0] + 50   # После "By:"
+                            sig_y = bbox[1] - 5    # На той же высоте
+                            
+                            # Печать правее подписи, где должно быть "Stamp"
+                            stamp_x = bbox[0] + 200  # Где обычно "Stamp"
+                            stamp_y = bbox[1] - 10   # Немного выше для центрирования
+                        else:
+                            # Строка только с "THE AGENT" - ищем место для подписи ниже
+                            sig_x = bbox[0] + 50   # Отступ от левого края
+                            sig_y = bbox[3] + 10   # Ниже строки "THE AGENT"
+                            
+                            # Печать правее
+                            stamp_x = sig_x + sig_w + 30
+                            stamp_y = sig_y - 5
+                    
+                    else:
+                        # Fallback позиция
+                        sig_x = bbox[0] + 50
+                        sig_y = bbox[1]
+                        stamp_x = sig_x + sig_w + 20
+                        stamp_y = sig_y - 5
+                    
+                    # Логируем детали позиционирования
+                    _logger.info(f"[_sign_individual_document] Text: '{text[:50]}...'")
+                    _logger.info(f"[_sign_individual_document] BBox: {bbox}")
+                    _logger.info(f"[_sign_individual_document] Signature position: ({sig_x}, {sig_y}) size: {sig_w}x{sig_h}")
+                    _logger.info(f"[_sign_individual_document] Stamp position: ({stamp_x}, {stamp_y}) size: {stamp_w}x{stamp_h}")
+                    
+                    # Проставляем подпись
+                    sig_rect = pymupdf.Rect(sig_x, sig_y, sig_x + sig_w, sig_y + sig_h)
+                    page.insert_image(sig_rect, stream=base64.b64decode(sig_record.image))
+                    
+                    # Проставляем печать
+                    stamp_rect = pymupdf.Rect(stamp_x, stamp_y, stamp_x + stamp_w, stamp_y + stamp_h)
+                    page.insert_image(stamp_rect, stream=base64.b64decode(stamp_record.image))
+                    
+                    _logger.info(f"[_sign_individual_document] Added {agent_type} signature and stamp on page {page_num + 1}")
+            
+            # Сохраняем подписанный PDF
+            signed_pdf_bytes = doc.write()
+            doc.close()
+            
+            _logger.info(f"[_sign_individual_document] Successfully signed individual document with {agent_type} signatures")
+            return signed_pdf_bytes
+            
+        except Exception as e:
+            _logger.error(f"[_sign_individual_document] Error signing individual document: {e}")
+            return pdf_bytes

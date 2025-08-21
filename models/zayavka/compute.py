@@ -290,6 +290,13 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.client_currency_bought = (total_client - payment_rf) / partner_rate
 
+    @api.depends('agent_id')
+    def _compute_can_generate_individual(self):
+        """Вычисляет, может ли текущий агент генерировать документ 'Индивидуал'"""
+        for record in self:
+            is_allowed, _ = record._is_agent_allowed_for_individual_document()
+            record.can_generate_individual = is_allowed
+
     @api.depends('total_client', 'payment_order_rf_client', 'real_post_conversion_rate')
     def _compute_client_currency_bought_real(self):
         for rec in self:

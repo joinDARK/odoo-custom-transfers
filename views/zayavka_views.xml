@@ -80,6 +80,7 @@
                 <field name="bank_address" />
                 <field name="iban_accc" />
                 <field name="contract_number" />
+                <field name="agency_agreement" />
               </group>
               <!-- Скрываем финансовые данные для ограниченного доступа -->
               <group groups="!amanat.group_amanat_limited_access">
@@ -439,20 +440,54 @@
                     <field name="zayavka_output_attachments" widget="amanat_attachment"
                       options="{'no_create': False, 'no_open': False}" />
                   </group>
+                  <group>
+                    <field name="other_documents_attachments" widget="amanat_attachment"
+                      options="{'no_create': False, 'no_open': False}" />
+                  </group>
                 </div>
               </group>
 
               <group>
                 <div class="o-form-group-2">
                   <group>
-                    <!-- <field name="assignment_start_attachments" widget="amanat_attachment"
-                    options="{'no_create': False, 'no_open': False}"/> -->
+                    <!-- Генерация документа Индивидуал -->
+                    <field name="can_generate_individual" invisible="1"/>
+                    <div class="card border-0 bg-light p-3 mb-3" invisible="not can_generate_individual">
+                      <div class="card-header bg-transparent border-0 pb-2">
+                        <h6 class="mb-0 text-primary">Генерация документа "Индивидуал"</h6>
+                        <small class="text-muted">Доступно для агентов: СТЕЛЛАР, ИНДО ТРЕЙД, ТДК</small>
+                      </div>
+                      <div class="card-body p-0">
+                        <div class="row align-items-center">
+                          <div class="col-auto">
+                            <field name="document_format" widget="selection" 
+                                   class="o_field_selection" 
+                                   style="min-width: 200px;"
+                                   options="{'no_create': true, 'no_open': true}" />
+                          </div>
+                          <div class="col-auto">
+                            <button name="action_generate_individual_document" type="object"
+                                    string="Генерировать"
+                                    class="btn btn-primary btn-sm"
+                                    help="Генерирует документ 'Индивидуал' в выбранном формате" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Сообщение для неразрешенных агентов -->
+                    <div class="alert alert-info" role="alert" invisible="can_generate_individual">
+                      <strong>Информация:</strong> Генерация документа "Индивидуал" доступна только для агентов: 
+                      <strong>СТЕЛЛАР</strong>, <strong>ИНДО ТРЕЙД</strong>, <strong>ТДК</strong>
+                    </div>
+                    
+                    <!-- Вложения поручения -->
                     <field name="assignment_end_attachments" widget="amanat_attachment"
-                      options="{'no_create': False, 'no_open': False}" />
+                           options="{'no_create': False, 'no_open': False}" />
                   </group>
                   <group>
                     <field name="invoice_attachments" widget="amanat_attachment"
-                    options="{'no_create': False, 'no_open': False}" />
+                           options="{'no_create': False, 'no_open': False}" />
                   </group>
                   
                 </div>

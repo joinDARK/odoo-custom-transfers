@@ -77,7 +77,7 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <form>
-                <header>
+                <!-- <header>
                     <button name="manual_match_applications" 
                             string="Найти заявки" 
                             type="object" 
@@ -94,73 +94,9 @@
                             class="btn-info"
                             confirm="Провести диагностику проблем с сопоставлением заявок?"/>
                     <h1><field name="name" readonly="1"/></h1>
-                </header>
+                </header> -->
                 <sheet>
                     <notebook>
-                        <page string="Основные">
-                            <group string="Информация о выписке">
-                                <div class="o-form-group">
-                                    <group>
-                                        <field name="date"/>
-                                    </group>
-                                    <group>
-                                        <field name="amount"/>
-                                    </group>
-                                    <group>
-                                        <field name="document_id"/>
-                                    </group>
-                                </div>
-                            </group>
-                            <group>
-                                <div class="o-form-group-2">
-                                    <group>
-                                        <field name="payer"/>
-                                        <field name="recipient"/>
-                                    </group>
-                                    <group>
-                                        <field name="payer_inn"/>
-                                        <field name="recipient_inn"/>
-                                    </group>
-                                </div>
-                            </group>
-                            <group>
-                                <field name="payment_purpose"/>
-                                <div class="o-form-group">
-                                    <group>
-                                        <field name="deal"/>
-                                    </group>
-                                    <group>
-                                        <field name="dds_article"/>
-                                    </group>
-                                    <group>
-                                        <field name="assign_bulinan"/>
-                                    </group>
-                                </div>
-                            </group>
-                            <group>
-                                <div class="o-form-group-2">
-                                    <group>
-                                        <field name="serial_number"/>
-                                    </group>
-                                    <group>
-                                        <field name="bank_document"/>
-                                    </group>
-                                </div>
-                            </group>
-                            <group>
-                                <field name="direction_choice"/>
-                            </group>
-                        </page>
-                        <page string="Линки" groups="!amanat.group_amanat_fin_manager_jess">
-                            <group>
-                                <field name="applications"/>
-                                <field name="currency_reserve" groups="!amanat.group_amanat_treasurer"/>
-                                <field name="transfer_ids" groups="!amanat.group_amanat_treasurer"/>
-                                <field name="conversion" groups="!amanat.group_amanat_treasurer"/>
-                                <field name="investment" groups="!amanat.group_amanat_treasurer"/>
-                                <field name="gold_deal" groups="!amanat.group_amanat_treasurer"/>
-                            </group>
-                        </page>
                         <page string="Выписка дробь" groups="!amanat.group_amanat_fin_manager_jess">
                             <group string="Информация о выписке">
                                 <div class="o-form-group">
@@ -196,10 +132,36 @@
                                         <field name="fragment_statement"/>
                                     </group>
                                     <group>
+                                        <field name="assign_bulinan"/>
+                                    </group>
+                                    <group>
                                         <field name="remaining_statement"/>
+                                    </group>
+                                    <group>
+                                        <field name="serial_number"/>
                                     </group>
                                 </div>
                             </group>
+
+                            <group>
+                                <div class="o-form-group-2">
+                                    <group>
+                                        <field name="dds_article"/>
+                                    </group>
+                                    <group>
+                                        <field name="bank_document"/>
+                                    </group>
+                                </div>
+                            </group>
+
+                            <group>
+                                <div class="o-form-group-1">
+                                    <group>
+                                        <field name="direction_choice"/>
+                                    </group>
+                                </div>
+                            </group>
+
                             <group>
                                 <div class="o-form-group-2">
                                     <group>
@@ -244,7 +206,17 @@
                                     </group>
                                 </div>
                             </group>
-                        </page>
+                        </page>       
+                        <page string="Линки" groups="!amanat.group_amanat_fin_manager_jess">
+                            <group>
+                                <field name="applications"/>
+                                <field name="currency_reserve" groups="!amanat.group_amanat_treasurer"/>
+                                <field name="transfer_ids" groups="!amanat.group_amanat_treasurer"/>
+                                <field name="conversion" groups="!amanat.group_amanat_treasurer"/>
+                                <field name="investment" groups="!amanat.group_amanat_treasurer"/>
+                                <field name="gold_deal" groups="!amanat.group_amanat_treasurer"/>
+                            </group>
+                        </page>         
                         <page string="Выписка разнос Джесс" groups="amanat.group_amanat_fin_manager_jess,amanat.group_amanat_admin,amanat.group_amanat_director">
                             <group>
                                 <div class="o-form-group">
@@ -267,6 +239,7 @@
                                 </div>
                             </group>
                         </page>
+                        
                         <page string="Диапазон" groups="!amanat.group_amanat_fin_manager_jess, !amanat.group_amanat_treasurer">
                             <group>
                                 <field name="range_field"/>

@@ -27,7 +27,8 @@
                 <sheet>
                     <group>
                         <field name="name"/>
-                        <field name="vypiska_ids"/>
+                        <field name="vypiska_ids" widget="amanat_attachment"
+                        options="{'accepted_file_extensions': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt'}" />
                         <field name="raznesti"/>
                         <field name="delete_deliveries"/>
                         <field name="bank"/>
