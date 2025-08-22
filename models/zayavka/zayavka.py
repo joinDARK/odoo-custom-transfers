@@ -6,6 +6,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     _name = 'amanat.zayavka'
     _description = 'Заявки'
     _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
+    _order = 'create_date desc'
 
     zayavka_id = fields.Char(
         string='ID заявки',

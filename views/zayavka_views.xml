@@ -1679,6 +1679,7 @@
     <field name="model">amanat.zayavka</field>
     <field name="arch" type="xml">
       <search string="Поиск заявок">
+        <field name="amount" string="Сумма заявки" />
         <field name="zayavka_num" string="№ заявки" />
         <field name="status" widget="searchable_selection" />
         <field name="date_placement" string="Дата размещения"

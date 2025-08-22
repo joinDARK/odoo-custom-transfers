@@ -1,0 +1,133 @@
+/* Кастомные цвета для списка заявок */
+
+/* Кастомные decoration атрибуты */
+.o_list_view .o_data_row.decoration-return {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%) !important;
+    color: white !important;
+    font-weight: bold !important;
+    border-left: 5px solid #c0392b !important;
+    position: relative;
+}
+
+.o_list_view .o_data_row.decoration-return::before {
+    content: "↩️";
+    position: absolute;
+    left: 8px;
+    font-size: 14px;
+}
+
+.o_list_view .o_data_row.decoration-return:hover {
+    background: linear-gradient(135deg, #ee5a24 0%, #c0392b 100%) !important;
+    transform: translateX(2px);
+    transition: all 0.3s ease;
+}
+
+.o_list_view .o_data_row.decoration-urgent {
+    background: linear-gradient(45deg, #ff4757 0%, #ff3838 50%, #ff4757 100%) !important;
+    color: white !important;
+    font-weight: bold !important;
+    animation: urgent-pulse 1.5s infinite;
+    border-left: 5px solid #ff2d2d !important;
+}
+
+@keyframes urgent-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+    50% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+}
+
+.o_list_view .o_data_row.decoration-vip {
+    background: linear-gradient(135deg, #9c88ff 0%, #8c7ae6 100%) !important;
+    color: white !important;
+    font-weight: bold !important;
+    border-left: 5px solid #6c5ce7 !important;
+    position: relative;
+}
+
+.o_list_view .o_data_row.decoration-vip::before {
+    content: "👑";
+    position: absolute;
+    left: 8px;
+    font-size: 14px;
+}
+
+/* Успешно завершенные заявки - яркий зеленый фон */
+.o_list_view .o_data_row.text-success {
+    background-color: #d4edda !important;
+    border-left: 4px solid #28a745 !important;
+}
+
+.o_list_view .o_data_row.text-success:hover {
+    background-color: #c3e6cb !important;
+}
+
+/* Заявки в работе - синий фон */
+.o_list_view .o_data_row.text-info {
+    background-color: #d1ecf1 !important;
+    border-left: 4px solid #17a2b8 !important;
+}
+
+.o_list_view .o_data_row.text-info:hover {
+    background-color: #bee5eb !important;
+}
+
+/* Заявки требующие внимания - желтый фон */
+.o_list_view .o_data_row.text-warning {
+    background-color: #fff3cd !important;
+    border-left: 4px solid #ffc107 !important;
+    color: rgb(40, 40, 40) !important;
+}
+
+.o_list_view .o_data_row.text-warning:hover {
+    background-color: #ffeaa7 !important;
+}
+
+/* Проблемные заявки - красный фон */
+.o_list_view .o_data_row.text-danger {
+    background-color: #f8d7da !important;
+    border-left: 4px solid #dc3545 !important;
+}
+
+.o_list_view .o_data_row.text-danger:hover {
+    background-color: #f1b0b7 !important;
+}
+
+/* Дополнительные кастомные классы */
+.o_list_view .o_data_row.zayavka_urgent {
+    background: linear-gradient(90deg, #ff5722 0%, #ff7043 100%) !important;
+    color: white !important;
+    font-weight: bold !important;
+    border-left: 4px solid #d32f2f !important;
+}
+
+.o_list_view .o_data_row.zayavka_vip {
+    background: linear-gradient(90deg, #9c27b0 0%, #ba68c8 100%) !important;
+    color: white !important;
+    font-weight: bold !important;
+    border-left: 4px solid #7b1fa2 !important;
+}
+
+/* Анимация для особых статусов */
+.o_list_view .o_data_row.zayavka_urgent {
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 87, 34, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0); }
+}
+
+/* Стили для статуса в ячейке */
+.o_list_view .o_field_widget.badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/* Кастомные цвета для конкретных статусов */
+.status_21 { background-color: #28a745 !important; color: white !important; }
+.status_22 { background-color: #dc3545 !important; color: white !important; }
+.status_20 { background-color: #fd7e14 !important; color: white !important; }
+.status_1 { background-color: #007bff !important; color: white !important; }
+.status_12 { background-color: #ffc107 !important; color: black !important; }

@@ -195,6 +195,7 @@
             "amanat/static/src/js/kassa_filter_handler.js",
             "amanat/static/src/xml/attachment_preview.xml",
             "amanat/static/src/css/calculator_background.css",
+            "amanat/static/src/css/zayavka_list_colors.css",
             # "amanat/static/src/js/calculator_background.js",
             "amanat/static/src/widgets/searchable_selection/searchable_selection.js",
             "amanat/static/src/widgets/searchable_selection/searchable_selection.xml",

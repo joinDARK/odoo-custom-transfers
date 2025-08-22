@@ -1265,18 +1265,35 @@ class AmanatZayavkaDocuments(models.Model):
                             sig_x = bbox[0] - 15   
                             sig_y = bbox[1] - 15   
                             stamp_x = sig_x + sig_w - 50   
-                            stamp_y = bbox[1] - 40  
-                        else:
-                            sig_x = bbox[0] + 10
-                            sig_y = bbox[1] - 15
-                            stamp_x = sig_x + sig_w - 50
                             stamp_y = bbox[1] - 40
-                    
-                    else:
-                        # Для ТДК, СТЕЛЛАР и других - скорректированные настройки
+
+                    elif agent_type == 'СТЕЛЛАР':
+                        # Для СТЕЛЛАР - текущие настройки (работают хорошо)
                         if match.get('is_russian'):
                             # Русская строка: "Подпись: _______ МП"
-                            sig_x = bbox[0] + 50   # Подпись правее для других агентов
+                            sig_x = bbox[0] + 45   # Подпись правее для других агентов
+                            sig_y = bbox[1] - 2    # Ближе к линии
+                            
+                            # Печать правее подписи
+                            stamp_x = sig_x + sig_w - 15   # Печать правее подписи
+                            stamp_y = bbox[1] - 35  # Выше для центрирования
+                            
+                        elif match.get('is_english'):
+                            # Английская строка: "By: _______ Stamp"
+                            sig_x = bbox[0] + 25   # Подпись правее для других агентов
+                            sig_y = bbox[1] - 2    # Ближе к линии
+                            
+                            # Печать правее подписи
+                            stamp_x = sig_x + sig_w - 15   # Печать правее подписи
+                            stamp_y = bbox[1] - 35  # Выше для центрирования
+                        
+
+                    
+                    elif agent_type == 'ТДК':
+                        # Для ТДК - текущие настройки (работают хорошо)
+                        if match.get('is_russian'):
+                            # Русская строка: "Подпись: _______ МП"
+                            sig_x = bbox[0] - 50   # Подпись правее для других агентов
                             sig_y = bbox[1] - 8    # Ближе к линии
                             
                             # Печать правее подписи
@@ -1292,12 +1309,12 @@ class AmanatZayavkaDocuments(models.Model):
                             stamp_x = sig_x + sig_w + 20   # Печать правее подписи
                             stamp_y = bbox[1] - 15  # Выше для центрирования
                         
-                        else:
-                            # Fallback позиция для других агентов
-                            sig_x = bbox[0] + 40   
-                            sig_y = bbox[1] - 8
-                            stamp_x = sig_x + sig_w + 20   
-                            stamp_y = bbox[1] - 15
+                    else:
+                        # Fallback позиция для других агентов
+                        sig_x = bbox[0] + 40   
+                        sig_y = bbox[1] - 8
+                        stamp_x = sig_x + sig_w + 20   
+                        stamp_y = bbox[1] - 15
                     
                     # Логируем детали позиционирования
                     _logger.info(f"[_sign_individual_document] Text: '{text[:50]}...'")
