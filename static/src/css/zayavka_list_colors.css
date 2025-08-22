@@ -1,9 +1,10 @@
-.o_list_view .o_data_row.text-close {
+.o_list_view .o_data_row.text-success {
     background-color: #dff8d7 !important;
     border-left: 4px solid #72dc35 !important;
+    color: rgb(40, 40, 40) !important;
 }
 
-.o_list_view .o_data_row.text-close .amanat_row_number_cell {
+.o_list_view .o_data_row.text-success .amanat_row_number_cell {
     background-color: #dff8d7 !important;
 }
 

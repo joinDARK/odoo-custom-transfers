@@ -1599,7 +1599,7 @@
         editable="top" 
         multi_edit="1" 
         create="false"
-        decoration-close="status == '21'"
+        decoration-success="status == '21'"
         decoration-danger="status == '22'"
       >
         <header>
@@ -1658,9 +1658,7 @@
         <field width="200" name="rate_fixation_date" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="agent_reward" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="total_amount" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="xe_rate" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="best_rate" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="usd_equivalent" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="comment_hedge" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="best_rate_name" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="hidden_hadge" groups="!amanat.group_amanat_treasurer"/>
