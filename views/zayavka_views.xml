@@ -1595,7 +1595,13 @@
     <field name="groups_id"
       eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]" />
     <field name="arch" type="xml">
-      <list editable="top" multi_edit="1" create="false">
+      <list 
+        editable="top" 
+        multi_edit="1" 
+        create="false"
+        decoration-close="status == '21'"
+        decoration-danger="status == '22'"
+      >
         <header>
           <button name="action_create_new_zayavka"
             string="Новый"
