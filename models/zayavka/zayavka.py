@@ -2765,9 +2765,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     
     # Поле для выбора формата генерируемого документа
     document_format = fields.Selection([
-        # ('pdf', 'PDF'),
+        ('pdf', 'PDF'),
         ('docx', 'Word')
-    ], string='Формат документа', default='docx', help='Выберите формат для генерации документа "Индивидуал"')
+    ], string='Формат документа', default='pdf', help='Выберите формат для генерации документа "Индивидуал"')
     
     # Вычисляемое поле для проверки разрешения генерации
     can_generate_individual = fields.Boolean(

@@ -992,35 +992,37 @@ class AmanatZayavkaDocuments(models.Model):
                 page_text = ' '.join([block['text'] for block in page_blocks])
                 
                 # Ищем ТОЛЬКО конкретные паттерны подписи
-                for block in page_blocks:
+                for block_index, block in enumerate(page_blocks):
                     block_text = block['text']
                     
                     # Логируем все блоки для отладки
                     if any(word in block_text.upper() for word in ['АГЕНТ', 'THE AGENT', 'ПОДПИСЬ', 'BY:']):
                         _logger.info(f"[DEBUG] Found potential signature block: '{block_text[:150]}'")
                     
-                    # СТРОГИЕ паттерны - ищем только блоки подписи в конце документа
+                    # СТРОГИЕ паттерны - ищем только блоки подписи агента
                     
-                    # Паттерн 1: Блок "ПРИНЦИПАЛ" с подписью (пропускаем)
-                    if 'ПРИНЦИПАЛ' in block_text and ('Подпись:' in block_text or 'By:' in block_text):
+                    # Паттерн 1: Блок "ПРИНЦИПАЛ" или "THE PRINCIPAL" с подписью (пропускаем)
+                    if ('ПРИНЦИПАЛ' in block_text or 'THE PRINCIPAL' in block_text) and ('Подпись' in block_text or 'By:' in block_text):
                         _logger.info(f"[SKIP] Skipping PRINCIPAL signature block: '{block_text[:50]}...'")
                         continue
                     
-                    # Паттерн 2: Русский блок агента - ТОЛЬКО если есть "АГЕНТ" + "Подпись:" + подчеркивания + "МП"
+                    # Паттерн 2: Русский блок агента - ТОЛЬКО если есть "АГЕНТ" + "Подпись" + подчеркивания + "МП" + "Директор" (НЕ "Генеральный директор")
                     russian_agent_signature = (
                         'АГЕНТ' in block_text and 
-                        'Подпись:' in block_text and 
+                        'Подпись' in block_text and 
                         '_' in block_text and
                         'МП' in block_text and
-                        'Директор' in block_text  # Дополнительная проверка
+                        'Директор' in block_text and
+                        'Генеральный директор' not in block_text  # Исключаем принципала
                     )
                     
-                    # Паттерн 3: Английский блок агента - ТОЛЬКО если есть "THE AGENT" + "By:" + подчеркивания + "Director"
+                    # Паттерн 3: Английский блок агента - ТОЛЬКО если есть "THE AGENT" + "By:" + подчеркивания + "Director" (НЕ "General Director")
                     english_agent_signature = (
                         'THE AGENT' in block_text and 
                         'By:' in block_text and 
                         '_' in block_text and
-                        'Director' in block_text  # Дополнительная проверка
+                        'Director' in block_text and
+                        'General Director' not in block_text  # Исключаем принципала
                     )
                     
                     if russian_agent_signature or english_agent_signature:
@@ -1048,13 +1050,16 @@ class AmanatZayavkaDocuments(models.Model):
         return matches
     
     def _find_agent_signature_position_fallback(self, pdf_bytes):
-        """Fallback метод поиска позиций для подписи - старая логика"""
+        """Упрощенный метод - находим ПОСЛЕДНИЕ строки подписи в русской и английской частях"""
         if not PYMUPDF_AVAILABLE or not pdf_bytes:
             return []
         
-        matches = []
         try:
             doc = pymupdf.open(stream=pdf_bytes, filetype='pdf')
+            
+            # Собираем все строки подписи
+            russian_signatures = []
+            english_signatures = []
             
             for page_index in range(len(doc)):
                 page = doc[page_index]
@@ -1074,65 +1079,56 @@ class AmanatZayavkaDocuments(models.Model):
                                     line_bbox = span.get('bbox')
                         
                         line_text = line_text.strip()
-                        
-                        # БОЛЕЕ ИЗБИРАТЕЛЬНАЯ FALLBACK ЛОГИКА
-                        # Ищем только строки с подписями агента, исключая принципала
-                        
-                        # Пропускаем строки с ПРИНЦИПАЛ
-                        if 'ПРИНЦИПАЛ' in line_text or 'PRINCIPAL' in line_text:
+                        if not line_text or not line_bbox:
                             continue
                             
-                        # Пропускаем заголовки и общие упоминания
-                        if 'АГЕНТСКОМУ ДОГОВОРУ' in line_text or 'AGENCY CONTRACT' in line_text:
-                            continue
+                        # Русская строка подписи
+                        if 'Подпись' in line_text and '_' in line_text:
+                            russian_signatures.append({
+                                'page_number': page_index + 1,
+                                'bbox': tuple(line_bbox),
+                                'text': line_text,
+                                'y_position': line_bbox[1],  # Для сортировки по вертикали
+                                'is_russian': True,
+                                'is_english': False
+                            })
+                            _logger.info(f"[SIMPLE] Found Russian signature: '{line_text}' at y={line_bbox[1]}")
                         
-                        # Ищем конкретные паттерны подписи агента
-                        russian_agent_line = (
-                            'АГЕНТ' in line_text and 
-                            ('Подпись:' in line_text or ('_' in line_text and 'МП' in line_text))
-                        )
-                        
-                        english_agent_line = (
-                            'THE AGENT' in line_text and 
-                            ('By:' in line_text or '_' in line_text)
-                        )
-                        
-                        # Отдельные строки с подписями (только если рядом нет ПРИНЦИПАЛ)
-                        signature_line = (
-                            ('Подпись:' in line_text or 'By:' in line_text) and 
-                            '_' in line_text and
-                            'ПРИНЦИПАЛ' not in line_text and 'PRINCIPAL' not in line_text
-                        )
-                        
-                        # Ищем строки только с "АГЕНТ" (для русского) или "THE AGENT" (для английского)
-                        standalone_agent_russian = (
-                            line_text.strip() == 'АГЕНТ' or 
-                            (line_text.strip().startswith('АГЕНТ') and len(line_text.strip()) < 10)
-                        )
-                        
-                        standalone_agent_english = (
-                            line_text.strip() == 'THE AGENT' or
-                            (line_text.strip().startswith('THE AGENT') and len(line_text.strip()) < 15)
-                        )
-                        
-                        if russian_agent_line or english_agent_line or signature_line or standalone_agent_russian or standalone_agent_english:
-                            _logger.info(f"[FALLBACK] Found agent signature line: '{line_text}'")
-                            if line_bbox:
-                                matches.append({
-                                    'page_number': page_index + 1,
-                                    'bbox': tuple(line_bbox),
-                                    'text': line_text,
-                                    'is_russian': russian_agent_line or (signature_line and 'Подпись:' in line_text) or standalone_agent_russian,
-                                    'is_english': english_agent_line or (signature_line and 'By:' in line_text) or standalone_agent_english
-                                })
+                        # Английская строка подписи
+                        elif 'By:' in line_text and '_' in line_text:
+                            english_signatures.append({
+                                'page_number': page_index + 1,
+                                'bbox': tuple(line_bbox),
+                                'text': line_text,
+                                'y_position': line_bbox[1],  # Для сортировки по вертикали
+                                'is_russian': False,
+                                'is_english': True
+                            })
+                            _logger.info(f"[SIMPLE] Found English signature: '{line_text}' at y={line_bbox[1]}")
             
             doc.close()
-            _logger.info(f"[FALLBACK] Found {len(matches)} signature positions")
+            
+            # Выбираем ПОСЛЕДНИЕ (самые нижние) подписи
+            matches = []
+            
+            # Последняя русская подпись (с наибольшим y - самая нижняя)
+            if russian_signatures:
+                last_russian = max(russian_signatures, key=lambda x: x['y_position'])
+                matches.append(last_russian)
+                _logger.info(f"[SIMPLE] Selected LAST Russian signature: '{last_russian['text']}' at y={last_russian['y_position']}")
+            
+            # Последняя английская подпись (с наибольшим y - самая нижняя)
+            if english_signatures:
+                last_english = max(english_signatures, key=lambda x: x['y_position'])
+                matches.append(last_english)
+                _logger.info(f"[SIMPLE] Selected LAST English signature: '{last_english['text']}' at y={last_english['y_position']}")
+            
+            _logger.info(f"[SIMPLE] Total selected positions: {len(matches)}")
+            return matches
             
         except Exception as e:
-            _logger.error(f"[FALLBACK] Error: {e}")
-        
-        return matches
+            _logger.error(f"[SIMPLE] Error finding signature positions: {e}")
+            return []
 
     def _detect_agent_type_from_record(self):
         """
@@ -1184,6 +1180,7 @@ class AmanatZayavkaDocuments(models.Model):
                 ('signature_type', '=', 'signature'),
                 ('active', '=', True)
             ], limit=1)
+            
             if sig_record:
                 break
         
@@ -1250,55 +1247,57 @@ class AmanatZayavkaDocuments(models.Model):
                     
                     _logger.info(f"[_sign_individual_document] Processing signature block: '{text[:50]}...'")
                     
-                    # Размеры подписи и печати
-                    sig_w = sig_record.default_width or 120
-                    sig_h = sig_record.default_height or 40
-                    stamp_w = stamp_record.default_width or 80
-                    stamp_h = stamp_record.default_height or 80
+                    # Размеры подписи и печати (уменьшенные для лучшего вида)
+                    sig_w = sig_record.default_width or 100
+                    sig_h = sig_record.default_height or 35
+                    stamp_w = stamp_record.default_width or 60
+                    stamp_h = stamp_record.default_height or 60
                     
-                    # Определяем позицию для подписи и печати более точно
-                    if match.get('is_russian'):
-                        if 'Подпись:' in text:
-                            # Строка с "Подпись: _______"
-                            sig_x = bbox[0] + 80   # После "Подпись:"
-                            sig_y = bbox[1] - 5    # На той же высоте
-                            
-                            # Печать правее подписи, где должно быть "МП"
-                            stamp_x = bbox[0] + 250  # Где обычно "МП"
-                            stamp_y = bbox[1] - 10   # Немного выше для центрирования
+                    # Определяем позицию для подписи и печати в зависимости от агента
+                    if agent_type == 'ИНДО ТРЕЙД':
+                        # Для ИНДО ТРЕЙД - текущие настройки (работают хорошо)
+                        if match.get('is_russian'):
+                            sig_x = bbox[0] + 10   
+                            sig_y = bbox[1] - 15   
+                            stamp_x = sig_x + sig_w - 50   
+                            stamp_y = bbox[1] - 40  
+                        elif match.get('is_english'):
+                            sig_x = bbox[0] - 15   
+                            sig_y = bbox[1] - 15   
+                            stamp_x = sig_x + sig_w - 50   
+                            stamp_y = bbox[1] - 40  
                         else:
-                            # Строка только с "АГЕНТ" - ищем место для подписи ниже
-                            sig_x = bbox[0] + 80   # Отступ от левого края
-                            sig_y = bbox[3] + 10   # Ниже строки "АГЕНТ"
-                            
-                            # Печать правее
-                            stamp_x = sig_x + sig_w + 30
-                            stamp_y = sig_y - 5
-                        
-                    elif match.get('is_english'):
-                        if 'By:' in text:
-                            # Строка с "By: _______"
-                            sig_x = bbox[0] + 50   # После "By:"
-                            sig_y = bbox[1] - 5    # На той же высоте
-                            
-                            # Печать правее подписи, где должно быть "Stamp"
-                            stamp_x = bbox[0] + 200  # Где обычно "Stamp"
-                            stamp_y = bbox[1] - 10   # Немного выше для центрирования
-                        else:
-                            # Строка только с "THE AGENT" - ищем место для подписи ниже
-                            sig_x = bbox[0] + 50   # Отступ от левого края
-                            sig_y = bbox[3] + 10   # Ниже строки "THE AGENT"
-                            
-                            # Печать правее
-                            stamp_x = sig_x + sig_w + 30
-                            stamp_y = sig_y - 5
+                            sig_x = bbox[0] + 10
+                            sig_y = bbox[1] - 15
+                            stamp_x = sig_x + sig_w - 50
+                            stamp_y = bbox[1] - 40
                     
                     else:
-                        # Fallback позиция
-                        sig_x = bbox[0] + 50
-                        sig_y = bbox[1]
-                        stamp_x = sig_x + sig_w + 20
-                        stamp_y = sig_y - 5
+                        # Для ТДК, СТЕЛЛАР и других - скорректированные настройки
+                        if match.get('is_russian'):
+                            # Русская строка: "Подпись: _______ МП"
+                            sig_x = bbox[0] + 50   # Подпись правее для других агентов
+                            sig_y = bbox[1] - 8    # Ближе к линии
+                            
+                            # Печать правее подписи
+                            stamp_x = sig_x + sig_w + 20   # Печать правее подписи
+                            stamp_y = bbox[1] - 15  # Выше для центрирования
+                            
+                        elif match.get('is_english'):
+                            # Английская строка: "By: _______ Stamp"
+                            sig_x = bbox[0] + 35   # Подпись правее для других агентов
+                            sig_y = bbox[1] - 8    # Ближе к линии
+                            
+                            # Печать правее подписи
+                            stamp_x = sig_x + sig_w + 20   # Печать правее подписи
+                            stamp_y = bbox[1] - 15  # Выше для центрирования
+                        
+                        else:
+                            # Fallback позиция для других агентов
+                            sig_x = bbox[0] + 40   
+                            sig_y = bbox[1] - 8
+                            stamp_x = sig_x + sig_w + 20   
+                            stamp_y = bbox[1] - 15
                     
                     # Логируем детали позиционирования
                     _logger.info(f"[_sign_individual_document] Text: '{text[:50]}...'")

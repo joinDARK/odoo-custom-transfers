@@ -120,6 +120,19 @@ class Contragent(models.Model, AmanatBaseModel):
         compute='_compute_contract_dates',
         store=True
     )
+    
+    # Поле для загрузки файла актуального договора
+    actual_contract_file = fields.Many2many(
+        'ir.attachment',
+        'contragent_actual_contract_attachment_rel',
+        'contragent_id',
+        'attachment_id',
+        string='Актуальный договор (файл)',
+        help='Файл актуального договора для быстрого доступа',
+        tracking=True
+    )
+
+
 
     @api.depends('payer_ids.inn')
     def _compute_payer_inn(self):

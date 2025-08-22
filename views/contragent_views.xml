@@ -126,6 +126,8 @@
                                     </sheet>
                                 </form>
                             </field>
+                            <field name="actual_contract_file" widget="amanat_attachment"
+                                       options="{'accepted_file_extensions': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt'}"/>
                         </page>
                         
                     </notebook>
