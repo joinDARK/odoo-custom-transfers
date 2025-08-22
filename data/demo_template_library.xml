@@ -30,5 +30,15 @@
             <field name="description">Шаблон индивидуального поручения</field>
             <field name="template_file" type="base64" file="amanat/static/src/template_documents/Индивидуал.docx"/>
         </record>
+
+        <!-- Шаблон индивидуала (реальный файл) -->
+        <!-- <record id="demo_template_individual_old_docx" model="template.library">
+            <field name="name">Индивидуал Старый</field>
+            <field name="template_type">docx</field>
+            <field name="category">other</field>
+            <field name="template_filename">Индивидуал Старый.docx</field>
+            <field name="description">Шаблон индивидуального старого поручения</field>
+            <field name="template_file" type="base64" file="amanat/static/src/template_documents/Индивидуал_старый_формат.docx"/>
+        </record> -->
     </data>
 </odoo>

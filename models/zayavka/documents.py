@@ -29,6 +29,13 @@ try:
 except ImportError:
     PYTHON_DOCX_AVAILABLE = False
 
+try:
+    from spire.doc import Document as SpireDocument
+    from spire.doc import FileFormat
+    SPIRE_DOC_AVAILABLE = True
+except ImportError:
+    SPIRE_DOC_AVAILABLE = False
+
 
 
 _logger = logging.getLogger(__name__)
@@ -320,6 +327,65 @@ class AmanatZayavkaDocuments(models.Model):
         except Exception as e:
             _logger.error(f"DOCX→PDF conversion failed: {e}")
             raise
+
+    def _convert_docx_to_pdf_spire(self, docx_data):
+        """
+        Конвертирует DOCX в PDF используя Spire.Doc для высокой точности форматирования.
+        Используется для индивидуальных документов где критично сохранение разметки.
+        """
+        if not docx_data:
+            raise ValueError('DOCX data is empty')
+        
+        if not SPIRE_DOC_AVAILABLE:
+            _logger.warning("Spire.Doc не доступен, используем fallback метод LibreOffice")
+            return self._convert_docx_to_pdf(docx_data)
+        
+        try:
+            # Декодируем данные если они в base64
+            raw = base64.b64decode(docx_data) if isinstance(docx_data, str) else docx_data
+            
+            # Создаем временные файлы
+            with tempfile.NamedTemporaryFile(suffix='.docx', delete=False, prefix='spire_input_') as docx_temp:
+                docx_temp.write(raw)
+                docx_path = docx_temp.name
+            
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False, prefix='spire_output_') as pdf_temp:
+                pdf_path = pdf_temp.name
+            
+            try:
+                _logger.info(f"🔄 Конвертируем DOCX в PDF через Spire.Doc: {docx_path}")
+                
+                # Загружаем документ в Spire.Doc
+                doc = SpireDocument()
+                doc.LoadFromFile(docx_path)
+                
+                # Конвертируем в PDF с высоким качеством
+                doc.SaveToFile(pdf_path, FileFormat.PDF)
+                doc.Close()
+                
+                # Читаем результат
+                with open(pdf_path, 'rb') as f:
+                    pdf_bytes = f.read()
+                
+                _logger.info("✅ Конвертация через Spire.Doc успешно завершена!")
+                return base64.b64encode(pdf_bytes)
+                
+            finally:
+                # Очищаем временные файлы
+                try:
+                    os.unlink(docx_path)
+                except Exception:
+                    pass
+                try:
+                    os.unlink(pdf_path)
+                except Exception:
+                    pass
+                    
+        except Exception as e:
+            _logger.error(f"❌ Ошибка конвертации через Spire.Doc: {e}")
+            _logger.info("🔄 Переходим на fallback метод LibreOffice...")
+            # В случае ошибки используем стандартный метод
+            return self._convert_docx_to_pdf(docx_data)
 
 
 
@@ -1293,21 +1359,21 @@ class AmanatZayavkaDocuments(models.Model):
                         # Для ТДК - текущие настройки (работают хорошо)
                         if match.get('is_russian'):
                             # Русская строка: "Подпись: _______ МП"
-                            sig_x = bbox[0] - 50   # Подпись правее для других агентов
-                            sig_y = bbox[1] - 8    # Ближе к линии
+                            sig_x = bbox[0] + 30   # Подпись правее для других агентов
+                            sig_y = bbox[1] - 15    # Ближе к линии
                             
                             # Печать правее подписи
-                            stamp_x = sig_x + sig_w + 20   # Печать правее подписи
-                            stamp_y = bbox[1] - 15  # Выше для центрирования
+                            stamp_x = sig_x + sig_w - 60   # Печать правее подписи
+                            stamp_y = bbox[1] - 35  # Выше для центрирования
                             
                         elif match.get('is_english'):
                             # Английская строка: "By: _______ Stamp"
-                            sig_x = bbox[0] + 35   # Подпись правее для других агентов
-                            sig_y = bbox[1] - 8    # Ближе к линии
+                            sig_x = bbox[0] + 15   # Подпись правее для других агентов
+                            sig_y = bbox[1] - 15    # Ближе к линии
                             
                             # Печать правее подписи
-                            stamp_x = sig_x + sig_w + 20   # Печать правее подписи
-                            stamp_y = bbox[1] - 15  # Выше для центрирования
+                            stamp_x = sig_x + sig_w - 60   # Печать правее подписи
+                            stamp_y = bbox[1] - 35  # Выше для центрирования
                         
                     else:
                         # Fallback позиция для других агентов

@@ -144,21 +144,6 @@ class ZayavkaYandexGPTAnalyse(models.Model):
     _inherit = 'amanat.zayavka'
 
     # Внешние методы
-    def _notify_user_simple(self, title, message, warning=False, sticky=False):
-        """Отправляет пользователю простое UI-уведомление через bus.bus (не почта)."""
-        try:
-            partner = self.env.user.partner_id
-            payload = {
-                'title': str(title) if title is not None else 'Уведомление',
-                'message': str(message) if message is not None else '',
-                'sticky': bool(sticky),
-                'warning': bool(warning),
-            }
-            # Для Odoo 18 требуется указывать тип сообщения вторым аргументом
-            self.env['bus.bus']._sendone(partner, 'simple_notification', payload)
-        except Exception as notify_err:
-            _logger.warning(f"[_notify_user_simple] Не удалось отправить уведомление пользователю: {notify_err}")
-
     def analyze_document_with_yandex_gpt(self, content, prompt_type="zayavka"):
         try:
 
@@ -453,6 +438,21 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             return None
 
     # Внутренние методы
+    def _notify_user_simple(self, title, message, warning=False, sticky=False):
+        """Отправляет пользователю простое UI-уведомление через bus.bus (не почта)."""
+        try:
+            partner = self.env.user.partner_id
+            payload = {
+                'title': str(title) if title is not None else 'Уведомление',
+                'message': str(message) if message is not None else '',
+                'sticky': bool(sticky),
+                'warning': bool(warning),
+            }
+            # Для Odoo 18 требуется указывать тип сообщения вторым аргументом
+            self.env['bus.bus']._sendone(partner, 'simple_notification', payload)
+        except Exception as notify_err:
+            _logger.warning(f"[_notify_user_simple] Не удалось отправить уведомление пользователю: {notify_err}")
+
     def _update_fields_from_gpt_response(self, gpt_response):
         """
         Парсит ответ YandexGPT и обновляет поля заявки
@@ -583,7 +583,19 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                     except Exception:
                         model_to_json_key = {}
 
-                    for field_name, new_value in filtered_values.items():
+                    # Определяем порядок обновления полей: subagent_ids должен идти перед subagent_payer_ids
+                    field_priority = {
+                        'subagent_ids': 1,  # Высший приоритет
+                        'subagent_payer_ids': 2,  # Второй приоритет
+                    }
+                    
+                    # Сортируем поля по приоритету, остальные поля идут в произвольном порядке
+                    sorted_fields = sorted(
+                        filtered_values.items(),
+                        key=lambda x: field_priority.get(x[0], 999)  # 999 для полей без приоритета
+                    )
+
+                    for field_name, new_value in sorted_fields:
                         try:
                             field = self._fields.get(field_name)
                             current_value = getattr(self, field_name)
@@ -671,9 +683,35 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                             _logger.warning(f"[_update_fields_from_gpt_response] Ошибка при подготовке обновления поля '{field_name}': {log_err}")
 
                     if fields_to_write:
-                        self.write(fields_to_write)
-                        updated_fields = ', '.join(f"{k}: {v}" for k, v in fields_to_write.items())
-                        _logger.info(f"[_update_fields_from_gpt_response] Обновлены поля заявки {self.zayavka_id}: {updated_fields}")
+                        # Разделяем обновление на два этапа для корректной работы с subagent_payer_ids
+                        payer_fields = {}
+                        other_fields = {}
+                        
+                        for field_name, field_value in fields_to_write.items():
+                            if field_name == 'subagent_payer_ids':
+                                payer_fields[field_name] = field_value
+                            else:
+                                other_fields[field_name] = field_value
+                        
+                        # Этап 1: Обновляем все поля кроме subagent_payer_ids
+                        if other_fields:
+                            self.write(other_fields)
+                            updated_fields = ', '.join(f"{k}: {v}" for k, v in other_fields.items())
+                            _logger.info(f"[_update_fields_from_gpt_response] Этап 1 - Обновлены поля заявки {self.zayavka_id}: {updated_fields}")
+                        
+                        # Этап 2: Обновляем subagent_payer_ids отдельно после того, как compute-методы отработали
+                        if payer_fields:
+                            # Небольшая задержка, чтобы compute-методы успели отработать
+                            self.env.cr.commit()  # Фиксируем изменения
+                            self.invalidate_recordset()  # Очищаем кеш
+                            
+                            self.write(payer_fields)
+                            updated_payer_fields = ', '.join(f"{k}: {v}" for k, v in payer_fields.items())
+                            _logger.info(f"[_update_fields_from_gpt_response] Этап 2 - Обновлены поля плательщика заявки {self.zayavka_id}: {updated_payer_fields}")
+                        
+                        all_updated = {**other_fields, **payer_fields}
+                        updated_fields = ', '.join(f"{k}: {v}" for k, v in all_updated.items())
+                        _logger.info(f"[_update_fields_from_gpt_response] Итого обновлены поля заявки {self.zayavka_id}: {updated_fields}")
                     else:
                         _logger.info("[_update_fields_from_gpt_response] Все целевые поля уже были заполнены. Запись не выполнялась.")
 
@@ -748,15 +786,21 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 payer = self._advanced_payer_search(payer_name)
                 
                 if payer:
-                    # Очищаем поле subagent_payer_ids и добавляем нового плательщика
-                    update_values['subagent_payer_ids'] = [(6, 0, [payer.id])]  # (6, 0, ids) - заменить все записи
-                    # Теперь ищем связанного контрагента для subagent_ids
+                    # Сначала ищем связанного контрагента для subagent_ids
                     if payer.contragents_ids:
                         # Берем первого связанного контрагента
                         contragent = payer.contragents_ids[0]
-                        # Очищаем поле subagent_ids и добавляем нового контрагента
+                        # Устанавливаем subagent_ids СНАЧАЛА
                         update_values['subagent_ids'] = [(6, 0, [contragent.id])]  # (6, 0, ids) - заменить все записи
+                        _logger.info(f"[_handle_special_fields] Установлен контрагент '{contragent.name}' для плательщика '{payer.name}'")
+                        
+                        # НЕ устанавливаем subagent_payer_ids здесь - это будет сделано на втором этапе
+                        # Сохраняем информацию о плательщике для второго этапа
+                        update_values['subagent_payer_ids'] = [(6, 0, [payer.id])]  # (6, 0, ids) - заменить все записи
+                        _logger.info(f"[_handle_special_fields] Подготовлен плательщик '{payer.name}' для установки на втором этапе")
                     else:
+                        # Если у плательщика нет связанных контрагентов, устанавливаем только плательщика
+                        update_values['subagent_payer_ids'] = [(6, 0, [payer.id])]  # (6, 0, ids) - заменить все записи
                         label_subagent = self._get_field_label('subagent_ids')
                         msg = f"{label_subagent}: у плательщика '{payer.name}' нет связанных контрагентов"
                         warnings.append(msg)

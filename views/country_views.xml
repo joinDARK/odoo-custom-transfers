@@ -11,6 +11,7 @@
                 <field name="name" width="200"/>
                 <field name="code"/>
                 <field name="full_name"/>
+                <field name="eng_country_name"/>
                 <!-- <field name="zayavka_id"/> -->
             </list>
         </field>
@@ -28,6 +29,7 @@
                         <field name="name"/>
                         <field name="code"/>
                         <field name="full_name"/>
+                        <field name="eng_country_name"/>
                         <field name="zayavka_id"/>
                     </group>
                 </sheet>

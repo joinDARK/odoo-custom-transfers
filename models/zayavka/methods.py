@@ -10,6 +10,35 @@ _logger = logging.getLogger(__name__)
 class ZayavkaMethods(models.Model):
     _inherit = 'amanat.zayavka'
 
+    def _duplicate_attachments_to_output(self):
+        """
+        Дублирует файлы из zayavka_attachments в zayavka_output_attachments
+        Для One2many поля создаем копии attachment'ов
+        """
+        for record in self:
+            if record.zayavka_attachments:
+                # Получаем имена файлов, которые уже есть в zayavka_output_attachments
+                existing_names = set(record.zayavka_output_attachments.mapped('name'))
+                
+                # Получаем файлы из zayavka_attachments, которых еще нет в zayavka_output_attachments
+                new_attachments = record.zayavka_attachments.filtered(
+                    lambda att: att.name not in existing_names
+                )
+                
+                if new_attachments:
+                    # Создаем копии attachment'ов для One2many поля
+                    for attachment in new_attachments:
+                        self.env['ir.attachment'].create({
+                            'name': attachment.name,
+                            'datas': attachment.datas,
+                            'res_model': 'amanat.zayavka',
+                            'res_id': record.id,
+                            'res_field': 'zayavka_output_attachments',
+                            'mimetype': attachment.mimetype,
+                            'description': attachment.description or f'Копия из Заявка Вход: {attachment.name}',
+                        })
+                    _logger.info(f"Заявка {record.id}: создано {len(new_attachments)} копий файлов в zayavka_output_attachments")
+
     def write(self, vals):
         trigger = vals.get('fin_entry_check', False)
         trigger2 = vals.get('for_khalida_temp', False)
@@ -143,6 +172,7 @@ class ZayavkaMethods(models.Model):
         if 'zayavka_attachments' in vals:
             for rec in self:
                 rec.zayavka_analyse_with_yandex_gpt()
+                rec._duplicate_attachments_to_output()
 
         if 'screen_sber_attachments' in vals:
             for rec in self:
@@ -329,6 +359,7 @@ class ZayavkaMethods(models.Model):
 
         if vals.get('zayavka_attachments'):
             res.zayavka_analyse_with_yandex_gpt()
+            res._duplicate_attachments_to_output()
 
         if vals.get('screen_sber_attachments'):
             res.analyze_screen_sber_images_with_yandex_gpt()
@@ -767,33 +798,10 @@ class ZayavkaMethods(models.Model):
         }
     
     def action_generate_statement_document(self):
-        """Генерация документа заявления по шаблону"""
+        """Генерация документа заявления по шаблону с улучшенной обработкой"""
         try:
-            # Проверим значения полей перед генерацией
-            _logger.info(f"=== ПРОВЕРКА ПОЛЕЙ ДЛЯ ЗАПИСИ ID {self.id} ===")
-            _logger.info(f"exporter_importer_name: '{self.exporter_importer_name}' (тип: {type(self.exporter_importer_name)})")
-            _logger.info(f"currency: '{self.currency}' (тип: {type(self.currency)})")
-            _logger.info(f"subagent_payer_ids: {self.subagent_payer_ids} (количество: {len(self.subagent_payer_ids)})")
-            _logger.info(f"country_id: {self.country_id} (name: '{self.country_id.name if self.country_id else 'None'}')")
-            _logger.info(f"beneficiary_address: '{self.beneficiary_address}' (тип: {type(self.beneficiary_address)})")
-            _logger.info("=== КОНЕЦ ПРОВЕРКИ ПОЛЕЙ ===")
+            _logger.info(f"[ЗАЯВЛЕНИЕ] Начинаем генерацию заявления для записи ID {self.id}")
             
-            # Проверим также имена плательщиков субагента
-            if self.subagent_payer_ids:
-                payer_names = [payer.name for payer in self.subagent_payer_ids]
-                _logger.info(f"Имена плательщиков субагента: {payer_names}")
-            
-            # Дополнительная проверка поля валюты
-            if hasattr(self, '_fields') and 'currency' in self._fields:
-                field_info = self._fields['currency']
-                _logger.info(f"Информация о поле currency: {field_info}")
-                if hasattr(field_info, 'selection'):
-                    _logger.info(f"Selection валюты: {field_info.selection}")
-            
-        except Exception as debug_error:
-            _logger.error(f"Ошибка при отладке полей: {debug_error}")
-        
-        try:
             # Ищем шаблон заявления
             template = self.env['template.library'].search([
                 ('name', '=', 'Заявление'),
@@ -812,11 +820,17 @@ class ZayavkaMethods(models.Model):
                     }
                 }
             
+            # УДАЛЯЕМ СТАРЫЕ ФАЙЛЫ ЗАЯВЛЕНИЯ ПЕРЕД СОЗДАНИЕМ НОВЫХ
+            self._remove_existing_statement_files()
+            
+            # ДОПОЛНИТЕЛЬНАЯ ОПЦИЯ: Удалить ВСЕ файлы из заявка_выход (раскомментируйте если нужно)
+            # self._remove_all_output_files()
+            
             # Подготавливаем данные для подстановки
             template_data = self._prepare_statement_template_data()
             
-            # Генерируем документ (используем специальный метод для заявлений)
-            generated_file = self._generate_statement_document_from_template(template, template_data)
+            # Генерируем документ используя надежный метод docxtpl
+            generated_file = self._generate_statement_document_safe(template, template_data)
             
             if generated_file:
                 # Создаем attachment
@@ -835,6 +849,8 @@ class ZayavkaMethods(models.Model):
                 
                 # Обновляем запись для автообновления интерфейса
                 self.env['amanat.zayavka'].browse(self.id).invalidate_recordset()
+                
+                _logger.info(f"[ЗАЯВЛЕНИЕ] ✅ Документ успешно сгенерирован: {attachment.name}")
                 
                 return {
                     'type': 'ir.actions.client',
@@ -861,17 +877,423 @@ class ZayavkaMethods(models.Model):
                 }
                 
         except Exception as e:
-            _logger.error(f"Ошибка при генерации документа заявления: {str(e)}")
+            _logger.error(f"[ЗАЯВЛЕНИЕ] ❌ Ошибка при генерации документа заявления: {str(e)}")
+            import traceback
+            _logger.error(f"[ЗАЯВЛЕНИЕ] Traceback: {traceback.format_exc()}")
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Ошибка',
-                    'message': f'Ошибка при генерации документа: {str(e)}',
+                    'message': f'Произошла ошибка при генерации документа: {str(e)}',
                     'type': 'danger',
                     'sticky': True,
                 }
             }
+    
+    def _remove_existing_statement_files(self):
+        """Удаляет ВСЕ существующие файлы заявления из заявка_выход (независимо от способа загрузки)"""
+        try:
+            # Ищем ВСЕ файлы заявления в zayavka_output_attachments по различным критериям
+            search_patterns = [
+                ('name', 'ilike', 'заявление%'),      # Заявление*
+                ('name', 'ilike', '%заявление%'),     # *заявление*
+                ('name', 'ilike', 'statement%'),      # statement*
+                ('name', 'ilike', '%statement%'),     # *statement*
+                ('name', 'ilike', 'application%'),    # application*
+                ('name', 'ilike', '%application%'),   # *application*
+            ]
+            
+            all_statements = self.env['ir.attachment']
+            
+            # Собираем все файлы по всем паттернам
+            for pattern in search_patterns:
+                statements = self.env['ir.attachment'].search([
+                    ('res_model', '=', self._name),
+                    ('res_id', '=', self.id),
+                    ('res_field', '=', 'zayavka_output_attachments'),
+                    pattern
+                ])
+                all_statements |= statements
+            
+            # Дополнительно ищем по расширению файла (docx, doc, pdf)
+            doc_extensions = self.env['ir.attachment'].search([
+                ('res_model', '=', self._name),
+                ('res_id', '=', self.id),
+                ('res_field', '=', 'zayavka_output_attachments'),
+                '|', '|',
+                ('name', 'ilike', '%.docx'),
+                ('name', 'ilike', '%.doc'),
+                ('name', 'ilike', '%.pdf')
+            ])
+            
+            # Фильтруем только те, которые могут быть заявлениями
+            for doc in doc_extensions:
+                doc_name_lower = doc.name.lower()
+                # Проверяем, содержит ли имя файла ключевые слова заявления
+                if any(keyword in doc_name_lower for keyword in [
+                    'заявл', 'statement', 'application', 'заяв', 'зая'
+                ]):
+                    all_statements |= doc
+            
+            # Удаляем дубликаты
+            all_statements = all_statements.sudo()  # Используем sudo для гарантированного доступа
+            
+            if all_statements:
+                _logger.info(f"[ЗАЯВЛЕНИЕ] 🗑️ Найдено {len(all_statements)} файлов заявления для удаления:")
+                for attachment in all_statements:
+                    _logger.info(f"[ЗАЯВЛЕНИЕ]   - Удаляем: {attachment.name} (ID: {attachment.id})")
+                
+                # Удаляем все найденные файлы
+                all_statements.unlink()
+                _logger.info(f"[ЗАЯВЛЕНИЕ] ✅ Успешно удалено {len(all_statements)} файлов заявления")
+            else:
+                _logger.info("[ЗАЯВЛЕНИЕ] 📝 Файлов заявления для удаления не найдено")
+                
+        except Exception as e:
+            _logger.error(f"[ЗАЯВЛЕНИЕ] ❌ Ошибка при удалении существующих файлов заявления: {e}")
+            import traceback
+            _logger.error(f"[ЗАЯВЛЕНИЕ] Traceback: {traceback.format_exc()}")
+    
+    def _remove_all_output_files(self):
+        """Удаляет ВСЕ файлы из заявка_выход (агрессивная очистка)"""
+        try:
+            # Ищем ВСЕ файлы в zayavka_output_attachments
+            all_output_files = self.env['ir.attachment'].search([
+                ('res_model', '=', self._name),
+                ('res_id', '=', self.id),
+                ('res_field', '=', 'zayavka_output_attachments')
+            ]).sudo()
+            
+            if all_output_files:
+                _logger.info(f"[ЗАЯВЛЕНИЕ] 🗑️ АГРЕССИВНАЯ ОЧИСТКА: Удаляем ВСЕ {len(all_output_files)} файлов из заявка_выход:")
+                for attachment in all_output_files:
+                    _logger.info(f"[ЗАЯВЛЕНИЕ]   - Удаляем: {attachment.name} (ID: {attachment.id})")
+                
+                all_output_files.unlink()
+                _logger.info(f"[ЗАЯВЛЕНИЕ] ✅ Агрессивная очистка завершена: удалено {len(all_output_files)} файлов")
+            else:
+                _logger.info("[ЗАЯВЛЕНИЕ] 📝 Файлов для агрессивной очистки не найдено")
+                
+        except Exception as e:
+            _logger.error(f"[ЗАЯВЛЕНИЕ] ❌ Ошибка при агрессивной очистке файлов: {e}")
+            import traceback
+            _logger.error(f"[ЗАЯВЛЕНИЕ] Traceback: {traceback.format_exc()}")
+    
+    def _generate_statement_document_safe(self, template, template_data):
+        """Безопасная генерация документа заявления используя только docxtpl"""
+        import base64
+        import tempfile
+        import os
+        
+        try:
+            _logger.info("[ЗАЯВЛЕНИЕ] 🔧 Используем безопасный метод генерации с docxtpl")
+            
+            # Проверяем наличие docxtpl
+            try:
+                from docxtpl import DocxTemplate  # type: ignore
+            except ImportError:
+                _logger.error("[ЗАЯВЛЕНИЕ] ❌ docxtpl не установлен! Установите: pip install docxtpl")
+                return None
+            
+            # Декодируем файл шаблона
+            template_bytes = base64.b64decode(template.template_file)
+            
+            # Создаем временный файл для работы
+            with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as temp_file:
+                temp_file.write(template_bytes)
+                temp_file_path = temp_file.name
+            
+            try:
+                # Создаем объект шаблона
+                doc = DocxTemplate(temp_file_path)
+                
+                _logger.info(f"[ЗАЯВЛЕНИЕ] 📝 Обрабатываем шаблон с {len(template_data)} переменными")
+                
+                # ОТЛАДКА: Проверяем, какие переменные найдены в шаблоне
+                try:
+                    # Получаем список переменных из шаблона
+                    template_vars = doc.get_undeclared_template_variables()
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] 🔍 Переменные, найденные в шаблоне: {template_vars}")
+                    
+                    # Проверяем совпадения
+                    our_vars = set(template_data.keys())
+                    template_vars_set = set(template_vars)
+                    
+                    matches = our_vars.intersection(template_vars_set)
+                    missing_in_template = our_vars - template_vars_set
+                    missing_in_data = template_vars_set - our_vars
+                    
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] ✅ Совпадающие переменные ({len(matches)}): {matches}")
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] ❌ Наши переменные, отсутствующие в шаблоне ({len(missing_in_template)}): {missing_in_template}")
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] ⚠️ Переменные шаблона, для которых нет данных ({len(missing_in_data)}): {missing_in_data}")
+                    
+                except Exception as debug_e:
+                    _logger.warning(f"[ЗАЯВЛЕНИЕ] Не удалось получить переменные шаблона: {debug_e}")
+                
+                # Рендерим шаблон с данными
+                doc.render(template_data)
+                
+                # Сохраняем результат
+                with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as result_file:
+                    result_file_path = result_file.name
+                
+                try:
+                    # Сохраняем документ
+                    doc.save(result_file_path)
+                    
+                    # Читаем байты
+                    with open(result_file_path, 'rb') as f:
+                        result_bytes = f.read()
+                    
+                    _logger.info("[ЗАЯВЛЕНИЕ] ✅ Документ успешно сгенерирован с docxtpl")
+                    return base64.b64encode(result_bytes).decode('utf-8')
+                    
+                finally:
+                    # Удаляем временный файл результата
+                    try:
+                        os.unlink(result_file_path)
+                    except Exception:
+                        pass
+                        
+            finally:
+                # Удаляем временный файл шаблона
+                try:
+                    os.unlink(temp_file_path)
+                except Exception:
+                    pass
+                    
+        except Exception as e:
+            _logger.error(f"[ЗАЯВЛЕНИЕ] ❌ Ошибка при безопасной генерации документа: {str(e)}")
+            import traceback
+            _logger.error(f"[ЗАЯВЛЕНИЕ] Traceback: {traceback.format_exc()}")
+            return None
+    
+    def _is_russian_text(self, text):
+        """Проверяет, содержит ли текст русские символы"""
+        if not text:
+            return False
+        
+        import re
+        # Проверяем наличие кириллических символов
+        return bool(re.search(r'[а-яё]', text.lower()))
+    
+    def _translate_country_to_english(self, country_ru):
+        """Переводит название страны с русского на английский через Яндекс GPT"""
+        try:
+            # Сначала пробуем простой словарь для популярных стран
+            country_mapping = {
+                # Россия и варианты
+                'россия': 'Russia',
+                'российская федерация': 'Russia',
+                'рф': 'Russia',
+                'russia': 'Russia',
+                
+                # Китай и варианты
+                'китай': 'China',
+                'кнр': 'China',
+                'china': 'China',
+                'people\'s republic of china': 'China',
+                
+                # США и варианты
+                'сша': 'USA',
+                'соединенные штаты америки': 'USA',
+                'соединённые штаты америки': 'USA',
+                'америка': 'USA',
+                'usa': 'USA',
+                'united states': 'USA',
+                'united states of america': 'USA',
+                
+                # Европа
+                'германия': 'Germany',
+                'germany': 'Germany',
+                'франция': 'France',
+                'france': 'France',
+                'италия': 'Italy',
+                'italy': 'Italy',
+                'испания': 'Spain',
+                'spain': 'Spain',
+                'великобритания': 'United Kingdom',
+                'англия': 'United Kingdom',
+                'uk': 'United Kingdom',
+                'united kingdom': 'United Kingdom',
+                'britain': 'United Kingdom',
+                
+                # Азия
+                'япония': 'Japan',
+                'japan': 'Japan',
+                'индия': 'India',
+                'india': 'India',
+                'южная корея': 'South Korea',
+                'корея': 'South Korea',
+                'south korea': 'South Korea',
+                'korea': 'South Korea',
+                'турция': 'Turkey',
+                'turkey': 'Turkey',
+                
+                # Ближний Восток
+                'египет': 'Egypt',
+                'egypt': 'Egypt',
+                'саудовская аравия': 'Saudi Arabia',
+                'saudi arabia': 'Saudi Arabia',
+                'оаэ': 'UAE',
+                'объединенные арабские эмираты': 'UAE',
+                'объединённые арабские эмираты': 'UAE',
+                'uae': 'UAE',
+                'united arab emirates': 'UAE',
+                
+                # Юго-Восточная Азия
+                'таиланд': 'Thailand',
+                'тайланд': 'Thailand',  # Альтернативное написание
+                'thailand': 'Thailand',
+                'вьетнам': 'Vietnam',
+                'vietnam': 'Vietnam',
+                'индонезия': 'Indonesia',
+                'indonesia': 'Indonesia',
+                'малайзия': 'Malaysia',
+                'malaysia': 'Malaysia',
+                'сингапур': 'Singapore',
+                'singapore': 'Singapore',
+                'филиппины': 'Philippines',
+                'philippines': 'Philippines',
+                
+                # Америки
+                'бразилия': 'Brazil',
+                'brazil': 'Brazil',
+                'канада': 'Canada',
+                'canada': 'Canada',
+                'мексика': 'Mexico',
+                'mexico': 'Mexico',
+                'аргентина': 'Argentina',
+                'argentina': 'Argentina',
+                
+                # Океания
+                'австралия': 'Australia',
+                'australia': 'Australia',
+                
+                # СНГ
+                'казахстан': 'Kazakhstan',
+                'kazakhstan': 'Kazakhstan',
+                'узбекистан': 'Uzbekistan',
+                'uzbekistan': 'Uzbekistan',
+                'беларусь': 'Belarus',
+                'белоруссия': 'Belarus',
+                'belarus': 'Belarus',
+                'украина': 'Ukraine',
+                'ukraine': 'Ukraine',
+                
+                # Восточная Европа
+                'польша': 'Poland',
+                'poland': 'Poland',
+                'чехия': 'Czech Republic',
+                'czech republic': 'Czech Republic',
+                'венгрия': 'Hungary',
+                'hungary': 'Hungary',
+                'румыния': 'Romania',
+                'romania': 'Romania',
+                'болгария': 'Bulgaria',
+                'bulgaria': 'Bulgaria',
+                'сербия': 'Serbia',
+                'serbia': 'Serbia',
+                'хорватия': 'Croatia',
+                'croatia': 'Croatia',
+                'словения': 'Slovenia',
+                'slovenia': 'Slovenia',
+                'словакия': 'Slovakia',
+                'slovakia': 'Slovakia',
+                
+                # Балтика и Скандинавия
+                'литва': 'Lithuania',
+                'lithuania': 'Lithuania',
+                'латвия': 'Latvia',
+                'latvia': 'Latvia',
+                'эстония': 'Estonia',
+                'estonia': 'Estonia',
+                'финляндия': 'Finland',
+                'finland': 'Finland',
+                'швеция': 'Sweden',
+                'sweden': 'Sweden',
+                'норвегия': 'Norway',
+                'norway': 'Norway',
+                'дания': 'Denmark',
+                'denmark': 'Denmark',
+                
+                # Западная Европа
+                'нидерланды': 'Netherlands',
+                'голландия': 'Netherlands',
+                'netherlands': 'Netherlands',
+                'holland': 'Netherlands',
+                'бельгия': 'Belgium',
+                'belgium': 'Belgium',
+                'швейцария': 'Switzerland',
+                'switzerland': 'Switzerland',
+                'австрия': 'Austria',
+                'austria': 'Austria',
+                'португалия': 'Portugal',
+                'portugal': 'Portugal',
+                'греция': 'Greece',
+                'greece': 'Greece',
+                'кипр': 'Cyprus',
+                'cyprus': 'Cyprus',
+                'мальта': 'Malta',
+                'malta': 'Malta',
+                'ирландия': 'Ireland',
+                'ireland': 'Ireland',
+                'исландия': 'Iceland',
+                'iceland': 'Iceland',
+            }
+            
+            country_lower = country_ru.lower().strip()
+            _logger.info(f"[ПЕРЕВОД СТРАНЫ] 🔍 Ищем в словаре: '{country_lower}'")
+            
+            if country_lower in country_mapping:
+                result = country_mapping[country_lower]
+                _logger.info(f"[ПЕРЕВОД СТРАНЫ] 📚 Найдено в словаре: '{country_ru}' -> '{result}'")
+                return result
+            else:
+                _logger.info(f"[ПЕРЕВОД СТРАНЫ] ❌ Не найдено в словаре: '{country_lower}'")
+            
+            # Если не найдено в словаре, используем Яндекс GPT
+            _logger.info(f"[ПЕРЕВОД СТРАНЫ] 🤖 Используем Яндекс GPT для перевода: '{country_ru}'")
+            
+            prompt = f"""Переведи название страны на английский язык. Отвечай ТОЛЬКО названием страны на английском.
+
+{country_ru} = """
+
+            # Используем существующий метод для перевода через Яндекс GPT
+            translated = self._translate_text_via_yandex_gpt(prompt)
+            
+            _logger.info(f"[ПЕРЕВОД СТРАНЫ] 🔍 Сырой ответ от Яндекс GPT: '{translated}'")
+            
+            if translated and translated.strip():
+                # Очищаем результат от лишних символов
+                result = translated.strip().replace('"', '').replace("'", "")
+                
+                # ПРОВЕРЯЕМ, НЕ ВЕРНУЛ ЛИ GPT ВЕСЬ ПРОМПТ
+                if prompt in result or len(result) > 50:
+                    _logger.warning(f"[ПЕРЕВОД СТРАНЫ] ⚠️ Яндекс GPT вернул промпт или слишком длинный ответ: '{result[:100]}...'")
+                    # Пробуем извлечь только последнюю строку (возможный ответ)
+                    lines = result.split('\n')
+                    if lines:
+                        last_line = lines[-1].strip()
+                        if last_line and len(last_line) < 30 and not self._is_russian_text(last_line):
+                            _logger.info(f"[ПЕРЕВОД СТРАНЫ] 🔄 Извлекли ответ из последней строки: '{last_line}'")
+                            return last_line
+                
+                # Проверяем, что результат не содержит русских символов и разумной длины
+                if not self._is_russian_text(result) and len(result) < 30:
+                    _logger.info(f"[ПЕРЕВОД СТРАНЫ] ✅ Яндекс GPT перевел: '{country_ru}' -> '{result}'")
+                    return result
+                else:
+                    _logger.warning(f"[ПЕРЕВОД СТРАНЫ] ⚠️ Яндекс GPT вернул неподходящий текст: '{result[:50]}...'")
+            
+            # Если перевод не удался, возвращаем оригинал
+            _logger.warning(f"[ПЕРЕВОД СТРАНЫ] ❌ Не удалось перевести '{country_ru}', используем оригинал")
+            return country_ru
+            
+        except Exception as e:
+            _logger.error(f"[ПЕРЕВОД СТРАНЫ] ❌ Ошибка при переводе страны '{country_ru}': {e}")
+            return country_ru
     
     def _is_agent_allowed_for_individual_document(self):
         """Проверяет, разрешена ли генерация документа 'Индивидуал' для текущего агента"""
@@ -1305,9 +1727,18 @@ class ZayavkaMethods(models.Model):
         try:
             # Декодируем DOCX
             docx_bytes = base64.b64decode(docx_base64)
-            
+
             # Используем существующую функцию конвертации
-            pdf_base64 = self._convert_docx_to_pdf(docx_bytes)
+            # pdf_base64 = self._convert_docx_to_pdf(docx_bytes)
+
+            
+            # Для индивидуальных документов используем Spire.Doc для высокой точности форматирования
+            if sign_individual:
+                _logger.info("🎯 Используем Spire.Doc для конвертации индивидуального документа")
+                pdf_base64 = self._convert_docx_to_pdf_spire(docx_bytes)
+            else:
+                # Для остальных документов используем стандартный метод
+                pdf_base64 = self._convert_docx_to_pdf(docx_bytes)
             
             # Если нужно подписать документ "Индивидуал"
             if sign_individual and pdf_base64:
@@ -1671,10 +2102,36 @@ class ZayavkaMethods(models.Model):
         if self.exporter_importer_name:
             beneficiary = str(self.exporter_importer_name).strip()
         
-        # Получаем страну
+        # Получаем страну с переводом на английский если нужно
         country = ""
         if self.country_id and hasattr(self.country_id, 'name') and self.country_id.name:
-            country = str(self.country_id.name).strip()
+            country_ru = str(self.country_id.name).strip()
+            
+            # Проверяем, нужен ли перевод (если страна на русском языке)
+            is_russian = self._is_russian_text(country_ru)
+            _logger.info(f"[ЗАЯВЛЕНИЕ] 🔍 Анализ страны '{country_ru}': is_russian={is_russian}")
+            
+            if is_russian:
+                _logger.info(f"[ЗАЯВЛЕНИЕ] 🌍 Переводим страну с русского: '{country_ru}'")
+                country_en = self._translate_country_to_english(country_ru)
+                if country_en and country_en != country_ru:
+                    country = country_en
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] ✅ Страна переведена: '{country_ru}' -> '{country}'")
+                else:
+                    country = country_ru
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] ⚠️ Перевод не удался, используем оригинал: '{country}'")
+            else:
+                # ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Возможно, это смешанный текст или нужен принудительный перевод
+                _logger.info(f"[ЗАЯВЛЕНИЕ] 🔍 Страна распознана как НЕ русская: '{country_ru}'")
+                
+                # Проверим, есть ли эта страна в нашем словаре (принудительный перевод)
+                country_en = self._translate_country_to_english(country_ru)
+                if country_en and country_en != country_ru:
+                    country = country_en
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] 🔄 Принудительный перевод из словаря: '{country_ru}' -> '{country}'")
+                else:
+                    country = country_ru
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] 📝 Оставляем как есть: '{country}'")
         
         # Получаем валюту с правильным отображением
         currency_display = ""
@@ -1716,33 +2173,84 @@ class ZayavkaMethods(models.Model):
         beneficiary_addr = str(self.beneficiary_address).strip() if self.beneficiary_address else ""
         _logger.info(f"beneficiary_address обработанный: '{beneficiary_addr}'")
         
-        return {
-            # Поля которые уже работают (точные совпадения из логов)
-            'VALUE DATE*': datetime.now().strftime('%d.%m.%Y'),
-            'VALUE DATE *': datetime.now().strftime('%d.%m.%Y'),
-            'AMOUNT*': f"{self.amount:.2f}" if self.amount else "0.00",
-            'AMOUNT *': f"{self.amount:.2f}" if self.amount else "0.00",
+        # Данные для docxtpl - добавляем множественные варианты именования
+        current_date = datetime.now().strftime('%d.%m.%Y')
+        amount_str = f"{self.amount:.2f}" if self.amount else "0.00"
+        
+        template_data = {
+            # Основные поля (английские названия)
+            'VALUE_DATE': current_date,
+            'AMOUNT': amount_str,
+            'CURRENCY': currency_display,
+            'BILL_TO': bill_to,
+            'BENEFICIARY': beneficiary,
+            'BENEFICIARY_COUNTRY': country,
+            'BENEFICIARY_ADDRESS': beneficiary_addr,
+            'ACCOUNT': self.iban_accc or "",
+            'BENEF_BANK': self.beneficiary_bank_name or "",
+            'ADDRESS': self.bank_address or "",
+            'SWIFT': self.bank_swift or "",
+            'PAYMENT_DETAILS': payment_details,
+            
+            # Варианты с пробелами и звездочками
+            'VALUE DATE': current_date,
+            'VALUE DATE*': current_date,
+            'VALUE DATE *': current_date,
+            'AMOUNT*': amount_str,
+            'AMOUNT *': amount_str,
             'CURRENCY*': currency_display,
             'CURRENCY *': currency_display,
+            'BILL TO': bill_to,
             'BILL TO*': bill_to,
             'BILL TO *': bill_to,
             'BENEFICIARY*': beneficiary,
             'BENEFICIARY *': beneficiary,
+            'BENEFICIARY COUNTRY': country,
             'BENEFICIARY COUNTRY*': country,
             'BENEFICIARY COUNTRY *': country,
+            'BENEFICIARY ADDRESS': beneficiary_addr,
             'BENEFICIARY ADDRESS*': beneficiary_addr,
             'BENEFICIARY ADDRESS *': beneficiary_addr,
             'ACCOUNT*': self.iban_accc or "",
             'ACCOUNT *': self.iban_accc or "",
+            'BENEF BANK': self.beneficiary_bank_name or "",
+            'BENEF.BANK': self.beneficiary_bank_name or "",
             'BENEF.BANK*': self.beneficiary_bank_name or "",
             'BENEF.BANK *': self.beneficiary_bank_name or "",
             'ADDRESS*': self.bank_address or "",
             'ADDRESS *': self.bank_address or "", 
             'SWIFT*': self.bank_swift or "",
             'SWIFT *': self.bank_swift or "",
+            'PAYMENT DETAILS': payment_details,
             'PAYMENT DETAILS*': payment_details,
             'PAYMENT DETAILS *': payment_details,
+            
+            # Возможные русские варианты
+            'дата': current_date,
+            'сумма': amount_str,
+            'валюта': currency_display,
+            'плательщик': bill_to,
+            'получатель': beneficiary,
+            'страна_получателя': country,
+            'адрес_получателя': beneficiary_addr,
+            'счет': self.iban_accc or "",
+            'банк_получателя': self.beneficiary_bank_name or "",
+            'адрес_банка': self.bank_address or "",
+            'свифт': self.bank_swift or "",
+            'назначение_платежа': payment_details,
+            
+            # Возможные варианты с номером заявки
+            'номер_заявки': self.zayavka_num or self.zayavka_id or "",
+            'zayavka_num': self.zayavka_num or self.zayavka_id or "",
+            'zayavka_id': str(self.zayavka_id) if self.zayavka_id else "",
         }
+        
+        _logger.info("=== ФИНАЛЬНЫЕ ДАННЫЕ ДЛЯ ШАБЛОНА ===")
+        for key, value in template_data.items():
+            _logger.info(f"'{key}': '{value}'")
+        _logger.info("=== КОНЕЦ ДАННЫХ ===")
+        
+        return template_data
     
     def _generate_document_from_template(self, template, template_data):
         """Генерирует документ из шаблона с подстановкой данных"""
@@ -1797,12 +2305,14 @@ class ZayavkaMethods(models.Model):
             return None
     
     def _generate_statement_document_from_template(self, template, template_data):
-        """Генерирует документ заявления из шаблона с заполнением таблиц"""
+        """Генерирует документ заявления из шаблона с использованием docxtpl (безопасный подход)"""
         import base64
         import tempfile
         import os
         
         try:
+            _logger.info("[ЗАЯВЛЕНИЕ] Используем безопасный метод генерации с docxtpl")
+            
             # Декодируем файл шаблона
             template_bytes = base64.b64decode(template.template_file)
             
@@ -1812,19 +2322,48 @@ class ZayavkaMethods(models.Model):
                 temp_file_path = temp_file.name
             
             try:
-                # Обрабатываем DOCX файл специальным методом для таблиц
-                result_bytes = self._process_statement_docx_template(temp_file_path, template_data)
-                if result_bytes:
-                    return base64.b64encode(result_bytes).decode('utf-8')
+                # ИСПОЛЬЗУЕМ ТОТ ЖЕ БЕЗОПАСНЫЙ МЕТОД, ЧТО И ДЛЯ АКТОВ/ИНДИВИДУАЛОВ
+                processed_doc = self._process_docx_template(temp_file_path, template_data)
+                
+                # Если получили объект DocxTemplate, сохраняем его в байты
+                if hasattr(processed_doc, 'save'):
+                    # docxtpl возвращает объект DocxTemplate
+                    with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as result_file:
+                        result_file_path = result_file.name
+                    
+                    try:
+                        # Сохраняем документ
+                        processed_doc.save(result_file_path)
+                        # Читаем байты
+                        with open(result_file_path, 'rb') as f:
+                            result_bytes = f.read()
+                        
+                        _logger.info("[ЗАЯВЛЕНИЕ] ✅ Документ успешно сгенерирован с docxtpl")
+                        return base64.b64encode(result_bytes).decode('utf-8')
+                    finally:
+                        # Удаляем временный файл
+                        try:
+                            os.unlink(result_file_path)
+                        except Exception:
+                            pass
                 else:
-                    return None
+                    # Старый метод возвращает байты напрямую
+                    if processed_doc:
+                        _logger.info("[ЗАЯВЛЕНИЕ] ✅ Документ успешно сгенерирован (legacy метод)")
+                        return base64.b64encode(processed_doc).decode('utf-8')
+                    else:
+                        _logger.error("[ЗАЯВЛЕНИЕ] ❌ Не удалось сгенерировать документ")
+                        return None
+                        
             finally:
                 # Удаляем временный файл
                 if os.path.exists(temp_file_path):
                     os.unlink(temp_file_path)
                     
         except Exception as e:
-            _logger.error(f"Ошибка при генерации документа заявления из шаблона: {str(e)}")
+            _logger.error(f"[ЗАЯВЛЕНИЕ] Ошибка при генерации документа заявления: {str(e)}")
+            import traceback
+            _logger.error(f"[ЗАЯВЛЕНИЕ] Traceback: {traceback.format_exc()}")
             return None
     
     def _process_docx_template(self, docx_path, template_data):
@@ -1834,7 +2373,7 @@ class ZayavkaMethods(models.Model):
             
             # Импортируем docxtpl
             try:
-                from docxtpl import DocxTemplate
+                from docxtpl import DocxTemplate  # type: ignore
             except ImportError:
                 _logger.error("docxtpl не установлен! Используем старый метод...")
                 return self._process_docx_template_legacy(docx_path, template_data)

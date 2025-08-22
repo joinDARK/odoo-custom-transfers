@@ -12,3 +12,4 @@ class Country(models.Model, AmanatBaseModel):
     code = fields.Integer(string='Код страны', required=True, tracking=True)
     full_name = fields.Text(string='Полное название', tracking=True)
     zayavka_id = fields.Many2one('amanat.zayavka', string='Заявка', tracking=True)
+    eng_country_name = fields.Char(string='Английское название страны', tracking=True)
