@@ -231,7 +231,7 @@
         name="Касса Иван"
         parent="amanat_menu_orders_group"
         action="kassa_ivan_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Кассы 2 -->
@@ -240,7 +240,7 @@
         name="Касса 2"
         parent="amanat_menu_orders_group"
         action="kassa_2_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Кассы 3 -->
@@ -249,7 +249,7 @@
         name="Касса 3"
         parent="amanat_menu_orders_group"
         action="kassa_3_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector"
     />
 
     <!-- Меню для Прайс лист партнеры-->
