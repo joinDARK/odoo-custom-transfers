@@ -118,10 +118,15 @@ class ZayavkaComputes(models.Model):
             else:
                 record.effective_rate = 0
 
-    @api.depends('reward_percent', 'rate_field', 'amount')
+    # @api.depends('reward_percent', 'rate_field', 'amount')
+    # def _compute_client_reward(self):
+    #     for rec in self:
+    #         rec.client_reward = rec.reward_percent * rec.rate_field * rec.amount
+    
+    @api.depends('reward_percent_in_contract', 'rate_field', 'amount')
     def _compute_client_reward(self):
         for rec in self:
-            rec.client_reward = rec.reward_percent * rec.rate_field * rec.amount
+            rec.client_reward = rec.reward_percent_in_contract * rec.rate_field * rec.amount
 
     @api.depends('best_rate', 'hidden_commission', 'amount', 'plus_currency', 'total_client', 'rate_real')
     def _compute_our_client_reward(self):
@@ -158,7 +163,7 @@ class ZayavkaComputes(models.Model):
                 rec.non_our_client_reward = rec.total_client - (rec.rate_real + rec.our_client_reward)
             else:
                 # ! Вознаграждение не наше Клиент = 0, если скрытая комиссия == 0
-                _logger.info(f'rec.non_our_client_reward: 0')
+                _logger.info('rec.non_our_client_reward: 0')
                 rec.non_our_client_reward = 0.0
 
     @api.depends('application_amount_rub_contract', 'client_reward')
@@ -456,10 +461,15 @@ class ZayavkaComputes(models.Model):
         for rec in self:
             rec.fin_res_client_real_rub = (rec.fin_res_client_real_usd or 0.0) * (rec.payer_cross_rate_rub or 0.0)
 
-    @api.depends('reward_percent', 'rate_field', 'amount')
+    # @api.depends('reward_percent', 'rate_field', 'amount')
+    # def _compute_sber_reward(self):
+    #     for rec in self:
+    #         rec.sber_reward = rec.reward_percent * rec.rate_field * rec.amount
+
+    @api.depends('reward_percent_in_contract', 'rate_field', 'amount')
     def _compute_sber_reward(self):
         for rec in self:
-            rec.sber_reward = rec.reward_percent * rec.rate_field * rec.amount
+            rec.sber_reward = rec.reward_percent_in_contract * rec.rate_field * rec.amount
 
     @api.depends('rate_field', 'best_rate', 'amount', 'plus_currency', 'sber_reward')
     def _compute_our_sber_reward(self):
@@ -1423,14 +1433,35 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.status_range = 'no'
 
-    @api.depends('export_agent_flag', 'is_sovcombank_contragent', 'is_sberbank_contragent', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate', 'hand_reward_percent')
+    # @api.depends('export_agent_flag', 'is_sovcombank_contragent', 'is_sberbank_contragent', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate', 'hand_reward_percent')
+    # def _compute_application_amount_rub_contract(self):
+    #     for record in self:
+    #         if record.deal_type == 'export':
+    #             if record.export_agent_flag:
+    #                 comp_amount_rub = record.amount * record.best_rate
+    #             else:
+    #                 comp_amount_rub = record.amount * (record.rate_field - (record.rate_field * record.hand_reward_percent))
+    #         else:
+    #             comp_amount_rub = record.amount * record.rate_field
+
+    #         if record.export_agent_flag:
+    #             if record.is_sberbank_contragent and not record.is_sovcombank_contragent:
+    #                 record.application_amount_rub_contract = comp_amount_rub - record.sber_reward
+    #             elif record.is_sovcombank_contragent and not record.is_sberbank_contragent:
+    #                 record.application_amount_rub_contract = comp_amount_rub - record.sovok_reward
+    #             else:
+    #                 record.application_amount_rub_contract = comp_amount_rub - record.client_reward
+    #         else:
+    #             record.application_amount_rub_contract = comp_amount_rub
+
+    @api.depends('export_agent_flag', 'is_sovcombank_contragent', 'is_sberbank_contragent', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate', 'reward_percent_in_contract')
     def _compute_application_amount_rub_contract(self):
         for record in self:
             if record.deal_type == 'export':
                 if record.export_agent_flag:
                     comp_amount_rub = record.amount * record.best_rate
                 else:
-                    comp_amount_rub = record.amount * (record.rate_field - (record.rate_field * record.hand_reward_percent))
+                    comp_amount_rub = record.amount * (record.rate_field - (record.rate_field * record.reward_percent_in_contract))
             else:
                 comp_amount_rub = record.amount * record.rate_field
 

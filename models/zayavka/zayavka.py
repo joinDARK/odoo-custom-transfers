@@ -1118,11 +1118,11 @@ class Zayavka(models.Model, AmanatBaseModel):
         digits=(16, 6)
     )
 
-    # reward_percent_in_contract = fields.Float(
-    #     string='% Вознаграждения по договору',
-    #     tracking=True,
-    #     digits=(16, 4)
-    # )
+    reward_percent_in_contract = fields.Float(
+        string='% Вознаграждения по договору',
+        tracking=True,
+        digits=(16, 4)
+    )
 
     equivalent_amount_usd = fields.Float(
         string='Сумма эквивалент $',
@@ -1467,15 +1467,6 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Прочие документы'
     )
 
-    # TODO: Удалить Заявку Вход
-    zayavka_start_attachments = fields.Many2many(
-        'ir.attachment', 
-        'zayavka_start_attachment_rel', 
-        'zayavka_id', 
-        'attachment_id', 
-        string='Заявка Вход'
-    )
-
     zayavka_end_attachments = fields.Many2many(
         'ir.attachment', 
         'zayavka_end_attachment_rel', 
@@ -1483,14 +1474,6 @@ class Zayavka(models.Model, AmanatBaseModel):
         'attachment_id', 
         string='Заявка Выход'
     )
-
-    # assignment_start_attachments = fields.Many2many(
-    #     'ir.attachment', 
-    #     'assignment_start_attachment_rel', 
-    #     'zayavka_id', 
-    #     'attachment_id', 
-    #     string='Поручение Вход'
-    # )
 
     assignment_end_attachments = fields.Many2many(
         'ir.attachment', 
@@ -1508,11 +1491,69 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Cкрин сбер'
     )
 
+    # Недостающие поля для реорганизации документов
+    additional_agreement_attachments = fields.Many2many(
+        'ir.attachment', 
+        'additional_agreement_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Доп соглашение к поручению'
+    )
+
+    assignment_input_attachments = fields.Many2many(
+        'ir.attachment', 
+        'assignment_input_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Поручение вход'
+    )
+
+    # Переименование для консистентности - заменяем zayavka_start_attachments на zayavka_attachments
+    zayavka_attachments = fields.Many2many(
+        'ir.attachment', 
+        'zayavka_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Заявка вход'
+    )
+
     # Поле для отображения документов договоров контрагента
     contragent_contract_attachments = fields.Many2many(
         'ir.attachment',
         compute='_compute_contragent_contract_attachments',
         string='Договоры контрагента'
+    )
+
+    contract_attachments = fields.Many2many(
+        'ir.attachment',
+        'amanat_zayavka_contract_attachment_rel',
+        'zayavka_id',
+        'attachment_id',
+        string='Контракт'
+    )
+
+    contract_appendix_attachments = fields.Many2many(
+        'ir.attachment',
+        'amanat_zayavka_contract_appendix_attachment_rel',
+        'zayavka_id',
+        'attachment_id',
+        string='Приложение к контракту'
+    )
+
+    vbk_attachments = fields.Many2many(
+        'ir.attachment',
+        'amanat_zayavka_vbk_attachment_rel',
+        'zayavka_id',
+        'attachment_id',
+        string='ВБК'
+    )
+
+    invoice_primary_attachments = fields.Many2many(
+        'ir.attachment',
+        'amanat_zayavka_invoice_primary_attachment_rel',
+        'zayavka_id',
+        'attachment_id',
+        string='Инвойс первичный'
     )
 
     money_ran_out = fields.Boolean(string='Сели деньги', tracking=True, default=False)
@@ -2443,8 +2484,10 @@ class Zayavka(models.Model, AmanatBaseModel):
         many2many_fields = [
             'zayavka_attachments', 'invoice_attachments', 'assignment_attachments',
             'swift_attachments', 'swift103_attachments', 'swift199_attachments', 
-            'report_attachments', 'other_documents_attachments', 'zayavka_start_attachments', 
-            'zayavka_end_attachments', 'assignment_end_attachments', 'screen_sber_attachments'
+            'report_attachments', 'other_documents_attachments', 'zayavka_end_attachments', 
+            'assignment_end_attachments', 'screen_sber_attachments', 'contract_attachments',
+            'contract_appendix_attachments', 'invoice_primary_attachments', 'vbk_attachments',
+            'additional_agreement_attachments', 'assignment_input_attachments'
         ]
         # Note: contragent_contract_attachments исключено, так как это computed поле
         
@@ -2676,8 +2719,10 @@ class Zayavka(models.Model, AmanatBaseModel):
         many2many_fields = [
             'zayavka_attachments', 'invoice_attachments', 'assignment_attachments',
             'swift_attachments', 'swift103_attachments', 'swift199_attachments', 
-            'report_attachments', 'other_documents_attachments', 'zayavka_start_attachments', 
-            'zayavka_end_attachments', 'assignment_end_attachments', 'screen_sber_attachments'
+            'report_attachments', 'other_documents_attachments', 'zayavka_end_attachments', 
+            'assignment_end_attachments', 'screen_sber_attachments', 'contract_attachments',
+            'contract_appendix_attachments', 'invoice_primary_attachments', 'vbk_attachments',
+            'additional_agreement_attachments', 'assignment_input_attachments'
         ]
         
         one2many_fields = [
@@ -2769,6 +2814,13 @@ class Zayavka(models.Model, AmanatBaseModel):
         ('pdf', 'PDF'),
         ('docx', 'Word')
     ], string='Формат документа', default='pdf', help='Выберите формат для генерации документа "Индивидуал"')
+    
+    # Поле для выбора типа шаблона Индивидуал
+    fixed_reward = fields.Boolean(
+        string='Фиксированное вознаграждение',
+        default=True,
+        help='Если отмечено - генерируется текущий шаблон "Индивидуал", если не отмечено - генерируется старый формат "Индивидуал старый"'
+    )
     
     # Вычисляемое поле для проверки разрешения генерации
     can_generate_individual = fields.Boolean(

@@ -23,8 +23,11 @@ class ForKhalidaAutomations(models.Model):
         # 2. Используем compute-поле subagent_payer_ids напрямую
         subagent_payers = self.subagent_payer_ids
         rate_fixation_date = self.rate_fixation_date
+        payment_date = self.payment_date
         equivalent_sum = self.equivalent_amount_usd
         reward_percent = self.reward_percent
+
+        _logger.info(f"[Khalida Automation] Заявка {self.id}: payment_date={payment_date}, rate_fixation_date={rate_fixation_date}, equivalent_sum={equivalent_sum}, reward_percent={reward_percent}")
 
         # Применяем правила
         self.apply_rules_by_deal_closed_date()
@@ -47,13 +50,15 @@ class ForKhalidaAutomations(models.Model):
             return
 
         # 4. Поиск подходящей записи в "Прайс лист проведение"
+        # Передаем payment_date, но метод сам проверит его наличие
         matched_carrying_out = self._find_matching_carrying_out_record(
-            subagent_payers, rate_fixation_date, equivalent_sum, reward_percent
+            subagent_payers, None, equivalent_sum, reward_percent
         )
 
         # 5. Поиск подходящей записи в "Прайс лист Плательщика Прибыль"
+        # Передаем payment_date, но метод сам проверит его наличие
         matched_profit = self._find_matching_profit_record(
-            subagent_payers, rate_fixation_date, equivalent_sum, reward_percent
+            subagent_payers, None, equivalent_sum, reward_percent
         )
 
         # 6. Поиск подходящей записи в "Прайс лист Партнеры"
@@ -73,22 +78,42 @@ class ForKhalidaAutomations(models.Model):
         if update_vals:
             self.write(update_vals)
 
+        # Логируем результаты с уведомлениями о пропущенных прайс-листах
+        carrying_out_msg = matched_carrying_out.id if matched_carrying_out else ('пропущен (нет payment_date)' if not self.payment_date else 'нет')
+        profit_msg = matched_profit.id if matched_profit else ('пропущен (нет payment_date)' if not self.payment_date else 'нет')
+        partners_msg = matched_partners.id if matched_partners else 'нет'
+        
         _logger.info(f"[PriceList] Заявка {self.id} обновлена: "
-                    f"Прайс лист проведение -> {matched_carrying_out.id if matched_carrying_out else 'нет'}, "
-                    f"Прайс лист Плательщика Прибыль -> {matched_profit.id if matched_profit else 'нет'}, "
-                    f"Прайс лист Партнеры -> {matched_partners.id if matched_partners else 'нет'}")
+                    f"Прайс лист проведение -> {carrying_out_msg}, "
+                    f"Прайс лист Плательщика Прибыль -> {profit_msg}, "
+                    f"Прайс лист Партнеры -> {partners_msg}")
     
     def _find_matching_carrying_out_record(self, subagent_payers, rate_fixation_date, equivalent_sum, reward_percent):
         """
         Поиск подходящей записи в модели amanat.price_list_payer_carrying_out
+        Использует payment_date (передано в оплату) вместо rate_fixation_date
         """
         PriceListCarryingOut = self.env['amanat.price_list_payer_carrying_out']
+
+        # Проверяем наличие payment_date, используем rate_fixation_date как fallback
+        payment_date = self.payment_date
+        if not payment_date:
+            # Используем rate_fixation_date как резервную дату
+            payment_date = self.rate_fixation_date
+            if not payment_date:
+                _logger.warning(f"[PriceList Carrying Out] Пропускаем заявку {self.id}: отсутствуют поля 'передано в оплату' (payment_date) и 'дата фиксации курса' (rate_fixation_date)")
+                return None
+            _logger.info(f"[PriceList Carrying Out] Используем rate_fixation_date={payment_date} как fallback для заявки {self.id}")
+        else:
+            _logger.info(f"[PriceList Carrying Out] Используем payment_date={payment_date} для заявки {self.id}")
+        
+        _logger.info(f"[PriceList Carrying Out] Ищем прайс-лист для заявки {self.id} с датой={payment_date}, плательщики={subagent_payers.ids}, сумма={equivalent_sum}, процент={reward_percent}")
 
         # Строим домен для поиска
         domain = [
             ('payer_partners', 'in', subagent_payers.ids),
-            ('date_start', '<=', rate_fixation_date),
-            ('date_end', '>=', rate_fixation_date),
+            ('date_start', '<=', payment_date),
+            ('date_end', '>=', payment_date),
             ('min_application_amount', '<=', equivalent_sum),
             ('max_application_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
@@ -118,8 +143,8 @@ class ForKhalidaAutomations(models.Model):
 
         softDomain = [
             ('payer_partners', 'in', subagent_payers.ids),
-            ('date_start', '<=', rate_fixation_date),
-            ('date_end', '>=', rate_fixation_date),
+            ('date_start', '<=', payment_date),
+            ('date_end', '>=', payment_date),
             ('min_application_amount', '<=', equivalent_sum),
             ('max_application_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
@@ -134,22 +159,39 @@ class ForKhalidaAutomations(models.Model):
         matched_record = PriceListCarryingOut.search(domain, limit=1)
 
         if not matched_record:
-            _logger.info(f"[PriceList] Не найден подходящий прайс-лист за проведение для заявки {self.id}, ищем по общим условиям")
+            _logger.info(f"[PriceList Carrying Out] Не найден подходящий прайс-лист за проведение для заявки {self.id}, ищем по общим условиям")
             matched_record = PriceListCarryingOut.search(softDomain, limit=1)
             
             if not matched_record:
-                _logger.info(f"[PriceList] Не найден подходящий общий прайс-лист за проведение для заявки {self.id}")
-                return
+                _logger.warning(f"[PriceList Carrying Out] Не найден подходящий общий прайс-лист за проведение для заявки {self.id}")
+                _logger.info(f"[PriceList Carrying Out] Использованный домен: {domain}")
+                _logger.info(f"[PriceList Carrying Out] Использованный softDomain: {softDomain}")
+                return None
         
-        _logger.info(f"[PriceList] Найден прайс-лист за проведение: {matched_record.id}")
+        _logger.info(f"[PriceList Carrying Out] Найден прайс-лист за проведение: {matched_record.id} (название: {matched_record.name})")
 
         return matched_record 
 
     def _find_matching_profit_record(self, subagent_payers, rate_fixation_date, equivalent_sum, reward_percent):
         """
         Поиск подходящей записи в модели amanat.price_list_payer_profit
+        Использует payment_date (передано в оплату) вместо rate_fixation_date
         """
         PriceListProfit = self.env['amanat.price_list_payer_profit']
+        
+        # Проверяем наличие payment_date, используем rate_fixation_date как fallback
+        payment_date = self.payment_date
+        if not payment_date:
+            # Используем rate_fixation_date как резервную дату
+            payment_date = self.rate_fixation_date
+            if not payment_date:
+                _logger.warning(f"[PriceList Profit] Пропускаем заявку {self.id}: отсутствуют поля 'передано в оплату' (payment_date) и 'дата фиксации курса' (rate_fixation_date)")
+                return None
+            _logger.info(f"[PriceList Profit] Используем rate_fixation_date={payment_date} как fallback для заявки {self.id}")
+        else:
+            _logger.info(f"[PriceList Profit] Используем payment_date={payment_date} для заявки {self.id}")
+        
+        _logger.info(f"[PriceList Profit] Ищем прайс-лист для заявки {self.id} с датой={payment_date}, плательщики={subagent_payers.ids}, сумма={equivalent_sum}, процент={reward_percent}")
         
         # Подготавливаем значения для гибкого поиска
         contragent_values = [False]
@@ -171,8 +213,8 @@ class ForKhalidaAutomations(models.Model):
         # Строим домен для поиска
         domain = [
             ('payer_subagent_ids', 'in', subagent_payers.ids),
-            ('date_start', '<=', rate_fixation_date),
-            ('date_end', '>=', rate_fixation_date),
+            ('date_start', '<=', payment_date),
+            ('date_end', '>=', payment_date),
             ('min_zayavka_amount', '<=', equivalent_sum),
             ('max_zayavka_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
@@ -201,8 +243,8 @@ class ForKhalidaAutomations(models.Model):
 
         softDomain = [
             ('payer_subagent_ids', 'in', subagent_payers.ids),
-            ('date_start', '<=', rate_fixation_date),
-            ('date_end', '>=', rate_fixation_date),
+            ('date_start', '<=', payment_date),
+            ('date_end', '>=', payment_date),
             ('min_zayavka_amount', '<=', equivalent_sum),
             ('max_zayavka_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
@@ -217,14 +259,16 @@ class ForKhalidaAutomations(models.Model):
         matched_record = PriceListProfit.search(domain, limit=1)
         
         if not matched_record:
-            _logger.info(f"[PriceList] Не найден подходящий прайс-лист плательщика прибыль для заявки {self.id}, ищем по общим условиям")
+            _logger.info(f"[PriceList Profit] Не найден подходящий прайс-лист плательщика прибыль для заявки {self.id}, ищем по общим условиям")
             matched_record = PriceListProfit.search(softDomain, limit=1)
             
             if not matched_record:
-                _logger.info(f"[PriceList] Не найден подходящий общий прайс-лист плательщика прибыль для заявки {self.id}")
-                return
+                _logger.warning(f"[PriceList Profit] Не найден подходящий общий прайс-лист плательщика прибыль для заявки {self.id}")
+                _logger.info(f"[PriceList Profit] Использованный домен: {domain}")
+                _logger.info(f"[PriceList Profit] Использованный softDomain: {softDomain}")
+                return None
         
-        _logger.info(f"[PriceList] Найден прайс-лист прибыль: {matched_record.id}")
+        _logger.info(f"[PriceList Profit] Найден прайс-лист прибыль: {matched_record.id} (название: {matched_record.name})")
 
         return matched_record 
 

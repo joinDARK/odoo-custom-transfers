@@ -218,8 +218,13 @@ class AmanatBaseModel(models.AbstractModel):
                         record._log_activity('update', "\n".join(changes))
         
         # Отправляем real-time уведомление
-        if self.exists():
-            self._send_realtime_notification('update', changed_fields=changed_fields)
+        try:
+            if self.exists():
+                self._send_realtime_notification('update', changed_fields=changed_fields)
+        except Exception as e:
+            # Если транзакция в неудачном состоянии, просто пропускаем уведомление
+            _logger.warning(f"Не удалось отправить real-time уведомление: {e}")
+            pass
         
         return result
 

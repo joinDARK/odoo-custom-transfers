@@ -150,7 +150,7 @@
                     <field name="amount" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
-                    <!-- <field name="reward_percent_in_contract" widget="percentage" /> -->
+                    <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
                   </group>
@@ -237,7 +237,7 @@
                     <field name="amount" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
-                    <!-- <field name="reward_percent_in_contract" widget="percentage" /> -->
+                    <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
                     <field name="jess_rate" groups="!amanat.group_amanat_manager" />
@@ -312,7 +312,7 @@
                     <field name="amount" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
-                    <!-- <field name="reward_percent_in_contract" widget="percentage" /> -->
+                    <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
                     <field name="jess_rate" groups="!amanat.group_amanat_manager" />
@@ -381,115 +381,129 @@
 
             <page string="Документы" groups="!amanat.group_amanat_limited_access">
               <notebook>
-                <page string="Первичные документы">
+                <page string="Первичка">
                   <group string="Первичные документы">
-                    <div class="o-form-group-3">
+                    <div class="o-form-group-2">
                       <group>
-                        <field name="zayavka_output_attachments" widget="amanat_attachment"
+                        <field name="contract_attachments" widget="amanat_attachment"
                           options="{'no_create': False, 'no_open': False}" />
                       </group>
                       <group>
-                        <field name="other_documents_attachments" widget="amanat_attachment"
+                        <field name="contract_appendix_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                      <group>
+                        <field name="invoice_primary_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                      <group>
+                        <field name="vbk_attachments" widget="amanat_attachment"
                           options="{'no_create': False, 'no_open': False}" />
                       </group>
                     </div>
                   </group>
                 </page>
                 <page string="Комплект">
-                  <div class="o-form-group-1">
-                    <group>
-                      <field name="contragent_contract_attachments" widget="amanat_attachment"
-                        options="{'no_create': False, 'no_open': True}" />
-                    </group>
-                    <group class="col-12">
-                      <div class="d-flex gap-2">
-                        <label for="zayavka_attachments">zayavka_attachments</label>
-                        <field name="zayavka_attachments" widget="amanat_attachment"
-                          options="{'accepted_file_extensions': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt'}" />
-                        <!-- <field name="report_attachments" widget="amanat_attachment"
-                        options="{'no_create': False, 'no_open': False}"/> -->
-                        <label for="assignment_attachments">assignment_attachments</label>
+                  <group string="Комплект документов">
+                    <div class="o-form-group-2">
+                      <group>
+                        <field name="contragent_contract_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': True}" />
+                      </group>
+                      <group>
+                        <div class="o_inner_group d-flex">
+                          <button name="action_generate_statement_document" type="object"
+                            string="Генерировать заявление" class="btn-primary" />
+                        </div>
+                        <field name="zayavka_output_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                      <group>
+                        <field name="act_report_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                      <group>
                         <field name="assignment_attachments" widget="amanat_attachment"
                           options="{'no_create': False, 'no_open': False}" />
-                      </div>
-                    </group>
-                    <group>
-                      <div class="o_inner_group d-flex">
-                        <button name="action_generate_statement_document" type="object"
-                          string="Генерировать заявление" class="btn-primary" />
-                      </div>
-                    </group>
-                    
-                    <group>
-                      <field name="act_report_attachments" widget="amanat_attachment"
-                        options="{'no_create': False, 'no_open': False}" />
-                    </group>
-  
-                    <group>
-                      <group class="col-6">
+                      </group>
+                      <group>
+                        <field name="swift_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                      <group>
                         <field name="swift103_attachments" widget="amanat_attachment"
                           options="{'no_create': False, 'no_open': False}" />
                       </group>
-                      <group class="col-6">
+                      <group>
                         <field name="swift199_attachments" widget="amanat_attachment"
                           options="{'no_create': False, 'no_open': False}" />
                       </group>
-                    </group>
-                    <group>
-                      <field name="swift_attachments" widget="amanat_attachment"
-                        options="{'no_create': False, 'no_open': False}" />
-                    </group>
-  
-                    <group>
-                      <field name="screen_sber_attachments" widget="amanat_attachment"
-                        options="{'no_create': False, 'no_open': True}" />
-                    </group>
-                  </div>
+                      <group>
+                        <field name="additional_agreement_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                    </div>
+                  </group>
                 </page>
                 <page string="Прочие документы">
                   <group>
+                    <!-- Генерация документа Индивидуал -->
+                    <field name="can_generate_individual" invisible="1"/>
+                    <div class="card border-0 bg-light p-3 mb-3" invisible="not can_generate_individual">
+                      <div class="card-header bg-transparent border-0 pb-2">
+                        <h6 class="mb-0 text-primary">Генерация документа "Индивидуал"</h6>
+                        <small class="text-muted">Доступно для агентов: СТЕЛЛАР, ИНДО ТРЕЙД, ТДК</small>
+                      </div>
+                      <div class="card-body p-0">
+                        <div class="row align-items-center">
+                          <div class="col-auto">
+                            <field name="document_format" widget="selection" 
+                                   class="o_field_selection" 
+                                   style="min-width: 200px;"
+                                   options="{'no_create': true, 'no_open': true}" />
+                          </div>
+                          <div class="col-auto">
+                            <field name="fixed_reward" widget="boolean_toggle"
+                                   help="Если отмечено - генерируется текущий шаблон 'Индивидуал', если не отмечено - генерируется старый формат 'Индивидуал старый'" />
+                            <label for="fixed_reward" class="small text-muted ml-1">Фиксированное вознаграждение</label>
+                          </div>
+                          <div class="col-auto">
+                            <button name="action_generate_individual_document" type="object"
+                                    string="Генерировать"
+                                    class="btn btn-primary btn-sm"
+                                    help="Генерирует документ 'Индивидуал' в выбранном формате" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Сообщение для неразрешенных агентов -->
+                    <div class="alert alert-info" role="alert" invisible="can_generate_individual">
+                      <strong>Информация:</strong> Генерация документа "Индивидуал" доступна только для агентов: 
+                      <strong>СТЕЛЛАР</strong>, <strong>ИНДО ТРЕЙД</strong>, <strong>ТДК</strong>
+                    </div>
+
                     <div class="o-form-group-2">
                       <group>
-                        <!-- Генерация документа Индивидуал -->
-                        <field name="can_generate_individual" invisible="1"/>
-                        <div class="card border-0 bg-light p-3 mb-3" invisible="not can_generate_individual">
-                          <div class="card-header bg-transparent border-0 pb-2">
-                            <h6 class="mb-0 text-primary">Генерация документа "Индивидуал"</h6>
-                            <small class="text-muted">Доступно для агентов: СТЕЛЛАР, ИНДО ТРЕЙД, ТДК</small>
-                          </div>
-                          <div class="card-body p-0">
-                            <div class="row align-items-center">
-                              <div class="col-auto">
-                                <field name="document_format" widget="selection" 
-                                       class="o_field_selection" 
-                                       style="min-width: 200px;"
-                                       options="{'no_create': true, 'no_open': true}" />
-                              </div>
-                              <div class="col-auto">
-                                <button name="action_generate_individual_document" type="object"
-                                        string="Генерировать"
-                                        class="btn btn-primary btn-sm"
-                                        help="Генерирует документ 'Индивидуал' в выбранном формате" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <!-- Сообщение для неразрешенных агентов -->
-                        <div class="alert alert-info" role="alert" invisible="can_generate_individual">
-                          <strong>Информация:</strong> Генерация документа "Индивидуал" доступна только для агентов: 
-                          <strong>СТЕЛЛАР</strong>, <strong>ИНДО ТРЕЙД</strong>, <strong>ТДК</strong>
-                        </div>
-                        
-                        <!-- Вложения поручения -->
+                        <field name="other_documents_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                      <group>
+                        <field name="zayavka_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                      <group>
+                        <field name="assignment_input_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                      <group>
                         <field name="assignment_end_attachments" widget="amanat_attachment"
                                options="{'no_create': False, 'no_open': False}" />
                       </group>
                       <group>
-                        <field name="invoice_attachments" widget="amanat_attachment"
-                               options="{'no_create': False, 'no_open': False}" />
+                        <field name="screen_sber_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
                       </group>
-                      
                     </div>
                   </group>
                 </page>

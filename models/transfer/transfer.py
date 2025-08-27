@@ -195,6 +195,28 @@ class Transfer(models.Model, AmanatBaseModel):
             unmarked = Wallet.create({'name': 'Неразмеченные'})
         return unmarked.id
 
+    def _get_agentka_wallet(self):
+        """Возвращает ID кошелька 'Агентка' если он существует"""
+        Wallet = self.env['amanat.wallet']
+        agentka = Wallet.search([('name', '=', 'Агентка')], limit=1)
+        if agentka:
+            return agentka.id
+        else:
+            _logger.warning("Кошелек 'Агентка' не найден в системе")
+            return False
+
+    def _set_transit_wallets(self):
+        """Устанавливает кошелек 'Агентка' для всех кошельков при активации транзита"""
+        agentka_wallet_id = self._get_agentka_wallet()
+        if agentka_wallet_id:
+            vals = {
+                'sender_wallet_id': agentka_wallet_id,
+                'receiver_wallet_id': agentka_wallet_id,
+            }
+            _logger.info(f"Устанавливаем кошелек 'Агентка' (ID: {agentka_wallet_id}) для перевода {self.name}")
+            return vals
+        return {}
+
     @api.depends('comment', 'comment_accrual')
     def _compute_combined_comment(self):
         """Объединяет основные комментарии и комментарии начисления через ';'"""
@@ -539,13 +561,13 @@ class Transfer(models.Model, AmanatBaseModel):
             created_money = self.env['amanat.money'].search([('id', '=', money_record.id)])
             created_reconciliation = self.env['amanat.reconciliation'].search([('id', '=', reconciliation_record.id)])
             
-            _logger.info(f"Проверка существования записей:")
+            _logger.info("Проверка существования записей:")
             _logger.info(f"Money record exists: {bool(created_money)}")
             _logger.info(f"Reconciliation record exists: {bool(created_reconciliation)}")
             
             # Проверим, что мы в правильном состоянии транзакции
-            _logger.info(f"Состояние транзакции: {self.env.cr.closed}")
-            _logger.info(f"Создание записей завершено без ошибок")
+            _logger.info("Состояние транзакции: %s", self.env.cr.closed)
+            _logger.info("Создание записей завершено без ошибок")
             
         except Exception as e:
             _logger.error(f"ОШИБКА при создании денежного контейнера и сверки: {str(e)}")
@@ -556,9 +578,9 @@ class Transfer(models.Model, AmanatBaseModel):
             try:
                 order.unlink()
                 _logger.info(f"Удален ордер {order.id} из-за ошибки")
-            except:
-                _logger.error(f"Не удалось удалить ордер {order.id}")
-            raise e
+            except Exception as delete_error:
+                _logger.error("Не удалось удалить ордер %s: %s", order.id, str(delete_error))
+            raise
 
     def _get_currency_fields(self, currency, amount):
         mapping = {
@@ -670,7 +692,23 @@ class Transfer(models.Model, AmanatBaseModel):
                 _logger.error(f"Полный traceback: {traceback.format_exc()}")
                 raise e
 
-        _logger.info(f"Transfer write() завершен успешно")
+        # Обработка транзита - автоматическая установка кошелька "Агентка"
+        if 'is_transit' in vals and vals['is_transit']:
+            to_set_transit = self.filtered(lambda rec: rec.is_transit)
+            if to_set_transit:
+                _logger.info(f"Обрабатываем установку кошелька 'Агентка' для транзитных переводов: {[rec.name for rec in to_set_transit]}")
+                try:
+                    for rec in to_set_transit:
+                        transit_vals = rec._set_transit_wallets()
+                        if transit_vals:
+                            rec.with_context(skip_automation=True).write(transit_vals)
+                            _logger.info(f"Установлен кошелек 'Агентка' для перевода {rec.name}")
+                    _logger.info("Завершили обработку транзитных переводов")
+                except Exception as e:
+                    _logger.error(f"ОШИБКА при обработке транзитных переводов: {str(e)}")
+                    raise e
+
+        _logger.info("Transfer write() завершен успешно")
         return res
     
     def _delete_related_records(self):
@@ -949,49 +987,65 @@ class Transfer(models.Model, AmanatBaseModel):
         return defaults
 
     @api.model
-    def create(self, vals):
-        _logger.info(f"Transfer create() вызван с vals: {vals}")
+    def create(self, vals_list):
+        if not isinstance(vals_list, list):
+            vals_list = [vals_list]
         
-        # Автоматически устанавливаем галочку "Транзит" для пользователей с соответствующей ролью
-        if 'is_transit' not in vals and self.env.user.has_group('amanat.group_amanat_transit_only'):
-            vals['is_transit'] = True
-            _logger.info(f"Автоматически установлена галочка 'Транзит' при создании для пользователя {self.env.user.name}")
+        records = self.env['amanat.transfer']
+        for vals in vals_list:
+            _logger.info(f"Transfer create() вызван с vals: {vals}")
+            
+            # Автоматически устанавливаем галочку "Транзит" для пользователей с соответствующей ролью
+            if 'is_transit' not in vals and self.env.user.has_group('amanat.group_amanat_transit_only'):
+                vals['is_transit'] = True
+                _logger.info(f"Автоматически установлена галочка 'Транзит' при создании для пользователя {self.env.user.name}")
+            
+            # Найдём или создадим кошелёк «Неразмеченные»
+            Wallet = self.env['amanat.wallet']
+            unmarked = Wallet.search([('name', '=', 'Неразмеченные')], limit=1)
+            if not unmarked:
+                unmarked = Wallet.create({'name': 'Неразмеченные'})
+            # Если в vals не задан кошелёк отправителя/получателя — подставляем
+            if not vals.get('sender_wallet_id'):
+                vals['sender_wallet_id'] = unmarked.id
+            if not vals.get('receiver_wallet_id'):
+                vals['receiver_wallet_id'] = unmarked.id
+            if not vals.get('intermediary_2_wallet_id'):
+                vals['intermediary_2_wallet_id'] = unmarked.id
+            if not vals.get('intermediary_1_wallet_id'):
+                vals['intermediary_1_wallet_id'] = unmarked.id
+
+        # Создание записей
+        records = super(Transfer, self).create(vals_list)
         
-        # Найдём или создадим кошелёк «Неразмеченные»
-        Wallet = self.env['amanat.wallet']
-        unmarked = Wallet.search([('name', '=', 'Неразмеченные')], limit=1)
-        if not unmarked:
-            unmarked = Wallet.create({'name': 'Неразмеченные'})
-        # Если в vals не задан кошелёк отправителя/получателя — подставляем
-        if not vals.get('sender_wallet_id'):
-            vals['sender_wallet_id'] = unmarked.id
-        if not vals.get('receiver_wallet_id'):
-            vals['receiver_wallet_id'] = unmarked.id
-        if not vals.get('intermediary_2_wallet_id'):
-            vals['intermediary_2_wallet_id'] = unmarked.id
-        if not vals.get('intermediary_1_wallet_id'):
-            vals['intermediary_1_wallet_id'] = unmarked.id
+        for record in records:
+            _logger.info(f"Создана запись перевода с ID: {record.id}")
 
-        # Создание записи
-        record = super(Transfer, self).create(vals)
-        _logger.info(f"Создана запись перевода с ID: {record.id}")
+            # Автоматически установить кошелек "Агентка" если установлен флаг транзит
+            if record.is_transit:
+                _logger.info(f"Автоматически устанавливаем кошелек 'Агентка' для транзитного перевода {record.name}")
+                transit_vals = record._set_transit_wallets()
+                if transit_vals:
+                    record.with_context(skip_automation=True).write(transit_vals)
+                    _logger.info("Завершили автоматическую установку кошелька 'Агентка'")
 
-        # Автоматически создать ордера, если установлен флаг
-        if record.create_order and record.state == 'open':
-            _logger.info(f"Автоматически создаем ордера для перевода {record.name}")
-            record.create_transfer_orders()
-            record.with_context(skip_automation=True).write({'create_order': False})
-            _logger.info("Завершили автоматическое создание ордеров")
+            # Автоматически создать ордера, если установлен флаг
+            if record.create_order and record.state == 'open':
+                _logger.info(f"Автоматически создаем ордера для перевода {record.name}")
+                record.create_transfer_orders()
+                record.with_context(skip_automation=True).write({'create_order': False})
+                _logger.info("Завершили автоматическое создание ордеров")
 
-        # Автоматически создать начисление, если установлен флаг
-        if record.create_accrual:
-            _logger.info(f"Автоматически создаем начисление для перевода {record.name}")
-            record._create_accrual_reconciliation()
-            record.with_context(skip_automation=True).write({'create_accrual': False})
-            _logger.info("Завершили автоматическое создание начисления")
+            # Автоматически создать начисление, если установлен флаг
+            if record.create_accrual:
+                _logger.info(f"Автоматически создаем начисление для перевода {record.name}")
+                record._create_accrual_reconciliation()
+                record.with_context(skip_automation=True).write({'create_accrual': False})
+                _logger.info("Завершили автоматическое создание начисления")
 
-        _logger.info(f"Transfer create() завершен успешно для записи {record.name}")
-        return record
+            _logger.info(f"Transfer create() завершен успешно для записи {record.name}")
+        
+        return records
 
     def _get_realtime_fields(self):
         """Поля для real-time обновлений в списке переводов"""

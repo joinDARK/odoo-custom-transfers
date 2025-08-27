@@ -275,22 +275,65 @@ class ZayavkaMethods(models.Model):
                 _logger.info(f"Изменено поле 'supplier_currency_paid_date_again_5' для заявки {rec.id}")
                 rec.run_return_with_subsequent_payment_method_new_subagent(rec.amount - (rec.amount * rec.return_commission), rec.supplier_currency_paid_date_again_5, rec.payment_date_again_5)
 
+        # Автоматизация для импорт-экспорт сделок при изменении даты оплаты валюты поставщику/субагенту
+        # Выполняется В КОНЦЕ, после всех других автоматизаций и очистки дубликатов
+        # Срабатывает ТОЛЬКО когда: deal_type='import_export' И агент НЕ указан
+        if 'supplier_currency_paid_date' in vals:
+            for rec in self:
+                _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Изменено поле 'supplier_currency_paid_date' для заявки {rec.id}")
+                
+                # Проверяем условия для запуска автоматизации
+                _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {rec.id}: проверяем условия - deal_type={rec.deal_type}, agent_id={rec.agent_id}, agent_id.id={rec.agent_id.id if rec.agent_id else None}, not agent_id.id={not rec.agent_id.id}, дата={vals.get('supplier_currency_paid_date')}")
+                
+                # УСЛОВИЕ: импорт-экспорт И агент НЕ указан И дата заполнена
+                if (rec.deal_type == 'import_export' and 
+                    not rec.agent_id.id and 
+                    vals.get('supplier_currency_paid_date')):
+                    
+                    _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {rec.id}: условия выполнены - запускаем создание сверок")
+                    _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {rec.id}: deal_type={rec.deal_type}, agent_id={rec.agent_id}, новая дата={vals.get('supplier_currency_paid_date')}")
+                    
+                    # Создаем 2 сверки
+                    success = rec._create_import_export_reconciliations()
+                    if success:
+                        _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {rec.id}: автоматизация выполнена успешно")
+                    else:
+                        _logger.error(f"[IMPORT_EXPORT_AUTOMATION] Заявка {rec.id}: ошибка выполнения автоматизации")
+                else:
+                    _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {rec.id}: условия не выполнены")
+                    _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {rec.id}: deal_type={rec.deal_type}, agent_id={bool(rec.agent_id)}, дата={vals.get('supplier_currency_paid_date')}")
+
         return res
 
     @api.model
-    def create(self, vals):
-        range_id = vals.get('range_id')
-        if not range_id:
-            range_rec = self.env['amanat.ranges'].browse(1)
-            if range_rec.exists():
-                vals['range_id'] = range_rec.id
-            else:
-                _logger.warning('В таблице "Диапазон" не найдена запись с ID = 1.')
+    def create(self, vals_list):
+        # Обрабатываем как список, так и одиночные значения для совместимости
+        if isinstance(vals_list, dict):
+            vals_list = [vals_list]
+        
+        # Инициализируем переменные для триггеров
+        trigger = False
+        trigger2 = False
+        send_to_reconciliation = False
+        
+        for vals in vals_list:
+            range_id = vals.get('range_id')
+            if not range_id:
+                range_rec = self.env['amanat.ranges'].browse(1)
+                if range_rec.exists():
+                    vals['range_id'] = range_rec.id
+                else:
+                    _logger.warning('В таблице "Диапазон" не найдена запись с ID = 1.')
 
-        trigger = vals.get('fin_entry_check', False)
-        trigger2 = vals.get('for_khalida_temp', False)
-        send_to_reconciliation = vals.get('send_to_reconciliation', False)
-        res = super().create(vals)
+            # Сохраняем триггеры из последней записи (для совместимости со старым кодом)
+            trigger = vals.get('fin_entry_check', False) or trigger
+            trigger2 = vals.get('for_khalida_temp', False) or trigger2
+            send_to_reconciliation = vals.get('send_to_reconciliation', False) or send_to_reconciliation
+        
+        res = super().create(vals_list)
+        
+        # Для работы с одиночными записями берем первый vals
+        vals = vals_list[0] if vals_list else {}
 
         if trigger:
             # Запуск основной логики (вместо print потом будут скрипты)
@@ -426,8 +469,11 @@ class ZayavkaMethods(models.Model):
         zayavka = self
         _logger.info(f"Анти-дубль: удаляем старые ордера, контейнеры и сверки для заявки {zayavka.id}")
 
-        # 1. Находим все ордера, связанные с данной заявкой
-        orders = self.env['amanat.order'].search([('zayavka_ids', 'in', [zayavka.id])])
+        # 1. Находим все ордера, связанные с данной заявкой, исключая импорт-экспорт автоматизацию
+        orders = self.env['amanat.order'].search([
+            ('zayavka_ids', 'in', [zayavka.id]),
+            ('comment', 'not ilike', '[IMPORT_EXPORT_AUTO]')
+        ])
 
         if orders:
             # 2. Удаляем все сверки, связанные с этими ордерами
@@ -470,6 +516,149 @@ class ZayavkaMethods(models.Model):
         reconciliation = self.env['amanat.reconciliation'].create(vals)
         _logger.info(f"Создана сверка: {reconciliation.id}, сумма={reconciliation.sum}, валюта={reconciliation.currency}")
         return reconciliation
+
+    def _create_import_export_reconciliations(self):
+        """
+        Создает 2 сверки для импорт-экспорт сделок при изменении даты оплаты валюты поставщику/субагенту
+        Условия: deal_type = 'import_export', agent_id указан, изменена supplier_currency_paid_date
+        
+        Структура сверок:
+        - partner_id: субагент из заявки (первый из subagent_ids)
+        - sender_id: плательщик с именем контрагента из заявки (если найден)
+        - receiver_id: плательщик с именем субагента из заявки (если найден)
+        """
+        _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: создание сверок для импорт-экспорт сделки")
+        
+        # Проверяем обязательные поля
+        if not self.supplier_currency_paid_date:
+            _logger.warning(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: дата оплаты валюты не указана")
+            return False
+            
+        if not self.amount:
+            _logger.warning(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: сумма не указана")
+            return False
+            
+        if not self.currency:
+            _logger.warning(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: валюта не указана")
+            return False
+
+        # Получаем контрагента и субагентов из заявки
+        contragent = self.contragent_id
+        subagents = self.subagent_ids
+        subagent_payer_ids = self.subagent_payer_ids
+        
+        if not contragent:
+            _logger.warning(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: не указан контрагент")
+            return False
+            
+        if not subagents:
+            _logger.warning(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: не указаны субагенты")
+            return False
+
+        # Берем первого субагента
+        first_subagent = subagents[0]
+        first_subagent_payer = subagent_payer_ids[0]
+        
+        # Находим плательщиков для контрагента и субагента (не создаем новых)
+        contragent_payer = self.env['amanat.payer'].search([('name', '=', contragent.name)], limit=1)
+        subagent_payer = self.env['amanat.payer'].search([('name', '=', first_subagent_payer.name)], limit=1)
+        
+        _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: контрагент={contragent.name}, субагент={first_subagent.name}, плательщик контрагента={contragent_payer.name if contragent_payer else 'не найден'}, плательщик субагента={subagent_payer.name if subagent_payer else 'не найден'}")
+
+        # Найдем или создадим кошелек "Неразмеченные" как в других автоматизациях
+        unmarked_wallet = self.env['amanat.wallet'].search([('name', '=', 'Неразмеченные')], limit=1)
+        if not unmarked_wallet:
+            unmarked_wallet = self.env['amanat.wallet'].create({'name': 'Неразмеченные'})
+        wallet_id = unmarked_wallet.id
+
+        try:
+            # Создаем первый ордер (сумма заявки)
+            order_1 = self._create_order({
+                "date": self.supplier_currency_paid_date,
+                "type": "transfer",
+                "partner_1_id": contragent.id,
+                "payer_1_id": contragent_payer.id if contragent_payer else False,
+                "partner_2_id": first_subagent.id,
+                "payer_2_id": subagent_payer.id if subagent_payer else False,
+                "wallet_1_id": wallet_id,
+                "wallet_2_id": wallet_id,
+                "currency": self.currency,
+                "amount": self.amount,
+                "comment": f"Оплата валюты по заявке {self.amount} {self.currency}",
+                "zayavka_ids": [(6, 0, [self.id])],
+            })
+
+            # Создаем контейнер денег для первого ордера
+            self._create_money({
+                'date': self.supplier_currency_paid_date,
+                'partner_id': first_subagent.id,
+                'currency': self.currency,
+                'state': 'debt',
+                'wallet_id': wallet_id,
+                'order_id': order_1.id,
+                **self._get_currency_fields(self.currency, -self.amount)
+            })
+
+            # Создаем первую сверку (сумма заявки)
+            reconciliation_1 = self._create_reconciliation({
+                'date': self.supplier_currency_paid_date,
+                'partner_id': first_subagent.id,  # Субагент из заявки
+                'currency': self.currency,
+                'order_id': [(4, order_1.id)],
+                'sender_id': [(6, 0, [contragent_payer.id])] if contragent_payer else [],  # Плательщик контрагента
+                'receiver_id': [(6, 0, [subagent_payer.id])] if subagent_payer else [],  # Плательщик субагента
+                'wallet_id': wallet_id,
+                **self._get_reconciliation_currency_fields(self.currency, -self.amount)
+            })
+
+            # Создаем второй ордер (расход за платеж)
+            order_2 = self._create_order({
+                "date": self.supplier_currency_paid_date,
+                "type": "transfer",
+                "partner_1_id": contragent.id,
+                "payer_1_id": contragent_payer.id if contragent_payer else False,
+                "partner_2_id": first_subagent.id,
+                "payer_2_id": subagent_payer.id if subagent_payer else False,
+                "wallet_1_id": wallet_id,
+                "wallet_2_id": wallet_id,
+                "currency": self.currency,
+                "amount": self.client_payment_cost,
+                "comment": f"Оплата вознаграждения субагента за провод платежа по заявке {self.client_payment_cost} {self.currency}",
+                "zayavka_ids": [(6, 0, [self.id])],
+            })
+
+            # Создаем контейнер денег для второго ордера
+            self._create_money({
+                'date': self.supplier_currency_paid_date,
+                'partner_id': first_subagent.id,
+                'currency': self.currency,
+                'state': 'debt',
+                'wallet_id': wallet_id,
+                'order_id': order_2.id,
+                **self._get_currency_fields(self.currency, -self.client_payment_cost)
+            })
+
+            # Создаем вторую сверку (расход за платеж)
+            reconciliation_2 = self._create_reconciliation({
+                'date': self.supplier_currency_paid_date,
+                'partner_id': first_subagent.id,  # Субагент из заявки
+                'currency': self.currency,
+                'order_id': [(4, order_2.id)],
+                'sender_id': [(6, 0, [contragent_payer.id])] if contragent_payer else [],  # Плательщик контрагента
+                'receiver_id': [(6, 0, [subagent_payer.id])] if subagent_payer else [],  # Плательщик субагента
+                'wallet_id': wallet_id,
+                **self._get_reconciliation_currency_fields(self.currency, -self.client_payment_cost)
+            })
+
+            _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: создан первый ордер {order_1.id} и сверка {reconciliation_1.id} - сумма заявки: {self.amount}")
+            _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: создан второй ордер {order_2.id} и сверка {reconciliation_2.id} - расход за платеж: {self.client_payment_cost}")
+
+            _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: успешно созданы 2 ордера, контейнеры и сверки для импорт-экспорт сделки")
+            return True
+
+        except Exception as e:
+            _logger.error(f"[IMPORT_EXPORT_AUTOMATION] Заявка {self.id}: ошибка создания сверок: {str(e)}")
+            return False
 
     @staticmethod
     def _get_currency_fields(currency, amount):
@@ -1078,6 +1267,74 @@ class ZayavkaMethods(models.Model):
         # Проверяем наличие кириллических символов
         return bool(re.search(r'[а-яё]', text.lower()))
     
+    def test_yandex_gpt_translation(self, test_text="Тестовая страна"):
+        """Тестовый метод для проверки работы YandexGPT"""
+        _logger.info(f"[ТЕСТ] 🧪 Тестируем перевод YandexGPT для: '{test_text}'")
+        
+        try:
+            from odoo.addons.amanat.models.zayavka.automations.ygpt_analyse import _get_yandex_gpt_config
+            cfg = _get_yandex_gpt_config(self.env, "zayavka")
+            
+            _logger.info(f"[ТЕСТ] Конфигурация: api_key={'есть' if cfg['api_key'] else 'НЕТ'}, folder_id={'есть' if cfg['folder_id'] else 'НЕТ'}")
+            
+            if not cfg['api_key'] or not cfg['folder_id']:
+                return {
+                    'success': False,
+                    'error': 'API ключ или Folder ID не настроены',
+                    'config': {
+                        'api_key_present': bool(cfg['api_key']),
+                        'folder_id_present': bool(cfg['folder_id'])
+                    }
+                }
+            
+            result = self._translate_text_via_yandex_gpt(test_text)
+            
+            return {
+                'success': True,
+                'original': test_text,
+                'translated': result,
+                'config': {
+                    'api_key_present': True,
+                    'folder_id_present': True
+                }
+            }
+            
+        except Exception as e:
+            _logger.error(f"[ТЕСТ] Ошибка при тестировании YandexGPT: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'original': test_text
+            }
+
+    def _get_country_translation_fallback(self, country_ru):
+        """Fallback метод для перевода стран когда поле eng_country_name не заполнено"""
+        # Проверяем, нужен ли перевод (если страна на русском языке)
+        is_russian = self._is_russian_text(country_ru)
+        _logger.info(f"[ЗАЯВЛЕНИЕ] 🔍 Анализ страны '{country_ru}': is_russian={is_russian}")
+        
+        if is_russian:
+            _logger.info(f"[ЗАЯВЛЕНИЕ] 🌍 Переводим страну с русского: '{country_ru}'")
+            country_en = self._translate_country_to_english(country_ru)
+            if country_en and country_en != country_ru:
+                _logger.info(f"[ЗАЯВЛЕНИЕ] ✅ Страна переведена: '{country_ru}' -> '{country_en}'")
+                return country_en
+            else:
+                _logger.info(f"[ЗАЯВЛЕНИЕ] ⚠️ Перевод не удался, используем оригинал: '{country_ru}'")
+                return country_ru
+        else:
+            # ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Возможно, это смешанный текст или нужен принудительный перевод
+            _logger.info(f"[ЗАЯВЛЕНИЕ] 🔍 Страна распознана как НЕ русская: '{country_ru}'")
+            
+            # Проверим, есть ли эта страна в нашем словаре (принудительный перевод)
+            country_en = self._translate_country_to_english(country_ru)
+            if country_en and country_en != country_ru:
+                _logger.info(f"[ЗАЯВЛЕНИЕ] 🔄 Принудительный перевод из словаря: '{country_ru}' -> '{country_en}'")
+                return country_en
+            else:
+                _logger.info(f"[ЗАЯВЛЕНИЕ] 📝 Оставляем как есть: '{country_ru}'")
+                return country_ru
+
     def _translate_country_to_english(self, country_ru):
         """Переводит название страны с русского на английский через Яндекс GPT"""
         try:
@@ -1244,14 +1501,21 @@ class ZayavkaMethods(models.Model):
             }
             
             country_lower = country_ru.lower().strip()
-            _logger.info(f"[ПЕРЕВОД СТРАНЫ] 🔍 Ищем в словаре: '{country_lower}'")
+            _logger.info(f"[ПЕРЕВОД СТРАНЫ] 🔍 Ищем в словаре: '{country_lower}' (исходный: '{country_ru}')")
+            _logger.info(f"[ПЕРЕВОД СТРАНЫ] 📖 Размер словаря: {len(country_mapping)} стран")
             
             if country_lower in country_mapping:
                 result = country_mapping[country_lower]
-                _logger.info(f"[ПЕРЕВОД СТРАНЫ] 📚 Найдено в словаре: '{country_ru}' -> '{result}'")
+                _logger.info(f"[ПЕРЕВОД СТРАНЫ] 📚 ✅ Найдено в словаре: '{country_ru}' -> '{result}'")
                 return result
             else:
                 _logger.info(f"[ПЕРЕВОД СТРАНЫ] ❌ Не найдено в словаре: '{country_lower}'")
+                # Покажем несколько похожих ключей для отладки
+                similar_keys = [key for key in country_mapping.keys() if country_lower in key or key in country_lower]
+                if similar_keys:
+                    _logger.info(f"[ПЕРЕВОД СТРАНЫ] 🔍 Похожие ключи в словаре: {similar_keys[:5]}")
+                else:
+                    _logger.info(f"[ПЕРЕВОД СТРАНЫ] 🔍 Похожих ключей не найдено")
             
             # Если не найдено в словаре, используем Яндекс GPT
             _logger.info(f"[ПЕРЕВОД СТРАНЫ] 🤖 Используем Яндекс GPT для перевода: '{country_ru}'")
@@ -1376,27 +1640,43 @@ class ZayavkaMethods(models.Model):
             
             # Получаем формат из поля записи
             output_format = self.document_format or 'pdf'
+            
+            # Определяем какой шаблон использовать на основе галочки fixed_reward
+            template_name = 'Индивидуал' if self.fixed_reward else 'Индивидуал Старый'
+            
             _logger.info(f"=== ГЕНЕРАЦИЯ ДОКУМЕНТА ИНДИВИДУАЛ ДЛЯ ЗАЯВКИ ID {self.id} ===")
             _logger.info(f"Агент проверен: {reason}")
             _logger.info(f"Формат вывода: {output_format} (из поля document_format)")
+            _logger.info(f"Фиксированное вознаграждение: {self.fixed_reward}")
+            _logger.info(f"Выбранный шаблон: {template_name}")
             
-            # Ищем шаблон Индивидуал
+            # Ищем шаблон на основе выбора пользователя
             template = self.env['template.library'].search([
-                ('name', '=', 'Индивидуал'),
+                ('name', '=', template_name),
                 ('template_type', '=', 'docx')
             ], limit=1)
             
             if not template:
-                return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                    'params': {
-                        'title': 'Ошибка',
-                        'message': 'Шаблон "Индивидуал" не найден в библиотеке шаблонов',
-                        'type': 'danger',
-                        'sticky': True,
+                # Если шаблон "Индивидуал Старый" не найден, используем обычный "Индивидуал"
+                if template_name == 'Индивидуал Старый':
+                    _logger.warning(f"Шаблон '{template_name}' не найден, используем 'Индивидуал'")
+                    template = self.env['template.library'].search([
+                        ('name', '=', 'Индивидуал'),
+                        ('template_type', '=', 'docx')
+                    ], limit=1)
+                    template_name = 'Индивидуал'  # Обновляем имя для корректного логирования
+                
+                if not template:
+                    return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': 'Ошибка',
+                            'message': f'Шаблон "{template_name}" не найден в библиотеке шаблонов',
+                            'type': 'danger',
+                            'sticky': True,
+                        }
                     }
-                }
             
             # Подготавливаем данные для подстановки
             template_data = self._prepare_individual_template_data()
@@ -1410,7 +1690,8 @@ class ZayavkaMethods(models.Model):
                     # Конвертируем в PDF с подписанием
                     pdf_file = self._convert_docx_to_pdf_base64(generated_file, sign_individual=True)
                     if pdf_file:
-                        file_name = f'Индивидуал_{self.zayavka_num or self.zayavka_id}.pdf'
+                        file_prefix = 'Индивидуал' if self.fixed_reward else 'Индивидуал_старый'
+                        file_name = f'{file_prefix}_{self.zayavka_num or self.zayavka_id}.pdf'
                         file_data = pdf_file
                         mimetype = 'application/pdf'
                     else:
@@ -1425,18 +1706,20 @@ class ZayavkaMethods(models.Model):
                             }
                         }
                 elif output_format == 'docx':
-                    file_name = f'Индивидуал_{self.zayavka_num or self.zayavka_id}.docx'
+                    file_prefix = 'Индивидуал' if self.fixed_reward else 'Индивидуал_старый'
+                    file_name = f'{file_prefix}_{self.zayavka_num or self.zayavka_id}.docx'
                     file_data = generated_file
                     mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 else:
                     # Fallback на PDF если формат неизвестен
                     pdf_file = self._convert_docx_to_pdf_base64(generated_file, sign_individual=True)
+                    file_prefix = 'Индивидуал' if self.fixed_reward else 'Индивидуал_старый'
                     if pdf_file:
-                        file_name = f'Индивидуал_{self.zayavka_num or self.zayavka_id}.pdf'
+                        file_name = f'{file_prefix}_{self.zayavka_num or self.zayavka_id}.pdf'
                         file_data = pdf_file
                         mimetype = 'application/pdf'
                     else:
-                        file_name = f'Индивидуал_{self.zayavka_num or self.zayavka_id}.docx'
+                        file_name = f'{file_prefix}_{self.zayavka_num or self.zayavka_id}.docx'
                         file_data = generated_file
                         mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 
@@ -1581,9 +1864,9 @@ class ZayavkaMethods(models.Model):
         beneficiary_bank_name = str(self.beneficiary_bank_name).strip() if self.beneficiary_bank_name else ""
         bank_address = str(self.bank_address).strip() if self.bank_address else ""
         bank_swift = str(self.bank_swift).strip() if self.bank_swift else ""
-        amount = f"{self.amount:.2f}" if self.amount else "0.00"
+        amount = f"{float(self.amount or 0):.2f}" if self.amount else "0.00"
         currency = str(self.currency).upper() if self.currency else ""
-        rate = f"{self.rate_field:.4f}" if self.rate_field else ""
+        rate = f"{float(self.rate_field or 0):.4f}" if self.rate_field else ""
         
         _logger.info("=== ДАННЫЕ ДЛЯ ШАБЛОНА ИНДИВИДУАЛ ===")
         _logger.info(f"Номер поручения: '{instruction_number}'")
@@ -1617,15 +1900,35 @@ class ZayavkaMethods(models.Model):
             'agent': agent_name_en,
             'клиент': client_name_ru,
             'client': client_name_en,
+            
+            # ✅ НОВЫЕ сигнатуры для шаблона "Индивидуал старый":
+            'получатель': exporter_importer_name,  # {{получатель}} - Наименование покупателя/продавца
+            'расчетный_счет': self.iban_accc or "",  # {{расчетный_счет}} - IBAN/номер счета
+            'swfit_код': bank_swift,  # {{swfit_код}} - указан в заявке (с опечаткой как в требованиях)
+            'процент_вознагрождение': f"{float(self.hand_reward_percent or 0):.2f}%" if self.hand_reward_percent else "0.00%",  # {{процент_вознагрождение}} - указан в заявке
+            'заявка_по_курсу_рублей': f"{float(self.application_amount_rub_contract or 0):.2f}" if self.application_amount_rub_contract else "0.00",  # {{заявка_по_курсу_рублей}} - указан в заявке
         }
+        
+        # КРИТИЧЕСКИ ВАЖНО: Убеждаемся что ВСЕ значения являются строками
+        # docxtpl не может обрабатывать булевы значения, числа и None
+        safe_template_data = {}
+        for key, value in template_data.items():
+            if value is None:
+                safe_template_data[key] = ""
+            elif isinstance(value, bool):
+                safe_template_data[key] = "Да" if value else "Нет"
+            elif isinstance(value, (int, float)):
+                safe_template_data[key] = str(value)
+            else:
+                safe_template_data[key] = str(value)
         
         # Логируем все подготовленные данные для отладки
         _logger.info("=== ВСЕ ПОДГОТОВЛЕННЫЕ ДАННЫЕ ДЛЯ ШАБЛОНА ===")
-        for key, value in template_data.items():
-            _logger.info(f"'{key}' -> '{value}' (длина: {len(str(value))})")
+        for key, value in safe_template_data.items():
+            _logger.info(f"'{key}' -> '{value}' (длина: {len(str(value))}, тип: {type(value).__name__})")
         _logger.info("=== КОНЕЦ СПИСКА ДАННЫХ ===")
         
-        return template_data
+        return safe_template_data
     
     def _translate_text_via_yandex_gpt(self, text):
         """Переводит текст с русского на английский через YandexGPT"""
@@ -1637,11 +1940,19 @@ class ZayavkaMethods(models.Model):
             try:
                 from odoo.addons.amanat.models.zayavka.automations.ygpt_analyse import _get_yandex_gpt_config
                 cfg = _get_yandex_gpt_config(self.env, "zayavka")
-            except ImportError:
-                _logger.error("[ПЕРЕВОД] Не удалось импортировать _get_yandex_gpt_config")
+                _logger.info(f"[ПЕРЕВОД] Получена конфигурация YandexGPT: api_key={'***' if cfg['api_key'] else 'НЕТ'}, folder_id={'***' if cfg['folder_id'] else 'НЕТ'}")
+            except ImportError as e:
+                _logger.error(f"[ПЕРЕВОД] Не удалось импортировать _get_yandex_gpt_config: {e}")
                 return text
+            except Exception as e:
+                _logger.error(f"[ПЕРЕВОД] Ошибка при получении конфигурации YandexGPT: {e}")
+                return text
+                
             if not cfg['api_key'] or not cfg['folder_id']:
-                _logger.error("[ПЕРЕВОД] Не настроены API ключ и/или Folder ID")
+                _logger.error(f"[ПЕРЕВОД] Не настроены API ключ и/или Folder ID. api_key: {'есть' if cfg['api_key'] else 'НЕТ'}, folder_id: {'есть' if cfg['folder_id'] else 'НЕТ'}")
+                _logger.info("[ПЕРЕВОД] Для настройки YandexGPT перейдите в Настройки -> Технические -> Параметры -> Системные параметры и добавьте:")
+                _logger.info("[ПЕРЕВОД] - amanat.ygpt.api_key = ваш_api_ключ")
+                _logger.info("[ПЕРЕВОД] - amanat.ygpt.folder_id = ваш_folder_id")
                 return text
 
             # Специальные случаи для известных сокращений
@@ -1687,12 +1998,17 @@ class ZayavkaMethods(models.Model):
             }
 
             import requests
+            _logger.info(f"[ПЕРЕВОД] 🚀 Отправляем запрос к YandexGPT для текста: '{text[:50]}...'")
+            _logger.debug(f"[ПЕРЕВОД] 📤 Данные запроса: {data}")
+            
             response = requests.post(
                 'https://llm.api.cloud.yandex.net/foundationModels/v1/completion',
                 headers=headers,
                 json=data,
                 timeout=30
             )
+            
+            _logger.info(f"[ПЕРЕВОД] 📥 Получен ответ от YandexGPT: статус {response.status_code}")
 
             if response.status_code == 200:
                 result = response.json()
@@ -2107,31 +2423,20 @@ class ZayavkaMethods(models.Model):
         if self.country_id and hasattr(self.country_id, 'name') and self.country_id.name:
             country_ru = str(self.country_id.name).strip()
             
-            # Проверяем, нужен ли перевод (если страна на русском языке)
-            is_russian = self._is_russian_text(country_ru)
-            _logger.info(f"[ЗАЯВЛЕНИЕ] 🔍 Анализ страны '{country_ru}': is_russian={is_russian}")
-            
-            if is_russian:
-                _logger.info(f"[ЗАЯВЛЕНИЕ] 🌍 Переводим страну с русского: '{country_ru}'")
-                country_en = self._translate_country_to_english(country_ru)
-                if country_en and country_en != country_ru:
-                    country = country_en
-                    _logger.info(f"[ЗАЯВЛЕНИЕ] ✅ Страна переведена: '{country_ru}' -> '{country}'")
+            # ПРИОРИТЕТ 1: Проверяем поле "Английское название страны" в модели стран
+            if hasattr(self.country_id, 'eng_country_name') and self.country_id.eng_country_name:
+                country_en_from_model = str(self.country_id.eng_country_name).strip()
+                if country_en_from_model:
+                    country = country_en_from_model
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] 🎯 Используем английское название из модели: '{country_ru}' -> '{country}'")
                 else:
-                    country = country_ru
-                    _logger.info(f"[ЗАЯВЛЕНИЕ] ⚠️ Перевод не удался, используем оригинал: '{country}'")
+                    # Поле есть, но пустое - переходим к автоматическому переводу
+                    _logger.info(f"[ЗАЯВЛЕНИЕ] ⚠️ Поле 'eng_country_name' пустое для '{country_ru}', переходим к автоматическому переводу")
+                    country = self._get_country_translation_fallback(country_ru)
             else:
-                # ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Возможно, это смешанный текст или нужен принудительный перевод
-                _logger.info(f"[ЗАЯВЛЕНИЕ] 🔍 Страна распознана как НЕ русская: '{country_ru}'")
-                
-                # Проверим, есть ли эта страна в нашем словаре (принудительный перевод)
-                country_en = self._translate_country_to_english(country_ru)
-                if country_en and country_en != country_ru:
-                    country = country_en
-                    _logger.info(f"[ЗАЯВЛЕНИЕ] 🔄 Принудительный перевод из словаря: '{country_ru}' -> '{country}'")
-                else:
-                    country = country_ru
-                    _logger.info(f"[ЗАЯВЛЕНИЕ] 📝 Оставляем как есть: '{country}'")
+                # ПРИОРИТЕТ 2: Поле отсутствует или не заполнено - используем автоматический перевод
+                _logger.info(f"[ЗАЯВЛЕНИЕ] 🔍 Поле 'eng_country_name' отсутствует для '{country_ru}', используем автоматический перевод")
+                country = self._get_country_translation_fallback(country_ru)
         
         # Получаем валюту с правильным отображением
         currency_display = ""
@@ -2245,12 +2550,25 @@ class ZayavkaMethods(models.Model):
             'zayavka_id': str(self.zayavka_id) if self.zayavka_id else "",
         }
         
-        _logger.info("=== ФИНАЛЬНЫЕ ДАННЫЕ ДЛЯ ШАБЛОНА ===")
+        # КРИТИЧЕСКИ ВАЖНО: Убеждаемся что ВСЕ значения являются строками
+        # docxtpl не может обрабатывать булевы значения, числа и None
+        safe_template_data = {}
         for key, value in template_data.items():
-            _logger.info(f"'{key}': '{value}'")
+            if value is None:
+                safe_template_data[key] = ""
+            elif isinstance(value, bool):
+                safe_template_data[key] = "Да" if value else "Нет"
+            elif isinstance(value, (int, float)):
+                safe_template_data[key] = str(value)
+            else:
+                safe_template_data[key] = str(value)
+        
+        _logger.info("=== ФИНАЛЬНЫЕ ДАННЫЕ ДЛЯ ШАБЛОНА ===")
+        for key, value in safe_template_data.items():
+            _logger.info(f"'{key}': '{value}' (тип: {type(value).__name__})")
         _logger.info("=== КОНЕЦ ДАННЫХ ===")
         
-        return template_data
+        return safe_template_data
     
     def _generate_document_from_template(self, template, template_data):
         """Генерирует документ из шаблона с подстановкой данных"""
@@ -2259,8 +2577,23 @@ class ZayavkaMethods(models.Model):
         import os
         
         try:
+            # КРИТИЧЕСКАЯ ПРОВЕРКА: проверяем поле template_file
+            _logger.info(f"🔍 ПРОВЕРКА ШАБЛОНА:")
+            _logger.info(f"  template.id: {template.id}")
+            _logger.info(f"  template.name: {template.name}")
+            _logger.info(f"  template_file тип: {type(template.template_file).__name__}")
+            _logger.info(f"  template_file значение: {repr(template.template_file)[:100]}...")
+            
+            if not template.template_file:
+                raise ValueError("Поле template_file пустое!")
+            
+            if isinstance(template.template_file, bool):
+                raise ValueError(f"Поле template_file имеет булев тип: {template.template_file}")
+            
             # Декодируем файл шаблона
+            _logger.info("🚀 Вызываем base64.b64decode()...")
             template_bytes = base64.b64decode(template.template_file)
+            _logger.info(f"✅ base64.b64decode() выполнен успешно, получено {len(template_bytes)} байт")
             
             # Создаем временный файл для работы
             with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as temp_file:
@@ -2385,8 +2718,23 @@ class ZayavkaMethods(models.Model):
             _logger.info(f"Данные для замены: {template_data}")
             _logger.info(f"Количество переменных: {len(template_data)}")
             
+            # КРИТИЧЕСКАЯ ПРОВЕРКА: убеждаемся что все значения - строки
+            _logger.info("🔍 ПРОВЕРКА ТИПОВ ДАННЫХ ПЕРЕД DOCXTPL:")
+            for key, value in template_data.items():
+                value_type = type(value).__name__
+                _logger.info(f"  '{key}': {value_type} = '{value}'")
+                if not isinstance(value, str):
+                    _logger.error(f"❌ НАЙДЕНО НЕ-СТРОКОВОЕ ЗНАЧЕНИЕ: '{key}' имеет тип {value_type}")
+            
             # Рендерим шаблон с данными
-            doc.render(template_data)
+            try:
+                _logger.info("🚀 Вызываем doc.render() с проверенными данными...")
+                doc.render(template_data)
+                _logger.info("✅ doc.render() выполнен успешно!")
+            except Exception as render_error:
+                _logger.error(f"❌ ОШИБКА В doc.render(): {render_error}")
+                _logger.error(f"❌ Тип ошибки: {type(render_error).__name__}")
+                raise render_error
             
             _logger.info("✅ docxtpl успешно обработал шаблон!")
             _logger.info("=== КОНЕЦ ОТЛАДКИ DOCXTPL ===")
@@ -2420,9 +2768,17 @@ class ZayavkaMethods(models.Model):
                     with open(document_path, 'r', encoding='utf-8') as f:
                         content = f.read()
                     
-                    _logger.info("=== ОТЛАДКА DOCX ОБРАБОТКИ ===")
+                    _logger.info("=== ОТЛАДКА DOCX ОБРАБОТКИ (LEGACY) ===")
                     _logger.info(f"Данные для замены: {template_data}")
                     _logger.info(f"Размер XML содержимого: {len(content)} символов")
+                    
+                    # КРИТИЧЕСКАЯ ПРОВЕРКА: убеждаемся что все значения - строки
+                    _logger.info("🔍 ПРОВЕРКА ТИПОВ ДАННЫХ ПЕРЕД LEGACY ОБРАБОТКОЙ:")
+                    for key, value in template_data.items():
+                        value_type = type(value).__name__
+                        _logger.info(f"  '{key}': {value_type} = '{value}'")
+                        if not isinstance(value, str):
+                            _logger.error(f"❌ НАЙДЕНО НЕ-СТРОКОВОЕ ЗНАЧЕНИЕ: '{key}' имеет тип {value_type}")
                     
                     # Покажем небольшой образец содержимого для анализа
                     preview_start = content[:300].replace('\n', '\\n').replace('\r', '\\r')
@@ -2437,15 +2793,22 @@ class ZayavkaMethods(models.Model):
                     # Экранируем XML символы в значениях И фигурные скобки (чтобы они не воспринимались как новые сигнатуры)
                     def escape_xml(text):
                         """Экранирует XML символы и фигурные скобки в значениях"""
+                        _logger.info(f"🔧 escape_xml вызвана с: {repr(text)} (тип: {type(text).__name__})")
+                        
                         if not isinstance(text, str):
+                            _logger.info(f"⚠️ Преобразуем {type(text).__name__} в строку: {text}")
                             text = str(text)
+                        
                         # Сначала проверяем, не экранирован ли уже символ &
                         if '&amp;' not in text:
                             text = text.replace('&', '&amp;')
-                        return (text.replace('<', '&lt;')
+                        result = (text.replace('<', '&lt;')
                                .replace('>', '&gt;')
                                .replace('"', '&quot;')
                                .replace("'", '&apos;'))
+                        
+                        _logger.info(f"🔧 escape_xml результат: {repr(result)}")
+                        return result
                         # НЕ экранируем фигурные скобки в данных - это может сломать XML
                     
                     # УПРОЩЕННАЯ ЛОГИКА: Используем только наши данные для замены

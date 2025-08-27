@@ -22,3 +22,18 @@
 - `def _get_pdf_attachments_base64(self, attachment)` — возвращает список dict с полями name, mimetype, base64 для PDF файлов
 - `def _send_image_to_yandex_gpt_vision(self, image_info)` — метод для отправки изображения в Yandex OCR API. Возвращает распознанный текст
 - `def _normalize_payer_name(self, name)` — метод для нормализация текста, для поиска плательщика по имени
+- `def _advanced_payer_search(self, search_text)` — продвинутый метод поиска подходящей записи в модели `amanat.payer`
+- `def _calculate_similarity(self, str1, str2)` — метод для подсчета "схожести"
+- `def _advanced_country_search(self, search_text)` — продвинутый метод поиска подходящей записи в модели `amanat.country`
+- `def _advanced_contragent_search(self, search_text, context_type="контрагент")` — продвинутый метод поиска подходящей записи в модели `amanat.contragent`
+- `def _get_yandex_gpt_config(env, prompt_type=None)` — возвращает конфиг YandexGPT из системных параметров
+- `def _make_headers(api_key, folder_id)` — возвращает загаловок для запроса через API
+
+Также про некоторые константные переменные:
+- `URL` — url для запроса по YandexGPT API
+- `OCR_URL` — url для запроса по Yandex OCR API
+- `PROMPT` — дефолтные промпт (я вообще хз, используется ли он в итоге или нет)
+- `UPDATE_FIELDS` — массив полей `amanat.zayavka` для обновления
+- `FIELD_MAPPING` — словарь для обновления полей. Он должен был выступать для маппинга полей из json-а от YGPT, но сейчас нужен для обновления специальных полей (для дата или many2many/many2one/one2many и тп)
+
+*P.S. За остальные методы я не шарю =)*
