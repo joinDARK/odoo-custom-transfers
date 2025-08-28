@@ -444,7 +444,6 @@ class ZayavkaMethods(models.Model):
         # 1. Находим все ордера, связанные с данной заявкой
         orders = self.env['amanat.order'].search([('zayavka_ids', 'in', [zayavka.id])])
 
-
         if orders:
             # 2. Удаляем все сверки, связанные с этими ордерами
             reconciliation_domain = [('order_id', 'in', orders.ids)]
@@ -469,7 +468,6 @@ class ZayavkaMethods(models.Model):
         else:
             _logger.info("Старых ордеров не обнаружено.")
 
-
     def _create_order(self, vals):
         vals['status'] = ''
         order = self.env['amanat.order'].create(vals)
@@ -477,53 +475,16 @@ class ZayavkaMethods(models.Model):
         return order
 
     def _create_money(self, vals):
-        # Используем savepoint для изоляции операции создания
-        with self.env.cr.savepoint():
-            try:
-                money = self.env['amanat.money'].create(vals)
-                _logger.info(
-                    f"Создан контейнер (money): partner={vals.get('partner_id')}, amount={vals.get('amount')}, currency={vals.get('currency')}, состояние={vals.get('state')}, ордер={vals.get('order_id')}"
-                )
-                return money
-            except Exception as e:
-                if "mail_followers" in str(e) and "duplicate key" in str(e):
-                    _logger.warning(f"Проблема с подписчиками при создании money, создаем без подписчиков: {e}")
-                    # Создаем в новом savepoint без подписчиков
-                    with self.env.cr.savepoint():
-                        money = self.env['amanat.money'].with_context(
-                            mail_create_nosubscribe=True,
-                            mail_create_nolog=True,
-                            tracking_disable=True
-                        ).create(vals)
-                        _logger.info(
-                            f"Создан контейнер (money) без подписчиков: partner={vals.get('partner_id')}, amount={vals.get('amount')}, currency={vals.get('currency')}, состояние={vals.get('state')}, ордер={vals.get('order_id')}"
-                        )
-                        return money
-                else:
-                    raise
+        money = self.env['amanat.money'].create(vals)
+        _logger.info(
+            f"Создан контейнер (money): partner={vals.get('partner_id')}, amount={vals.get('amount')}, currency={vals.get('currency')}, состояние={vals.get('state')}, ордер={vals.get('order_id')}"
+        )
+        return money
 
     def _create_reconciliation(self, vals):
-        # Используем savepoint для изоляции операции создания
-        with self.env.cr.savepoint():
-            try:
-                reconciliation = self.env['amanat.reconciliation'].create(vals)
-                _logger.info(f"Создана сверка: {reconciliation.id}, сумма={reconciliation.sum}, валюта={reconciliation.currency}")
-                return reconciliation
-            except Exception as e:
-                if "mail_followers" in str(e) and "duplicate key" in str(e):
-                    _logger.warning(f"Проблема с подписчиками при создании reconciliation, создаем без подписчиков: {e}")
-                    # Создаем в новом savepoint без подписчиков
-                    with self.env.cr.savepoint():
-                        reconciliation = self.env['amanat.reconciliation'].with_context(
-                            mail_create_nosubscribe=True,
-                            mail_create_nolog=True,
-                            tracking_disable=True
-                        ).create(vals)
-                        _logger.info(f"Создана сверка без подписчиков: {reconciliation.id}, сумма={reconciliation.sum}, валюта={reconciliation.currency}")
-                        return reconciliation
-                else:
-                    raise
-
+        reconciliation = self.env['amanat.reconciliation'].create(vals)
+        _logger.info(f"Создана сверка: {reconciliation.id}, сумма={reconciliation.sum}, валюта={reconciliation.currency}")
+        return reconciliation
 
     @staticmethod
     def _get_currency_fields(currency, amount):

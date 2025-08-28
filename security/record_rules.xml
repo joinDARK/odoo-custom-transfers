@@ -112,6 +112,10 @@
             <field name="model_id" ref="model_amanat_swift_document_upload"/>
             <field name="domain_force">[('manager_id.user_id', '=', user.id)]</field>
             <field name="groups" eval="[(4, ref('amanat.group_amanat_manager')), (4, ref('amanat.group_amanat_inspector')), (4, ref('amanat.group_amanat_fin_manager')), (4, ref('amanat.group_amanat_fin_manager_jess')), (4, ref('amanat.group_amanat_treasurer')), (4, ref('amanat.group_amanat_transit_only'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
         </record>
 
         <!-- Правило для SWIFT документов - администраторы и старшие менеджеры видят все документы -->
@@ -120,6 +124,10 @@
             <field name="model_id" ref="model_amanat_swift_document_upload"/>
             <field name="domain_force">[]</field>
             <field name="groups" eval="[(4, ref('amanat.group_amanat_admin')), (4, ref('amanat.group_amanat_senior_manager')), (4, ref('amanat.group_amanat_director'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
         </record>
 
         <!-- ЯДЕРНЫЙ ВАРИАНТ: Отключение ВСЕХ record rules для ir.attachment БЕЗ ГРУПП -->

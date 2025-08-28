@@ -8,6 +8,17 @@ class ZayavkaFinEntryAutomations(models.Model):
 
     @api.model
     def run_all_fin_entry_automations(self):
+        # СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ИМПОРТ-ЭКСПОРТ СДЕЛОК БЕЗ АГЕНТА
+        agent_is_empty = not self.agent_id or not self.agent_id.id
+        
+        if self.deal_type == 'import_export' and agent_is_empty:
+            _logger.info("[ФИН ВХОД ЗАЯВКИ] Считаем как Импорт-Экспорт БЕЗ агента")
+            self._run_fin_entry_automation_import_export()
+            return
+        elif self.deal_type == 'import_export' and not agent_is_empty:
+            _logger.info(f"[ФИН ВХОД ЗАЯВКИ] Импорт-экспорт С агентом ({self.agent_id.name}) - переходим к стандартной логике")
+        
+        # СТАНДАРТНАЯ ЛОГИКА ДЛЯ ОСТАЛЬНЫХ СДЕЛОК
         if self.is_sberbank_contragent and not self.is_sovcombank_contragent:
             if self.deal_type != "export":
                 _logger.info("[ФИН ВХОД ЗАЯВКИ] Считаем как Сбербанк; Вид сделки: импорт")
@@ -1915,3 +1926,159 @@ class ZayavkaFinEntryAutomations(models.Model):
             })
         else:
             _logger.info("Сумма оплаты вознаграждения субагента не заполнена, не создаем ордер 6")
+
+    @api.model
+    def _run_fin_entry_automation_import_export(self):
+        """
+        Автоматизация для импорт-экспорт сделок БЕЗ агента
+        Создает 2 ордера, контейнеры и сверки по стандартной схеме
+        """
+        wallet_model = self.env['amanat.wallet']
+        
+        record_id = self.id
+        _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Получен ID заявки: {record_id}")
+        
+        # Проверяем обязательные условия
+        if self.deal_type != 'import_export':
+            _logger.error(f"[IMPORT_EXPORT_AUTOMATION] ОШИБКА! Заявка {self.id}: метод вызван для НЕ импорт-экспорт сделки (deal_type={self.deal_type})")
+            return
+            
+        if self.agent_id:
+            _logger.error(f"[IMPORT_EXPORT_AUTOMATION] ОШИБКА! Заявка {self.id}: метод вызван при УКАЗАННОМ агенте (agent_id={self.agent_id})")
+            return
+
+        contragent = self.contragent_id
+        if not contragent:
+            _logger.warning("[IMPORT_EXPORT_AUTOMATION] Контрагент не найден")
+            return
+
+        # Удаляем старые ордера, сверки и контейнеры (стандартная логика)
+        self._clear_related_documents()
+
+        date = self.supplier_currency_paid_date
+        if not date:
+            _logger.warning("[IMPORT_EXPORT_AUTOMATION] Не заполнена дата оплаты поставщику!")
+            return
+        
+        _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Установлена дата: {date}")
+
+        if not self.subagent_ids:
+            _logger.warning("[IMPORT_EXPORT_AUTOMATION] Не заполнен субагент!")
+            return
+        
+        subagent = self.subagent_ids[0]
+        
+        currency = self.currency
+        if not currency:
+            _logger.warning("[IMPORT_EXPORT_AUTOMATION] Не заполнена валюта!")
+            return
+
+        amount = self.amount
+        if not amount:
+            _logger.warning("[IMPORT_EXPORT_AUTOMATION] Не заполнена сумма!")
+            return
+            
+        amount1 = self.client_payment_cost
+        if not amount1:
+            _logger.warning("[IMPORT_EXPORT_AUTOMATION] Не заполнена сумма расхода за платеж!")
+            return
+
+        # Находим кошелек "Неразмеченные" (как в стандартных автоматизациях используется "Агентка")
+        unmarked_wallet = wallet_model.search([('name', '=', 'Неразмеченные')], limit=1)
+        if not unmarked_wallet:
+            unmarked_wallet = wallet_model.create({'name': 'Неразмеченные'})
+        
+        # Получаем плательщиков
+        subagent_payer = self._get_first_payer(subagent)
+        contragent_payer = self.env['amanat.payer'].search([('name', '=', contragent.name)], limit=1)
+        temp_subagent_payer = self.subagent_payer_ids and self.subagent_payer_ids[0] or subagent_payer
+
+        _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Контрагент: {contragent.name}, Субагент: {subagent.name}")
+        _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Плательщик контрагента: {contragent_payer.name if contragent_payer else 'не найден'}")
+        _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Плательщик субагента: {temp_subagent_payer.name if temp_subagent_payer else 'не найден'}")
+
+        # --- Order 1: Оплата валюты по заявке
+        if amount:
+            order1 = self._create_order({
+                'date': date,
+                'type': 'transfer',
+                'partner_1_id': contragent.id,
+                'payer_1_id': contragent_payer.id if contragent_payer else False,
+                'partner_2_id': subagent.id,
+                'payer_2_id': temp_subagent_payer.id if temp_subagent_payer else False,
+                'amount': amount,
+                'currency': currency,
+                'wallet_1_id': unmarked_wallet.id,
+                'wallet_2_id': unmarked_wallet.id,
+                'comment': f"[IMPORT_EXPORT_AUTO] Оплата валюты по заявке {record_id}",
+                'zayavka_ids': [(6, 0, [record_id])]
+            })
+            
+            self._create_money({
+                'date': date,
+                'partner_id': subagent.id,
+                'currency': currency,
+                'state': 'debt',
+                'wallet_id': unmarked_wallet.id,
+                'order_id': order1.id,
+                **self._get_currency_fields(currency, -amount)
+            })
+            
+            self._create_reconciliation({
+                'date': date,
+                'currency': currency,
+                **self._get_reconciliation_currency_fields(currency, -amount),
+                'partner_id': subagent.id,
+                'order_id': [(6, 0, [order1.id])],
+                'sender_id': [(6, 0, [contragent_payer.id])] if contragent_payer else [],
+                'receiver_id': [(6, 0, [temp_subagent_payer.id])] if temp_subagent_payer else [],
+                'wallet_id': unmarked_wallet.id,
+            })
+            
+            _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Создан ордер 1: {order1.id}, сумма={amount}, валюта={currency}")
+        else:
+            _logger.info("[IMPORT_EXPORT_AUTOMATION] Сумма заявки не заполнена, не создаем ордер 1")
+
+        # --- Order 2: Оплата вознаграждения субагента за провод платежа
+        if amount1:
+            order2 = self._create_order({
+                'date': date,
+                'type': 'transfer',
+                'partner_1_id': contragent.id,
+                'payer_1_id': contragent_payer.id if contragent_payer else False,
+                'partner_2_id': subagent.id,
+                'payer_2_id': temp_subagent_payer.id if temp_subagent_payer else False,
+                'amount': amount1,
+                'currency': currency,
+                'wallet_1_id': unmarked_wallet.id,
+                'wallet_2_id': unmarked_wallet.id,
+                'comment': f"[IMPORT_EXPORT_AUTO] Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
+                'zayavka_ids': [(6, 0, [record_id])]
+            })
+            
+            self._create_money({
+                'date': date,
+                'partner_id': subagent.id,
+                'currency': currency,
+                'state': 'debt',
+                'wallet_id': unmarked_wallet.id,
+                'order_id': order2.id,
+                **self._get_currency_fields(currency, -amount1)
+            })
+            
+            self._create_reconciliation({
+                'date': date,
+                'currency': currency,
+                **self._get_reconciliation_currency_fields(currency, -amount1),
+                'partner_id': subagent.id,
+                'order_id': [(6, 0, [order2.id])],
+                'sender_id': [(6, 0, [contragent_payer.id])] if contragent_payer else [],
+                'receiver_id': [(6, 0, [temp_subagent_payer.id])] if temp_subagent_payer else [],
+                'wallet_id': unmarked_wallet.id,
+            })
+            
+            _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Создан ордер 2: {order2.id}, сумма={amount1}, валюта={currency}")
+        else:
+            _logger.info("[IMPORT_EXPORT_AUTOMATION] Сумма расхода за платеж не заполнена, не создаем ордер 2")
+
+        _logger.info(f"[IMPORT_EXPORT_AUTOMATION] Автоматизация для заявки {record_id} завершена успешно")
