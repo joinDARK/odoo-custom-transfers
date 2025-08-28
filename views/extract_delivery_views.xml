@@ -11,11 +11,8 @@
                        decoration-danger="1"
                        invisible="not show_red_stripe_for_ilzira"
                        readonly="1" width="150"/>
-                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-                <button width="30" title="Принудительное сопоставление" type="object" name="force_application_matching" icon="fa-link" class="btn-secondary"/>
-                <button width="30" title="Диагностика" type="object" name="show_diagnosis_result" icon="fa-search" class="btn-info"/>
+                <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
                 <field width="200" name="name"/>
-                <field width="200" name="serial_number"/>
                 <field width="200" name="date"/>
                 <field width="200" name="amount"/>
                 <field width="200" name="payer"/>
@@ -29,7 +26,7 @@
                 <field width="200" name="create_transfer_bulinan"/>
                 <field width="200" name="dds_article"/>
                 <field width="200" name="direction_choice"/>
-                <field width="200" name="applications" widget="many2many_tags"/>
+                <!-- <field width="200" name="applications" widget="many2many_tags"/> -->
                 <field width="200" name="currency_reserve"/>
                 <field width="200" name="transfer_ids"/>
                 <field width="200" name="deal"/>
@@ -63,6 +60,7 @@
                 <field width="200" name="statement_part_19"/>
                 <field width="200" name="statement_part_20"/>
                 <field width="200" name="remaining_statement"/>
+                <field width="200" name="serial_number"/>
                 <field width="200" name="range_field" invisible="1"/>
                 <field width="200" name="date_start" invisible="1"/>
                 <field width="200" name="date_end" invisible="1"/>
@@ -281,9 +279,9 @@
         <field name="priority">15</field>
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
-                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
-                <button width="30" title="Принудительное сопоставление" type="object" name="force_application_matching" icon="fa-link" class="btn-secondary"/>
-                <button width="30" title="Диагностика" type="object" name="show_diagnosis_result" icon="fa-search" class="btn-info"/>
+                <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
+                <!-- <button width="30" title="Принудительное сопоставление" type="object" name="force_application_matching" icon="fa-link" class="btn-secondary"/>
+                <button width="30" title="Диагностика" type="object" name="show_diagnosis_result" icon="fa-search" class="btn-info"/> -->
                 
                 <!-- Поле для Ильзиры с красным индикатором -->
                 <field name="show_red_stripe_for_ilzira" string="" 
@@ -294,19 +292,16 @@
                 
                 <!-- Поля только для Ильзиры -->
                 <field width="150" name="name"/>
-                <field width="120" name="serial_number"/>
-                <field width="80" name="assign_bulinan"/>
+                <!-- <field width="80" name="assign_bulinan"/> -->
                 <field width="120" name="date"/>
                 <field width="120" name="amount"/>
                 <field width="150" name="payer"/>
                 <field width="150" name="recipient"/>
                 <field width="200" name="payment_purpose"/>
-                <field width="150" name="document_id"/>
                 <field width="120" name="bank_document"/>
-                <field width="140" name="dds_article"/>
-                <field width="140" name="direction_choice"/>
+                
                 <field width="150" name="deal"/>
-                <field width="200" name="applications" widget="many2many_tags"/>
+                <field width="200" name="serial_number"/>
             </list>
         </field>
     </record>

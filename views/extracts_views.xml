@@ -7,9 +7,10 @@
         <field name="type">list</field>
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
-                <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
+                <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
                 <field name="name"/>
-                <field name="vypiska_ids"/>
+                <field name="vypiska_ids" widget="amanat_attachment"
+                options="{'accepted_file_extensions': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt'}" />
                 <field name="raznesti"/>
                 <field name="bank"/>
                 <field name="extract_delivery_ids"/>
