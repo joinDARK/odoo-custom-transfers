@@ -1521,6 +1521,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     contragent_contract_attachments = fields.Many2many(
         'ir.attachment',
         compute='_compute_contragent_contract_attachments',
+        store=True,
         string='Договоры контрагента'
     )
 
@@ -2373,10 +2374,11 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
     
     # Поле для хранения актов-отчетов
-    act_report_attachments = fields.One2many(
+    act_report_attachments = fields.Many2many(
         'ir.attachment',
-        'res_id',
-        domain=[('res_model', '=', 'amanat.zayavka'), ('res_field', '=', 'act_report_attachments')],
+        'amanat_zayavka_act_report_attachment_rel',
+        'zayavka_id',
+        'attachment_id',
         string='Акт Отчет'
     )
 
@@ -2487,12 +2489,12 @@ class Zayavka(models.Model, AmanatBaseModel):
             'report_attachments', 'other_documents_attachments', 'zayavka_end_attachments', 
             'assignment_end_attachments', 'screen_sber_attachments', 'contract_attachments',
             'contract_appendix_attachments', 'invoice_primary_attachments', 'vbk_attachments',
-            'additional_agreement_attachments', 'assignment_input_attachments'
+            'additional_agreement_attachments', 'assignment_input_attachments', 'act_report_attachments'
         ]
         # Note: contragent_contract_attachments исключено, так как это computed поле
         
         one2many_fields = [
-            'zayavka_output_attachments', 'act_report_attachments'
+            'zayavka_output_attachments'
         ]
         
         related_zayavkas = self.env['amanat.zayavka'].browse()
@@ -2629,7 +2631,7 @@ class Zayavka(models.Model, AmanatBaseModel):
             if len(many2many_fields) > 1:
                 global_domain = ['|'] * (len(many2many_fields) - 1)
                 for field in many2many_fields:
-                    global_domain.append((field, 'in', all_attachment_ids))
+                    global_domain += [(field, 'in', all_attachment_ids)]
             else:
                 global_domain = [(many2many_fields[0], 'in', all_attachment_ids)]
             
@@ -2722,11 +2724,11 @@ class Zayavka(models.Model, AmanatBaseModel):
             'report_attachments', 'other_documents_attachments', 'zayavka_end_attachments', 
             'assignment_end_attachments', 'screen_sber_attachments', 'contract_attachments',
             'contract_appendix_attachments', 'invoice_primary_attachments', 'vbk_attachments',
-            'additional_agreement_attachments', 'assignment_input_attachments'
+            'additional_agreement_attachments', 'assignment_input_attachments', 'act_report_attachments'
         ]
         
         one2many_fields = [
-            'zayavka_output_attachments', 'act_report_attachments'
+            'zayavka_output_attachments'
         ]
         
         related_zayavkas = self.env['amanat.zayavka'].browse()

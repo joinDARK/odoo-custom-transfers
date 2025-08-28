@@ -16,6 +16,7 @@
                 <field width="200" name="hash" />
                 <field width="200" name="currency" />
                 <field width="200" name="amount" />
+                <field width="200" name="receive_amount" />
                 <field width="200" name="sender_payer_id" />
                 <field width="200" name="sender_wallet_id" />
                 <field width="200" name="sender_id" />
@@ -74,6 +75,7 @@
                                     <group>
                                         <field name="currency" />
                                         <field name="amount" />
+                                        <field name="receive_amount" />
                                     </group>
                                     <group>
                                         <field name="sending_commission_percent" widget="percentage"

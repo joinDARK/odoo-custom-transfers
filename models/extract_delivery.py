@@ -354,6 +354,156 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 _logger.info(f"Ручное сопоставление: для выписки {record.id} подходящие заявки не найдены")
         
         return True
+        
+    def mass_match_applications(self):
+        """
+        Массовое сопоставление выбранных выписок с заявками.
+        Запускается из списка выписок разнос для нескольких записей.
+        """
+        _logger.info(f"🚀 ЗАПУСК МАССОВОЙ АВТОМАТИЗАЦИИ 'РАЗНЕСТИ' для {len(self)} выписок")
+        
+        processed_count = 0
+        matched_count = 0
+        skipped_count = 0
+        error_count = 0
+        
+        results = {
+            'processed': [],
+            'matched': [],
+            'skipped': [],
+            'errors': []
+        }
+        
+        for record in self:
+            try:
+                _logger.info(f"📝 Обработка выписки {record.id} (№{record.serial_number})")
+                processed_count += 1
+                
+                # Проверяем, есть ли уже связанные заявки
+                if record.applications:
+                    skip_reason = f"Уже есть связанные заявки: {', '.join(record.applications.mapped('zayavka_id'))}"
+                    _logger.info(f"⏭️  Выписка {record.id} пропущена: {skip_reason}")
+                    results['skipped'].append({
+                        'id': record.id,
+                        'serial_number': record.serial_number or 'Без номера',
+                        'reason': skip_reason
+                    })
+                    skipped_count += 1
+                    continue
+                    
+                # Проверяем, есть ли другие сделки
+                if any([record.currency_reserve, record.transfer_ids, record.conversion, 
+                       record.investment, record.gold_deal]):
+                    skip_reason = "Есть другие сделки (конверсии, переводы и т.д.)"
+                    _logger.info(f"⏭️  Выписка {record.id} пропущена: {skip_reason}")
+                    results['skipped'].append({
+                        'id': record.id,
+                        'serial_number': record.serial_number or 'Без номера',
+                        'reason': skip_reason
+                    })
+                    skipped_count += 1
+                    continue
+                    
+                # Ищем подходящие заявки
+                matching_apps = record._find_matching_applications()
+                if matching_apps:
+                    # Обновляем выписку
+                    record.write({
+                        'applications': [(6, 0, matching_apps.ids)],
+                        'direction_choice': 'applications'
+                    })
+                    
+                    # Обновляем обратную связь в заявках
+                    for app in matching_apps:
+                        app.write({
+                            'extract_delivery_ids': [(4, record.id)]
+                        })
+                    
+                    matched_apps_info = ', '.join(matching_apps.mapped('zayavka_id'))
+                    _logger.info(f"✅ Выписка {record.id} сопоставлена с заявками: {matched_apps_info}")
+                    
+                    results['matched'].append({
+                        'id': record.id,
+                        'serial_number': record.serial_number or 'Без номера',
+                        'amount': record.amount,
+                        'applications': matched_apps_info
+                    })
+                    matched_count += 1
+                    
+                    # Добавляем сообщение в чаттер выписки
+                    record.message_post(
+                        body=f"🤖 Массовая автоматизация: найдены подходящие заявки: {matched_apps_info}"
+                    )
+                else:
+                    skip_reason = "Подходящие заявки не найдены"
+                    _logger.info(f"❌ Выписка {record.id}: {skip_reason}")
+                    results['skipped'].append({
+                        'id': record.id,
+                        'serial_number': record.serial_number or 'Без номера',
+                        'reason': skip_reason
+                    })
+                    skipped_count += 1
+                    
+                    # Добавляем сообщение в чаттер выписки
+                    record.message_post(body="🤖 Массовая автоматизация: подходящие заявки не найдены")
+                    
+            except Exception as e:
+                error_count += 1
+                error_msg = str(e)
+                _logger.error(f"💥 Ошибка при обработке выписки {record.id}: {error_msg}")
+                results['errors'].append({
+                    'id': record.id,
+                    'serial_number': record.serial_number or 'Без номера',
+                    'error': error_msg
+                })
+        
+        # Формируем итоговое сообщение
+        summary_lines = [
+            f"🚀 <b>Результаты массовой автоматизации 'Разнести'",
+            f"📊 <b>Статистика:",
+            f"• Обработано выписок: {processed_count}",
+            f"• Успешно сопоставлено: <b style='color: green'>{matched_count}</b>",
+            f"• Пропущено: <b style='color: orange'>{skipped_count}</b>",
+            f"• Ошибки: <b style='color: red'>{error_count}</b>"
+        ]
+        
+        if results['matched']:
+            summary_lines.append("<br/>✅ <b>Успешно сопоставлены:</b>")
+            for item in results['matched'][:10]:  # Показываем только первые 10
+                summary_lines.append(f"• №{item['serial_number']} → {item['applications']}")
+            if len(results['matched']) > 10:
+                summary_lines.append(f"... и еще {len(results['matched']) - 10} записей")
+                
+        if results['errors']:
+            summary_lines.append("<br/>💥 <b>Ошибки:</b>")
+            for item in results['errors'][:5]:  # Показываем только первые 5 ошибок
+                summary_lines.append(f"• №{item['serial_number']}: {item['error']}")
+                
+        summary_message = "<br/>".join(summary_lines)
+        
+        _logger.info(f"🏁 МАССОВАЯ АВТОМАТИЗАЦИЯ ЗАВЕРШЕНА: {matched_count} сопоставлено, {skipped_count} пропущено, {error_count} ошибок")
+        
+        # Возвращаем уведомление пользователю
+        if matched_count > 0:
+            notification_type = 'success'
+            title = '🎉 Автоматизация выполнена успешно!'
+        elif error_count > 0:
+            notification_type = 'danger'
+            title = '⚠️ Автоматизация выполнена с ошибками'
+        else:
+            notification_type = 'warning'
+            title = '📝 Автоматизация выполнена'
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': title,
+                'message': summary_message,
+                'type': notification_type,
+                'sticky': True,  # Уведомление не исчезнет автоматически
+            }
+        }
 
     @api.model
     def create(self, vals):

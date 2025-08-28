@@ -598,7 +598,6 @@
                   <group>
                     <field name="client_ruble_paid_date" />
                     <field name="act_report_signed_date" />
-                    <field name="date_received_on_pc_payment" />
                     <field name="date_agent_on_pc" invisible="1" />
                   </group>
                   <group>
@@ -1662,7 +1661,7 @@
         <field width="200" name="application_amount_rub_contract" />
         <field width="200" name="contract_reward" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="total_fact" groups="amanat.group_amanat_treasurer"/>
-        <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer"/>
+
         <field width="200" name="bank_vypiska" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="extract_delivery_ids" widget="many2many_tags" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="payment_conditions" groups="!amanat.group_amanat_treasurer"/>

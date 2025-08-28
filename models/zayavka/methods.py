@@ -14,15 +14,23 @@ class ZayavkaMethods(models.Model):
         """
         Дублирует файлы из zayavka_attachments в zayavka_output_attachments
         Для One2many поля создаем копии attachment'ов
+        ИСКЛЮЧАЕТ договоры контрагента из дублирования
         """
         for record in self:
             if record.zayavka_attachments:
                 # Получаем имена файлов, которые уже есть в zayavka_output_attachments
                 existing_names = set(record.zayavka_output_attachments.mapped('name'))
                 
+                # Получаем ID договоров контрагента, чтобы исключить их из дублирования
+                contract_attachment_ids = set()
+                if record.contragent_contract_attachments:
+                    contract_attachment_ids = set(record.contragent_contract_attachments.ids)
+                    _logger.info(f"Заявка {record.id}: исключаем из дублирования {len(contract_attachment_ids)} договоров контрагента")
+                
                 # Получаем файлы из zayavka_attachments, которых еще нет в zayavka_output_attachments
+                # И которые НЕ являются договорами контрагента
                 new_attachments = record.zayavka_attachments.filtered(
-                    lambda att: att.name not in existing_names
+                    lambda att: att.name not in existing_names and att.id not in contract_attachment_ids
                 )
                 
                 if new_attachments:
@@ -37,7 +45,9 @@ class ZayavkaMethods(models.Model):
                             'mimetype': attachment.mimetype,
                             'description': attachment.description or f'Копия из Заявка Вход: {attachment.name}',
                         })
-                    _logger.info(f"Заявка {record.id}: создано {len(new_attachments)} копий файлов в zayavka_output_attachments")
+                    _logger.info(f"Заявка {record.id}: создано {len(new_attachments)} копий файлов в zayavka_output_attachments (исключены договоры контрагента)")
+                elif contract_attachment_ids:
+                    _logger.info(f"Заявка {record.id}: дублирование пропущено - все файлы являются договорами контрагента или уже существуют")
 
     def write(self, vals):
         trigger = vals.get('fin_entry_check', False)
@@ -119,6 +129,8 @@ class ZayavkaMethods(models.Model):
                             files_added = True
                             break
                 
+                if files_added:
+                    _logger.info(f"Заявка {rec.id}: файлы акт-отчетов добавлены")
                 
                 rec.status = '21'
         
@@ -2003,15 +2015,17 @@ class ZayavkaMethods(models.Model):
                     'datas': file_data,
                     'res_model': self._name,
                     'res_id': self.id,
-                    'res_field': 'act_report_attachments',
                     'mimetype': mimetype,
                 })
+                
+                # Добавляем файл в Many2many поле
+                self.act_report_attachments = [(4, attachment.id)]
                 
                 # Увеличиваем счетчик использования шаблона
                 template.increment_usage()
                 
                 # Обновляем запись для автообновления интерфейса
-                self.env['amanat.zayavka'].browse(self.id).invalidate_recordset()
+                self.invalidate_recordset()
                 
                 return {
                     'type': 'ir.actions.client',

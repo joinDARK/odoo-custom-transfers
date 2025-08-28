@@ -34,7 +34,12 @@ class Transfer(models.Model, AmanatBaseModel):
         default='rub',
         tracking=True
     )
-    amount = fields.Float(string='Сумма', tracking=True, digits=(16, 3))
+    amount = fields.Float(string='Сумма к переводу', tracking=True, digits=(16, 3))
+    receive_amount = fields.Float(
+        string='Сумма к получению', 
+        tracking=True, 
+        digits=(16, 3),
+    )
 
     sender_id = fields.Many2one(
         'amanat.contragent', 
@@ -171,6 +176,8 @@ class Transfer(models.Model, AmanatBaseModel):
 
     sending_commission_percent = fields.Float(string='% комиссия', tracking=True, digits=(16, 4))
 
+    
+
     order_ids = fields.Many2many(
         'amanat.order',
         'amanat_transfer_order_rel',
@@ -273,6 +280,42 @@ class Transfer(models.Model, AmanatBaseModel):
         else:
             self.receiver_payer_id_accrual = False
 
+    @api.onchange('amount', 'sending_commission_percent')
+    def _onchange_amount_or_commission(self):
+        """Пересчитывает сумму к получению при изменении суммы к переводу или процента комиссии"""
+        if self.amount and self.sending_commission_percent:
+            # Виджет percentage передает десятичное значение (0.05 для 5%)
+            # Но на всякий случай проверяем, если значение больше 1, то это старый формат
+            percent = self.sending_commission_percent / 100 if self.sending_commission_percent > 1 else self.sending_commission_percent
+            self.receive_amount = self.amount - (self.amount * percent)
+        elif self.amount and not self.sending_commission_percent:
+            # Если нет комиссии, сумма к получению равна сумме к переводу
+            self.receive_amount = self.amount
+        elif not self.amount:
+            self.receive_amount = 0.0
+
+    @api.onchange('receive_amount')
+    def _onchange_receive_amount(self):
+        """Пересчитывает процент комиссии или сумму к переводу при изменении суммы к получению"""
+        if self.receive_amount and self.amount and self.amount > 0:
+            # Если есть и сумма к получению, и сумма к переводу - пересчитываем процент комиссии
+            commission_amount = self.amount - self.receive_amount
+            if commission_amount >= 0:
+                # Виджет percentage ожидает десятичное значение (0.05 для 5%)
+                self.sending_commission_percent = commission_amount / self.amount
+            else:
+                # Если сумма к получению больше суммы к переводу - обнуляем комиссию
+                self.sending_commission_percent = 0.0
+        elif self.receive_amount and not self.amount and self.sending_commission_percent:
+            # Если есть сумма к получению и процент комиссии, но нет суммы к переводу - вычисляем её
+            percent = self.sending_commission_percent / 100 if self.sending_commission_percent > 1 else self.sending_commission_percent
+            if percent < 1:  # Проверяем, что процент меньше 100%
+                self.amount = self.receive_amount / (1 - percent)
+        elif self.receive_amount and not self.amount and not self.sending_commission_percent:
+            # Если есть только сумма к получению - устанавливаем её как сумму к переводу (без комиссии)
+            self.amount = self.receive_amount
+            self.sending_commission_percent = 0.0
+
     # Новые формулы для вычисления суммы посредников
     @api.depends('amount', 'sending_commission_percent','intermediary_1_commission_percent')
     def _compute_intermediary_1_sum(self):
@@ -343,8 +386,10 @@ class Transfer(models.Model, AmanatBaseModel):
             'transfer_id': [(6, 0, [record.id])],
         })
         
-        amount_1, amount_2 = self._calculate_amounts(record.amount, record.sending_commission_percent)
-        _logger.info(f"amount_1: {amount_1}, amount_2: {amount_2}")
+        # Используем новую логику с полем receive_amount
+        amount_1 = record.amount  # Сумма списания с отправителя
+        amount_2 = record._get_receive_amount()  # Сумма зачисления получателю
+        _logger.info(f"amount_1 (списание): {amount_1}, amount_2 (зачисление): {amount_2}")
 
         # Деньги/Сверки: сначала списываем со счета отправителя, затем зачисляем получателю
         self._create_money_and_reconciliation(
@@ -395,6 +440,9 @@ class Transfer(models.Model, AmanatBaseModel):
 
         # B) Посредник_1 -> Получатель (только если есть сумма для перевода)
         if record.intermediary_1_sum and record.intermediary_1_sum > 0:
+            # Для последнего этапа используем сумму к получению
+            final_receive_amount = record._get_receive_amount()
+            
             order_b = self.env['amanat.order'].create({
                 'date': record.date,
                 'type': 'transfer',
@@ -405,7 +453,7 @@ class Transfer(models.Model, AmanatBaseModel):
                 'payer_1_id': record.intermediary_1_payer_id.id,
                 'payer_2_id': record.receiver_payer_id.id,
                 'currency': record.currency,
-                'amount': comp_sum,
+                'amount': record.intermediary_1_sum,
                 'comment': record.combined_comment,
                 'operation_percent': record.sending_commission_percent,
                 'transfer_id': [(6, 0, [record.id])],
@@ -416,7 +464,7 @@ class Transfer(models.Model, AmanatBaseModel):
             )
             self._create_money_and_reconciliation(
                 order_b, record.receiver_wallet_id, record.receiver_id,
-                record.intermediary_1_sum, record.intermediary_1_payer_id, record.receiver_payer_id
+                final_receive_amount, record.intermediary_1_payer_id, record.receiver_payer_id
             )
 
     # ================================
@@ -486,6 +534,9 @@ class Transfer(models.Model, AmanatBaseModel):
 
         # C) Посредник_2 -> Получатель
         if record.intermediary_2_sum and record.intermediary_2_sum > 0:
+            # Для последнего этапа используем сумму к получению
+            final_receive_amount = record._get_receive_amount()
+            
             order_c = self.env['amanat.order'].create({
                 'date': record.date,
                 'type': 'transfer',
@@ -507,7 +558,7 @@ class Transfer(models.Model, AmanatBaseModel):
             )
             self._create_money_and_reconciliation(
                 order_c, record.receiver_wallet_id, record.receiver_id,
-                record.intermediary_2_sum, record.intermediary_2_payer_id, record.receiver_payer_id
+                final_receive_amount, record.intermediary_2_payer_id, record.receiver_payer_id
             )
 
     # ========================================
@@ -607,6 +658,20 @@ class Transfer(models.Model, AmanatBaseModel):
             amount_2 = amount
         _logger.info(f"_calculate_amounts — amount: {amount}, percent: {percent}, amount_1: {amount_1}, amount_2: {amount_2}")
         return amount_1, amount_2
+
+    def _get_receive_amount(self):
+        """Возвращает сумму к получению, используя поле receive_amount если оно заполнено, иначе вычисляет"""
+        if self.receive_amount:
+            return self.receive_amount
+        else:
+            # Вычисляем сумму к получению на основе суммы к переводу и комиссии
+            if self.amount and self.sending_commission_percent:
+                percent = self.sending_commission_percent / 100 if self.sending_commission_percent > 1 else self.sending_commission_percent
+                return self.amount - (self.amount * percent)
+            elif self.amount:
+                return self.amount
+            else:
+                return 0.0
 
     def write(self, vals):
         if self.env.context.get('skip_automation'):
@@ -1050,8 +1115,8 @@ class Transfer(models.Model, AmanatBaseModel):
     def _get_realtime_fields(self):
         """Поля для real-time обновлений в списке переводов"""
         return [
-            'id', 'display_name', 'name', 'state', 'date', 'currency', 'amount',
-            'sender_id', 'receiver_id', 'sender_payer_id', 'receiver_payer_id',
+            'id', 'display_name', 'name', 'state', 'date', 'currency', 'amount', 'receive_amount',
+            'sender_id', 'receiver_id', 'sender_payer_id', 'receiver_payer_id', 'sending_commission_percent',
             'create_date', 'write_date', 'manager_id', 'comment', 'comment_accrual', 'combined_comment', 'hash',
             'is_complex', 'intermediary_1_id', 'intermediary_2_id', 'is_transit',
             'create_accrual', 'delete_accrual', 'date_accrual', 'currency_accrual', 'amount_accrual',
