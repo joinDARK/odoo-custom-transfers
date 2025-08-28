@@ -71,12 +71,9 @@ class ZayavkaMethods(models.Model):
             for rec in self:
                 old_ids = set(old_values.get(rec.id, []))
                 new_ids = set(rec.extract_delivery_ids.ids)
-                _logger.info(f"Заявка {rec.id}: old_ids={old_ids}, new_ids={new_ids}")
                 if old_ids != new_ids:
-                    _logger.info(f"Изменения обнаружены для заявки {rec.id}, вызываем _on_extract_delivery_ids_changed")
+                    _logger.info(f"Заявка {rec.zayavka_num}: запуск автоматизаций при изменении выписок разнос")
                     rec._on_extract_delivery_ids_changed(old_ids, new_ids)
-                else:
-                    _logger.info(f"Изменений не обнаружено для заявки {rec.id}")
                 rec.run_change_data()
 
         if 'deal_closed_date' in vals:

@@ -12,6 +12,7 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
     _name = 'amanat.extracts'
     _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
     _description = 'extracts'
+    _order = 'id desc'
 
     name = fields.Char(string='ID', tracking=True)
 

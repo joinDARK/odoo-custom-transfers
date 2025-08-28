@@ -52,5 +52,6 @@
         <field name="res_model">amanat.extracts</field>
         <field name="view_mode">list,form</field>
         <field name="target">main</field>
+        <field name="context">{'search_default_order': 'id desc'}</field>
     </record>
 </odoo>

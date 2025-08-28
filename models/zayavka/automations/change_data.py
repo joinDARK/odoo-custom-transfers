@@ -7,10 +7,10 @@ _logger = logging.getLogger(__name__)
 class ZayavkaChangeData(models.Model):
     _inherit = 'amanat.zayavka'
 
-    @api.model
     def run_change_data(self):
+        """Автоматически заполняет поля дат при изменении связанных выписок разнос"""
         raw_dates = self.extract_delivery_ids.mapped('date')
-        _logger.info(f"===============! Даты из extract_delivery_ids: {raw_dates} !===============")
+        _logger.info(f"[Автоматизация дат] Заявка {self.zayavka_num}: найдено {len(raw_dates)} дат в выписках: {raw_dates}")
 
         # Приводим к типу date, фильтруем невалидные
         valid_dates = []
@@ -33,6 +33,6 @@ class ZayavkaChangeData(models.Model):
             max_date = max(valid_dates)
             self.date_received_on_pc_payment = min_date
             self.date_agent_on_pc = max_date
-            _logger.info(f"Ранняя дата: {min_date}, поздняя дата: {max_date}")
+            _logger.info(f"[Автоматизация дат] Заполнены поля: date_received_on_pc_payment={min_date}, date_agent_on_pc={max_date}")
         else:
-            _logger.info("Не найдены корректные даты в массиве.")
+            _logger.warning(f"[Автоматизация дат] Заявка {self.zayavka_num}: не найдены валидные даты в выписках")

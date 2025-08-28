@@ -192,6 +192,202 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
         _logger.info(f"[SWIFT AUTO] ✅ Статус обработки: {self.processing_status}")
         _logger.info(f"[SWIFT AUTO] ✅ Примечания: {self.processing_notes}")
 
+    def _normalize_currency(self, currency):
+        """Нормализация валютных кодов для сравнения с расширенным набором вариантов"""
+        if not currency:
+            return ""
+        
+        # Словарь соответствия различных вариантов валют
+        currency_mapping = {
+            # EUR варианты
+            'eur': 'eur',
+            'euro': 'eur',
+            'euros': 'eur',
+            'евро': 'eur',
+            '€': 'eur',
+            'eur.': 'eur',
+            'euro.': 'eur',
+            
+            # USD варианты  
+            'usd': 'usd',
+            'dollar': 'usd',
+            'dollars': 'usd',
+            'доллар': 'usd',
+            'доллары': 'usd',
+            '$': 'usd',
+            'usd.': 'usd',
+            'dollar.': 'usd',
+            'us dollar': 'usd',
+            'us dollars': 'usd',
+            
+            # CNY варианты
+            'cny': 'cny',
+            'yuan': 'cny',
+            'rmb': 'cny',
+            'юань': 'cny',
+            '¥': 'cny',
+            'cny.': 'cny',
+            'yuan.': 'cny',
+            'chinese yuan': 'cny',
+            
+            # AED варианты
+            'aed': 'aed',
+            'dirham': 'aed',
+            'dirhams': 'aed',
+            'дирхам': 'aed',
+            'дирхамы': 'aed',
+            'dh': 'aed',
+            'aed.': 'aed',
+            'dirham.': 'aed',
+            'uae dirham': 'aed',
+            
+            # RUB варианты
+            'rub': 'rub',
+            'ruble': 'rub',
+            'rubles': 'rub',
+            'рубль': 'rub',
+            'рубли': 'rub',
+            '₽': 'rub',
+            'rub.': 'rub',
+            'ruble.': 'rub',
+            'russian ruble': 'rub',
+            
+            # GBP варианты
+            'gbp': 'gbp',
+            'pound': 'gbp',
+            'pounds': 'gbp',
+            'фунт': 'gbp',
+            'фунты': 'gbp',
+            '£': 'gbp',
+            'gbp.': 'gbp',
+            'pound.': 'gbp',
+            'british pound': 'gbp',
+            
+            # JPY варианты
+            'jpy': 'jpy',
+            'yen': 'jpy',
+            'йена': 'jpy',
+            'йены': 'jpy',
+            'jpy.': 'jpy',
+            'yen.': 'jpy',
+            'japanese yen': 'jpy',
+            
+            # CHF варианты
+            'chf': 'chf',
+            'franc': 'chf',
+            'francs': 'chf',
+            'франк': 'chf',
+            'франки': 'chf',
+            'chf.': 'chf',
+            'franc.': 'chf',
+            'swiss franc': 'chf',
+            
+            # CAD варианты
+            'cad': 'cad',
+            'canadian dollar': 'cad',
+            'canadian dollars': 'cad',
+            'cad.': 'cad',
+            
+            # KZT варианты
+            'kzt': 'kzt',
+            'tenge': 'kzt',
+            'тенге': 'kzt',
+            'kzt.': 'kzt',
+            'tenge.': 'kzt',
+            'kazakhstani tenge': 'kzt',
+            '₸': 'kzt',
+            
+            # TRY варианты
+            'try': 'try',
+            'lira': 'try',
+            'лира': 'try',
+            'try.': 'try',
+            'lira.': 'try',
+            'turkish lira': 'try',
+        }
+        
+        # Нормализуем входную строку
+        normalized = currency.strip().lower()
+        # Убираем лишние пробелы
+        normalized = ' '.join(normalized.split())
+        
+        return currency_mapping.get(normalized, normalized)
+
+    def _check_amount_match(self, zayavka, swift_amount, tolerance=0.01):
+        """
+        Проверяет совпадение суммы SWIFT документа с различными полями суммы в заявке
+        
+        Args:
+            zayavka: Запись заявки
+            swift_amount: Сумма из SWIFT документа
+            tolerance: Допустимая погрешность при сравнении (по умолчанию 0.01)
+            
+        Returns:
+            dict: {'match': bool, 'details': str, 'matched_field': str}
+        """
+        if not swift_amount:
+            return {'match': False, 'details': 'Сумма в SWIFT документе не указана', 'matched_field': None}
+        
+        # Приоритетный список полей сумм для проверки
+        amount_fields = [
+            ('amount', 'Основная сумма заявки'),
+            ('application_amount_rub_contract', 'Заявка по курсу в рублях по договору'),
+            ('total_client', 'Итого Клиент'),
+            ('total_sber', 'Итого Сбербанк'),
+            ('total_sovok', 'Итого Совкомбанк'),
+            ('contract_reward', 'Вознаграждение по договору'),
+            ('total_fact', 'Итого факт'),
+            ('equivalent_amount_usd', 'Эквивалентная сумма в USD'),
+            ('fin_res_client_real_rub', 'Финансовый результат клиент в рублях'),
+            ('fin_res_sber_real_rub', 'Финансовый результат Сбер в рублях'),
+        ]
+        
+        _logger.info(f"[AMOUNT MATCH] Проверяем сумму SWIFT {swift_amount} против полей заявки {zayavka.id}")
+        
+        # Проверяем каждое поле по приоритету
+        for field_name, field_description in amount_fields:
+            if hasattr(zayavka, field_name):
+                zayavka_amount = getattr(zayavka, field_name, None)
+                
+                if zayavka_amount is not None and isinstance(zayavka_amount, (int, float)):
+                    difference = abs(float(swift_amount) - float(zayavka_amount))
+                    
+                    _logger.info(f"[AMOUNT MATCH] Поле '{field_name}' ({field_description}): "
+                               f"SWIFT={swift_amount}, Заявка={zayavka_amount}, Разница={difference:.4f}")
+                    
+                    if difference <= tolerance:
+                        details = f"Совпадение по полю '{field_name}' ({field_description}): SWIFT={swift_amount}, Заявка={zayavka_amount}, Разница={difference:.4f}"
+                        return {'match': True, 'details': details, 'matched_field': field_name}
+        
+        # Если точного совпадения не найдено, попробуем более мягкие критерии
+        _logger.info("[AMOUNT MATCH] Точного совпадения не найдено, пробуем мягкие критерии (допуск ±5%)")
+        
+        for field_name, field_description in amount_fields:
+            if hasattr(zayavka, field_name):
+                zayavka_amount = getattr(zayavka, field_name, None)
+                
+                if zayavka_amount is not None and isinstance(zayavka_amount, (int, float)) and zayavka_amount > 0:
+                    difference = abs(float(swift_amount) - float(zayavka_amount))
+                    percentage_diff = (difference / float(zayavka_amount)) * 100
+                    
+                    _logger.info(f"[AMOUNT MATCH SOFT] Поле '{field_name}' ({field_description}): "
+                               f"SWIFT={swift_amount}, Заявка={zayavka_amount}, Разница={difference:.4f} ({percentage_diff:.2f}%)")
+                    
+                    if percentage_diff <= 5.0:  # Допуск ±5%
+                        details = f"Мягкое совпадение по полю '{field_name}' ({field_description}): SWIFT={swift_amount}, Заявка={zayavka_amount}, Разница={percentage_diff:.2f}%"
+                        return {'match': True, 'details': details, 'matched_field': field_name}
+        
+        # Собираем информацию о всех проверенных полях для детального отчета
+        checked_fields = []
+        for field_name, field_description in amount_fields:
+            if hasattr(zayavka, field_name):
+                zayavka_amount = getattr(zayavka, field_name, None)
+                if zayavka_amount is not None:
+                    checked_fields.append(f"{field_name}={zayavka_amount}")
+        
+        details = f"Сумма не совпадает ни с одним полем. SWIFT={swift_amount}, Проверенные поля заявки: {', '.join(checked_fields)}"
+        return {'match': False, 'details': details, 'matched_field': None}
+
     def _find_matching_zayavka(self):
         """Поиск существующей заявки по плательщику субагента с дополнительными проверками валюты, суммы и отсутствия файлов"""
         if not self.payer_subagent:
@@ -213,62 +409,145 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
                 _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: валюта не указана в заявке")
                 return False
             
-            if self.currency.lower() != zayavka.currency.lower():
-                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: валюта не совпадает (SWIFT: {self.currency}, Заявка: {zayavka.currency})")
+            # УЛУЧШЕННАЯ проверка валюты с нормализацией
+            swift_currency_normalized = self._normalize_currency(self.currency)
+            zayavka_currency_normalized = self._normalize_currency(zayavka.currency)
+            
+            if swift_currency_normalized != zayavka_currency_normalized:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: валюта не совпадает (SWIFT: {self.currency} -> {swift_currency_normalized}, Заявка: {zayavka.currency} -> {zayavka_currency_normalized})")
                 return False
             
-            # СТРОГАЯ проверка суммы - оба поля должны быть заполнены и совпадать
+            # УЛУЧШЕННАЯ проверка суммы с учетом различных полей заявки
             if not self.amount:
                 _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: сумма не указана в SWIFT документе")
                 return False
             
-            if not zayavka.amount:
-                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: сумма не указана в заявке")
+            # Проверяем сумму по приоритетному списку полей заявки
+            amount_match_result = self._check_amount_match(zayavka, self.amount)
+            if not amount_match_result['match']:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: сумма не совпадает. {amount_match_result['details']}")
                 return False
-            
-            if abs(self.amount - zayavka.amount) > 0.01:  # допускаем погрешность в 0.01
-                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: сумма не совпадает (SWIFT: {self.amount}, Заявка: {zayavka.amount})")
-                return False
+            else:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id}: сумма совпадает. {amount_match_result['details']}")
             
             # Проверка отсутствия прикрепленных SWIFT файлов
             if zayavka.swift_attachments:
                 _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} отклонена: уже есть прикрепленные SWIFT документы ({len(zayavka.swift_attachments)} файлов)")
                 return False
             
-            _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} прошла все проверки: валюта={zayavka.currency}, сумма={zayavka.amount}, SWIFT файлов=0")
+            # Проверка статуса заявки (логируем, но не блокируем)
+            if zayavka.status == '21':
+                _logger.warning(f"[SWIFT AUTO] ⚠️  Заявка {zayavka.id} имеет статус '21' (закрыта), но может быть связана")
+            
+            _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} прошла все проверки: валюта={zayavka.currency}, сумма={zayavka.amount}, статус={zayavka.status}, SWIFT файлов=0")
             return True
         
         # Сначала пробуем старую логику для точных совпадений
-        # 1. Точное совпадение с проверками
-        zayavka = self.env['amanat.zayavka'].search([
-            ('subagent_payer_ids.name', '=', self.payer_subagent)
-        ], limit=1)
+        # 1. Точное совпадение с проверками - используем правильное поле Many2many
+        try:
+            # Пробуем разные возможные поля для плательщиков субагентов
+            search_domains = [
+                ('subagent_payer_ids.name', '=', self.payer_subagent),  # Основное поле
+                ('payer_ids.name', '=', self.payer_subagent),           # Альтернативное поле
+            ]
+            
+            zayavka = None
+            for domain in search_domains:
+                try:
+                    zayavka = self.env['amanat.zayavka'].search([domain], limit=1)
+                    if zayavka:
+                        _logger.info(f"[SWIFT AUTO] Заявка найдена через домен: {domain}")
+                        break
+                except Exception as domain_error:
+                    _logger.warning(f"[SWIFT AUTO] Ошибка поиска с доменом {domain}: {domain_error}")
+                    continue
+            
+            if zayavka and _validate_zayavka_conditions(zayavka):
+                _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по точному совпадению: {zayavka.id}")
+                return zayavka
+            elif zayavka:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по точному совпадению, но не прошла дополнительные проверки")
         
-        if zayavka and _validate_zayavka_conditions(zayavka):
-            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по точному совпадению: {zayavka.id}")
-            return zayavka
-        elif zayavka:
-            _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по точному совпадению, но не прошла дополнительные проверки")
+        except Exception as e:
+            _logger.warning(f"[SWIFT AUTO] Ошибка точного поиска плательщика: {e}")
         
         # 2. Нечеткий поиск ilike
-        zayavka = self.env['amanat.zayavka'].search([
-            ('subagent_payer_ids.name', 'ilike', self.payer_subagent)
-        ], limit=1)
+        try:
+            search_domains_ilike = [
+                ('subagent_payer_ids.name', 'ilike', self.payer_subagent),
+                ('payer_ids.name', 'ilike', self.payer_subagent),
+            ]
+            
+            zayavka = None
+            for domain in search_domains_ilike:
+                try:
+                    zayavka = self.env['amanat.zayavka'].search([domain], limit=1)
+                    if zayavka:
+                        _logger.info(f"[SWIFT AUTO] Заявка найдена через ilike домен: {domain}")
+                        break
+                except Exception as domain_error:
+                    _logger.warning(f"[SWIFT AUTO] Ошибка ilike поиска с доменом {domain}: {domain_error}")
+                    continue
         
-        if zayavka and _validate_zayavka_conditions(zayavka):
-            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по ilike поиску: {zayavka.id}")
-            return zayavka
-        elif zayavka:
-            _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по ilike поиску, но не прошла дополнительные проверки")
+            if zayavka and _validate_zayavka_conditions(zayavka):
+                _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка по ilike поиску: {zayavka.id}")
+                return zayavka
+            elif zayavka:
+                _logger.info(f"[SWIFT AUTO] Заявка {zayavka.id} найдена по ilike поиску, но не прошла дополнительные проверки")
         
-        # 3. Улучшенный алгоритм нечеткого поиска - ищем среди кандидатов, которые проходят проверки
-        best_zayavka = self._find_best_matching_zayavka_with_validation(_validate_zayavka_conditions)
+        except Exception as e:
+            _logger.warning(f"[SWIFT AUTO] Ошибка нечеткого поиска плательщика: {e}")
         
-        if best_zayavka:
-            _logger.info(f"[SWIFT AUTO] Найдена подходящая заявка с улучшенным алгоритмом поиска: {best_zayavka.id}")
-            return best_zayavka
+        # 3. Улучшенный алгоритм нечеткого поиска - ищем среди кандидатов, которые проходят строгие проверки
+        _logger.info(f"[SWIFT AUTO] Переходим к улучшенному нечеткому поиску для плательщика '{self.payer_subagent}'")
         
-        _logger.warning(f"[SWIFT AUTO] Подходящая заявка не найдена для плательщика субагента '{self.payer_subagent}' с учетом проверок валюты, суммы и отсутствия SWIFT файлов")
+        try:
+            best_zayavka = self._find_best_matching_zayavka_with_validation(_validate_zayavka_conditions)
+            
+            if best_zayavka:
+                _logger.info(f"[SWIFT AUTO] ✅ Найдена подходящая заявка с улучшенным алгоритмом поиска: {best_zayavka.id}")
+                return best_zayavka
+        
+        except Exception as e:
+            _logger.error(f"[SWIFT AUTO] Ошибка улучшенного нечеткого поиска: {e}")
+        
+        # 4. Если строгий поиск не дал результата, попробуем поиск с более мягкими критериями
+        _logger.info("[SWIFT AUTO] Строгий поиск не дал результата. Пробуем поиск с более мягкими критериями")
+        
+        def _soft_validate_zayavka_conditions(zayavka):
+            """Более мягкая проверка условий - только валюта и отсутствие SWIFT файлов"""
+            if not zayavka:
+                return False
+            
+            # Проверка валюты (если указана в обеих записях)
+            if self.currency and zayavka.currency:
+                swift_currency_normalized = self._normalize_currency(self.currency)
+                zayavka_currency_normalized = self._normalize_currency(zayavka.currency)
+                
+                if swift_currency_normalized != zayavka_currency_normalized:
+                    _logger.info(f"[SWIFT AUTO SOFT] Заявка {zayavka.id} отклонена: валюта не совпадает (SWIFT: {self.currency} -> {swift_currency_normalized}, Заявка: {zayavka.currency} -> {zayavka_currency_normalized})")
+                    return False
+            
+            # Проверка отсутствия прикрепленных SWIFT файлов
+            if zayavka.swift_attachments:
+                _logger.info(f"[SWIFT AUTO SOFT] Заявка {zayavka.id} отклонена: уже есть прикрепленные SWIFT документы ({len(zayavka.swift_attachments)} файлов)")
+                return False
+            
+            _logger.info(f"[SWIFT AUTO SOFT] Заявка {zayavka.id} прошла мягкую валидацию (валюта: {zayavka.currency}, SWIFT файлов: 0)")
+            return True
+        
+        try:
+            soft_fuzzy_zayavka = self._find_best_matching_zayavka_with_validation(_soft_validate_zayavka_conditions)
+            if soft_fuzzy_zayavka:
+                _logger.info(f"[SWIFT AUTO] ✅ Найдена заявка через мягкий нечеткий поиск: {soft_fuzzy_zayavka.id}")
+                return soft_fuzzy_zayavka
+            else:
+                _logger.info("[SWIFT AUTO] ❌ Мягкий нечеткий поиск не дал результатов")
+        
+        except Exception as e:
+            _logger.error(f"[SWIFT AUTO] Ошибка мягкого нечеткого поиска: {e}")
+        
+        _logger.warning(f"[SWIFT AUTO] ❌ Заявка не найдена ни одним из методов поиска для плательщика '{self.payer_subagent}' (точный поиск, ilike поиск, строгий нечеткий поиск, мягкий нечеткий поиск)")
         return None
 
     def _find_best_matching_zayavka_by_payer_name(self):
@@ -376,7 +655,7 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
             return None
 
     def _find_best_matching_zayavka_with_validation(self, validation_func):
-        """Улучшенный алгоритм поиска с учетом валидации заявок"""
+        """Улучшенный алгоритм поиска с учетом валидации заявок и нечеткого сопоставления"""
         import re
         from difflib import SequenceMatcher
         
@@ -384,16 +663,65 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
             return None
         
         def _normalize_string(s):
-            """Нормализация строки для сравнения"""
+            """Расширенная нормализация строки для сравнения"""
             if not s:
                 return ""
+            # Убираем знаки препинания и специальные символы
             normalized = re.sub(r'[^\w\s]', '', s.lower()).strip()
+            # Убираем лишние пробелы
             normalized = re.sub(r'\s+', ' ', normalized)
-            return normalized
+            # Убираем распространенные сокращения и слова-паразиты
+            stop_words = ['ltd', 'llc', 'inc', 'corp', 'company', 'co', 'limited', 'ооо', 'зао', 'оао', 'ип']
+            words = normalized.split()
+            words = [word for word in words if word not in stop_words]
+            return ' '.join(words)
         
         def _calculate_similarity(str1, str2):
             """Вычисляем сходство между двумя строками (0.0 - 1.0)"""
             return SequenceMatcher(None, str1, str2).ratio()
+        
+        def _calculate_fuzzy_similarity(str1, str2):
+            """Расширенная функция нечеткого сопоставления"""
+            if not str1 or not str2:
+                return 0.0
+            
+            # 1. Обычное сходство строк
+            basic_similarity = _calculate_similarity(str1, str2)
+            
+            # 2. Сходство по токенам (слова)
+            tokens1 = set(str1.split())
+            tokens2 = set(str2.split())
+            
+            if not tokens1 or not tokens2:
+                return basic_similarity
+            
+            # Пересечение токенов
+            common_tokens = tokens1 & tokens2
+            all_tokens = tokens1 | tokens2
+            token_similarity = len(common_tokens) / len(all_tokens) if all_tokens else 0.0
+            
+            # 3. Частичное совпадение токенов (подстроки)
+            partial_matches = 0
+            total_comparisons = 0
+            
+            for token1 in tokens1:
+                for token2 in tokens2:
+                    total_comparisons += 1
+                    # Если один токен содержится в другом
+                    if token1 in token2 or token2 in token1:
+                        partial_matches += 1
+                    # Или если токены очень похожи
+                    elif len(token1) >= 3 and len(token2) >= 3:
+                        token_sim = _calculate_similarity(token1, token2)
+                        if token_sim >= 0.8:
+                            partial_matches += 0.8
+            
+            partial_similarity = partial_matches / total_comparisons if total_comparisons > 0 else 0.0
+            
+            # 4. Итоговый скор - взвешенная сумма всех метрик
+            final_score = (basic_similarity * 0.4) + (token_similarity * 0.4) + (partial_similarity * 0.2)
+            
+            return min(final_score, 1.0)  # Ограничиваем максимум единицей
         
         def _check_token_overlap(tokens1, tokens2):
             """Проверяем пересечение токенов между двумя наборами"""
@@ -435,17 +763,19 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
                 normalized_candidate = _normalize_string(payer.name)
                 candidate_tokens = set(normalized_candidate.split())
                 
-                # Рассчитываем метрики сходства
+                # Используем улучшенную функцию нечеткого сопоставления
+                final_score = _calculate_fuzzy_similarity(normalized_payer, normalized_candidate)
+                
+                # Дополнительно рассчитываем отдельные метрики для логирования
                 string_similarity = _calculate_similarity(normalized_payer, normalized_candidate)
                 token_overlap = _check_token_overlap(payer_tokens, candidate_tokens)
-                
-                # Итоговый скор
-                final_score = (string_similarity * 0.6) + (token_overlap * 0.4)
                 
                 valid_candidates.append({
                     'zayavka': zayavka,
                     'payer_name': payer.name,
-                    'final_score': final_score
+                    'final_score': final_score,
+                    'string_similarity': string_similarity,
+                    'token_overlap': token_overlap
                 })
                 
                 if final_score > best_score:
@@ -578,26 +908,46 @@ class AmanatSwiftDocumentUpload(models.Model, AmanatBaseModel):
             
             if best_match:
                 # Получаем информацию о найденной заявке
-                payer_names = [p.name for p in best_match.subagent_payer_ids if p.name]
-                message = f"Найдена заявка {best_match.id}.\nПлательщики: {', '.join(payer_names)}\nВалюта: {best_match.currency}\nСумма: {best_match.amount}"
+                try:
+                    payer_names = [p.name for p in best_match.subagent_payer_ids if p.name]
+                except Exception as e:
+                    _logger.warning(f"[SWIFT AUTO FUZZY] Ошибка получения плательщиков субагентов: {e}")
+                    payer_names = ["Не удалось получить список плательщиков"]
+                
+                swift_curr_norm = self._normalize_currency(self.currency)
+                zayavka_curr_norm = self._normalize_currency(best_match.currency)
+                
+                message = f"✅ Найдена заявка {best_match.id} ({best_match.zayavka_num})\n"
+                message += f"Плательщики: {', '.join(payer_names[:3])}{'...' if len(payer_names) > 3 else ''}\n"
+                message += f"Валюта: {best_match.currency} (норм: {zayavka_curr_norm}) vs SWIFT: {self.currency} (норм: {swift_curr_norm})\n"
+                message += f"Сумма: {best_match.amount} vs SWIFT: {self.amount}\n"
+                message += f"Статус: {best_match.status}\n"
+                message += f"SWIFT файлов: {len(best_match.swift_attachments) if best_match.swift_attachments else 0}"
                 
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
-                        'title': 'Результат нечеткого поиска',
+                        'title': 'Результат поиска заявки (ИСПРАВЛЕННЫЙ алгоритм)',
                         'message': message,
                         'type': 'success',
                         'sticky': True,
                     }
                 }
             else:
+                swift_curr_norm = self._normalize_currency(self.currency)
+                message = '❌ Подходящая заявка не найдена\n'
+                message += f'Плательщик: "{self.payer_subagent}"\n'
+                message += f'Валюта: {self.currency} (норм: {swift_curr_norm})\n'
+                message += f'Сумма: {self.amount}\n'
+                message += 'Проверьте логи для подробной диагностики.'
+                
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
-                        'title': 'Результат нечеткого поиска',
-                        'message': f'Подходящая заявка не найдена для плательщика "{self.payer_subagent}"',
+                        'title': 'Результат поиска заявки',
+                        'message': message,
                         'type': 'warning',
                         'sticky': True,
                     }

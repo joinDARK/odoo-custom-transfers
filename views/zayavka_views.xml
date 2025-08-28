@@ -430,7 +430,7 @@
                       </group>
                       <group>
                         <field name="act_report_attachments" widget="amanat_attachment"
-                          options="{'no_create': False, 'no_open': False}" />
+                          options="{'no_create': False, 'no_open': False} " />
                       </group>
                       <group>
                         <field name="assignment_attachments" widget="amanat_attachment"
@@ -1720,7 +1720,8 @@
                readonly="1" width="150"/>
         <field width="200" name="date_placement" groups="!amanat.group_amanat_treasurer" />
         <field width="200" name="zayavka_num" />
-        <field width="200" name="status" widget="searchable_selection" />
+        <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer"/>
+        <field width="200" name="date_agent_on_pc" />
         <field width="200" name="contragent_id" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="agent_id" />
         <field width="200" name="client_id" />
@@ -1732,7 +1733,7 @@
         <field width="200" name="application_amount_rub_contract" />
         <field width="200" name="contract_reward" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="total_fact" groups="amanat.group_amanat_treasurer"/>
-
+        <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="bank_vypiska" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="extract_delivery_ids" widget="many2many_tags" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="payment_conditions" groups="!amanat.group_amanat_treasurer"/>

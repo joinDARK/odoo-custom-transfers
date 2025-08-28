@@ -1614,7 +1614,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     date_agent_on_pc = fields.Date(
-        string='Поступление на PC',
+        string='Дата поступления агентского на PC',
         tracking=True,
     )
 
@@ -1870,7 +1870,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     )
 
     date_received_on_pc_payment = fields.Date(
-        string="Дата поступления на РС расчет",
+        string="Дата поступления на РС",
         tracking=True,
     )
 
