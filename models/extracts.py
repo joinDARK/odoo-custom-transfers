@@ -39,6 +39,7 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
             ('vtb', 'ВТБ'),
             ('nbs', 'НБС'),
             ('zenit', 'Зенит'),
+            ('zarechie', 'Заречье'),
             ('absolut', 'Абсолют'),
         ],
         string='Банк',
