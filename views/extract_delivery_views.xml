@@ -26,7 +26,7 @@
                 <field width="200" name="create_transfer_bulinan"/>
                 <field width="200" name="dds_article"/>
                 <field width="200" name="direction_choice"/>
-                <!-- <field width="200" name="applications" widget="many2many_tags"/> -->
+                <field width="200" name="applications" widget="many2many_tags"/>
                 <field width="200" name="currency_reserve"/>
                 <field width="200" name="transfer_ids"/>
                 <field width="200" name="deal"/>
@@ -299,7 +299,7 @@
                 <field width="150" name="recipient"/>
                 <field width="200" name="payment_purpose"/>
                 <field width="120" name="bank_document"/>
-                
+                <field width="200" name="applications"/>
                 <field width="150" name="deal"/>
                 <field width="200" name="serial_number"/>
             </list>
