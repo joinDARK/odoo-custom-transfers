@@ -127,6 +127,8 @@
             # JS
             "amanat/static/src/js/file_input.js",
             "amanat/static/src/js/attachment_widget.js",
+            "amanat/static/src/js/search_state_config.js",
+            "amanat/static/src/js/search_state_simple.js",
             # XML
             "amanat/static/src/xml/attachment_templates.xml",
             # CSS

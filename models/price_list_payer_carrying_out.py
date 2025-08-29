@@ -19,6 +19,7 @@ class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
         'amanat.contragent',
         string='Субагенты',
         compute='_compute_contragent_ids',
+        search='_search_contragent_ids',
         store=False,
         readonly=True
     )
@@ -82,3 +83,28 @@ class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
     def _compute_contragent_ids(self):
         for rec in self:
             rec.contragent_ids = rec.payer_partners.mapped('contragents_ids')
+    
+    def _search_contragent_ids(self, operator, value):
+        """Поиск по субагентам через связанных плательщиков"""
+        if operator == 'in' and value:
+            # Находим всех плательщиков, у которых есть указанные контрагенты
+            payers = self.env['amanat.payer'].search([
+                ('contragents_ids', 'in', value)
+            ])
+            return [('payer_partners', 'in', payers.ids)]
+        elif operator == '=' and value:
+            # Поиск по конкретному контрагенту
+            payers = self.env['amanat.payer'].search([
+                ('contragents_ids', '=', value)
+            ])
+            return [('payer_partners', 'in', payers.ids)]
+        elif operator == 'ilike' and value:
+            # Поиск по имени контрагента
+            contragents = self.env['amanat.contragent'].search([
+                ('name', 'ilike', value)
+            ])
+            payers = self.env['amanat.payer'].search([
+                ('contragents_ids', 'in', contragents.ids)
+            ])
+            return [('payer_partners', 'in', payers.ids)]
+        return []

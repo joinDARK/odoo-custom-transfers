@@ -73,3 +73,20 @@ class ZayavkaOnchange(models.Model):
             subagent = self.subagent_ids
             if len(subagent.payer_ids) == 1:
                 self.subagent_payer_ids = subagent.payer_ids
+        
+        # TODO: Добавить автоматическое заполнение плательщиков субагента
+        # if self.subagent_ids:
+            # Собираем всех плательщиков от всех выбранных субагентов
+            # all_payers = self.subagent_ids.mapped('payer_ids')
+            
+            # if all_payers:
+                # Автоматически заполняем всех доступных плательщиков
+                # self.subagent_payer_ids = all_payers
+                # _logger.info(f"Автоматически установлены плательщики субагента: {all_payers.mapped('name')}")
+            # else:
+                # Если у субагентов нет плательщиков, очищаем поле
+                # self.subagent_payer_ids = False
+                # _logger.info("У выбранных субагентов нет плательщиков")
+        # else:
+            # Если субагенты не выбраны, очищаем плательщиков
+            # self.subagent_payer_ids = False

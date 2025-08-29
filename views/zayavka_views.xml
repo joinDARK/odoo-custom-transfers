@@ -17,11 +17,14 @@
                     <field name="zayavka_num" />
                     <field name="status" widget="searchable_selection" />
                     <field name="date_placement" />
+                    <field name="amount" />
+                    <field name="usd_equivalent" />
                   </group>
                   <group>
                     <field name="contragent_id" />
                     <field name="client_id" />
                     <field name="country_id" />
+                    <field name="currency" />
                   </group>
                 </div>
                 <field name="comment" />
@@ -148,6 +151,7 @@
                     <field name="deal_type" />
                     <field name="instruction_signed_date" />
                     <field name="amount" />
+                    <field name="usd_equivalent" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
                     <field name="reward_percent_in_contract" widget="percentage" />
@@ -235,6 +239,7 @@
                     <field name="deal_type" />
                     <field name="instruction_signed_date" />
                     <field name="amount" />
+                    <field name="usd_equivalent" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
                     <field name="reward_percent_in_contract" widget="percentage" />
@@ -310,6 +315,7 @@
                     <field name="deal_type" />
                     <field name="instruction_signed_date" />
                     <field name="amount" />
+                    <field name="usd_equivalent" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
                     <field name="reward_percent_in_contract" widget="percentage" />
@@ -1553,8 +1559,8 @@
                 <field name="status_range_copy" />
               </group>
             </page>
-            <page string="Compute-поля"
-              groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director,!amanat.group_amanat_treasurer">
+            <page string="Вычисляемые поля"
+              groups="!amanat.group_amanat_limited_access">
               <group>
                 <field name="usd_equivalent" />
                 <field name="conversion_expenses_rub" />
@@ -1727,6 +1733,7 @@
         <!-- <separator/>
         <filter name="filter_in_range" string="В диапазоне" domain="[('range_id','!=',False)]"/>
         <separator/> -->
+        
         <group expand="0" string="Group By">
           <filter name="group_by_date" string="Дата размещения"
             context="{'group_by':'date_placement'}" />

@@ -29,6 +29,46 @@
         </field>
     </record>
 
+    <record id="view_price_list_payer_carrying_out_search" model="ir.ui.view">
+        <field name="name">price_list_payer_carrying_out.search</field>
+        <field name="model">amanat.price_list_payer_carrying_out</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Наименование"/>
+                <field name="payer_partners" string="Плательщики субагенты" widget="many2many_tags"/>
+                <field name="contragent_ids" string="Субагенты"/>
+                <field name="contragent_zayavka_id" string="Контрагент заявки"/>
+                <field name="agent_zayavka_id" string="Агент заявки"/>
+                <field name="client_zayavka_id" string="Клиент заявки"/>
+                <field name="currency_zayavka" string="Валюта заявки"/>
+                
+                <separator/>
+                
+                <filter name="active_period" string="Активный период" 
+                        domain="[('date_start', '&lt;=', context_today()), ('date_end', '&gt;=', context_today())]"/>
+                <filter name="future_period" string="Будущий период" 
+                        domain="[('date_start', '&gt;', context_today())]"/>
+                <filter name="past_period" string="Прошедший период" 
+                        domain="[('date_end', '&lt;', context_today())]"/>
+                
+                <separator/>
+                
+                <filter name="with_fixed_fee" string="С фиксированной комиссией" 
+                        domain="[('fixed_deal_fee', '&gt;', 0)]"/>
+                <filter name="with_percentage" string="С процентной комиссией" 
+                        domain="[('accrual_percentage', '&gt;', 0)]"/>
+                
+                <separator/>
+                
+                <group expand="0" string="Группировка">
+                    <filter name="group_by_payer" string="По плательщикам" context="{'group_by': 'payer_partners'}"/>
+                    <filter name="group_by_currency" string="По валюте" context="{'group_by': 'currency_zayavka'}"/>
+                    <filter name="group_by_period" string="По периоду" context="{'group_by': 'date_start'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <record id="view_price_list_payer_carrying_out_form" model="ir.ui.view">
         <field name="name">price_list_payer_carrying_out.form</field>
         <field name="model">amanat.price_list_payer_carrying_out</field>
@@ -117,6 +157,7 @@
         <field name="res_model">amanat.price_list_payer_carrying_out</field>
         <field name="view_mode">list,form</field>
         <field name="target">main</field>
+        <field name="search_view_id" ref="view_price_list_payer_carrying_out_search"/>
     </record>
 
     <!-- Отдельное действие для "Фикс заявка" с дашбордом -->

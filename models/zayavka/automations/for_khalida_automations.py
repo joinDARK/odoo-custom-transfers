@@ -29,8 +29,8 @@ class ForKhalidaAutomations(models.Model):
 
         _logger.info(f"[Khalida Automation] Заявка {self.id}: payment_date={payment_date}, rate_fixation_date={rate_fixation_date}, equivalent_sum={equivalent_sum}, reward_percent={reward_percent}")
 
-        # Применяем правила
-        self.apply_rules_by_deal_closed_date()
+        # Применяем правила по дате фиксации курса (вместо даты закрытия сделки)
+        self.apply_rules_by_rate_fixation_date()
 
         # 3. Проверяем наличие необходимых полей
         if not subagent_payers:

@@ -150,6 +150,19 @@ class ZayavkaComputes(models.Model):
             if record.subagent_ids:
                 payer_ids = record.subagent_ids.mapped('payer_ids').ids
                 record.domain_subagent_payer_ids = payer_ids
+                # TODO: Добавить автоматическое заполнение плательщиков субагента
+                # all_payers = record.subagent_ids.mapped('payer_ids')
+                # payer_ids = all_payers.ids
+                # record.domain_subagent_payer_ids = payer_ids
+                
+                # Автоматически заполняем плательщиков субагента, если они еще не заполнены
+                # или если текущие плательщики не входят в новый список доступных
+                # current_payer_ids = set(record.subagent_payer_ids.ids)
+                # available_payer_ids = set(payer_ids)
+                
+                # if not current_payer_ids or not current_payer_ids.issubset(available_payer_ids):
+                    # record.subagent_payer_ids = all_payers
+                    # _logger.info(f"Автоматически обновлены плательщики субагента для заявки {record.id}: {all_payers.mapped('name')}")
             else:
                 record.subagent_payer_ids = False
                 record.domain_subagent_payer_ids = []
@@ -1239,7 +1252,9 @@ class ZayavkaComputes(models.Model):
     @api.depends('jess_rate', 'payer_cross_rate_usd_auto')
     def _compute_real_post_conversion_rate(self):
         for rec in self:
-            rec.real_post_conversion_rate = (rec.jess_rate or 0.0) * (rec.payer_cross_rate_usd_auto or 0.0)
+            rec.real_post_conversion_rate = (rec.jess_rate or 0.0)
+            # TODO
+            # rec.real_post_conversion_rate = (rec.jess_rate or 0.0) * (rec.payer_cross_rate_usd_auto or 0.0)
 
     @api.depends('real_post_conversion_rate', 'payer_cross_rate_usd_auto')
     def _compute_real_post_conversion_rate_usd(self):
