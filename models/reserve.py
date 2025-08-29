@@ -31,12 +31,30 @@ class Reserve(models.Model, AmanatBaseModel):
         domain="[('contragents_ids','in',sender_id)]"
     )
     commision_percent_1 = fields.Float(string="Процент комиссии по отправке", tracking=True)
+    commision_amount_1 = fields.Float(
+        string="Сумма комиссии по отправке", 
+        compute="_compute_commision_amount_1", 
+        store=True, 
+        readonly=True,
+        digits=(16, 2),
+        tracking=True,
+        help="Автоматически рассчитывается как: сумма - (сумма * процент комиссии по отправке)"
+    )
     receiver_id = fields.Many2one('amanat.contragent', string='Получатель', tracking=True)
     receiver_payer_id = fields.Many2one(
         'amanat.payer', string='Плательщик получателя', tracking=True,
         domain="[('contragents_ids','in',receiver_id)]"
     )
     commision_percent_2 = fields.Float(string="Процент комиссии отправителя", tracking=True)
+    commision_amount_2 = fields.Float(
+        string="Сумма комиссии отправителя", 
+        compute="_compute_commision_amount_2", 
+        store=True, 
+        readonly=True,
+        digits=(16, 2),
+        tracking=True,
+        help="Автоматически рассчитывается как: сумма - (сумма * процент комиссии отправителя)"
+    )
 
     commision_difference = fields.Float(
         string="Разница комиссии", compute="_compute_commission_difference", store=True, tracking=True, readonly=False
@@ -108,6 +126,34 @@ class Reserve(models.Model, AmanatBaseModel):
         self.receiver_payer_id = self.env['amanat.payer'].search(
             [('contragents_ids', 'in', self.receiver_id.id)], limit=1
         ).id if self.receiver_id else False
+
+    @api.depends('amount', 'commision_percent_1')
+    def _compute_commision_amount_1(self):
+        """Рассчитывает сумму комиссии по отправке: сумма - (сумма * процент комиссии по отправке)"""
+        for rec in self:
+            if rec.amount and rec.commision_percent_1:
+                # Нормализуем процент (если больше 1, то это проценты, делим на 100)
+                percent = rec.commision_percent_1 / 100 if rec.commision_percent_1 > 1 else rec.commision_percent_1
+                rec.commision_amount_1 = rec.amount - (rec.amount * percent)
+            elif rec.amount:
+                # Если нет процента комиссии, сумма комиссии равна исходной сумме
+                rec.commision_amount_1 = rec.amount
+            else:
+                rec.commision_amount_1 = 0.0
+
+    @api.depends('amount', 'commision_percent_2')
+    def _compute_commision_amount_2(self):
+        """Рассчитывает сумму комиссии отправителя: сумма - (сумма * процент комиссии отправителя)"""
+        for rec in self:
+            if rec.amount and rec.commision_percent_2:
+                # Нормализуем процент (если больше 1, то это проценты, делим на 100)
+                percent = rec.commision_percent_2 / 100 if rec.commision_percent_2 > 1 else rec.commision_percent_2
+                rec.commision_amount_2 = rec.amount - (rec.amount * percent)
+            elif rec.amount:
+                # Если нет процента комиссии, сумма комиссии равна исходной сумме
+                rec.commision_amount_2 = rec.amount
+            else:
+                rec.commision_amount_2 = 0.0
 
     @api.depends('commision_percent_1', 'commision_percent_2')
     def _compute_commission_difference(self):

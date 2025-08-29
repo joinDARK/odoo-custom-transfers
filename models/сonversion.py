@@ -49,6 +49,15 @@ class Conversion(models.Model, AmanatBaseModel):
     amount = fields.Float(
         string='Сумма', digits=(16, 6), tracking=True
     )
+    total_amount = fields.Float(
+        string='Сумма итого', 
+        compute='_compute_total_amount', 
+        store=True, 
+        readonly=True,
+        digits=(16, 6),
+        tracking=True,
+        help="Автоматически рассчитывается с учетом курса и кросс-конвертации"
+    )
 
     currency = fields.Selection(
         CURRENCY_SELECTION, string='Валюта', default='usd', tracking=True
@@ -107,7 +116,7 @@ class Conversion(models.Model, AmanatBaseModel):
         string='Ордеры', tracking=True
     )
 
-    contragent_count = fields.Selection(
+    contragent_count = fields.Selection(     
         [('1', '1'), ('2', '2')], string='Кол-во КА', default='1', tracking=True
     )
 
@@ -197,6 +206,42 @@ class Conversion(models.Model, AmanatBaseModel):
     comment = fields.Text(
         string='Комментарий', tracking=True
     )
+
+    @api.depends('amount', 'rate', 'cross_envelope', 'cross_rate', 'cross_conversion_currency', 'currency', 'conversion_currency')
+    def _compute_total_amount(self):
+        """Рассчитывает сумму итого с учетом курса и кросс-конвертации"""
+        for rec in self:
+            if not rec.amount or not rec.rate:
+                rec.total_amount = 0.0
+                continue
+            
+            base_amount = rec.amount
+            
+            # Если включена кросс-конвертация
+            if rec.cross_envelope and rec.cross_rate and rec.cross_conversion_currency:
+                # Сначала конвертируем из исходной валюты в кросс-валюту
+                intermediate_amount = rec._convert_currency_smart(
+                    base_amount, 
+                    rec.currency, 
+                    rec.cross_conversion_currency, 
+                    rec.cross_rate
+                )
+                
+                # Затем конвертируем из кросс-валюты в целевую валюту
+                rec.total_amount = rec._convert_currency_smart(
+                    intermediate_amount,
+                    rec.cross_conversion_currency,
+                    rec.conversion_currency,
+                    rec.rate
+                )
+            else:
+                # Без кросс-конвертации: прямая конвертация из исходной валюты в целевую
+                rec.total_amount = rec._convert_currency_smart(
+                    base_amount,
+                    rec.currency,
+                    rec.conversion_currency,
+                    rec.rate
+                )
 
     @api.onchange('sender_id')
     def _onchange_sender_id(self):
@@ -713,6 +758,54 @@ class Conversion(models.Model, AmanatBaseModel):
                 **{k: v for k, v in cf_map_5.items() if k.startswith('sum_')},
             }
             Recon.create(recon_vals)
+
+    def _convert_currency_smart(self, amount, from_currency, to_currency, rate):
+        """
+        Умная конвертация валют с учетом иерархии их силы.
+        
+        Логика:
+        - Каждая валюта имеет свой "вес" в иерархии (чем больше число, тем слабее валюта)
+        - Если исходная валюта слабее целевой (больший вес) → ДЕЛИМ на курс
+        - Если исходная валюта сильнее целевой (меньший вес) → УМНОЖАЕМ на курс
+        - Если валюты равны по силе → УМНОЖАЕМ на курс
+        """
+        if not rate or rate == 0:
+            return 0.0
+
+        # Иерархия валют по силе (чем больше число, тем слабее валюта)
+        # Основана на реальной покупательной способности и стабильности
+        currency_hierarchy = {
+            # Самые сильные валюты
+            'euro': 1,           # Евро - самая сильная валюта
+            'euro_cashe': 1,
+            'usd': 2,            # Доллар США
+            'usd_cashe': 2,
+            'usdt': 2,           # USDT привязан к доллару
+            # Средне-сильные валюты
+            'aed': 3,            # Дирхам ОАЭ (привязан к доллару, но менее ликвиден)
+            'aed_cashe': 3,
+            'cny': 4,            # Китайский юань
+            'cny_cashe': 4,
+            # Слабые валюты
+            'thb': 5,            # Тайский бат
+            'thb_cashe': 5,
+            'rub': 6,            # Российский рубль - самая слабая
+            'rub_cashe': 6,
+        }
+
+        # Получаем веса валют (по умолчанию 5 для неизвестных валют)
+        from_weight = currency_hierarchy.get(from_currency, 5)
+        to_weight = currency_hierarchy.get(to_currency, 5)
+        
+        if from_weight > to_weight:
+            # Исходная валюта слабее целевой: ДЕЛИМ (например, RUB → USD: 7500 ÷ 75 = 100)
+            return amount / rate
+        elif from_weight < to_weight:
+            # Исходная валюта сильнее целевой: УМНОЖАЕМ (например, USD → RUB: 100 × 75 = 7500)
+            return amount * rate
+        else:
+            # Валюты равны по силе: УМНОЖАЕМ (например, USD → EUR: 100 × 0.85 = 85)
+            return amount * rate
 
     def _convert_amount(self, amount, from_currency, to_currency, rate):
         """

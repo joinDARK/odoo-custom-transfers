@@ -17,7 +17,7 @@ class PriceListPayerCarryingOut(models.Model, AmanatBaseModel):
     )
     contragent_ids = fields.Many2many(
         'amanat.contragent',
-        string='Контрагенты',
+        string='Субагенты',
         compute='_compute_contragent_ids',
         store=False,
         readonly=True

@@ -73,3 +73,4 @@ act_report_attachments = fields.Many2many(
 - API для работы с полем остается тем же
 - Интерфейс работает без изменений
 
+

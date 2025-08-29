@@ -2454,6 +2454,24 @@ class Zayavka(models.Model, AmanatBaseModel):
                 record.contragent_contract_attachments = self.env['ir.attachment'].browse()
 
     @api.model
+    def get_zayavka_action_context(self):
+        """Динамически определяет контекст для action заявок в зависимости от группы пользователя"""
+        context = {'default_status': '1_no_chat'}
+        
+        # Проверяем, является ли пользователь менеджером
+        user = self.env.user
+        manager_groups = [
+            'amanat.group_amanat_manager',
+            'amanat.group_amanat_senior_manager'
+        ]
+        
+        # Если пользователь в группе менеджеров, применяем фильтр "Активные заявки"
+        if any(user.has_group(group) for group in manager_groups):
+            context['search_default_filter_active_zayavkas'] = 1
+        
+        return context
+
+    @api.model
     def action_show_related_zayavkas_by_attachment(self, attachment_id=None):
         """Показать все заявки, к которым прикреплен данный документ"""
         print(f"=== action_show_related_zayavkas_by_attachment called with attachment_id={attachment_id} ===")

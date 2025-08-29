@@ -36,11 +36,13 @@
                                         <field name="sender_id"/>
                                         <field name="sender_payer_id" domain="[('contragents_ids', 'in', sender_id)]"/>
                                         <field name="commision_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                                        <field name="commision_amount_1" readonly="1"/>
                                     </group>
                                     <group string="Получатель">
                                         <field name="receiver_id"/>
                                         <field name="receiver_payer_id" domain="[('contragents_ids', 'in', receiver_id)]"/>
                                         <field name="commision_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                                        <field name="commision_amount_2" readonly="1"/>
                                     </group>
                                 </div>
                             </group>
@@ -127,9 +129,11 @@
                 <field name="sender_id"/>
                 <field name="sender_payer_id"/>
                 <field name="commision_percent_1" widget="percentage" options="{'rounding': 2}"/>
+                <field name="commision_amount_1"/>
                 <field name="receiver_id"/>
                 <field name="receiver_payer_id"/>
                 <field name="commision_percent_2" widget="percentage" options="{'rounding': 2}"/>
+                <field name="commision_amount_2"/>
                 <field name="commision_difference" widget="percentage" options="{'rounding': 2}"/>
                 <field name="finally_result"/>
                 <field name="has_royalti" width="100"/>

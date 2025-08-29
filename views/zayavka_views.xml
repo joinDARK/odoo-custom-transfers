@@ -1683,14 +1683,26 @@
     </field>
   </record>
 
-  <record id="zayavka_action" model="ir.actions.act_window">
+  <!-- Action для менеджеров (с автоматическим фильтром "Активные заявки") -->
+  <record id="zayavka_action_managers" model="ir.actions.act_window">
     <field name="name">Заявки</field>
     <field name="res_model">amanat.zayavka</field>
     <field name="view_mode">list,form</field>
     <field name="target">main</field>
     <field name="context">{'default_status': '1_no_chat', 'search_default_filter_active_zayavkas': 1}</field>
     <field name="groups_id"
-      eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_senior_manager')), (4, ref('group_amanat_manager')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access'))]" />
+      eval="[(4, ref('group_amanat_manager')), (4, ref('group_amanat_senior_manager'))]" />
+  </record>
+
+  <!-- Action для остальных пользователей (без автоматического фильтра) -->
+  <record id="zayavka_action" model="ir.actions.act_window">
+    <field name="name">Заявки</field>
+    <field name="res_model">amanat.zayavka</field>
+    <field name="view_mode">list,form</field>
+    <field name="target">main</field>
+    <field name="context">{'default_status': '1_no_chat'}</field>
+    <field name="groups_id"
+      eval="[(4, ref('base.group_system')), (4, ref('group_amanat_admin')), (4, ref('group_amanat_inspector')), (4, ref('group_amanat_limited_access')), (4, ref('group_amanat_treasurer'))]" />
   </record>
 
   <record id="zayavka_search_view" model="ir.ui.view">
@@ -1711,7 +1723,7 @@
         <field name="deal_type" />
         <!-- <field name="range_id" string="Диапазон"/> -->
         <separator/>
-        <filter name="filter_active_zayavkas" string="Активные заявки" domain="[('status','not in',['21','22'])]"/>
+        <filter name="filter_active_zayavkas" string="Активные заявки" domain="[('status','not in',['21','22'])]" groups="amanat.group_amanat_manager,amanat.group_amanat_senior_manager"/>
         <!-- <separator/>
         <filter name="filter_in_range" string="В диапазоне" domain="[('range_id','!=',False)]"/>
         <separator/> -->

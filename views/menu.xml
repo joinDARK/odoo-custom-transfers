@@ -207,13 +207,22 @@
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector,amanat.group_amanat_fin_manager"
     />
 
-    <!-- Меню для заявки (обычные пользователи) -->
+    <!-- Меню для заявки (менеджеры с автофильтром) -->
+    <menuitem 
+        id="amanat_menu_zayavka_managers"
+        name="Заявки"
+        parent="amanat_menu_orders_group"
+        action="zayavka_action_managers"
+        groups="amanat.group_amanat_manager,amanat.group_amanat_senior_manager"
+    />
+
+    <!-- Меню для заявки (остальные пользователи без автофильтра) -->
     <menuitem 
         id="amanat_menu_zayavka"
         name="Заявки"
         parent="amanat_menu_orders_group"
         action="zayavka_action"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_manager,amanat.group_amanat_inspector,amanat.group_amanat_limited_access"
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_inspector,amanat.group_amanat_limited_access,amanat.group_amanat_treasurer"
     />
 
     <!-- Меню для резерва -->
