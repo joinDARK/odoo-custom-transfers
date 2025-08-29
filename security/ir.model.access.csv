@@ -67,7 +67,7 @@ access_amanat_money_senior_manager,amanat.money,model_amanat_money,group_amanat_
 access_amanat_money_fin_manager_jess,amanat.money,model_amanat_money,group_amanat_fin_manager_jess,1,1,1,1
 access_amanat_money_fin_manager,amanat.money,model_amanat_money,group_amanat_fin_manager,1,1,1,1
 access_amanat_money_director,amanat.money,model_amanat_money,group_amanat_director,1,1,1,1
-access_amanat_money_manager,amanat.money,model_amanat_money,group_amanat_manager,1,1,1,0
+access_amanat_money_manager,amanat.money,model_amanat_money,group_amanat_manager,1,1,1,1
 access_amanat_money_inspector,amanat.money,model_amanat_money,group_amanat_inspector,1,0,0,0
 access_amanat_money_transit_only,amanat.money,model_amanat_money,group_amanat_transit_only,1,1,1,0
 access_amanat_reconciliation_admin,amanat.reconciliation,model_amanat_reconciliation,group_amanat_admin,1,1,1,1
