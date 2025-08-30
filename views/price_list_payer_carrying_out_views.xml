@@ -7,7 +7,7 @@
             <list editable="top" multi_edit="1">
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="name"/>
-                <field width="200" name="payer_partners"/>
+                <field width="200" name="payer_partners" widget="many2many_tags"/>
                 <field width="200" name="contragent_ids" widget="many2many_tags"/>
                 <field width="200" name="date_start"/>
                 <field width="200" name="date_end"/>
@@ -35,7 +35,7 @@
         <field name="arch" type="xml">
             <search>
                 <field name="name" string="Наименование"/>
-                <field name="payer_partners" string="Плательщики субагенты" widget="many2many_tags"/>
+                <field name="payer_partners" string="Плательщики субагенты"/>
                 <field name="contragent_ids" string="Субагенты"/>
                 <field name="contragent_zayavka_id" string="Контрагент заявки"/>
                 <field name="agent_zayavka_id" string="Агент заявки"/>

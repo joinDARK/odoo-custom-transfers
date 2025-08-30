@@ -1783,8 +1783,10 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Курс после конвертации в валюте заявки',
         compute='_compute_real_post_conversion_rate',
         help="""
-        Курс после конвертации в валюте заявки = Курс Джесс × Кросс-курс $ к валюте заявки авто
+        Курс после конвертации в валюте заявки = Курс Джесс
         """,
+        # TODO
+        # Кросс-курс $ к валюте заявки авто
         readonly=False,
         store=True,
         digits=(16, 6),

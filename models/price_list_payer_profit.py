@@ -30,6 +30,19 @@ class PriceListPayerProfit(models.Model):
         readonly=True
     )
 
+    # Субагенты — вычисляемое поле, собирающее субагентов из связанных плательщиков через контрагентов
+    subagent_ids = fields.Many2many(
+        'amanat.contragent',
+        'amanat_price_list_profit_subagent_rel',
+        'price_list_id',
+        'subagent_id',
+        string='Субагенты',
+        compute='_compute_subagent_ids',
+        store=True,
+        readonly=True,
+        tracking=True
+    )
+
     # Дата начало и Дата конец
     date_start = fields.Date(string='Дата начало', tracking=True)
     date_end = fields.Date(string='Дата конец', tracking=True)
@@ -110,6 +123,14 @@ class PriceListPayerProfit(models.Model):
     def _compute_contragent_ids(self):
         for rec in self:
             rec.contragent_ids = rec.payer_subagent_ids.mapped('contragents_ids')
+
+    @api.depends('payer_subagent_ids')
+    def _compute_subagent_ids(self):
+        """Вычисляет субагентов из связанных плательщиков через их контрагентов"""
+        for rec in self:
+            # Получаем всех контрагентов из плательщиков субагентов
+            contragents = rec.payer_subagent_ids.mapped('contragents_ids')
+            rec.subagent_ids = contragents
 
     @api.depends('date_start', 'date_end')
     def _compute_period_days(self):

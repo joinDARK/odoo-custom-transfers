@@ -8,7 +8,7 @@
                 <button width="30" title="Перейти в форму" type="object" name="open_form" icon="fa-external-link"/>
                 <field width="200" name="name"/>
                 <field width="200" name="payer_partner"/>
-                <field width="200" name="contragents_ids"/>
+                <field width="200" name="contragents_ids" widget="many2many_tags"/>
                 <field width="200" name="accrual_type"/>
                 <field width="200" name="date_start"/>
                 <field width="200" name="date_end"/>

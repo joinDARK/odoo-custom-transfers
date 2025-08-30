@@ -37,9 +37,12 @@
                 </header>
                 <sheet>
                     <group>
-                        <div class="o-form-group-2">
+                        <div class="o-form-group-3">
                             <group>
                                 <field name="payer_subagent_ids" widget="many2many_tags"/>
+                            </group>
+                            <group>
+                                <field name="subagent_ids" widget="many2many_tags"/>
                             </group>
                             <group>
                                 <field name="contragent_ids" widget="many2many_tags"/>
@@ -83,6 +86,43 @@
                     <field name="message_ids"/>
                 </chatter>
             </form>
+        </field>
+    </record>
+
+    <!-- Search view -->
+    <record id="price_list_payer_profit_search_view" model="ir.ui.view">
+        <field name="name">price.list.payer.profit.search</field>
+        <field name="model">amanat.price_list_payer_profit</field>
+        <field name="arch" type="xml">
+            <search string="Поиск прайс-листов плательщика прибыль">
+                <field name="name" string="Наименование"/>
+                <field name="payer_subagent_ids" string="Плательщики субагента"/>
+                <field name="subagent_ids" string="Субагент"/>
+                <field name="contragent_ids" string="Контрагенты"/>
+                <field name="date_start" string="Дата начало"/>
+                <field name="date_end" string="Дата конец"/>
+                <field name="percent_accrual" string="% Начисления"/>
+                <field name="fixed_fee" string="Фикс за сделку $"/>
+                <field name="contragent_zayavka_id" string="Контрагент заявки"/>
+                <field name="agent_zayavka_id" string="Агент заявки"/>
+                <field name="client_zayavka_id" string="Клиент заявки"/>
+                <field name="currency_zayavka" string="Валюта заявки"/>
+                
+                <!-- Фильтры -->
+                <filter name="filter_active" string="Активные" 
+                        domain="['|', ('date_end', '=', False), ('date_end', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_expired" string="Истекшие" 
+                        domain="[('date_end', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                
+                <!-- Группировка -->
+                <group expand="0" string="Группировать по">
+                    <filter name="group_by_subagent" string="Субагент" context="{'group_by': 'subagent_ids'}"/>
+                    <filter name="group_by_payer" string="Плательщики субагента" context="{'group_by': 'payer_subagent_ids'}"/>
+                    <filter name="group_by_contragent" string="Контрагенты" context="{'group_by': 'contragent_ids'}"/>
+                    <filter name="group_by_currency" string="Валюта заявки" context="{'group_by': 'currency_zayavka'}"/>
+                    <filter name="group_by_date_start" string="Дата начало" context="{'group_by': 'date_start'}"/>
+                </group>
+            </search>
         </field>
     </record>
 

@@ -18,7 +18,7 @@
                     <field name="status" widget="searchable_selection" />
                     <field name="date_placement" />
                     <field name="amount" />
-                    <field name="usd_equivalent" />
+                    <field name="usd_equivalent" digits="[16,4]" />
                   </group>
                   <group>
                     <field name="contragent_id" />
@@ -150,8 +150,8 @@
                   <group>
                     <field name="deal_type" />
                     <field name="instruction_signed_date" />
-                    <field name="amount" />
-                    <field name="usd_equivalent" />
+                    <field name="amount" digits="[16,4]"/>
+                    <field name="usd_equivalent" digits="[16,4]" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
                     <field name="reward_percent_in_contract" widget="percentage" />
@@ -238,8 +238,8 @@
                   <group>
                     <field name="deal_type" />
                     <field name="instruction_signed_date" />
-                    <field name="amount" />
-                    <field name="usd_equivalent" />
+                    <field name="amount" digits="[16,4]"/>
+                    <field name="usd_equivalent" digits="[16,4]" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
                     <field name="reward_percent_in_contract" widget="percentage" />
@@ -314,8 +314,8 @@
                   <group>
                     <field name="deal_type" />
                     <field name="instruction_signed_date" />
-                    <field name="amount" />
-                    <field name="usd_equivalent" />
+                    <field name="amount" digits="[16,4]"/>
+                    <field name="usd_equivalent" digits="[16,4]" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
                     <field name="reward_percent_in_contract" widget="percentage" />
@@ -385,7 +385,7 @@
               </notebook>
             </page>
 
-            <page string="Документы" groups="!amanat.group_amanat_limited_access">
+            <page string="Документы">
               <notebook>
                 <page string="Первичка">
                   <group string="Первичные документы">
@@ -410,7 +410,7 @@
                   </group>
                 </page>
                 <page string="Комплект">
-                  <group string="Комплект документов">
+                  <group string="Комплект документов">е
                     <div class="o-form-group-2">
                       <group>
                         <field name="contragent_contract_attachments" widget="amanat_attachment"
@@ -1561,43 +1561,100 @@
             </page>
             <page string="Вычисляемые поля"
               groups="!amanat.group_amanat_limited_access">
-              <group>
-                <field name="usd_equivalent" />
-                <field name="conversion_expenses_rub" />
-                <field name="payment_expense_in_currency" />
-                <field name="real_cross_rate" />
-                <field name="xe_rate_auto" />
-                <field name="client_payment_cost" />
-                <field name="payment_cost_sovok" />
-                <field name="course_profitable" />
-                <field name="equivalent_amount_usd" />
-                <field name="contract_reward" />
-                <field name="bank_vypiska" />
-                <field name="calculation" />
-                <field name="waiting_for_replenishment" />
-                <field name="deal_amount_received" />
-                <field name="total_amount_received" />
-                <field name="sum_from_extracts" />
-                <field name="error_sber" />
-                <field name="partner_post_conversion_rate" />
-                <field name="payer_cross_rate_usd_auto" />
-                <field name="date_received_on_pc_auto" />
-                <field name="status_range_copy" />
-                <field name="status_range" />
-                <field name="client_operating_expenses" />
-                <field name="hidden_partner_commission" />
-                <field name="date_days" />
-                <field name="operating_expenses_sovok_partner" />
-                <field name="cost_of_money_client" />
-                <field name="fin_res_client" />
-                <field name="sebestoimost_denej_sovok_partner" />
-                <field name="payment_cost_sovok_partner_usd" />
-                <field name="fin_res_sovok_partner" />
-                <field name="sber_payment_cost_on_usd" />
-                <field name="sber_payment_cost_on_usd_real" />
-                <field name="sebestoimost_denej_sber" />
-                <field name="fin_res_sber" />
+              
+              <!-- Валютные расчеты и эквиваленты -->
+              <group string="Валютные расчеты и эквиваленты">
+                <div class="o-form-group-3">
+                  <group>
+                    <field name="usd_equivalent" digits="[16,4]" />
+                    <field name="equivalent_amount_usd" />
+                    <field name="real_cross_rate" />
+                  </group>
+                  <group>
+                    <field name="xe_rate_auto" />
+                    <field name="payer_cross_rate_usd_auto" />
+                    <field name="partner_post_conversion_rate" />
+                  </group>
+                  <group>
+                    <field name="conversion_expenses_rub" />
+                    <field name="course_profitable" />
+                  </group>
+                </div>
               </group>
+
+              <!-- Расходы и платежи -->
+              <group string="Расходы и платежи">
+                <div class="o-form-group-3">
+                  <group>
+                    <field name="client_payment_cost" />
+                    <field name="payment_cost_sovok" />
+                    <field name="payment_expense_in_currency" />
+                  </group>
+                  <group>
+                    <field name="sber_payment_cost_on_usd" />
+                    <field name="sber_payment_cost_on_usd_real" />
+                    <field name="payment_cost_sovok_partner_usd" />
+                  </group>
+                  <group>
+                    <field name="client_operating_expenses" />
+                    <field name="operating_expenses_sovok_partner" />
+                    <field name="hidden_partner_commission" />
+                  </group>
+                </div>
+              </group>
+
+              <!-- Себестоимость и финансовые результаты -->
+              <group string="Себестоимость и финансовые результаты">
+                <div class="o-form-group-3">
+                  <group>
+                    <field name="cost_of_money_client" />
+                    <field name="sebestoimost_denej_sber" />
+                    <field name="sebestoimost_denej_sovok_partner" />
+                  </group>
+                  <group>
+                    <field name="fin_res_client" />
+                    <field name="fin_res_sber" />
+                    <field name="fin_res_sovok_partner" />
+                  </group>
+                  <group>
+                    <field name="contract_reward" />
+                    <field name="calculation" />
+                  </group>
+                </div>
+              </group>
+
+              <!-- Банковские операции и выписки -->
+              <group string="Банковские операции и выписки">
+                <div class="o-form-group-3">
+                  <group>
+                    <field name="bank_vypiska" />
+                    <field name="sum_from_extracts" />
+                    <field name="waiting_for_replenishment" />
+                  </group>
+                  <group>
+                    <field name="deal_amount_received" />
+                    <field name="total_amount_received" />
+                    <field name="date_received_on_pc_auto" />
+                  </group>
+                  <group>
+                    <field name="error_sber" />
+                  </group>
+                </div>
+              </group>
+
+              <!-- Временные и статусные поля -->
+              <group string="Временные и статусные поля">
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="date_days" />
+                    <field name="status_range" />
+                  </group>
+                  <group>
+                    <field name="status_range_copy" />
+                  </group>
+                </div>
+              </group>
+
             </page>
           </notebook>
         </sheet>
