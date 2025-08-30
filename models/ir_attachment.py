@@ -41,18 +41,15 @@ class IrAttachment(models.Model):
 
     
     def _filter_access_rules(self, operation):
-        """ЯДЕРНЫЙ ОБХОД: Полностью отключаем record rules для всех пользователей с base.group_user"""
-        _logger.info(f"AMANAT _filter_access_rules called for IDs: {self.ids}, operation: {operation}, user: {self.env.user.name}")
+        """ЯДЕРНЫЙ ОБХОД: Полностью отключаем record rules для ВСЕХ пользователей"""
+        _logger.error(f"🚨🚨🚨 AMANAT _filter_access_rules called for IDs: {self.ids}, operation: {operation}, user: {self.env.user.name} 🚨🚨🚨")
         
-        # КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Обходим правила для всех внутренних пользователей
-        if self.env.user._is_internal() or self.env.user.has_group('base.group_user'):
-            _logger.info(f"AMANAT: Internal user {self.env.user.name} - BYPASSING ALL RECORD RULES for {self.ids}")
-            # Возвращаем все записи без фильтрации
-            return self
-        else:
-            _logger.info(f"AMANAT: External user {self.env.user.name} - applying standard rules")
-            # Для внешних пользователей применяем стандартную логику
-            return super()._filter_access_rules(operation)
+        # ЭКСТРЕМАЛЬНОЕ ИЗМЕНЕНИЕ: Обходим правила для ВСЕХ пользователей без исключений
+        _logger.error(f"🚨 AMANAT: BYPASSING ALL RECORD RULES FOR ALL USERS - NO EXCEPTIONS! 🚨")
+        print(f"🚨 AMANAT: _filter_access_rules BYPASS for user {self.env.user.name}, operation: {operation} 🚨")
+        
+        # Возвращаем все записи без фильтрации для ВСЕХ
+        return self
 
     def read(self, fields=None, load='_classic_read'):
         """

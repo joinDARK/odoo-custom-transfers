@@ -65,6 +65,7 @@ from . import res_company
 from . import res_config_settings
 from . import ir_attachment
 from . import ir_binary
+from . import ir_rule
 
 from . import signature_library
 from . import template_library
