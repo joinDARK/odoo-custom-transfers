@@ -59,7 +59,7 @@ access_amanat_order_senior_manager,amanat.order,model_amanat_order,group_amanat_
 access_amanat_order_fin_manager_jess,amanat.order,model_amanat_order,group_amanat_fin_manager_jess,1,1,1,1
 access_amanat_order_fin_manager,amanat.order,model_amanat_order,group_amanat_fin_manager,1,1,1,1
 access_amanat_order_director,amanat.order,model_amanat_order,group_amanat_director,1,1,1,1
-access_amanat_order_manager,amanat.order,model_amanat_order,group_amanat_manager,1,1,1,0
+access_amanat_order_manager,amanat.order,model_amanat_order,group_amanat_manager,1,1,1,1
 access_amanat_order_inspector,amanat.order,model_amanat_order,group_amanat_inspector,1,0,0,0
 access_amanat_order_transit_only,amanat.order,model_amanat_order,group_amanat_transit_only,1,1,1,0
 access_amanat_money_admin,amanat.money,model_amanat_money,group_amanat_admin,1,1,1,1
