@@ -17,7 +17,7 @@ Endpoint: http://92.255.207.48:8080/receive-data
 
 ### Новая API
 ```
-Endpoint: http://localhost:8085/api/operations
+Endpoint: http://incube.ai:8085/api/operations
 Ответ: {
   "success": true,
   "message": "Файлы успешно созданы",

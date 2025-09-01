@@ -414,7 +414,7 @@
                     <div class="o-form-group-2">
                       <group>
                         <field name="contragent_contract_attachments" widget="amanat_attachment"
-                          options="{'no_create': False, 'no_open': True}" />
+                          options="{'no_create': False, 'no_open': False}" />
                       </group>
                       <group>
                         <div class="o_inner_group d-flex">
@@ -1560,7 +1560,7 @@
               </group>
             </page>
             <page string="Вычисляемые поля"
-              groups="!amanat.group_amanat_limited_access">
+              groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer">
               
               <!-- Валютные расчеты и эквиваленты -->
               <group string="Валютные расчеты и эквиваленты">

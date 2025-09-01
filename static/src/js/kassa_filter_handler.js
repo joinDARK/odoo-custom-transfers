@@ -66,7 +66,7 @@ patch(ListController.prototype, {
             console.error('⚠️ Неожиданная ошибка:', server_response);
         }
         
-        console.log('🌐 Адрес сервера:', 'http://92.255.207.48:8085/api/salesRegisters');
+        console.log('🌐 Адрес сервера:', 'http://incube.ai:8085/api/salesRegisters');
         console.log('⏰ Время отправки:', new Date().toLocaleString());
         console.groupEnd();
         
@@ -149,7 +149,7 @@ registry.category("actions").add("kassa_filter_response_handler", {
                 console.error('❌ Ошибка при отправке:', server_response);
             }
             
-            console.log('🌐 Адрес сервера:', 'http://92.255.207.48:8085/api/salesRegisters');
+            console.log('🌐 Адрес сервера:', 'http://incube.ai:8085/api/salesRegisters');
             console.log('⏰ Время отправки:', new Date().toLocaleString());
             console.groupEnd();
         }

@@ -1522,6 +1522,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         'ir.attachment',
         compute='_compute_contragent_contract_attachments',
         store=True,
+        readonly=False,
         string='Договоры контрагента'
     )
 
@@ -1785,8 +1786,6 @@ class Zayavka(models.Model, AmanatBaseModel):
         help="""
         Курс после конвертации в валюте заявки = Курс Джесс
         """,
-        # TODO
-        # Кросс-курс $ к валюте заявки авто
         readonly=False,
         store=True,
         digits=(16, 6),

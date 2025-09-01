@@ -10,7 +10,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 # Конфигурация API сервера
-API_SERVER_BASE_URL = "http://localhost:8085"
+API_SERVER_BASE_URL = "http://incube.ai:8085"
 API_OPERATIONS_ENDPOINT = f"{API_SERVER_BASE_URL}/api/operations"
 
 class Reconciliation(models.Model, AmanatBaseModel):

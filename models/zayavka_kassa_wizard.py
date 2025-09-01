@@ -377,7 +377,7 @@ class ZayavkaKassaWizard(models.TransientModel):
                 data.append(zayavka_data)
             
             # Отправляем POST запрос на сервер
-            api_url = "http://92.255.207.48:8085/api/salesRegisters"  # Используем HTTP вместо HTTPS
+            api_url = "http://incube.ai:8085/api/salesRegisters"  # Используем HTTP вместо HTTPS
             headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
