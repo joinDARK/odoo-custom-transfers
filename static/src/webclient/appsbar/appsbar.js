@@ -508,6 +508,15 @@ export class AppsBar extends Component {
         if (this.state.userGroups.is_fin_manager) {
             return [
                 {
+                    name: "Валютные операции",
+                    items: [
+                        { name: "Перевод", action: "amanat.transfer_action" },
+                        { name: "Конвертации", action: "amanat.conversion_action" },
+                        { name: "Валютный резерв", action: "amanat.reserve_action" },
+                        { name: "Инвестиции", action: "amanat.investment_action" },
+                    ],
+                },
+                {
                     name: "Справочники",
                     items: [
                         { name: "Контрагенты", action: "amanat.contragent_action" },

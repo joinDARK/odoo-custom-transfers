@@ -1121,7 +1121,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     reward_percent_in_contract = fields.Float(
         string='% Вознаграждения по договору',
         tracking=True,
-        digits=(16, 4)
+        digits=(16, 6)
     )
 
     equivalent_amount_usd = fields.Float(

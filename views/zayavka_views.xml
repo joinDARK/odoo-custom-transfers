@@ -154,7 +154,7 @@
                     <field name="usd_equivalent" digits="[16,4]" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
-                    <field name="reward_percent_in_contract" widget="float" digits="[16,4]" options="{'suffix': '%'}" />
+                    <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
                   </group>
@@ -242,7 +242,7 @@
                     <field name="usd_equivalent" digits="[16,4]" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
-                    <field name="reward_percent_in_contract" widget="float" digits="[16,4]" options="{'suffix': '%'}" />
+                    <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
                     <field name="jess_rate" groups="!amanat.group_amanat_manager" />
@@ -318,7 +318,7 @@
                     <field name="usd_equivalent" digits="[16,4]" />
                     <field name="best_rate" string="Скрытый курс" />
                     <field name="hand_reward_percent" widget="percentage" />
-                    <field name="reward_percent_in_contract" widget="float" digits="[16,4]" options="{'suffix': '%'}" />
+                    <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
                     <field name="jess_rate" groups="!amanat.group_amanat_manager" />
@@ -1719,6 +1719,7 @@
         <field width="200" name="client_id" />
         <field width="200" name="inn" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="deal_type" />
+        <field width="200" name="amount"/>
         <field width="140" name="sum_from_extracts" groups="amanat.group_amanat_treasurer"/>
         <field width="140" name="waiting_for_replenishment" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="application_amount_rub_contract" />
