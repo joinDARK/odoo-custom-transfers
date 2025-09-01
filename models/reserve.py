@@ -32,7 +32,7 @@ class Reserve(models.Model, AmanatBaseModel):
     )
     commision_percent_1 = fields.Float(string="Процент комиссии по отправке", tracking=True)
     commision_amount_1 = fields.Float(
-        string="Сумма комиссии по отправке", 
+        string="Сумма к отправке", 
         compute="_compute_commision_amount_1", 
         store=True, 
         readonly=True,
@@ -47,7 +47,7 @@ class Reserve(models.Model, AmanatBaseModel):
     )
     commision_percent_2 = fields.Float(string="Процент комиссии отправителя", tracking=True)
     commision_amount_2 = fields.Float(
-        string="Сумма комиссии отправителя", 
+        string="Сумма к получению", 
         compute="_compute_commision_amount_2", 
         store=True, 
         readonly=True,
