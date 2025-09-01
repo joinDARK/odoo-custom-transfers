@@ -41,23 +41,32 @@ class ZayavkaRuleForManagement(models.Model):
                 ('max_application_amount', '>=', equivalent_sum),
             ]
             
+            # ИСПРАВЛЕНА ЛОГИКА ДОМЕНА: ищем правила ИЛИ с конкретным значением ИЛИ с пустым полем
             if contragent:
-                domain.append(('contragent_zayavka_id', 'in', [contragent.id]))
+                domain.append('|')  # OR operator
+                domain.append(('contragent_zayavka_id', '=', contragent.id))
+                domain.append(('contragent_zayavka_id', '=', False))
             else:
                 domain.append(('contragent_zayavka_id', '=', False))
                 
             if agent:
-                domain.append(('agent_zayavka_id', 'in', [agent.id]))
+                domain.append('|')  # OR operator
+                domain.append(('agent_zayavka_id', '=', agent.id))
+                domain.append(('agent_zayavka_id', '=', False))
             else:
                 domain.append(('agent_zayavka_id', '=', False))
             
             if client:
-                domain.append(('client_zayavka_id', 'in', [client.id]))
+                domain.append('|')  # OR operator
+                domain.append(('client_zayavka_id', '=', client.id))
+                domain.append(('client_zayavka_id', '=', False))
             else:
                 domain.append(('client_zayavka_id', '=', False))
 
             if currency:
-                domain.append(('currency_zayavka', 'in', [currency]))
+                domain.append('|')  # OR operator
+                domain.append(('currency_zayavka', '=', currency))
+                domain.append(('currency_zayavka', '=', False))
             else:
                 domain.append(('currency_zayavka', '=', False))
 
@@ -171,10 +180,11 @@ class ZayavkaRuleForManagement(models.Model):
                 client_rule = getattr(rule, 'client_zayavka_id', None)
                 currency_rule = getattr(rule, 'currency_zayavka', None)
                 
-                contragent_ok = (not contragent_rule and not contragent) or (contragent_rule and contragent and contragent_rule.id == contragent.id)
-                agent_ok = (not agent_rule and not agent) or (agent_rule and agent and agent_rule.id == agent.id)
-                client_ok = (not client_rule and not client) or (client_rule and client and client_rule.id == client.id)
-                currency_ok = (not currency_rule and not currency) or (currency_rule and currency and currency_rule == currency)
+                # ИСПРАВЛЕНА ЛОГИКА: пустое поле в правиле = подходит ЛЮБОЕ значение в заявке
+                contragent_ok = (not contragent_rule) or (contragent_rule and contragent and contragent_rule.id == contragent.id)
+                agent_ok = (not agent_rule) or (agent_rule and agent and agent_rule.id == agent.id)
+                client_ok = (not client_rule) or (client_rule and client and client_rule.id == client.id)
+                currency_ok = (not currency_rule) or (currency_rule and currency and currency_rule == currency)
                 
                 _logger.info(f"    Контрагент ({contragent_rule} vs {contragent}): {'✓' if contragent_ok else '✗'}")
                 _logger.info(f"    Агент ({agent_rule} vs {agent}): {'✓' if agent_ok else '✗'}")
@@ -192,23 +202,32 @@ class ZayavkaRuleForManagement(models.Model):
                 ('max_application_amount', '>=', equivalent_sum),
             ]
             
+            # ИСПРАВЛЕНА ЛОГИКА ДОМЕНА: ищем правила ИЛИ с конкретным значением ИЛИ с пустым полем
             if contragent:
-                domain.append(('contragent_zayavka_id', 'in', [contragent.id]))
+                domain.append('|')  # OR operator
+                domain.append(('contragent_zayavka_id', '=', contragent.id))
+                domain.append(('contragent_zayavka_id', '=', False))
             else:
                 domain.append(('contragent_zayavka_id', '=', False))
                 
             if agent:
-                domain.append(('agent_zayavka_id', 'in', [agent.id]))
+                domain.append('|')  # OR operator
+                domain.append(('agent_zayavka_id', '=', agent.id))
+                domain.append(('agent_zayavka_id', '=', False))
             else:
                 domain.append(('agent_zayavka_id', '=', False))
             
             if client:
-                domain.append(('client_zayavka_id', 'in', [client.id]))
+                domain.append('|')  # OR operator
+                domain.append(('client_zayavka_id', '=', client.id))
+                domain.append(('client_zayavka_id', '=', False))
             else:
                 domain.append(('client_zayavka_id', '=', False))
 
             if currency:
-                domain.append(('currency_zayavka', 'in', [currency]))
+                domain.append('|')  # OR operator
+                domain.append(('currency_zayavka', '=', currency))
+                domain.append(('currency_zayavka', '=', False))
             else:
                 domain.append(('currency_zayavka', '=', False))
 

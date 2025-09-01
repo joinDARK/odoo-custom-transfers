@@ -1561,7 +1561,6 @@
             </page>
             <page string="Вычисляемые поля"
               groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer">
-              
               <!-- Валютные расчеты и эквиваленты -->
               <group string="Валютные расчеты и эквиваленты">
                 <div class="o-form-group-3">

@@ -36,7 +36,7 @@ access_amanat_payer_transit_only,amanat.payer,model_amanat_payer,group_amanat_tr
 access_amanat_transfer_admin,amanat.transfer,model_amanat_transfer,group_amanat_admin,1,1,1,1
 access_amanat_transfer_senior_manager,amanat.transfer,model_amanat_transfer,group_amanat_senior_manager,1,1,1,1
 access_amanat_transfer_fin_manager_jess,amanat.transfer,model_amanat_transfer,group_amanat_fin_manager_jess,1,1,1,1
-access_amanat_transfer_fin_manager,amanat.transfer,model_amanat_transfer,group_amanat_fin_manager,1,0,0,0
+access_amanat_transfer_fin_manager,amanat.transfer,model_amanat_transfer,group_amanat_fin_manager,1,1,1,1
 access_amanat_transfer_director,amanat.transfer,model_amanat_transfer,group_amanat_director,1,1,1,1
 access_amanat_transfer_manager,amanat.transfer,model_amanat_transfer,group_amanat_manager,1,1,1,0
 access_amanat_transfer_inspector,amanat.transfer,model_amanat_transfer,group_amanat_inspector,1,0,0,0
@@ -100,6 +100,7 @@ access_amanat_writeoff_inspector,amanat.writeoff,model_amanat_writeoff,group_ama
 access_amanat_conversion_admin,amanat.conversion,model_amanat_conversion,group_amanat_admin,1,1,1,1
 access_amanat_conversion_senior_manager,amanat.conversion,model_amanat_conversion,group_amanat_senior_manager,1,1,1,1
 access_amanat_conversion_fin_manager_jess,amanat.conversion,model_amanat_conversion,group_amanat_fin_manager_jess,1,1,1,1
+access_amanat_conversion_fin_manager,amanat.conversion,model_amanat_conversion,group_amanat_fin_manager,1,1,1,1
 access_amanat_conversion_director,amanat.conversion,model_amanat_conversion,group_amanat_director,1,1,1,1
 access_amanat_conversion_manager,amanat.conversion,model_amanat_conversion,group_amanat_manager,1,1,1,0
 access_amanat_conversion_inspector,amanat.conversion,model_amanat_conversion,group_amanat_inspector,1,0,0,0
@@ -127,6 +128,7 @@ access_amanat_zayavka_treasurer,amanat.zayavka,model_amanat_zayavka,group_amanat
 access_amanat_reserve_admin,amanat.reserve,model_amanat_reserve,group_amanat_admin,1,1,1,1
 access_amanat_reserve_senior_manager,amanat.reserve,model_amanat_reserve,group_amanat_senior_manager,1,1,1,1
 access_amanat_reserve_fin_manager_jess,amanat.reserve,model_amanat_reserve,group_amanat_fin_manager_jess,1,1,1,1
+access_amanat_reserve_fin_manager,amanat.reserve,model_amanat_reserve,group_amanat_fin_manager,1,1,1,1
 access_amanat_reserve_director,amanat.reserve,model_amanat_reserve,group_amanat_director,1,1,1,1
 access_amanat_reserve_manager,amanat.reserve,model_amanat_reserve,group_amanat_manager,0,0,0,0
 access_amanat_reserve_inspector,amanat.reserve,model_amanat_reserve,group_amanat_inspector,1,0,0,0
@@ -214,6 +216,7 @@ access_amanat_investment_admin,amanat.investment,model_amanat_investment,group_a
 access_amanat_investment_director,amanat.investment,model_amanat_investment,group_amanat_director,1,1,1,1
 access_amanat_investment_senior_manager,amanat.investment,model_amanat_investment,group_amanat_senior_manager,1,1,1,1
 access_amanat_investment_fin_manager_jess,amanat.investment,model_amanat_investment,group_amanat_fin_manager_jess,1,1,1,1
+access_amanat_investment_fin_manager,amanat.investment,model_amanat_investment,group_amanat_fin_manager,1,1,1,1
 access_amanat_investment_manager,amanat.investment,model_amanat_investment,group_amanat_manager,0,0,0,0
 access_amanat_investment_inspector,amanat.investment,model_amanat_investment,group_amanat_inspector,1,0,0,0
 access_amanat_manager_admin,amanat.manager,model_amanat_manager,group_amanat_admin,1,1,1,1
