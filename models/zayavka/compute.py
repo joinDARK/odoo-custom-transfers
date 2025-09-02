@@ -443,7 +443,7 @@ class ZayavkaComputes(models.Model):
                 rec.fin_res_client_real = (amount * reward_percent) - client_payment_cost - client_real_operating_expenses + cross_return_delta
             else:
                 if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
-                    if rec.contragent_id and rec.contragent_id.name.strip() in ['а7', 'a7']:
+                    if rec.contragent_id and rec.contragent_id.name in ['А7', 'A7']:
                         # ! Фин рез Клиент реал = (Сумма заявки * % Вознаграждения) - Расход платежа Клиент - Расход на операционную деятельность Клиент Реал
                         rec.fin_res_client_real = (rec.amount * rec.reward_percent) - rec.client_real_operating_expenses - rec.client_payment_cost + cross_return_delta
                         _logger.info(f"[_compute_fin_res_client_real] (Контрагент А7) ({rec.amount} * {rec.reward_percent}) - {rec.client_real_operating_expenses} - {rec.client_payment_cost} + {cross_return_delta} = {rec.fin_res_client_real}")
@@ -739,7 +739,7 @@ class ZayavkaComputes(models.Model):
                 rec.fin_res_sber_real = (amount * reward_percent) - sber_payment_cost - sber_operating_expenses_real + cross_return_delta
             else:
                 if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
-                    if rec.contragent_id and rec.contragent_id.name.strip() in ['а7', 'a7']:
+                    if rec.contragent_id and rec.contragent_id.name in ['А7', 'A7']:
                         # ! Фин рез Сбер реал = (Сумма * % Вознаграждения) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
                         rec.fin_res_sber_real = (amount * rec.reward_percent) - sber_operating_expenses_real - sber_payment_cost + cross_return_delta
                     else:
@@ -1044,7 +1044,7 @@ class ZayavkaComputes(models.Model):
                 rec.fin_res_sovok_real = (amount * reward_percent) - payment_cost_sovok - operating_expenses_sovok_real + cross_return_delta
             else:
                 if (rec.agent_id and rec.agent_id.name == 'Тезер') or rec.currency == 'usdt' or rec.deal_type == 'import_export' or rec.deal_type == 'export_import':
-                    if rec.contragent_id and rec.contragent_id.name.strip() in ['а7', 'a7']:
+                    if rec.contragent_id and rec.contragent_id.name in ['А7', 'A7']:
                         # ! Фин рез Совок реал = (Сумма * % Вознаграждения) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
                         rec.fin_res_sovok_real = (amount * rec.reward_percent) - operating_expenses_sovok_real - payment_cost_sovok + cross_return_delta
                     else:
