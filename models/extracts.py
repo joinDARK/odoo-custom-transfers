@@ -202,13 +202,40 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
 
                 # Check 1: Duplicate within this file (already processed in this run)
                 if key1 in processed_keys or (key2 and key2 in processed_keys):
-                    _logger.info("Skipping duplicate record within file: %s", new_record_data)
+                    _logger.warning(
+                        "ДУБЛИКАТ В ФАЙЛЕ: Пропускаем запись. Плательщик: %s (ИНН: %s), Получатель: %s (ИНН: %s), "
+                        "Сумма: %s, Дата: %s, Номер документа: %s, Назначение: %s",
+                        doc.get('payer', 'Не указан'),
+                        payer_inn,
+                        doc.get('receiver', 'Не указан'), 
+                        receiver_inn,
+                        parsed_amount,
+                        parsed_date,
+                        doc.get('number', 'Не указан'),
+                        (doc.get('paymentPurpose') or '').replace('\n', ' ').strip()[:100]
+                    )
                     skipped_duplicate_count += 1
                     continue
 
                 # Check 2: Duplicate in the database (from a previous run)
-                if self._is_duplicate_record(new_record_data):
-                    _logger.info("Skipping duplicate record from DB: %s", new_record_data)
+                _logger.info("DEBUG: Перед проверкой дубликата в БД для документа %s", doc.get('number', 'Не указан'))
+                _logger.info("DEBUG: new_record_data: %s", new_record_data)
+                is_duplicate = self._is_duplicate_record(new_record_data)
+                _logger.info("DEBUG: Результат проверки дубликата: %s", is_duplicate)
+
+                if is_duplicate:
+                    _logger.warning(
+                        "ДУБЛИКАТ В БД: Пропускаем запись. Плательщик: %s (ИНН: %s), Получатель: %s (ИНН: %s), "
+                        "Сумма: %s, Дата: %s, Номер документа: %s, Назначение: %s",
+                        doc.get('payer', 'Не указан'),
+                        payer_inn,
+                        doc.get('receiver', 'Не указан'),
+                        receiver_inn,
+                        parsed_amount,
+                        parsed_date,
+                        doc.get('number', 'Не указан'),
+                        (doc.get('paymentPurpose') or '').replace('\n', ' ').strip()[:100]
+                    )
                     skipped_duplicate_count += 1
                     continue
                 # --- End Duplicate Check ---
@@ -220,10 +247,18 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
             
             created_count = 0
             if records_to_create_vals:
-                created_records = self.env['amanat.extract_delivery'].create(records_to_create_vals)
-                self.extract_delivery_ids |= created_records
-                created_count = len(created_records)
-                _logger.info("Created %d 'amanat.extract_delivery' records for extract %s", created_count, self.name)
+                _logger.info("DEBUG: Создаем %d записей в amanat.extract_delivery", len(records_to_create_vals))
+                for i, record_vals in enumerate(records_to_create_vals):
+                    _logger.info("DEBUG: Запись %d: %s", i+1, record_vals)
+                try:
+                    created_records = self.env['amanat.extract_delivery'].create(records_to_create_vals)
+                    self.extract_delivery_ids |= created_records
+                    created_count = len(created_records)
+                    _logger.info("Created %d 'amanat.extract_delivery' records for extract %s", created_count, self.name)
+                except Exception as create_error:
+                    _logger.error("DEBUG: Ошибка при создании записей: %s", create_error)
+                    _logger.error("DEBUG: records_to_create_vals: %s", records_to_create_vals)
+                    raise
 
             summary_message = (
                 f"Обработка завершена.<br/>"
@@ -253,35 +288,46 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
                 continue
             
             fields = {}
-            fields['date'] = (re.search(r"Дата=(.+)", section) or [None, None])[1]
-            fields['amount'] = (re.search(r"Сумма=(.+)", section) or [None, None])[1]
-            fields['number'] = (re.search(r"Номер=(.+)", section) or [None, None])[1]
+            date_match = re.search(r"Дата=(.+)", section)
+            fields['date'] = date_match.group(1) if date_match else None
+            amount_match = re.search(r"Сумма=(.+)", section)
+            fields['amount'] = amount_match.group(1) if amount_match else None
+            number_match = re.search(r"Номер=(.+)", section)
+            fields['number'] = number_match.group(1) if number_match else None
             
-            raw_payer = (re.search(r"Плательщик=(.+)", section) or re.search(r"Плательщик1=(.+)", section) or [None, None])[1]
+            payer_match = re.search(r"Плательщик=(.+)", section) or re.search(r"Плательщик1=(.+)", section)
+            raw_payer = payer_match.group(1) if payer_match else None
             fields['payer'] = self._clean_contractor_name(raw_payer)
-            
-            raw_receiver = (re.search(r"Получатель=(.+)", section) or re.search(r"Получатель1=(.+)", section) or [None, None])[1]
+
+            receiver_match = re.search(r"Получатель=(.+)", section) or re.search(r"Получатель1=(.+)", section)
+            raw_receiver = receiver_match.group(1) if receiver_match else None
             fields['receiver'] = self._clean_contractor_name(raw_receiver)
 
-            fields['payerINN'] = (re.search(r"ПлательщикИНН=(.+)", section) or [None, None])[1]
-            fields['receiverINN'] = (re.search(r"ПолучательИНН=(.+)", section) or [None, None])[1]
-            fields['paymentPurpose'] = (re.search(r"НазначениеПлатежа=(.+)", section) or [None, None])[1]
+            payer_inn_match = re.search(r"ПлательщикИНН=(.+)", section)
+            fields['payerINN'] = payer_inn_match.group(1) if payer_inn_match else None
+            receiver_inn_match = re.search(r"ПолучательИНН=(.+)", section)
+            fields['receiverINN'] = receiver_inn_match.group(1) if receiver_inn_match else None
+            payment_purpose_match = re.search(r"НазначениеПлатежа=(.+)", section)
+            fields['paymentPurpose'] = payment_purpose_match.group(1) if payment_purpose_match else None
 
             if fields.get('date') or fields.get('amount'):
                 documents.append({k: v.strip() if v else v for k, v in fields.items()})
         return documents
 
     def _extract_inn_string(self, inn):
-        if not inn: return None
+        if not inn:
+            return None
         cleaned = re.sub(r'\D', '', str(inn))
         return cleaned if cleaned else None
 
     def _clean_contractor_name(self, name):
-        if not name: return ''
+        if not name:
+            return ''
         return re.sub(r'^ИНН\s*\d+\s*', '', str(name), flags=re.IGNORECASE).strip()
 
     def _parse_date(self, date_str):
-        if not date_str: return None
+        if not date_str:
+            return None
         try:
             # Format DD.MM.YYYY
             return datetime.strptime(date_str, '%d.%m.%Y').strftime('%Y-%m-%d')
@@ -289,7 +335,8 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
             return None
 
     def _parse_amount(self, amount_str):
-        if not amount_str: return None
+        if not amount_str:
+            return None
         amount_str = amount_str.replace(' ', '').replace(',', '.')
         try:
             return float(amount_str)
@@ -328,25 +375,52 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
         # Domain fields must exist and not be None
         required_fields = ['payer', 'recipient', 'amount', 'date']
         if any(new_record_vals.get(f) is None for f in required_fields):
+            _logger.info("DEBUG: Недостаточно данных для проверки дубликатов. Доступные поля: %s", new_record_vals)
             return False # Not enough data to check for duplicates
+
+        # Отладка: проверим, что мы ищем
+        _logger.info("DEBUG: Проверяем дубликат для записи:")
+        _logger.info("  - payer: %s (ID: %s)", self.env['amanat.payer'].browse(new_record_vals['payer']).name if new_record_vals.get('payer') else 'None', new_record_vals.get('payer'))
+        _logger.info("  - recipient: %s (ID: %s)", self.env['amanat.payer'].browse(new_record_vals['recipient']).name if new_record_vals.get('recipient') else 'None', new_record_vals.get('recipient'))
+        _logger.info("  - amount: %s", new_record_vals.get('amount'))
+        _logger.info("  - date: %s", new_record_vals.get('date'))
+        _logger.info("  - serial_number: %s", new_record_vals.get('serial_number'))
 
         domain1 = [
             ('payer', '=', new_record_vals['payer']),
             ('recipient', '=', new_record_vals['recipient']),
             ('amount', '=', new_record_vals['amount']),
             ('date', '=', new_record_vals['date']),
+            ('serial_number', '=', new_record_vals['serial_number']),
         ]
-        if ExtractDelivery.search_count(domain1) > 0:
+        _logger.info("DEBUG: Domain1 для поиска: %s", domain1)
+        count1 = ExtractDelivery.search_count(domain1)
+        _logger.info("DEBUG: Найдено записей по domain1: %d", count1)
+
+        if count1 > 0:
+            existing_records = ExtractDelivery.search(domain1, limit=5)
+            for rec in existing_records:
+                _logger.info("  Найденная запись ID %s: payer=%s, recipient=%s, amount=%s, date=%s, serial_number=%s",
+                           rec.id, rec.payer.name, rec.recipient.name, rec.amount, rec.date, rec.serial_number)
             return True
-        
-        if new_record_vals.get('serial_number'):
-            domain2 = [
-                ('payer', '=', new_record_vals['payer']),
-                ('recipient', '=', new_record_vals['recipient']),
-                ('serial_number', '=', new_record_vals['serial_number']),
-                ('date', '=', new_record_vals['date']),
-            ]
-            if ExtractDelivery.search_count(domain2) > 0:
-                return True
-        
+
+        # if new_record_vals.get('serial_number'):
+        #     domain2 = [
+        #         ('payer', '=', new_record_vals['payer']),
+        #         ('recipient', '=', new_record_vals['recipient']),
+        #         ('serial_number', '=', new_record_vals['serial_number']),
+        #         ('date', '=', new_record_vals['date']),
+        #     ]
+        #     _logger.info("DEBUG: Domain2 для поиска (без дублирования serial_number): %s", domain2)
+        #     count2 = ExtractDelivery.search_count(domain2)
+        #     _logger.info("DEBUG: Найдено записей по domain2: %d", count2)
+
+        #     if count2 > 0:
+        #         existing_records = ExtractDelivery.search(domain2, limit=5)
+        #         for rec in existing_records:
+        #             _logger.info("  Найденная запись ID %s: payer=%s, recipient=%s, amount=%s, date=%s, serial_number=%s",
+        #                        rec.id, rec.payer.name, rec.recipient.name, rec.amount, rec.date, rec.serial_number)
+        #         return True
+
+        _logger.info("DEBUG: Дубликат НЕ найден, запись будет создана")
         return False
