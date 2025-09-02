@@ -22,12 +22,11 @@ class ForKhalidaAutomations(models.Model):
 
         # 2. Используем compute-поле subagent_payer_ids напрямую
         subagent_payers = self.subagent_payer_ids
-        rate_fixation_date = self.rate_fixation_date
         payment_date = self.payment_date
         equivalent_sum = self.equivalent_amount_usd
         reward_percent = self.reward_percent
 
-        _logger.info(f"[Khalida Automation] Заявка {self.id}: payment_date={payment_date}, rate_fixation_date={rate_fixation_date}, equivalent_sum={equivalent_sum}, reward_percent={reward_percent}")
+        _logger.info(f"[Khalida Automation] Заявка {self.id}: payment_date={payment_date}, equivalent_sum={equivalent_sum}, reward_percent={reward_percent}")
 
         # Применяем правила по дате фиксации курса (вместо даты закрытия сделки)
         self.apply_rules_by_rate_fixation_date()
@@ -35,10 +34,6 @@ class ForKhalidaAutomations(models.Model):
         # 3. Проверяем наличие необходимых полей
         if not subagent_payers:
             _logger.warning(f"[PriceList] Пропускаем заявку {self.id}: отсутствует 'Плательщик Субагента' {subagent_payers}")
-            return
-
-        if not rate_fixation_date:
-            _logger.warning(f"[PriceList] Пропускаем заявку {self.id}: отсутствует 'Дата фиксации курса'")
             return
 
         if equivalent_sum is None:
@@ -63,7 +58,7 @@ class ForKhalidaAutomations(models.Model):
 
         # 6. Поиск подходящей записи в "Прайс лист Партнеры"
         matched_partners = self._find_matching_partners_record(
-            subagent_payers, rate_fixation_date, equivalent_sum, reward_percent
+            subagent_payers, equivalent_sum, reward_percent
         )
 
         # 6. Обновляем заявку ссылками на найденные записи
@@ -288,11 +283,15 @@ class ForKhalidaAutomations(models.Model):
 
         return matched_record 
 
-    def _find_matching_partners_record(self, subagent_payers, rate_fixation_date, equivalent_sum, reward_percent):
+    def _find_matching_partners_record(self, subagent_payers, equivalent_sum, reward_percent):
         """
         Поиск подходящей записи в модели amanat.price_list_partners
         """
         PriceListPartners = self.env['amanat.price_list_partners']
+
+        if not self.rate_fixation_date:
+            _logger.warning(f"[PriceList Partners] Пропускаем заявку {self.id}: отсутствует 'Дата фиксации курса'")
+            return None
         
         # Подготавливаем значения для гибкого поиска
         contragent_values = [False]
@@ -314,8 +313,8 @@ class ForKhalidaAutomations(models.Model):
         # Строим домен для поиска
         domain = [
             ('payer_partner', 'in', subagent_payers.ids),
-            ('date_start', '<=', rate_fixation_date),
-            ('date_end', '>=', rate_fixation_date),
+            ('date_start', '<=', self.rate_fixation_date),
+            ('date_end', '>=', self.rate_fixation_date),
             ('min_application_amount', '<=', equivalent_sum),
             ('max_application_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
@@ -353,8 +352,8 @@ class ForKhalidaAutomations(models.Model):
         # Добавляем условия по сумме заявки
         softDomain = [
             ('payer_partner', 'in', subagent_payers.ids),
-            ('date_start', '<=', rate_fixation_date),
-            ('date_end', '>=', rate_fixation_date),
+            ('date_start', '<=', self.rate_fixation_date),
+            ('date_end', '>=', self.rate_fixation_date),
             ('min_application_amount', '<=', equivalent_sum),
             ('max_application_amount', '>=', equivalent_sum),
             ('min_percent_accrual', '<=', reward_percent),
@@ -377,7 +376,7 @@ class ForKhalidaAutomations(models.Model):
                 return
         
         _logger.info(f"[PriceList] Найден прайс-лист партнера: {matched_record.id}")
-        _logger.info(f"[PriceList zayavka] {subagent_payers.ids} {rate_fixation_date} {equivalent_sum} {reward_percent} {self.contragent_id.id} {self.agent_id.id} {self.client_id.id} {self.currency}")
+        _logger.info(f"[PriceList zayavka] {subagent_payers.ids} {self.rate_fixation_date} {equivalent_sum} {reward_percent} {self.contragent_id.id} {self.agent_id.id} {self.client_id.id} {self.currency}")
         _logger.info(f"[PriceList price_list] {matched_record.payer_partner} {matched_record.date_start} {matched_record.date_end} {matched_record.contragent_zayavka_id} {matched_record.agent_zayavka_id} {matched_record.client_zayavka_id} {matched_record.currency_zayavka} {matched_record.min_application_amount} {matched_record.max_application_amount} {matched_record.min_percent_accrual} {matched_record.max_percent_accrual}")
 
         return matched_record
