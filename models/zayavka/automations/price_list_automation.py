@@ -56,7 +56,7 @@ class ZayavkaPriceListAutomation(models.Model):
 
         # 6. Поиск подходящей записи в "Прайс лист Партнеры"
         matched_partners = self._find_matching_partners_record(
-            subagent_payers, rate_fixation_date, equivalent_sum, reward_percent
+            subagent_payers, equivalent_sum, reward_percent
         )
 
         # 6. Обновляем заявку ссылками на найденные записи
