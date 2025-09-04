@@ -304,156 +304,6 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 _logger.info(f"Ручное сопоставление: для выписки {record.id} подходящие заявки не найдены")
         
         return True
-        
-    def mass_match_applications(self):
-        """
-        Массовое сопоставление выбранных выписок с заявками.
-        Запускается из списка выписок разнос для нескольких записей.
-        """
-        _logger.info(f"🚀 ЗАПУСК МАССОВОЙ АВТОМАТИЗАЦИИ 'РАЗНЕСТИ' для {len(self)} выписок")
-        
-        processed_count = 0
-        matched_count = 0
-        skipped_count = 0
-        error_count = 0
-        
-        results = {
-            'processed': [],
-            'matched': [],
-            'skipped': [],
-            'errors': []
-        }
-        
-        for record in self:
-            try:
-                _logger.info(f"📝 Обработка выписки {record.id} (№{record.serial_number})")
-                processed_count += 1
-                
-                # Проверяем, есть ли уже связанные заявки
-                if record.applications:
-                    skip_reason = f"Уже есть связанные заявки: {', '.join(record.applications.mapped('zayavka_id'))}"
-                    _logger.info(f"⏭️  Выписка {record.id} пропущена: {skip_reason}")
-                    results['skipped'].append({
-                        'id': record.id,
-                        'serial_number': record.serial_number or 'Без номера',
-                        'reason': skip_reason
-                    })
-                    skipped_count += 1
-                    continue
-                    
-                # Проверяем, есть ли другие сделки
-                if any([record.currency_reserve, record.transfer_ids, record.conversion, 
-                       record.investment, record.gold_deal]):
-                    skip_reason = "Есть другие сделки (конверсии, переводы и т.д.)"
-                    _logger.info(f"⏭️  Выписка {record.id} пропущена: {skip_reason}")
-                    results['skipped'].append({
-                        'id': record.id,
-                        'serial_number': record.serial_number or 'Без номера',
-                        'reason': skip_reason
-                    })
-                    skipped_count += 1
-                    continue
-                    
-                # Ищем подходящие заявки
-                matching_apps = record._find_matching_applications()
-                if matching_apps:
-                    # Обновляем выписку
-                    record.write({
-                        'applications': [(6, 0, matching_apps.ids)],
-                        'direction_choice': 'applications'
-                    })
-                    
-                    # Обновляем обратную связь в заявках
-                    for app in matching_apps:
-                        app.write({
-                            'extract_delivery_ids': [(4, record.id)]
-                        })
-                    
-                    matched_apps_info = ', '.join(matching_apps.mapped('zayavka_id'))
-                    _logger.info(f"✅ Выписка {record.id} сопоставлена с заявками: {matched_apps_info}")
-                    
-                    results['matched'].append({
-                        'id': record.id,
-                        'serial_number': record.serial_number or 'Без номера',
-                        'amount': record.amount,
-                        'applications': matched_apps_info
-                    })
-                    matched_count += 1
-                    
-                    # Добавляем сообщение в чаттер выписки
-                    record.message_post(
-                        body=f"🤖 Массовая автоматизация: найдены подходящие заявки: {matched_apps_info}"
-                    )
-                else:
-                    skip_reason = "Подходящие заявки не найдены"
-                    _logger.info(f"❌ Выписка {record.id}: {skip_reason}")
-                    results['skipped'].append({
-                        'id': record.id,
-                        'serial_number': record.serial_number or 'Без номера',
-                        'reason': skip_reason
-                    })
-                    skipped_count += 1
-                    
-                    # Добавляем сообщение в чаттер выписки
-                    record.message_post(body="🤖 Массовая автоматизация: подходящие заявки не найдены")
-                    
-            except Exception as e:
-                error_count += 1
-                error_msg = str(e)
-                _logger.error(f"💥 Ошибка при обработке выписки {record.id}: {error_msg}")
-                results['errors'].append({
-                    'id': record.id,
-                    'serial_number': record.serial_number or 'Без номера',
-                    'error': error_msg
-                })
-        
-        # Формируем итоговое сообщение
-        summary_lines = [
-            f"🚀 <b>Результаты массовой автоматизации 'Разнести'",
-            f"📊 <b>Статистика:",
-            f"• Обработано выписок: {processed_count}",
-            f"• Успешно сопоставлено: <b style='color: green'>{matched_count}</b>",
-            f"• Пропущено: <b style='color: orange'>{skipped_count}</b>",
-            f"• Ошибки: <b style='color: red'>{error_count}</b>"
-        ]
-        
-        if results['matched']:
-            summary_lines.append("<br/>✅ <b>Успешно сопоставлены:</b>")
-            for item in results['matched'][:10]:  # Показываем только первые 10
-                summary_lines.append(f"• №{item['serial_number']} → {item['applications']}")
-            if len(results['matched']) > 10:
-                summary_lines.append(f"... и еще {len(results['matched']) - 10} записей")
-                
-        if results['errors']:
-            summary_lines.append("<br/>💥 <b>Ошибки:</b>")
-            for item in results['errors'][:5]:  # Показываем только первые 5 ошибок
-                summary_lines.append(f"• №{item['serial_number']}: {item['error']}")
-                
-        summary_message = "<br/>".join(summary_lines)
-        
-        _logger.info(f"🏁 МАССОВАЯ АВТОМАТИЗАЦИЯ ЗАВЕРШЕНА: {matched_count} сопоставлено, {skipped_count} пропущено, {error_count} ошибок")
-        
-        # Возвращаем уведомление пользователю
-        if matched_count > 0:
-            notification_type = 'success'
-            title = '🎉 Автоматизация выполнена успешно!'
-        elif error_count > 0:
-            notification_type = 'danger'
-            title = '⚠️ Автоматизация выполнена с ошибками'
-        else:
-            notification_type = 'warning'
-            title = '📝 Автоматизация выполнена'
-            
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': title,
-                'message': summary_message,
-                'type': notification_type,
-                'sticky': True,  # Уведомление не исчезнет автоматически
-            }
-        }
 
     @api.model
     def create(self, vals):
@@ -773,51 +623,44 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                     _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id} пропущена: несовпадение плательщиков")
                     continue
 
-                # Проверяем суммы заявки (в порядке приоритета)
+                # Проверяем ВСЕ поля сумм на совпадение (ПРАВИЛЬНАЯ логика)
                 zayavka_sums = [
-                    getattr(zayavka, 'application_amount_rub_contract', None),  # Заявка по курсу в рублях по договору
-                    getattr(zayavka, 'total_fact', None),                # Итого факт
-                    getattr(zayavka, 'contract_reward', None),           # Вознаграждение по договору
-                    getattr(zayavka, 'total_client', None),              # Итого Клиент
-                    getattr(zayavka, 'total_sber', None),                # Итого Сбербанк
-                    getattr(zayavka, 'total_sovok', None)                # Итого Совкомбанк
+                    ('application_amount_rub_contract', getattr(zayavka, 'application_amount_rub_contract', None)),
+                    ('total_fact', getattr(zayavka, 'total_fact', None)),
+                    ('contract_reward', getattr(zayavka, 'contract_reward', None)),
+                    ('total_client', getattr(zayavka, 'total_client', None)),
+                    ('total_sber', getattr(zayavka, 'total_sber', None)),
+                    ('total_sovok', getattr(zayavka, 'total_sovok', None))
                 ]
 
-                # Находим первую непустую сумму и определяем её тип
-                zayavka_sum = None
-                sum_field_name = None
-
-                for i, sum_val in enumerate(zayavka_sums):
+                # Ищем любое поле, которое подходит по сумме
+                found_match = False
+                for field_name, sum_val in zayavka_sums:
                     if isinstance(sum_val, (int, float)) and sum_val is not None:
-                        zayavka_sum = sum_val
-                        # Определяем название поля для логирования
-                        field_names = [
-                            'application_amount_rub_contract',
-                            'total_fact',
-                            'contract_reward',
-                            'total_client',
-                            'total_sber',
-                            'total_sovok'
-                        ]
-                        sum_field_name = field_names[i]
-                        break
+                        # Округляем суммы до 2 знаков после запятой для сравнения
+                        rounded_sum_val = round(sum_val, 2)
+                        rounded_extract_sum = round(extract_sum, 2)
+                        
+                        # Проверяем точное равенство округленных сумм
+                        sum_matched = rounded_sum_val == rounded_extract_sum
+                        
+                        _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: проверка поля {field_name} = {sum_val} (округленная {rounded_sum_val}) == extract_sum={extract_sum} (округленная {rounded_extract_sum}), совпадение={sum_matched}")
 
-                if zayavka_sum is None:
-                    _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: нет подходящих сумм для сравнения")
-                    continue
+                        if sum_matched:
+                            matching_zayavki.append(zayavka)
+                            _logger.info(f"[_run_matching_automation] Найдено совпадение: выписка {extract.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} по полю {field_name} (сумма {sum_val}, округленная {rounded_sum_val})")
+                            _logger.info(f"[_run_matching_automation] Совпадение по полю {field_name}: заявка {zayavka.zayavka_id} имеет {field_name}={sum_val}, выписка {extract.id} имеет сумму {extract_sum}")
+                            found_match = True
+                            break
 
-                _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: проверка суммы {zayavka_sum} (поле {sum_field_name}) с выпиской {extract.id} (сумма {extract_sum})")
-
-                # Для всех полей сумм используем диапазон от [сумма_поля - 0.01, сумма_поля]
-                min_range = zayavka_sum - 0.01
-                max_range = zayavka_sum
-                sum_matched = min_range <= extract_sum <= max_range
-                _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: проверка в диапазоне [{min_range:.2f}, {max_range:.2f}], extract_sum={extract_sum}, совпадение={sum_matched}")
-
-                if sum_matched:
-                    matching_zayavki.append(zayavka)
-                    _logger.info(f"[_run_matching_automation] Найдено совпадение: выписка {extract.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} (поле {sum_field_name}, сумма {zayavka_sum})")
-                    _logger.info(f"[_run_matching_automation] Совпадение по полю {sum_field_name}: заявка {zayavka.zayavka_id} имеет {sum_field_name}={zayavka_sum}, выписка {extract.id} имеет сумму {extract_sum}")
+                if not found_match:
+                    # Логируем для отладки почему не подошла
+                    non_empty_sums = [(name, val) for name, val in zayavka_sums if isinstance(val, (int, float)) and val is not None]
+                    if non_empty_sums:
+                        best_match = min(non_empty_sums, key=lambda x: abs(x[1] - extract_sum))
+                        _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id} не подошла. Лучшее совпадение: {best_match[0]} = {best_match[1]}, разница = {abs(best_match[1] - extract_sum)}")
+                    else:
+                        _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: нет подходящих сумм для сравнения")
             
             # Если нашли подходящие заявки, сохраняем их
             if matching_zayavki:
@@ -896,30 +739,36 @@ class Extract_delivery(models.Model, AmanatBaseModel):
             if not all_matched:
                 continue
 
-            # Проверяем суммы заявки (в порядке приоритета)
+            # Проверяем ВСЕ поля сумм на совпадение (ПРАВИЛЬНАЯ логика)
             zayavka_sums = [
-                getattr(zayavka, 'application_amount_rub_contract', None),  # Заявка по курсу в рублях по договору
-                getattr(zayavka, 'total_fact', None),                      # Итого факт
-                getattr(zayavka, 'contract_reward', None),                 # Вознаграждение по договору
-                getattr(zayavka, 'total_client', None),                    # Итого Клиент
-                getattr(zayavka, 'total_sber', None),                      # Итого Сбербанк
-                getattr(zayavka, 'total_sovok', None)                      # Итого Совкомбанк
+                ('application_amount_rub_contract', getattr(zayavka, 'application_amount_rub_contract', None)),
+                ('total_fact', getattr(zayavka, 'total_fact', None)),
+                ('contract_reward', getattr(zayavka, 'contract_reward', None)),
+                ('total_client', getattr(zayavka, 'total_client', None)),
+                ('total_sber', getattr(zayavka, 'total_sber', None)),
+                ('total_sovok', getattr(zayavka, 'total_sovok', None))
             ]
             
-            # Находим первую непустую сумму
-            zayavka_sum = None
-            for sum_val in zayavka_sums:
+            # Ищем любое поле, которое подходит по сумме
+            found_match = False
+            for field_name, sum_val in zayavka_sums:
                 if isinstance(sum_val, (int, float)) and sum_val is not None:
-                    zayavka_sum = sum_val
-                    break
+                    # Округляем суммы до 2 знаков после запятой для сравнения
+                    rounded_sum_val = round(sum_val, 2)
+                    rounded_extract_sum = round(extract_sum, 2)
+                    
+                    if rounded_sum_val == rounded_extract_sum:
+                        matching_zayavki.append(zayavka)
+                        _logger.info(f"[_find_matching_applications] Найдено совпадение: выписка {self.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} по полю {field_name} (сумма {sum_val}, округленная {rounded_sum_val})")
+                        found_match = True
+                        break
             
-            if zayavka_sum is None:
-                continue
-
-            # Проверяем сумму с допуском
-            if abs(zayavka_sum - extract_sum) <= TOLERANCE:
-                matching_zayavki.append(zayavka)
-                _logger.info(f"[_find_matching_applications] Найдено совпадение: выписка {self.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} (сумма {zayavka_sum})")
+            if not found_match:
+                # Логируем для отладки почему не подошла
+                non_empty_sums = [(name, val) for name, val in zayavka_sums if isinstance(val, (int, float)) and val is not None]
+                if non_empty_sums:
+                    best_match = min(non_empty_sums, key=lambda x: abs(x[1] - extract_sum))
+                    _logger.debug(f"[_find_matching_applications] Заявка {zayavka.zayavka_id} не подошла. Лучшее совпадение: {best_match[0]} = {best_match[1]}, разница = {abs(best_match[1] - extract_sum)}")
         
         return self.env['amanat.zayavka'].browse([z.id for z in matching_zayavki])
     
@@ -1342,58 +1191,3 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         
         _logger.info(f"Диагностика завершена: {summary}")
         return summary
-
-    def show_diagnosis_result(self):
-        """
-        Показывает результаты диагностики пользователю в удобном виде.
-        """
-        self.ensure_one()
-        diagnosis = self.diagnose_application_matching()
-        
-        # Формируем детальное сообщение
-        message_parts = []
-        message_parts.append(f"<h3>Диагностика выписки {self.name}</h3>")
-        message_parts.append(f"<p><strong>Плательщик:</strong> {diagnosis['extract_payer']}</p>")
-        message_parts.append(f"<p><strong>Получатель:</strong> {diagnosis['extract_recipient']}</p>")
-        message_parts.append(f"<p><strong>Сумма:</strong> {diagnosis['extract_amount']}</p>")
-        message_parts.append(f"<p><strong>Дата:</strong> {diagnosis['extract_date']}</p>")
-        message_parts.append(f"<p><strong>Текущих заявок:</strong> {diagnosis['current_applications']}</p>")
-        
-        if diagnosis['issues']:
-            message_parts.append("<h4 style='color: red;'>Обнаруженные проблемы:</h4>")
-            message_parts.append("<ul>")
-            for issue in diagnosis['issues']:
-                message_parts.append(f"<li>{issue}</li>")
-            message_parts.append("</ul>")
-        
-        message_parts.append(f"<p><strong>Всего заявок с датой 'Взята в работу':</strong> {diagnosis['total_zayavki_with_date']}</p>")
-        message_parts.append(f"<p><strong>Проверено заявок:</strong> {diagnosis['total_zayavki_checked']}</p>")
-        message_parts.append(f"<p><strong>Идеальных совпадений:</strong> {diagnosis['perfect_matches_count']}</p>")
-        
-        if diagnosis['potential_matches']:
-            message_parts.append("<h4>Потенциальные совпадения:</h4>")
-            message_parts.append("<ul>")
-            for match in diagnosis['potential_matches'][:5]:  # Показываем только первые 5
-                match_issues = ", ".join(match.get('issues', []))
-                if match.get('is_perfect_match'):
-                    message_parts.append(f"<li style='color: green;'><strong>✓ {match['zayavka_id']}</strong> - ИДЕАЛЬНОЕ СОВПАДЕНИЕ</li>")
-                else:
-                    message_parts.append(f"<li><strong>{match['zayavka_id']}</strong> - Проблемы: {match_issues}</li>")
-            message_parts.append("</ul>")
-        
-        message = "".join(message_parts)
-        
-        # Отправляем сообщение в чат записи
-        self.message_post(body=message)
-        
-        # Возвращаем уведомление
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Диагностика завершена',
-                'message': f'Найдено {diagnosis["perfect_matches_count"]} идеальных совпадений. Детали см. в чате записи.',
-                'type': 'success' if diagnosis['perfect_matches_count'] > 0 else 'warning',
-                'sticky': True,
-            }
-        }
