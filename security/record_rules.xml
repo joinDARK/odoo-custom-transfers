@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Правило для менеджеров -->
-        <record id="amanat_transfer_manager_rule" model="ir.rule">
-            <field name="name">Доступ к переводам менеджера</field>
+        <!-- <record id="amanat_transfer_manager_rule" model="ir.rule">
+            <field name="name">Доступ к переводам менеджера (все переводы)</field>
             <field name="model_id" ref="model_amanat_transfer"/>
-            <!-- <field name="domain_force">['|', ('manager_id', '=', user.id), ('manager_id', '=', False)]</field> -->
             <field name="domain_force">[('manager_id', '=', user.id)]</field>
             <field name="groups" eval="[(4, ref('amanat.group_amanat_manager'))]"/>
         </record>
+
+        <record id="amanat_transfer_manager_transit_rule" model="ir.rule">
+            <field name="name">Менеджер с ролью транзитных переводов видит только транзитные переводы</field>
+            <field name="model_id" ref="model_amanat_transfer"/>
+            <field name="domain_force">['&amp;', ('manager_id', '=', user.id), ('is_transit', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('amanat.group_amanat_manager')), (4, ref('amanat.group_amanat_transit_only'))]"/>
+        </record> -->
 
         <!-- Правило для проверяющих -->
         <record id="amanat_transfer_inspector_rule" model="ir.rule">

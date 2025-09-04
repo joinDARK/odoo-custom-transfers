@@ -391,6 +391,10 @@
                   <group string="Первичные документы">
                     <div class="o-form-group-2">
                       <group>
+                        <field name="primary_documents_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
+                      </group>
+                      <group>
                         <field name="contract_attachments" widget="amanat_attachment"
                           options="{'no_create': False, 'no_open': False}" />
                       </group>
@@ -449,6 +453,10 @@
                           options="{'no_create': False, 'no_open': False}" />
                       </group>
                     </div>
+                  </group>
+                  <group>
+                    <field name="assignment_individual_attachments" widget="amanat_attachment"
+                          options="{'no_create': False, 'no_open': False}" />
                   </group>
                 </page>
                 <page string="Прочие документы">

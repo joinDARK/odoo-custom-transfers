@@ -47,6 +47,7 @@
                 <field width="200" name="exchange"/>
                 <field width="200" name="order_id" widget="many2many_tags"/>
                 <field width="200" name="order_comment"/>
+                <field width="300" name="admin_relations_info" groups="base.group_system,amanat.group_amanat_admin" widget="text" optional="hide"/>
                 <!-- <field width="200" name="unload"/> -->
             </list>
         </field>
@@ -175,6 +176,14 @@
                             <group>
                                 <field name="create_Reconciliation"/>
                                 <field name="royalti_Reconciliation"/>
+                            </group>
+                        </page>
+                        <page string="Связи (Админ)" groups="base.group_system,amanat.group_amanat_admin">
+                            <header>
+                                <h2>Информация о связях записи</h2>
+                            </header>
+                            <group>
+                                <field name="admin_relations_info" widget="text" nolabel="1"/>
                             </group>
                         </page>
                     </notebook>

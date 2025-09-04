@@ -181,6 +181,10 @@ class ZayavkaFiksDashboard(models.Model):
             # Используем тот же метод агрегации
             today_metrics = self._get_aggregated_data(domain)
             
+            # Получаем список заявок за сегодня для таблицы
+            today_orders = self._get_today_orders_list()
+            today_metrics['orders_list'] = today_orders
+            
             # Данные для графика за сегодня
             currency_sums = {
                 'usd': float(today_metrics['usd_sum'].replace(',', '')),
@@ -200,6 +204,125 @@ class ZayavkaFiksDashboard(models.Model):
         except Exception as e:
             _logger.error(f"Ошибка получения данных за сегодня: {e}")
             return self._get_empty_metrics()
+    
+    def _get_today_orders_list(self):
+        """
+        Получение списка заявок за сегодня для отображения в таблице
+        """
+        try:
+            today = date.today()
+            domain = [('rate_fixation_date', '=', today)]
+            
+            # Получаем ВСЕ заявки за сегодня, отсортированные по времени создания (новые сначала)
+            orders = self.env['amanat.zayavka'].search(domain, order='create_date desc')
+            
+            orders_list = []
+            for order in orders:
+                # Валюта - преобразуем техническое значение в читаемое
+                currency_map = {
+                    'usd': 'USD КЭШ',
+                    'cny': 'CNY',
+                    'euro': 'EURO',
+                    'aed': 'AED',
+                    'usdt': 'USDT',
+                    'rub': 'RUB',
+                    'usd_cashe': 'USD КЭШ',
+                    'cny_cashe': 'CNY КЭШ',
+                    'euro_cashe': 'EURO КЭШ',
+                    'aed_cashe': 'AED КЭШ',
+                    'usdt_cashe': 'USDT КЭШ',
+                    'rub_cashe': 'RUB КЭШ',
+                }
+                currency_display = currency_map.get(order.currency, order.currency or 'Не указана')
+                
+                # Тип сделки
+                deal_type_map = {
+                    'import': 'Перевод',
+                    'export': 'Экспорт', 
+                    'import_export': 'Импорт-экспорт',
+                    'export_import': 'Экспорт-импорт'
+                }
+                deal_type_display = deal_type_map.get(order.deal_type, order.deal_type or 'Перевод')
+                
+                # Статус с декорациями как в list view
+                status_class = ''
+                if order.status == '21':
+                    status_class = 'table-success'  # decoration-success
+                elif order.status == '22':
+                    status_class = 'table-danger'   # decoration-danger
+
+                # Маппинг статусов
+                status_map = {
+                    '1': '1. В работе',
+                    '2': '2. Выставлен инвойс',
+                    '3': '3. Зафиксирован курс',
+                    '4': '4. Подписано поручение',
+                    '5': '5. Готовим на оплату',
+                    '6': '6. Передано на оплату',
+                    '7': '7. Получили ПП',
+                    '8': '8. Получили Swift',
+                    '9': '9. Подписан Акт-отчет',
+                    '10': '10. Ждем рубли',
+                    '11': '11. Получили рубли',
+                    '12': '12. Ждем поступление валюты',
+                    '13': '13. Валюта у получателя',
+                    '14': '14. Запрошен Swift 103',
+                    '15': '15. Получен Swift 103',
+                    '16': '16. Запрошен Swift 199',
+                    '17': '17. Получен Swift 199',
+                    '18': '18. Ожидаем возврат',
+                    '19': '19. Оплачено повторно',
+                    '20': '20. Возврат',
+                    '21': '21. Заявка закрыта',
+                    '22': '22. Отменено клиентом',
+                    '23': '23. Согласован получатель (экспорт)',
+                    '24': '24. Получили валюту (экспорт)',
+                    '25': '25. Оплатили рубли (экспорт)',
+                }
+
+                # Маппинг условий оплаты
+                payment_conditions_map = {
+                    'prepayment': 'Предоплата',
+                    'postpayment': 'Постоплата',
+                    'deferred_payment': 'Отсрочка платежа',
+                    'cash_on_delivery': 'Наложенный платеж',
+                    'mixed': 'Смешанная',
+                    'credit': 'Кредит',
+                }
+
+                orders_list.append({
+                    'id': order.id,
+                    'date_placement': order.date_placement.strftime('%d.%m.%Y') if order.date_placement else '',
+                    'zayavka_num': order.zayavka_num or '',
+                    'status_display': status_map.get(order.status, order.status or ''),
+                    'status_class': status_class,
+                    'contragent_name': order.contragent_id.name if order.contragent_id else '',
+                    'agent_name': order.agent_id.name if order.agent_id else '',
+                    'client_name': order.client_id.name if order.client_id else '',
+                    'deal_type_display': deal_type_display,
+                    'amount': f"{order.amount:,.0f}".replace(',', ' ') if order.amount else "0",
+                    'application_amount_rub_contract': f"{order.application_amount_rub_contract:,.2f}".replace(',', ' ') if order.application_amount_rub_contract else "0,00",
+                    'payment_conditions_display': payment_conditions_map.get(order.payment_conditions, order.payment_conditions or ''),
+                    'usd_equivalent': f"{order.usd_equivalent:,.4f}".replace('.', ',').replace(',', ' ') if order.usd_equivalent else "0,0000",
+                    'xe_rate': f"{order.xe_rate:,.4f}".replace('.', ',').replace(',', ' ') if order.xe_rate else "0,0000",
+                    'currency_display': currency_display,
+                    'rate_field': f"{order.rate_field:,.4f}".replace('.', ',').replace(',', ' ') if order.rate_field else "0,0000",
+                    'reward_percent': f"{order.reward_percent:.1f}%".replace('.', ',') if order.reward_percent else "0,0%",
+                    'rate_fixation_date': order.rate_fixation_date.strftime('%d.%m.%Y') if order.rate_fixation_date else '',
+                    'agent_reward': f"{order.agent_reward:,.2f}".replace(',', ' ') if order.agent_reward else "0,00",
+                    'total_amount': f"{order.total_amount:,.2f}".replace(',', ' ') if order.total_amount else "0,00",
+                    'best_rate': f"{order.best_rate:,.4f}".replace('.', ',').replace(',', ' ') if order.best_rate else "0,0000",
+                    'comment_hedge': order.comment_hedge or '',
+                    'best_rate_name': order.best_rate_name or '',
+                    'hidden_hadge': order.hidden_hadge or ''
+                })
+            
+            _logger.info(f"Получено {len(orders_list)} заявок за сегодня")
+            return orders_list
+            
+        except Exception as e:
+            _logger.error(f"Ошибка получения списка заявок за сегодня: {e}")
+            return []
     
     def _calculate_usd_equivalents_optimized(self, currency_sums):
         """

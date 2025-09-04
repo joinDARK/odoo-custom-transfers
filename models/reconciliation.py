@@ -3,7 +3,7 @@ from odoo import models, fields, api
 from .base_model import AmanatBaseModel
 from odoo.exceptions import UserError
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from odoo.tools.translate import _
 import logging
 
@@ -36,14 +36,14 @@ class Reconciliation(models.Model, AmanatBaseModel):
     # Отправитель (Плательщик)
     sender_id = fields.Many2many(
         'amanat.payer',
-        string='Плательщик',
+        string='Плательщик Отправителя',
         tracking=True
     )
     # Контрагент Отправителя
     sender_contragent = fields.Many2many(
         'amanat.contragent',
         related='sender_id.contragents_ids',
-        string='Контрагент',
+        string='Отправитель',
         tracking=True
     )
     # Получатель (Плательщик)
@@ -52,14 +52,14 @@ class Reconciliation(models.Model, AmanatBaseModel):
         'amanat_reconciliation_payer_rel',
         'reconciliation_id',
         'payer_id',
-        string='Плательщик',
+        string='Плательщик Получателя',
         tracking=True
     )
     # Контрагент Получателя
     receiver_contragent = fields.Many2many(
         'amanat.contragent',
         related='receiver_id.contragents_ids',
-        string='Контрагент',
+        string='Получатель',
         tracking=True
     )
 
@@ -175,6 +175,144 @@ class Reconciliation(models.Model, AmanatBaseModel):
     royalti_Reconciliation = fields.Boolean(string='Провести роялти', default=False, tracking=True) # TODO нужно удалить
 
     range_reconciliation_bool = fields.Boolean(string='Сверка по диапазону', default=False, tracking=True)
+    
+    # Поле для администратора - отображение связей
+    admin_relations_info = fields.Text(
+        string='Связи записи (для админа)', 
+        compute='_compute_admin_relations_info',
+        store=False,
+        help='Показывает к каким заявкам/ордерам/записям привязана данная сверка'
+    )
+    
+    @api.depends('order_id', 'partner_id', 'wallet_id', 'range', 'sender_id', 'receiver_id', 'rate_id')
+    def _compute_admin_relations_info(self):
+        for rec in self:
+            relations = []
+            
+            # === ПРЯМЫЕ СВЯЗИ ===
+            
+            # Информация об ордерах/заявках
+            if rec.order_id:
+                orders_info = ', '.join([f"Ордер #{order.id} ({order.name or 'Без названия'})" for order in rec.order_id])
+                relations.append(f"🔗 Ордера: {orders_info}")
+            
+            # Информация о контрагенте
+            if rec.partner_id:
+                partner_name = getattr(rec.partner_id, 'name', rec.partner_id.display_name or f'ID: {rec.partner_id.id}')
+                relations.append(f"🏢 Контрагент: {partner_name} (ID: {rec.partner_id.id})")
+            
+            # Информация о кошельке
+            if rec.wallet_id:
+                wallet_name = getattr(rec.wallet_id, 'name', rec.wallet_id.display_name or f'ID: {rec.wallet_id.id}')
+                relations.append(f"💳 Кошелек: {wallet_name} (ID: {rec.wallet_id.id})")
+                
+            # Информация о диапазоне (используем range_id вместо name)
+            if rec.range:
+                range_name = getattr(rec.range, 'range_id', rec.range.display_name or f'ID: {rec.range.id}')
+                relations.append(f"📅 Диапазон: {range_name} (ID: {rec.range.id})")
+                
+            # Информация об отправителях
+            if rec.sender_id:
+                senders_info = ', '.join([
+                    f"{getattr(sender, 'name', sender.display_name or f'ID: {sender.id}')} (ID: {sender.id})" 
+                    for sender in rec.sender_id
+                ])
+                relations.append(f"📤 Плательщики отправителя: {senders_info}")
+                
+            # Информация о получателях
+            if rec.receiver_id:
+                receivers_info = ', '.join([
+                    f"{getattr(receiver, 'name', receiver.display_name or f'ID: {receiver.id}')} (ID: {receiver.id})" 
+                    for receiver in rec.receiver_id
+                ])
+                relations.append(f"📥 Плательщики получателя: {receivers_info}")
+                
+            # Информация о курсах
+            if rec.rate_id:
+                # У модели amanat.rates поле называется 'id', а не 'name'
+                rate_name = getattr(rec.rate_id, 'id', rec.rate_id.display_name or f'ID: {rec.rate_id.id}')
+                relations.append(f"💱 Курс: {rate_name} (ID: {rec.rate_id.id})")
+            
+            # === ОБРАТНЫЕ СВЯЗИ - ИЗ ЧЕГО СОЗДАЛАСЬ СВЕРКА ===
+            
+            # Поиск заявок, которые могли создать эту сверку
+            try:
+                zayavkas_linked = rec.env['amanat.zayavka'].sudo().search([
+                    '|', 
+                    ('contragent_id', '=', rec.partner_id.id if rec.partner_id else False),
+                    ('agent_id', '=', rec.partner_id.id if rec.partner_id else False)
+                ])
+                # Дополнительная фильтрация по дате (±30 дней от даты сверки)
+                if rec.date and zayavkas_linked:
+                    date_from = rec.date - timedelta(days=30)
+                    date_to = rec.date + timedelta(days=30)
+                    zayavkas_linked = zayavkas_linked.filtered(lambda z: 
+                        z.deal_closed_date and date_from <= z.deal_closed_date <= date_to
+                    )
+                
+                if zayavkas_linked:
+                    zayavkas_info = ', '.join([
+                        f"#{zayavka.zayavka_num or zayavka.id} ({zayavka.client_name or 'Без клиента'})" 
+                        for zayavka in zayavkas_linked[:3]  # Показываем максимум 3
+                    ])
+                    if len(zayavkas_linked) > 3:
+                        zayavkas_info += f" и еще {len(zayavkas_linked) - 3}"
+                    relations.append(f"📋 Возможные заявки: {zayavkas_info}")
+            except Exception as e:
+                relations.append(f"❌ Ошибка поиска заявок: {str(e)}")
+            
+            # Поиск переводов, которые могли создать эту сверку  
+            try:
+                if rec.order_id:
+                    transfers_linked = rec.env['amanat.transfer'].sudo().search([
+                        ('order_ids', 'in', rec.order_id.ids)
+                    ])
+                    if transfers_linked:
+                        transfers_info = ', '.join([
+                            f"#{transfer.id} ({transfer.type_operation or 'Без типа'})" 
+                            for transfer in transfers_linked[:3]
+                        ])
+                        if len(transfers_linked) > 3:
+                            transfers_info += f" и еще {len(transfers_linked) - 3}"
+                        relations.append(f"💸 Переводы: {transfers_info}")
+            except Exception as e:
+                relations.append(f"❌ Ошибка поиска переводов: {str(e)}")
+            
+            # Поиск инвестиций, которые могли создать эту сверку
+            try:
+                if rec.order_id:
+                    investments_linked = rec.env['amanat.investment'].sudo().search([
+                        ('orders', 'in', rec.order_id.ids)  
+                    ])
+                    if investments_linked:
+                        investments_info = ', '.join([
+                            f"#{investment.id} ({investment.name or 'Без названия'})" 
+                            for investment in investments_linked[:3]
+                        ])
+                        if len(investments_linked) > 3:
+                            investments_info += f" и еще {len(investments_linked) - 3}"
+                        relations.append(f"📈 Инвестиции: {investments_info}")
+            except Exception as e:
+                relations.append(f"❌ Ошибка поиска инвестиций: {str(e)}")
+            
+            # Поиск записей Money, связанных с этой сверкой
+            try:
+                if rec.order_id:
+                    money_linked = rec.env['amanat.money'].sudo().search([
+                        ('order_id', 'in', rec.order_id.ids)
+                    ])
+                    if money_linked:
+                        money_info = ', '.join([
+                            f"#{money.id} ({money.currency} {money.amount})" 
+                            for money in money_linked[:3]
+                        ])
+                        if len(money_linked) > 3:
+                            money_info += f" и еще {len(money_linked) - 3}"
+                        relations.append(f"💰 Деньги: {money_info}")
+            except Exception as e:
+                relations.append(f"❌ Ошибка поиска записей Money: {str(e)}")
+                
+            rec.admin_relations_info = '\n'.join(relations) if relations else 'Нет связанных записей'
 
     def write(self, vals):
         unload_trigger = False
@@ -242,9 +380,9 @@ class Reconciliation(models.Model, AmanatBaseModel):
                 '№': rec.id,
                 'Контрагент': [{'name': rec.partner_id.name}] if rec.partner_id else [],
                 'Дата': rec.date.isoformat() if rec.date else '',
-                'Отправитель': [{'name': name} for name in rec.sender_id.mapped('name')],
-                'Контрагенты (from Отправитель)': [{'name': name} for name in rec.sender_contragent.mapped('name')],
-                'Получатель': [{'name': name} for name in rec.receiver_id.mapped('name')],
+                'Плательщик Отправителя': [{'name': name} for name in rec.sender_id.mapped('name')],
+                'Отправитель': [{'name': name} for name in rec.sender_contragent.mapped('name')],
+                'Плательщик Получателя': [{'name': name} for name in rec.receiver_id.mapped('name')],
                 'Валюта': {'name': dict(rec._fields['currency'].selection).get(rec.currency, rec.currency)},
                 'Сумма': rec.sum,
                 'Сумма RUB': rec.sum_rub,
@@ -265,7 +403,7 @@ class Reconciliation(models.Model, AmanatBaseModel):
                 'Сумма_Ордер': rec.order_id and rec.order_id[0].amount or 0.0,
                 'Курс': rec.rate,
                 'Кошелек': rec.wallet_id.name if rec.wallet_id else '',
-                'Контрагенты (from Получатель)': [{'name': name} for name in rec.receiver_contragent.mapped('name')],
+                'Получатель': [{'name': name} for name in rec.receiver_contragent.mapped('name')],
                 'За операцию': rec.award,
                 'РКО': rec.rko,
                 'Наш процент': rec.our_percent,

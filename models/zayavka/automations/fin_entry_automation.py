@@ -1979,9 +1979,6 @@ class ZayavkaFinEntryAutomations(models.Model):
             return
             
         amount1 = self.client_payment_cost
-        if not amount1:
-            _logger.warning("[IMPORT_EXPORT_AUTOMATION] Не заполнена сумма расхода за платеж!")
-            return
 
         # Находим кошелек "Неразмеченные" (как в стандартных автоматизациях используется "Агентка")
         unmarked_wallet = wallet_model.search([('name', '=', 'Неразмеченные')], limit=1)

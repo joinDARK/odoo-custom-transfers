@@ -1036,7 +1036,7 @@ canvas[id*="agents-by-zayavki"] {
     width: 100%;
     height: auto; /* Адаптивная высота */
     min-height: 400px; /* Увеличенная минимальная высота */
-    max-height: 1200px; /* УВЕЛИЧЕННАЯ максимальная высота для лучшей читаемости */
+
     background: white;
     border-radius: 8px;
     padding: 15px; /* Увеличенный padding */
@@ -1048,7 +1048,7 @@ canvas[id*="agents-by-zayavki"] {
     width: 100% !important;
     height: auto !important; /* Адаптивная высота для canvas */
     max-width: none !important;
-    max-height: 1200px !important; /* УВЕЛИЧЕННАЯ максимальная высота */
+
     display: block; /* Убираем возможные проблемы с inline отображением */
 }
 
@@ -1117,14 +1117,12 @@ canvas[id*="agents-by-zayavki"] {
 .chart-container-large.adaptive {
     height: auto !important;
     min-height: 120px;
-    max-height: 600px;
 }
 
 /* Горизонтальные столбчатые диаграммы с большим количеством данных */
 .chart-container-large.horizontal-bar-adaptive {
     height: auto !important;
     min-height: 180px;
-    max-height: 600px;
     overflow-y: auto;
 }
 
@@ -1138,7 +1136,7 @@ canvas[id*="agents-by-zayavki"] {
 .chart-container-medium.pie-adaptive {
     height: auto !important;
     min-height: 200px;
-    max-height: 350px;
+
     aspect-ratio: 1;
 }
 
@@ -1152,7 +1150,6 @@ canvas[id*="agents-by-zayavki"] {
 .chart-container-large.line-adaptive {
     height: auto !important;
     min-height: 180px;
-    max-height: 400px;
 }
 
 .chart-container-large.line-adaptive canvas {
@@ -1165,7 +1162,6 @@ canvas[id*="agents-by-zayavki"] {
 .chart-card.has-more-data.adaptive .chart-container-medium {
     height: auto !important;
     min-height: 300px;
-    max-height: 800px;
 }
 
 .chart-card.has-more-data.adaptive canvas {
@@ -1177,7 +1173,6 @@ canvas[id*="agents-by-zayavki"] {
 .full-chart-modal .full-chart-container.adaptive {
     height: auto !important;
     min-height: 400px;
-    max-height: 1000px;
     overflow-y: auto;
 }
 
@@ -1187,16 +1182,16 @@ canvas[id*="agents-by-zayavki"] {
     width: 100% !important;
 }
 
-/* Мобильные устройства - ограничение максимальной высоты */
+/* Мобильные устройства - убрано ограничение максимальной высоты */
 @media (max-width: 768px) {
     .chart-container-large.horizontal-bar-adaptive,
     .chart-container-large.line-adaptive {
-        max-height: 400px;
+        /* Без ограничений по высоте */
     }
     
     .chart-card.has-more-data.adaptive .chart-container-large,
     .chart-card.has-more-data.adaptive .chart-container-medium {
-        max-height: 500px;
+        /* Без ограничений по высоте */
     }
     
     .full-chart-modal .full-chart-container.adaptive {
@@ -1207,11 +1202,11 @@ canvas[id*="agents-by-zayavki"] {
 /* Планшеты - промежуточные значения */
 @media (max-width: 1024px) and (min-width: 769px) {
     .chart-container-large.horizontal-bar-adaptive {
-        max-height: 500px;
+        /* Без ограничений по высоте */
     }
     
     .full-chart-modal .full-chart-container.adaptive {
-        max-height: 80vh;
+        max-height: 80vh; /* Оставляем для модального окна */
     }
 }
 
@@ -1632,4 +1627,415 @@ canvas:hover {
         font-size: 11px;
         padding: 6px 10px;
     }
+}
+
+/* ==================== СТИЛИ ДЛЯ LIST VIEW ЗАЯВОК ==================== */
+
+/* Секция list view заявок */
+.zayavka-list-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.zayavka-list-section .section-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.zayavka-list-section .section-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Контейнер list view */
+.zayavka-list-container {
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    width: 100%;
+    position: relative;
+}
+
+/* Таблица в стиле Odoo list view */
+.zayavka-list-table {
+    margin-bottom: 0;
+    font-size: 11px;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    table-layout: auto; /* Позволяет таблице адаптироваться */
+}
+
+.zayavka-list-table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    padding: 8px 12px;
+    font-size: 11px;
+    line-height: 1.2;
+    vertical-align: middle;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    min-width: 100px;
+}
+
+.zayavka-list-table thead th:last-child {
+    border-right: none;
+}
+
+.zayavka-list-table tbody td {
+    padding: 4px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.zayavka-list-table tbody td:last-child {
+    border-right: none;
+}
+
+/* Строки заявок с декорациями как в Odoo */
+.zayavka-list-table tbody tr.zayavka-row {
+    transition: background-color 0.2s ease;
+}
+
+.zayavka-list-table tbody tr.zayavka-row:hover {
+    background-color: rgba(0, 123, 255, 0.05) !important;
+}
+
+/* Цветовые декорации как в оригинальном list view */
+.zayavka-list-table tbody tr.table-success {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+}
+
+.zayavka-list-table tbody tr.table-success:hover {
+    background-color: rgba(40, 167, 69, 0.2) !important;
+}
+
+.zayavka-list-table tbody tr.table-danger {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.zayavka-list-table tbody tr.table-danger:hover {
+    background-color: rgba(220, 53, 69, 0.2) !important;
+}
+
+/* Стили прокрутки для list view контейнера */
+.zayavka-list-container::-webkit-scrollbar {
+    width: 8px;  /* Ширина вертикального скроллбара */
+    height: 8px; /* Высота горизонтального скроллбара */
+}
+
+.zayavka-list-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.zayavka-list-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.zayavka-list-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.zayavka-list-container::-webkit-scrollbar-corner {
+    background: #f1f1f1;
+}
+
+/* Темная тема для list view заявок */
+.o_dark_mode .zayavka-list-section {
+    background: #2b2b2b;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.o_dark_mode .zayavka-list-section .section-header {
+    border-bottom-color: #404040;
+}
+
+.o_dark_mode .zayavka-list-section .section-header h3 {
+    color: #e0e0e0;
+}
+
+.o_dark_mode .zayavka-list-container {
+    border-color: #404040;
+}
+
+.o_dark_mode .zayavka-list-table {
+    color: #e0e0e0;
+}
+
+.o_dark_mode .zayavka-list-table thead th {
+    background-color: #404040;
+    border-bottom-color: #555555;
+    border-right-color: #555555;
+    color: #e0e0e0;
+}
+
+.o_dark_mode .zayavka-list-table tbody td {
+    border-bottom-color: #404040;
+    border-right-color: #404040;
+    background-color: #2b2b2b;
+}
+
+.o_dark_mode .zayavka-list-table tbody tr.zayavka-row:hover {
+    background-color: rgba(64, 158, 255, 0.1) !important;
+}
+
+.o_dark_mode .zayavka-list-table tbody tr.table-success {
+    background-color: rgba(40, 167, 69, 0.15) !important;
+}
+
+.o_dark_mode .zayavka-list-table tbody tr.table-success:hover {
+    background-color: rgba(40, 167, 69, 0.25) !important;
+}
+
+.o_dark_mode .zayavka-list-table tbody tr.table-danger {
+    background-color: rgba(220, 53, 69, 0.15) !important;
+}
+
+.o_dark_mode .zayavka-list-table tbody tr.table-danger:hover {
+    background-color: rgba(220, 53, 69, 0.25) !important;
+}
+
+.o_dark_mode .zayavka-list-container::-webkit-scrollbar-track {
+    background: #2d3748;
+}
+
+.o_dark_mode .zayavka-list-container::-webkit-scrollbar-thumb {
+    background: #4a5568;
+}
+
+.o_dark_mode .zayavka-list-container::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+}
+
+.o_dark_mode .zayavka-list-container::-webkit-scrollbar-corner {
+    background: #2d3748;
+}
+
+/* Адаптивность для мобильных устройств - list view */
+@media (max-width: 768px) {
+    .zayavka-list-section {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .zayavka-list-table {
+        font-size: 10px;
+    }
+    
+    .zayavka-list-table thead th {
+        padding: 6px 8px;
+        font-size: 10px;
+    }
+    
+    .zayavka-list-table tbody td {
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+    
+    .zayavka-list-section .section-header h3 {
+        font-size: 14px;
+    }
+}
+
+/* Горизонтальная и вертикальная прокрутка для таблицы */
+.table-responsive {
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive::-webkit-scrollbar {
+    width: 8px;  /* Ширина вертикального скроллбара */
+    height: 8px; /* Высота горизонтального скроллбара */
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Стили для угла между скроллбарами */
+.table-responsive::-webkit-scrollbar-corner {
+    background: #f1f1f1;
+}
+
+/* Выравнивание текста в таблице */
+.orders-table .text-end {
+    text-align: right !important;
+}
+
+.orders-table .text-center {
+    text-align: center !important;
+}
+
+/* Стиль для строк таблицы */
+.orders-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.orders-table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Темная тема для таблицы заявок */
+.o_dark_mode .orders-table-section {
+    background: #2b2b2b;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.o_dark_mode .orders-table-section .section-header {
+    border-bottom-color: #404040;
+}
+
+.o_dark_mode .orders-table-section .section-header h3 {
+    color: #e0e0e0;
+}
+
+.o_dark_mode .orders-table {
+    color: #e0e0e0;
+}
+
+.o_dark_mode .orders-table thead th {
+    background-color: #404040;
+    border-bottom-color: #555555;
+    color: #e0e0e0;
+}
+
+.o_dark_mode .orders-table tbody td {
+    border-bottom-color: #404040;
+    background-color: #2b2b2b;
+}
+
+.o_dark_mode .orders-table tbody tr:hover {
+    background-color: rgba(64, 158, 255, 0.1);
+}
+
+.o_dark_mode .table-responsive::-webkit-scrollbar-track {
+    background: #2d3748;
+}
+
+.o_dark_mode .table-responsive::-webkit-scrollbar-thumb {
+    background: #4a5568;
+}
+
+.o_dark_mode .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #718096;
+}
+
+.o_dark_mode .table-responsive::-webkit-scrollbar-corner {
+    background: #2d3748;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .orders-table-section {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .orders-table {
+        font-size: 10px;
+    }
+    
+    .orders-table thead th {
+        padding: 6px 4px;
+        font-size: 9px;
+    }
+    
+    .orders-table tbody td {
+        padding: 6px 4px;
+        font-size: 9px;
+        max-width: 100px;
+    }
+    
+    .orders-table-section .section-header h3 {
+        font-size: 14px;
+    }
+}
+
+/* Минимальная ширина для колонок таблицы */
+.orders-table th:first-child,
+.orders-table td:first-child {
+    min-width: 80px; /* ID ордера */
+}
+
+.orders-table th:nth-child(2),
+.orders-table td:nth-child(2) {
+    min-width: 70px; /* Дата */
+}
+
+.orders-table th:nth-child(3),
+.orders-table td:nth-child(3) {
+    min-width: 70px; /* Тип */
+}
+
+.orders-table th:nth-child(4),
+.orders-table td:nth-child(4),
+.orders-table th:nth-child(5),
+.orders-table td:nth-child(5),
+.orders-table th:nth-child(7),
+.orders-table td:nth-child(7),
+.orders-table th:nth-child(8),
+.orders-table td:nth-child(8) {
+    min-width: 100px; /* Контрагенты и плательщики */
+}
+
+.orders-table th:nth-child(6),
+.orders-table td:nth-child(6),
+.orders-table th:nth-child(9),
+.orders-table td:nth-child(9) {
+    min-width: 80px; /* Кошельки */
+}
+
+.orders-table th:nth-child(10),
+.orders-table td:nth-child(10) {
+    min-width: 70px; /* Валюта */
+}
+
+.orders-table th:nth-child(11),
+.orders-table td:nth-child(11) {
+    min-width: 90px; /* Сумма */
+}
+
+.orders-table th:nth-child(12),
+.orders-table td:nth-child(12) {
+    min-width: 80px; /* Курс */
+}
+
+.orders-table th:nth-child(13),
+.orders-table td:nth-child(13) {
+    min-width: 70px; /* % За операцию */
+}
+
+.orders-table th:nth-child(14),
+.orders-table td:nth-child(14) {
+    min-width: 60px; /* РКО */
 } 

@@ -72,8 +72,10 @@
         <field name="name">Транзитные переводы</field>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         <field name="category_id" ref="base.module_category_amanat"/>
-        <field name="comment">Доступ только к переводам с галочкой 'Транзит'</field>
+        <field name="comment">Доступ только к переводам с галочкой 'Транзит'. Ограничивает права менеджера, если назначена совместно!</field>
     </record>
+
+
 
     <!-- Группа для Алины: Менеджер + доступ к файлам -->
     <record id="group_amanat_alina_manager_files" model="res.groups">

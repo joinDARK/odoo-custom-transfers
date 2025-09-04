@@ -225,6 +225,10 @@ class ZayavkaMethods(models.Model):
                     import traceback
                     _logger.error(f"[METHODS] Traceback: {traceback.format_exc()}")
         
+        if 'assignment_individual_attachments' in vals:
+            for rec in self:
+                rec.analyze_assignment_individual_with_yandex_gpt()
+
         # Изменение статуса при появлении подписанного поручения
         if 'assignment_end_attachments' in vals:
             for rec in self:
@@ -400,6 +404,9 @@ class ZayavkaMethods(models.Model):
         # Анализ документов с YandexGPT при создании (если есть вложения)
         if vals.get('assignment_attachments'):
             res.analyze_assignment_with_yandex_gpt()
+
+        if vals.get('assignment_individual_attachments'):
+            res.analyze_assignment_individual_with_yandex_gpt()
         
         # Изменение статуса при создании с подписанным поручением
         if vals.get('assignment_end_attachments'):

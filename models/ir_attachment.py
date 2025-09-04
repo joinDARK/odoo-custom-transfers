@@ -14,10 +14,6 @@ from odoo.exceptions import AccessError
 # Инициализируем logger ПЕРВЫМ!
 _logger = logging.getLogger(__name__)
 
-# ДИАГНОСТИЧЕСКОЕ СООБЩЕНИЕ - ПРОВЕРЯЕМ ЗАГРУЖАЕТСЯ ЛИ ФАЙЛ
-_logger.info("🚨 AMANAT: ir_attachment.py module is being loaded!")
-print("🚨 AMANAT: ir_attachment.py module is being loaded!")  # Дублируем в print
-
 # Попытка импорта различных движков для чтения Excel
 try:
     import openpyxl
@@ -36,29 +32,10 @@ class IrAttachment(models.Model):
     """Extended Attachment Model for Amanat Sverka Files"""
     _inherit = 'ir.attachment'
 
-    def _check_access(self, operation: str):
-        """
-        🚨🚨🚨 СУПЕР-ЯДЕРНЫЙ ОБХОД: Всегда возвращаем None = нет проблем с доступом 🚨🚨🚨
-        """
-        _logger.error(f"🚨🚨🚨 AMANAT ir.attachment._check_access CALLED! operation: {operation}, user: {self.env.user.name}, IDs: {self.ids} 🚨🚨🚨")
-        _logger.error(f"🚨 AMANAT: ALWAYS RETURNING None - FULL ACCESS TO ALL ATTACHMENTS! 🚨")
-        print(f"🚨 AMANAT: ir.attachment._check_access NUCLEAR BYPASS for {self.env.user.name}, operation: {operation} 🚨")
-        
-        # СУПЕР-ЯДЕРНЫЙ ПОДХОД: Всегда возвращаем None = нет проблем с доступом
+    def _check_access(self, operation: str): # СУПЕР-ЯДЕРНЫЙ ПОДХОД: Всегда возвращаем None = нет проблем с доступом
         return None
-
-    
-
-
     
     def _filter_access_rules(self, operation):
-        """ЯДЕРНЫЙ ОБХОД: Полностью отключаем record rules для ВСЕХ пользователей"""
-        _logger.error(f"🚨🚨🚨 AMANAT _filter_access_rules called for IDs: {self.ids}, operation: {operation}, user: {self.env.user.name} 🚨🚨🚨")
-        
-        # ЭКСТРЕМАЛЬНОЕ ИЗМЕНЕНИЕ: Обходим правила для ВСЕХ пользователей без исключений
-        _logger.error(f"🚨 AMANAT: BYPASSING ALL RECORD RULES FOR ALL USERS - NO EXCEPTIONS! 🚨")
-        print(f"🚨 AMANAT: _filter_access_rules BYPASS for user {self.env.user.name}, operation: {operation} 🚨")
-        
         # Возвращаем все записи без фильтрации для ВСЕХ
         return self
 
@@ -81,17 +58,7 @@ class IrAttachment(models.Model):
         return super().read(fields, load)
 
     @api.model
-    def check(self, mode, values=None):
-        """
-        🚨🚨🚨 ЭКСТРЕМАЛЬНЫЙ ЯДЕРНЫЙ ОБХОД: ПОЛНЫЙ ДОСТУП КО ВСЕМ ФАЙЛАМ 🚨🚨🚨
-        ЭТОТ МЕТОД ПЕРЕОПРЕДЕЛЯЕТ БАЗОВЫЙ ir.attachment.check() ИЗ ODOO CORE
-        """
-        _logger.error(f"🚨🚨🚨 AMANAT OVERRIDDEN CHECK() CALLED! IDs: {self.ids}, mode: {mode}, user: {self.env.user.name} 🚨🚨🚨")
-        print(f"🚨🚨🚨 AMANAT OVERRIDDEN CHECK() CALLED! IDs: {self.ids}, mode: {mode}, user: {self.env.user.name} 🚨🚨🚨")
-        
-        # АБСОЛЮТНО ЯДЕРНЫЙ ПОДХОД: Разрешаем ВСЕ операции для ВСЕХ пользователей
-        _logger.error(f"🚨 AMANAT: FULL ACCESS GRANTED TO ALL USERS - BYPASSING ALL SECURITY! 🚨")
-        print(f"🚨 AMANAT: FULL ACCESS GRANTED TO ALL USERS - BYPASSING ALL SECURITY! 🚨")
+    def check(self, mode, values=None):        
         return True
         
 

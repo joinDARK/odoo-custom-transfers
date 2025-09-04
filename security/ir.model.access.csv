@@ -396,3 +396,4 @@ access_amanat_contragent_limited_access,amanat.contragent limited access,model_a
 access_amanat_manager_limited_access,amanat.manager limited access,model_amanat_manager,group_amanat_limited_access,1,0,0,0
 access_amanat_country_limited_access,amanat.country limited access,model_amanat_country,group_amanat_limited_access,1,0,0,0
 
+

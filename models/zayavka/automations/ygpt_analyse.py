@@ -51,6 +51,7 @@ iban/acc - iban_accc
 выдаем только первоначальную валюту без эквивалента
 если не указано, то оставляй пустоту
 """
+
 UPDATE_FIELDS = [
     'amount',
     'currency', 
@@ -77,6 +78,13 @@ UPDATE_FIELDS = [
     'hand_reward_percent',
     'rate_fixation_date'
 ]
+
+# Поля, которые обновляются на втором этапе (после основных полей)
+LATE_UPDATE_FIELDS = [
+    'subagent_payer_ids',
+    'rate_fixation_date',
+]
+
 FIELD_MAPPING = {
     'amount': 'amount',  # Сумма заявки (строка 965)
     'currency': 'currency',  # Валюта (строка 895)
@@ -116,6 +124,8 @@ def _get_yandex_gpt_config(env, prompt_type=None):
                 prompt = icp.get_param('amanat.ygpt.prompt_for_sber_screen_analyse') or PROMPT
             case 'assignment':
                 prompt = icp.get_param('amanat.ygpt.prompt_for_assignment_analyse') or PROMPT
+            case 'assignment_individual':
+                prompt = icp.get_param('amanat.ygpt.prompt_for_assignment_client_analyse') or PROMPT
             case _:
                 prompt = PROMPT
 
@@ -392,6 +402,63 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             if not analyzed_any:
                 _logger.info(f"Заявка {self.id}: подходящих документов (DOCX/DOC/Excel) с текстом не найдено — анализ пропущен")
 
+    def analyze_assignment_individual_with_yandex_gpt(self):
+        attachments = self.assignment_individual_attachments
+        if not attachments:
+            _logger.info(f"Заявка {self.id}: нет вложений в 'assignment_individual_attachments' — пропускаем анализ документов")
+            return self
+        else:
+            attachment = attachments[0]
+            analyzed_any = False
+
+            text = None
+            
+            # Сначала пробуем как DOCX
+            try:
+                text = self.extract_text_from_docx_attachment(attachment)
+                if text:
+                    _logger.info(f"Заявка {self.id}: извлечён текст из DOCX '{attachment.name}'")
+            except Exception as e:
+                _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как DOCX: {str(e)}")
+            
+            # Если не DOCX, пробуем как старый DOC
+            if not text:
+                try:
+                    text = self.extract_text_from_doc_attachment(attachment)
+                    if text:
+                        _logger.info(f"Заявка {self.id}: извлечён текст из DOC '{attachment.name}'")
+                except Exception as e:
+                    _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как DOC: {str(e)}")
+            
+            # Если не DOCX и не DOC, пробуем как Excel
+            if not text:
+                try:
+                    text = self.extract_text_from_excel_attachment(attachment)
+                    if text:
+                        _logger.info(f"Заявка {self.id}: извлечён текст из Excel '{attachment.name}'")
+                except Exception as e:
+                    _logger.debug(f"Заявка {self.id}: не удалось обработать '{attachment.name}' как Excel: {str(e)}")
+
+            # Если текст извлечён, отправляем на анализ
+            if text:
+                try:
+                    self.analyze_document_with_yandex_gpt(text, "assignment_individual")
+                    analyzed_any = True
+                    _logger.info(f"Заявка {self.id}: успешно проанализирован документ '{attachment.name}'")
+                except Exception as e:
+                    _logger.error(f"Заявка {self.id}: ошибка анализа документа '{attachment.name}': {str(e)}")
+            else:
+                # Если не удалось извлечь текст из DOCX/Excel, пробуем PDF через OCR
+                try:
+                    self.analyze_pdf_attachments_with_yandex_gpt(attachment, "assignment_individual")
+                    analyzed_any = True
+                    _logger.info(f"Заявка {self.id}: успешно проанализирован PDF '{attachment.name}' через OCR")
+                except Exception as e:
+                    _logger.error(f"Заявка {self.id}: ошибка анализа PDF '{attachment.name}': {str(e)}")
+
+            if not analyzed_any:
+                _logger.info(f"Заявка {self.id}: подходящих документов (DOCX/DOC/Excel) с текстом не найдено — анализ пропущен")
+
     def analyze_pdf_attachments_with_yandex_gpt(self, attachment, prompt_type="zayavka"):
         """
         Анализирует PDF-файлы из zayavka_attachments с помощью Yandex Vision OCR API и выводит распознанный текст.
@@ -497,6 +564,22 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                                 update_values[model_field] = float(clean_value)
                             except (ValueError, TypeError):
                                 _logger.warning(f"[_update_fields_from_gpt_response] Не удалось конвертировать число '{value}' для поля '{model_field}'")
+                                continue
+
+                        elif model_field in ['hand_reward_percent'] and value:
+                            # Конвертируем процентные поля: убираем символ %, делим на 100
+                            try:
+                                clean_value = str(value).replace(',', '.').replace(' ', '').replace('%', '')
+                                float_value = float(clean_value)
+                                # Если значение больше 1, считаем что это проценты (например, 2.8), делим на 100
+                                # Если значение меньше или равно 1, считаем что это уже десятичная дробь (например, 0.028)
+                                if float_value > 1:
+                                    update_values[model_field] = float_value / 100
+                                else:
+                                    update_values[model_field] = float_value
+                                _logger.info(f"[_update_fields_from_gpt_response] Процентное поле '{model_field}': '{value}' -> {update_values[model_field]}")
+                            except (ValueError, TypeError):
+                                _logger.warning(f"[_update_fields_from_gpt_response] Не удалось конвертировать процент '{value}' для поля '{model_field}'")
                                 continue
 
                         elif model_field == 'currency' and value:
@@ -683,33 +766,33 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                             _logger.warning(f"[_update_fields_from_gpt_response] Ошибка при подготовке обновления поля '{field_name}': {log_err}")
 
                     if fields_to_write:
-                        # Разделяем обновление на два этапа для корректной работы с subagent_payer_ids
-                        payer_fields = {}
+                        # Разделяем обновление на два этапа для корректной работы с полями, зависящими от compute-методов
+                        late_fields = {}
                         other_fields = {}
                         
                         for field_name, field_value in fields_to_write.items():
-                            if field_name == 'subagent_payer_ids':
-                                payer_fields[field_name] = field_value
+                            if field_name in LATE_UPDATE_FIELDS:
+                                late_fields[field_name] = field_value
                             else:
                                 other_fields[field_name] = field_value
                         
-                        # Этап 1: Обновляем все поля кроме subagent_payer_ids
+                        # Этап 1: Обновляем основные поля (кроме полей из LATE_UPDATE_FIELDS)
                         if other_fields:
                             self.write(other_fields)
                             updated_fields = ', '.join(f"{k}: {v}" for k, v in other_fields.items())
-                            _logger.info(f"[_update_fields_from_gpt_response] Этап 1 - Обновлены поля заявки {self.zayavka_id}: {updated_fields}")
+                            _logger.info(f"[_update_fields_from_gpt_response] Этап 1 - Обновлены основные поля заявки {self.zayavka_id}: {updated_fields}")
                         
-                        # Этап 2: Обновляем subagent_payer_ids отдельно после того, как compute-методы отработали
-                        if payer_fields:
-                            # Небольшая задержка, чтобы compute-методы успели отработать
+                        # Этап 2: Обновляем поля из LATE_UPDATE_FIELDS отдельно после того, как compute-методы отработали
+                        if late_fields:
+                            # Фиксируем изменения и очищаем кеш, чтобы compute-методы успели отработать
                             self.env.cr.commit()  # Фиксируем изменения
                             self.invalidate_recordset()  # Очищаем кеш
                             
-                            self.write(payer_fields)
-                            updated_payer_fields = ', '.join(f"{k}: {v}" for k, v in payer_fields.items())
-                            _logger.info(f"[_update_fields_from_gpt_response] Этап 2 - Обновлены поля плательщика заявки {self.zayavka_id}: {updated_payer_fields}")
+                            self.write(late_fields)
+                            updated_late_fields = ', '.join(f"{k}: {v}" for k, v in late_fields.items())
+                            _logger.info(f"[_update_fields_from_gpt_response] Этап 2 - Обновлены поздние поля заявки {self.zayavka_id}: {updated_late_fields}")
                         
-                        all_updated = {**other_fields, **payer_fields}
+                        all_updated = {**other_fields, **late_fields}
                         updated_fields = ', '.join(f"{k}: {v}" for k, v in all_updated.items())
                         _logger.info(f"[_update_fields_from_gpt_response] Итого обновлены поля заявки {self.zayavka_id}: {updated_fields}")
                     else:
@@ -794,10 +877,10 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                         update_values['subagent_ids'] = [(6, 0, [contragent.id])]  # (6, 0, ids) - заменить все записи
                         _logger.info(f"[_handle_special_fields] Установлен контрагент '{contragent.name}' для плательщика '{payer.name}'")
                         
-                        # НЕ устанавливаем subagent_payer_ids здесь - это будет сделано на втором этапе
+                        # НЕ устанавливаем subagent_payer_ids здесь - это будет сделано на втором этапе (LATE_UPDATE_FIELDS)
                         # Сохраняем информацию о плательщике для второго этапа
                         update_values['subagent_payer_ids'] = [(6, 0, [payer.id])]  # (6, 0, ids) - заменить все записи
-                        _logger.info(f"[_handle_special_fields] Подготовлен плательщик '{payer.name}' для установки на втором этапе")
+                        _logger.info(f"[_handle_special_fields] Подготовлен плательщик '{payer.name}' для установки на втором этапе (LATE_UPDATE_FIELDS)")
                     else:
                         # Если у плательщика нет связанных контрагентов, устанавливаем только плательщика
                         update_values['subagent_payer_ids'] = [(6, 0, [payer.id])]  # (6, 0, ids) - заменить все записи
@@ -1003,6 +1086,94 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         
         return normalized
     
+    def _transliterate_ru_to_en(self, text):
+        """
+        Транслитерирует русский текст в английский
+        """
+        if not text:
+            return ""
+        
+        # Словарь транслитерации русских букв в английские
+        translit_dict = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+            'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+            'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+        }
+        
+        result = ""
+        for char in text.lower():
+            if char in translit_dict:
+                result += translit_dict[char]
+            else:
+                result += char
+        
+        return result
+    
+    def _transliterate_en_to_ru(self, text):
+        """
+        Транслитерирует английский текст в русский (приблизительно)
+        """
+        if not text:
+            return ""
+        
+        # Словарь транслитерации английских букв/сочетаний в русские
+        translit_dict = {
+            'a': 'а', 'b': 'б', 'v': 'в', 'g': 'г', 'd': 'д', 'e': 'е',
+            'zh': 'ж', 'z': 'з', 'i': 'и', 'y': 'й', 'k': 'к', 'l': 'л', 'm': 'м',
+            'n': 'н', 'o': 'о', 'p': 'п', 'r': 'р', 's': 'с', 't': 'т', 'u': 'у',
+            'f': 'ф', 'kh': 'х', 'h': 'х', 'ts': 'ц', 'ch': 'ч', 'sh': 'ш', 'sch': 'щ',
+            'yu': 'ю', 'ya': 'я', 'yo': 'ё', 'w': 'в', 'x': 'кс', 'j': 'дж', 'c': 'к'
+        }
+        
+        text_lower = text.lower()
+        result = text_lower
+        
+        # Заменяем длинные сочетания сначала
+        for en_seq in sorted(translit_dict.keys(), key=len, reverse=True):
+            if len(en_seq) > 1:
+                result = result.replace(en_seq, translit_dict[en_seq])
+        
+        # Затем заменяем отдельные символы
+        final_result = ""
+        for char in result:
+            if char in translit_dict:
+                final_result += translit_dict[char]
+            else:
+                final_result += char
+        
+        return final_result
+    
+    def _generate_search_variants(self, text):
+        """
+        Генерирует варианты поиска: оригинал + транслитерации
+        """
+        if not text:
+            return []
+        
+        variants = []
+        normalized_original = self._normalize_payer_name(text)
+        variants.append(normalized_original)
+        
+        # Добавляем транслитерацию с русского на английский
+        ru_to_en = self._transliterate_ru_to_en(normalized_original)
+        if ru_to_en and ru_to_en != normalized_original:
+            variants.append(ru_to_en)
+        
+        # Добавляем транслитерацию с английского на русский
+        en_to_ru = self._transliterate_en_to_ru(normalized_original)
+        if en_to_ru and en_to_ru != normalized_original:
+            variants.append(en_to_ru)
+        
+        # Убираем дубликаты, сохраняя порядок
+        unique_variants = []
+        for variant in variants:
+            if variant not in unique_variants:
+                unique_variants.append(variant)
+        
+        return unique_variants
+    
     def _advanced_payer_search(self, search_text):
         """
         Расширенный поиск плательщика с несколькими стратегиями:
@@ -1017,19 +1188,23 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         search_normalized = self._normalize_payer_name(search_text)
         if not search_normalized:
             return None
-            
-        _logger.info(f"[_advanced_payer_search] Поиск плательщика: '{search_text}' -> нормализовано: '{search_normalized}'")
+        
+        # Генерируем варианты поиска с транслитерацией
+        search_variants = self._generate_search_variants(search_text)
+        _logger.info(f"[_advanced_payer_search] Поиск плательщика: '{search_text}' -> варианты: {search_variants}")
         
         # Получаем всех плательщиков для поиска
         all_payers = self.env['amanat.payer'].search([])
         
-        # Стратегия 1: Точное совпадение (после нормализации)
+        # Стратегия 1: Точное совпадение (с учетом транслитерации)
         for payer in all_payers:
             if payer.name:
-                payer_normalized = self._normalize_payer_name(payer.name)
-                if payer_normalized == search_normalized:
-                    _logger.info(f"[_advanced_payer_search] Найден точный матч: '{payer.name}' (ID: {payer.id})")
-                    return payer
+                payer_variants = self._generate_search_variants(payer.name)
+                # Проверяем пересечение вариантов поиска и вариантов плательщика
+                for search_variant in search_variants:
+                    if search_variant in payer_variants:
+                        _logger.info(f"[_advanced_payer_search] Найден точный матч (транслитерация): '{payer.name}' (ID: {payer.id}) - совпал вариант '{search_variant}'")
+                        return payer
         
         # Стратегия 2: Поиск по ИНН (если поисковый текст похож на ИНН - только цифры, длина 10 или 12)
         import re
@@ -1286,7 +1461,9 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         if not search_normalized:
             return None
             
-        _logger.info(f"[_advanced_contragent_search] Поиск {context_type}: '{search_text}' -> нормализовано: '{search_normalized}'")
+        # Генерируем варианты поиска с транслитерацией
+        search_variants = self._generate_search_variants(search_text)
+        _logger.info(f"[_advanced_contragent_search] Поиск {context_type}: '{search_text}' -> варианты: {search_variants}")
         
         # Получаем всех контрагентов для поиска
         all_contragents = self.env['amanat.contragent'].search([])
@@ -1313,73 +1490,102 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         else:
             _logger.info(f"[_advanced_contragent_search] Стратегия 1: Пропускаем поиск по ИНН - '{search_original}' не похож на ИНН")
         
-        # Стратегия 2: Точное совпадение по названию (после нормализации)
-        _logger.info(f"[_advanced_contragent_search] Стратегия 2: Проверяем точное совпадение для '{search_normalized}'")
+        # Стратегия 2: Точное совпадение по названию (с учетом транслитерации)
+        _logger.info(f"[_advanced_contragent_search] Стратегия 2: Проверяем точное совпадение для вариантов: {search_variants}")
         exact_matches_checked = 0
         for contragent in all_contragents:
             if contragent.name:
                 contragent_normalized = self._normalize_payer_name(contragent.name)
+                contragent_variants = self._generate_search_variants(contragent.name)
                 exact_matches_checked += 1
-                if contragent_normalized == search_normalized:
-                    _logger.info(f"[_advanced_contragent_search] Найден {context_type} точное совпадение: '{contragent.name}' (ID: {contragent.id})")
-                    return contragent
+                
+                # Проверяем пересечение вариантов поиска и вариантов контрагента
+                for search_variant in search_variants:
+                    if search_variant in contragent_variants:
+                        _logger.info(f"[_advanced_contragent_search] Найден {context_type} точное совпадение (транслитерация): '{contragent.name}' (ID: {contragent.id}) - совпал вариант '{search_variant}'")
+                        return contragent
         _logger.info(f"[_advanced_contragent_search] Стратегия 2: Проверено {exact_matches_checked} контрагентов, точных совпадений не найдено")
         
-        # Стратегия 3: Поиск по началу строки
-        _logger.info(f"[_advanced_contragent_search] Стратегия 3: Проверяем поиск по началу строки для '{search_normalized}'")
+        # Стратегия 3: Поиск по началу строки (с учетом транслитерации)
+        _logger.info(f"[_advanced_contragent_search] Стратегия 3: Проверяем поиск по началу строки для вариантов: {search_variants}")
         start_matches = []
         start_matches_checked = 0
         for contragent in all_contragents:
             if contragent.name:
-                contragent_normalized = self._normalize_payer_name(contragent.name)
+                contragent_variants = self._generate_search_variants(contragent.name)
                 start_matches_checked += 1
-                if contragent_normalized.startswith(search_normalized):
-                    start_matches.append(contragent)
-                    _logger.info(f"[_advanced_contragent_search] DEBUG: Найден кандидат по началу строки: '{contragent.name}' -> '{contragent_normalized}'")
+                
+                # Проверяем, начинается ли какой-либо вариант контрагента с какого-либо варианта поиска
+                found_match = False
+                for search_variant in search_variants:
+                    for contragent_variant in contragent_variants:
+                        if contragent_variant.startswith(search_variant) or search_variant.startswith(contragent_variant):
+                            start_matches.append(contragent)
+                            found_match = True
+                            _logger.info(f"[_advanced_contragent_search] DEBUG: Найден кандидат по началу строки (транслитерация): '{contragent.name}' -> поиск '{search_variant}' vs контрагент '{contragent_variant}'")
+                            break
+                    if found_match:
+                        break
         
         _logger.info(f"[_advanced_contragent_search] Стратегия 3: Проверено {start_matches_checked} контрагентов, найдено кандидатов: {len(start_matches)}")
         
         if start_matches:
             # Сортируем по длине названия (короткие сначала), как в существующем name_search
             start_matches.sort(key=lambda c: len(c.name) if c.name else 999)
-            _logger.info(f"[_advanced_contragent_search] Найден {context_type} по началу строки: '{start_matches[0].name}' (ID: {start_matches[0].id})")
+            _logger.info(f"[_advanced_contragent_search] Найден {context_type} по началу строки (транслитерация): '{start_matches[0].name}' (ID: {start_matches[0].id})")
             return start_matches[0]
         
-        # Стратегия 3.5: Поиск по частям названия (разбиваем на слова)
-        _logger.info("[_advanced_contragent_search] Стратегия 3.5: Проверяем поиск по частям названия")
-        search_words = [word.strip() for word in search_normalized.split() if len(word.strip()) >= 2]
-        _logger.info(f"[_advanced_contragent_search] Слова для поиска: {search_words}")
+        # Стратегия 3.5: Поиск по частям названия (с учетом транслитерации)
+        _logger.info("[_advanced_contragent_search] Стратегия 3.5: Проверяем поиск по частям названия с транслитерацией")
         
-        if search_words:
+        # Собираем все слова из всех вариантов поиска
+        all_search_words = []
+        for variant in search_variants:
+            words = [word.strip() for word in variant.split() if len(word.strip()) >= 2]
+            all_search_words.extend(words)
+        
+        # Убираем дубликаты
+        unique_search_words = list(set(all_search_words))
+        _logger.info(f"[_advanced_contragent_search] Слова для поиска (с транслитерацией): {unique_search_words}")
+        
+        if unique_search_words:
             word_matches = []
             exact_word_matches = []  # Для точных совпадений с отдельными словами
             
             for contragent in all_contragents:
                 if contragent.name:
-                    contragent_normalized = self._normalize_payer_name(contragent.name)
-                    contragent_words = set(word.strip() for word in contragent_normalized.split() if len(word.strip()) >= 2)
+                    # Получаем все варианты слов контрагента
+                    contragent_variants = self._generate_search_variants(contragent.name)
+                    all_contragent_words = []
+                    for variant in contragent_variants:
+                        words = [word.strip() for word in variant.split() if len(word.strip()) >= 2]
+                        all_contragent_words.extend(words)
                     
-                    # Специальная проверка: если название контрагента точно совпадает с одним из слов поиска
-                    if contragent_normalized in search_words:
-                        exact_word_matches.append(contragent)
-                        _logger.info(f"[_advanced_contragent_search] DEBUG: Точное совпадение с словом '{contragent.name}' -> '{contragent_normalized}'")
+                    unique_contragent_words = set(all_contragent_words)
+                    
+                    # Специальная проверка: если какой-то вариант контрагента точно совпадает с одним из слов поиска
+                    for contragent_variant in contragent_variants:
+                        if contragent_variant in unique_search_words:
+                            exact_word_matches.append(contragent)
+                            _logger.info(f"[_advanced_contragent_search] DEBUG: Точное совпадение с словом (транслитерация) '{contragent.name}' -> '{contragent_variant}'")
+                            break
                     
                     # Проверяем, сколько слов совпадает
-                    matching_words = set(search_words).intersection(contragent_words)
+                    matching_words = set(unique_search_words).intersection(unique_contragent_words)
                     if matching_words:
-                        match_ratio = len(matching_words) / len(search_words)
+                        match_ratio = len(matching_words) / len(unique_search_words)
                         word_matches.append((contragent, match_ratio, matching_words))
                         
                         # Специальное логирование для интересных кандидатов
-                        if match_ratio >= 0.3 or any(word in contragent_normalized for word in ['тдк', 'джевэллэри', 'трейдинг']):
-                            _logger.info(f"[_advanced_contragent_search] DEBUG: Кандидат по словам '{contragent.name}' -> '{contragent_normalized}' (совпадений: {len(matching_words)}/{len(search_words)} = {match_ratio:.2f}, слова: {matching_words})")
+                        if match_ratio >= 0.3:
+                            _logger.info(f"[_advanced_contragent_search] DEBUG: Кандидат по словам (транслитерация) '{contragent.name}' (совпадений: {len(matching_words)}/{len(unique_search_words)} = {match_ratio:.2f}, слова: {matching_words})")
             
             # Приоритет: сначала точные совпадения с отдельными словами
             if exact_word_matches:
                 # Сортируем по длине (короткие сначала)
                 exact_word_matches.sort(key=lambda c: len(c.name) if c.name else 999)
                 contragent = exact_word_matches[0]
-                _logger.info(f"[_advanced_contragent_search] Найден {context_type} по точному совпадению со словом: '{contragent.name}' (ID: {contragent.id})")
+                _logger.info(f"[_advanced_contragent_search] Найден {context_type} по точному совпадению со словом (транслитерация): '{contragent.name}' (ID: {contragent.id})")
                 return contragent
             
             if word_matches:
@@ -1387,12 +1593,12 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 word_matches.sort(key=lambda x: (-x[1], len(x[0].name) if x[0].name else 999))
                 
                 best_match = word_matches[0]
-                if best_match[1] >= 0.5:  # Если совпадает минимум 50% слов
+                if best_match[1] >= 0.4:  # Снижаем порог до 40% для транслитерации
                     contragent, match_ratio, matching_words = best_match
-                    _logger.info(f"[_advanced_contragent_search] Найден {context_type} по частям названия: '{contragent.name}' (совпадений: {len(matching_words)}/{len(search_words)} = {match_ratio:.2f}, слова: {matching_words})")
+                    _logger.info(f"[_advanced_contragent_search] Найден {context_type} по частям названия (транслитерация): '{contragent.name}' (совпадений: {len(matching_words)}/{len(unique_search_words)} = {match_ratio:.2f}, слова: {matching_words})")
                     return contragent
                 else:
-                    _logger.info(f"[_advanced_contragent_search] Лучший кандидат по словам: '{best_match[0].name}' (совпадений: {best_match[1]:.2f}, но меньше порога 0.5)")
+                    _logger.info(f"[_advanced_contragent_search] Лучший кандидат по словам (транслитерация): '{best_match[0].name}' (совпадений: {best_match[1]:.2f}, но меньше порога 0.4)")
         
         # Стратегия 4: Поиск по содержанию (если поисковый запрос достаточно длинный)
         if len(search_normalized) >= 3:

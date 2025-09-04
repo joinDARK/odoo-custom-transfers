@@ -65,8 +65,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            
+                            </div>                    
                             <!-- Вторая строка: Эквивалент в $ и суммы по валютам -->
                             <div class="row">
                                 <div class="col">
@@ -116,6 +115,71 @@
                                             <t t-esc="state.dashboardData.today_data.usdt_sum"/>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Заявки за сегодня в формате list view -->
+                            <div class="zayavka-list-section" t-if="state.dashboardData.today_data and state.dashboardData.today_data.orders_list and state.dashboardData.today_data.orders_list.length">
+                                <div class="section-header">
+                                    <h3>Заявки за сегодня</h3>
+                                </div>
+                                <div class="table-responsive zayavka-list-container">
+                                    <table class="table table-sm zayavka-list-table">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <!-- Основные поля как в zayavka_views.xml -->
+                                                <th>Дата размещения</th>
+                                                <th>№ заявки</th>
+                                                <th>Статус</th>
+                                                <th>Контрагент</th>
+                                                <th>Агент</th>
+                                                <th>Клиент</th>
+                                                <th>Вид сделки</th>
+                                                <th>Сумма заявки</th>
+                                                <th>Заявка по курсу в рублях по договору</th>
+                                                <th>Условия оплаты</th>
+                                                <th>Эквивалент USD</th>
+                                                <th>Курс XE</th>
+                                                <th>Валюта</th>
+                                                <th>Курс</th>
+                                                <th>% Вознаграждения</th>
+                                                <th>Дата фиксации курса</th>
+                                                <th>Вознаграждение агента</th>
+                                                <th>ИТОГО</th>
+                                                <th>Лучший курс</th>
+                                                <th>Комментарии по Хэджу</th>
+                                                <th>Лучший курс Наименование</th>
+                                                <th>Скрытый хэдж</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="state.dashboardData.today_data.orders_list" t-as="order" t-key="order.id"
+                                                t-attf-class="zayavka-row {{ order.status_class or '' }}">
+                                                <td><t t-esc="order.date_placement"/></td>
+                                                <td><t t-esc="order.zayavka_num"/></td>
+                                                <td><t t-esc="order.status_display"/></td>
+                                                <td><t t-esc="order.contragent_name"/></td>
+                                                <td><t t-esc="order.agent_name"/></td>
+                                                <td><t t-esc="order.client_name"/></td>
+                                                <td><t t-esc="order.deal_type_display"/></td>
+                                                <td class="text-end"><t t-esc="order.amount"/></td>
+                                                <td class="text-end"><t t-esc="order.application_amount_rub_contract"/></td>
+                                                <td><t t-esc="order.payment_conditions_display"/></td>
+                                                <td class="text-end"><t t-esc="order.usd_equivalent"/></td>
+                                                <td class="text-end"><t t-esc="order.xe_rate"/></td>
+                                                <td><t t-esc="order.currency_display"/></td>
+                                                <td class="text-end"><t t-esc="order.rate_field"/></td>
+                                                <td class="text-end"><t t-esc="order.reward_percent"/></td>
+                                                <td><t t-esc="order.rate_fixation_date"/></td>
+                                                <td class="text-end"><t t-esc="order.agent_reward"/></td>
+                                                <td class="text-end"><t t-esc="order.total_amount"/></td>
+                                                <td class="text-end"><t t-esc="order.best_rate"/></td>
+                                                <td><t t-esc="order.comment_hedge"/></td>
+                                                <td><t t-esc="order.best_rate_name"/></td>
+                                                <td><t t-esc="order.hidden_hadge"/></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                             

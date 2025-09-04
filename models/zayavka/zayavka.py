@@ -1027,7 +1027,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     accreditation_commission = fields.Float(string='Комиссия + аккред', tracking=True)
     escrow_commission = fields.Float(string='Комиссия + эскроу', tracking=True)
 
-    rate_field = fields.Float(string='Курс', tracking=True, digits=(16, 4))
+    rate_field = fields.Float(string='Курс', tracking=True, digits=(16, 5))
 
     effective_rate = fields.Float(
         string='Эффективный курс',
@@ -1419,6 +1419,14 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     assignment_link = fields.Char(string='Поручение ссылка', tracking=True)
 
+    assignment_individual_attachments = fields.Many2many(
+        'ir.attachment', 
+        'assignment_individual_attachment_rel', 
+        'zayavka_id', 
+        'attachment_id', 
+        string='Поручение Индивидуала'
+    )
+
     swift_attachments = fields.Many2many(
         'ir.attachment', 
         'swift_attachment_rel', 
@@ -1556,6 +1564,14 @@ class Zayavka(models.Model, AmanatBaseModel):
         'zayavka_id',
         'attachment_id',
         string='Инвойс первичный'
+    )
+
+    primary_documents_attachments = fields.Many2many(
+        'ir.attachment',
+        'amanat_zayavka_primary_documents_attachment_rel',
+        'zayavka_id',
+        'attachment_id',
+        string='Первичка'
     )
 
     money_ran_out = fields.Boolean(string='Сели деньги', tracking=True, default=False)
