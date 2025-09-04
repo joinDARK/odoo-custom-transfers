@@ -65,8 +65,8 @@ class ResUsers(models.Model):
         # Если изменяются группы пользователей
         if 'groups_id' in vals:
             for user in self:
-                # Проверяем, стал ли пользователь менеджером
-                if user.has_group('amanat.group_amanat_manager'):
+                # Проверяем, стал ли пользователь менеджером или старшим менеджером
+                if user.has_group('amanat.group_amanat_manager') or user.has_group('amanat.group_amanat_senior_manager'):
                     # Проверяем, есть ли уже запись менеджера для этого пользователя
                     existing_manager = self.env['amanat.manager'].search([('user_id', '=', user.id)], limit=1)
                     if not existing_manager:

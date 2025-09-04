@@ -5,6 +5,25 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+FIELDS_TO_MATCH = [
+    'application_amount_rub_contract',
+    'contract_reward',
+    'total_fact',
+    'total_client',
+    'total_sber',
+    'total_sovok',
+]
+
+DOMAIN_SEARCH_ZAYAVKA = [
+    ('taken_in_work_date', '!=', False),
+]
+
+DOMAIN_SEARCH_EXTRACT_DELIVERY = [
+    ('applications', '=', False),
+]
+
+TOLERANCE = 1.0
+
 class Extract_delivery(models.Model, AmanatBaseModel):
     _name = 'amanat.extract_delivery'
     _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
@@ -247,75 +266,6 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 rec.env['amanat.extract_delivery']._run_stellar_tdk_logic()
                 rec.assign_bulinan = False
         return res
-
-    def _find_matching_applications(self):
-        """
-        Находит заявки, подходящие для текущей записи выписки по критериям:
-        - плательщик и получатель выписки должны быть среди плательщиков заявки  
-        - сумма должна совпадать с допуском ±1 рубль
-        - заявка должна быть взята в работу
-        """
-        self.ensure_one()
-        
-        if not self.payer or not self.recipient or not self.amount:
-            return self.env['amanat.zayavka']
-            
-        TOLERANCE = 1.0
-        
-        # Получаем плательщиков выписки
-        extract_payers = [self.payer.id, self.recipient.id]
-        extract_sum = self.amount
-        
-        # Ищем заявки с заполненной датой "Взята в работу"
-        all_zayavki = self.env['amanat.zayavka'].search([('taken_in_work_date', '!=', False)])
-        
-        matching_zayavki = []
-        
-        for zayavka in all_zayavki:
-            # Собираем плательщиков заявки через контрагентов
-            candidate_payers = []
-            
-            if zayavka.agent_id and zayavka.agent_id.payer_ids:
-                candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
-                
-            if zayavka.client_id and zayavka.client_id.payer_ids:
-                candidate_payers.extend(zayavka.client_id.payer_ids.ids)
-            
-            if not candidate_payers:
-                continue
-            
-            # Проверяем, что все плательщики выписки есть среди кандидатов
-            all_matched = all(payer_id in candidate_payers for payer_id in extract_payers)
-            
-            if not all_matched:
-                continue
-
-            # Проверяем суммы заявки (в порядке приоритета)
-            zayavka_sums = [
-                getattr(zayavka, 'application_amount_rub_contract', None),  # Заявка по курсу в рублях по договору
-                getattr(zayavka, 'total_fact', None),                      # Итого факт
-                getattr(zayavka, 'contract_reward', None),                 # Вознаграждение по договору
-                getattr(zayavka, 'total_client', None),                    # Итого Клиент
-                getattr(zayavka, 'total_sber', None),                      # Итого Сбербанк
-                getattr(zayavka, 'total_sovok', None)                      # Итого Совкомбанк
-            ]
-            
-            # Находим первую непустую сумму
-            zayavka_sum = None
-            for sum_val in zayavka_sums:
-                if isinstance(sum_val, (int, float)) and sum_val is not None:
-                    zayavka_sum = sum_val
-                    break
-            
-            if zayavka_sum is None:
-                continue
-
-            # Проверяем сумму с допуском
-            if abs(zayavka_sum - extract_sum) <= TOLERANCE:
-                matching_zayavki.append(zayavka)
-                _logger.info(f"Найдено совпадение: выписка {self.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} (сумма {zayavka_sum})")
-        
-        return self.env['amanat.zayavka'].browse([z.id for z in matching_zayavki])
 
     def manual_match_applications(self):
         """
@@ -646,7 +596,6 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         Сопоставляет выписки с заявками по логике из скрипта.
         Ищет подходящие заявки для выписок без связанных заявок.
         """
-        TOLERANCE = 1.0
         
         # Поля для проверки сумм в заявках
         fields_to_check = [
@@ -762,24 +711,22 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         _logger.info("Запуск автоматического сопоставления Выписок и Заявок")
 
         # Получаем все заявки с заполненной датой "Взята в работу"
-        all_zayavki = self.env['amanat.zayavka'].search([('taken_in_work_date', '!=', False)])
+        all_zayavki = self.env['amanat.zayavka'].search(DOMAIN_SEARCH_ZAYAVKA)
         
         # Получаем все выписки без связанных заявок
-        candidate_extracts = self.env['amanat.extract_delivery'].search([
-            ('applications', '=', False)
-        ])
+        candidate_extracts = self.env['amanat.extract_delivery'].search(DOMAIN_SEARCH_EXTRACT_DELIVERY)
         
         # Словарь для хранения всех подходящих заявок для каждой выписки
         extract_to_zayavki = {}
         
         # Проходим по всем выпискам
         for extract in candidate_extracts:
-            _logger.debug(f"Обработка выписки ID={extract.id}, сумма={extract.amount}")
+            _logger.debug(f"[_run_matching_automation] Обработка выписки ID={extract.id}, сумма={extract.amount}")
 
             # Проверяем, что нет других "сделок"
             if (extract.currency_reserve or extract.transfer_ids or 
                 extract.conversion or extract.investment or extract.gold_deal):
-                _logger.debug(f"Выписка {extract.id} пропущена: имеет другие сделки")
+                _logger.debug(f"[_run_matching_automation] Выписка {extract.id} пропущена: имеет другие сделки")
                 continue
 
             # Получаем плательщиков выписки
@@ -790,40 +737,40 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                 extract_payers.append(extract.recipient.id)
 
             if not extract_payers:
-                _logger.debug(f"Выписка {extract.id} пропущена: нет плательщиков")
+                _logger.debug(f"[_run_matching_automation] Выписка {extract.id} пропущена: нет плательщиков")
                 continue
 
             extract_sum = extract.amount or 0.0
             matching_zayavki = []
-            _logger.debug(f"Выписка {extract.id}: плательщики {extract_payers}, сумма {extract_sum}")
+            _logger.debug(f"[_run_matching_automation] Выписка {extract.id}: плательщики {extract_payers}, сумма {extract_sum}")
             
             # Проверяем все заявки для этой выписки
             for zayavka in all_zayavki:
-                _logger.debug(f"Проверка заявки {zayavka.zayavka_id} для выписки {extract.id}")
+                _logger.debug(f"[_run_matching_automation] Проверка заявки {zayavka.zayavka_id} для выписки {extract.id}")
 
                 # Собираем плательщиков заявки через контрагентов
                 candidate_payers = []
 
                 if zayavka.agent_id and zayavka.agent_id.payer_ids:
                     candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
-                    _logger.debug(f"Заявка {zayavka.zayavka_id}: плательщики агента {zayavka.agent_id.payer_ids.ids}")
+                    _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: плательщики агента {zayavka.agent_id.payer_ids.ids}")
 
                 if zayavka.client_id and zayavka.client_id.payer_ids:
                     candidate_payers.extend(zayavka.client_id.payer_ids.ids)
-                    _logger.debug(f"Заявка {zayavka.zayavka_id}: плательщики клиента {zayavka.client_id.payer_ids.ids}")
+                    _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: плательщики клиента {zayavka.client_id.payer_ids.ids}")
 
                 if not candidate_payers:
-                    _logger.debug(f"Заявка {zayavka.zayavka_id} пропущена: нет плательщиков в контрагентах")
+                    _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id} пропущена: нет плательщиков в контрагентах")
                     continue
 
-                _logger.debug(f"Заявка {zayavka.zayavka_id}: общие плательщики {candidate_payers}")
+                _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: общие плательщики {candidate_payers}")
 
                 # Проверяем, что все плательщики выписки есть среди кандидатов
                 all_matched = all(payer_id in candidate_payers for payer_id in extract_payers)
-                _logger.debug(f"Заявка {zayavka.zayavka_id}: проверка плательщиков выписки {extract_payers} в кандидатах {candidate_payers} = {all_matched}")
+                _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: проверка плательщиков выписки {extract_payers} в кандидатах {candidate_payers} = {all_matched}")
 
                 if not all_matched:
-                    _logger.debug(f"Заявка {zayavka.zayavka_id} пропущена: несовпадение плательщиков")
+                    _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id} пропущена: несовпадение плательщиков")
                     continue
 
                 # Проверяем суммы заявки (в порядке приоритета)
@@ -856,21 +803,21 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                         break
 
                 if zayavka_sum is None:
-                    _logger.debug(f"Заявка {zayavka.zayavka_id}: нет подходящих сумм для сравнения")
+                    _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: нет подходящих сумм для сравнения")
                     continue
 
-                _logger.debug(f"Заявка {zayavka.zayavka_id}: проверка суммы {zayavka_sum} (поле {sum_field_name}) с выпиской {extract.id} (сумма {extract_sum})")
+                _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: проверка суммы {zayavka_sum} (поле {sum_field_name}) с выпиской {extract.id} (сумма {extract_sum})")
 
                 # Для всех полей сумм используем диапазон от [сумма_поля - 0.01, сумма_поля]
                 min_range = zayavka_sum - 0.01
                 max_range = zayavka_sum
                 sum_matched = min_range <= extract_sum <= max_range
-                _logger.debug(f"Заявка {zayavka.zayavka_id}: проверка в диапазоне [{min_range:.2f}, {max_range:.2f}], extract_sum={extract_sum}, совпадение={sum_matched}")
+                _logger.debug(f"[_run_matching_automation] Заявка {zayavka.zayavka_id}: проверка в диапазоне [{min_range:.2f}, {max_range:.2f}], extract_sum={extract_sum}, совпадение={sum_matched}")
 
                 if sum_matched:
                     matching_zayavki.append(zayavka)
-                    _logger.info(f"Найдено совпадение: выписка {extract.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} (поле {sum_field_name}, сумма {zayavka_sum})")
-                    _logger.info(f"Совпадение по полю {sum_field_name}: заявка {zayavka.zayavka_id} имеет {sum_field_name}={zayavka_sum}, выписка {extract.id} имеет сумму {extract_sum}")
+                    _logger.info(f"[_run_matching_automation] Найдено совпадение: выписка {extract.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} (поле {sum_field_name}, сумма {zayavka_sum})")
+                    _logger.info(f"[_run_matching_automation] Совпадение по полю {sum_field_name}: заявка {zayavka.zayavka_id} имеет {sum_field_name}={zayavka_sum}, выписка {extract.id} имеет сумму {extract_sum}")
             
             # Если нашли подходящие заявки, сохраняем их
             if matching_zayavki:
@@ -879,7 +826,7 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         # Применяем обновления
         total_links = 0
         if extract_to_zayavki:
-            _logger.info(f"Найдено {len(extract_to_zayavki)} выписок с подходящими заявками. Применение обновлений...")
+            _logger.info(f"[_run_matching_automation] Найдено {len(extract_to_zayavki)} выписок с подходящими заявками. Применение обновлений...")
             
             for extract, zayavki in extract_to_zayavki.items():
                 # Обновляем выписку - связываем со всеми найденными заявками
@@ -887,27 +834,94 @@ class Extract_delivery(models.Model, AmanatBaseModel):
                     'direction_choice': 'applications'
                 })
 
-                _logger.info("extract.write")
+                _logger.info("[_run_matching_automation] extract.write")
                 
                 # Обновляем каждую заявку - добавляем обратную связь
                 for zayavka in zayavki:
                     existing_extract_ids = [e.id for e in zayavka.extract_delivery_ids]
                     if extract.id not in existing_extract_ids:
-                        _logger.info(f"Добавляем связь выписки ID={extract.id} с заявкой ID={zayavka.id}")
+                        _logger.info(f"[_run_matching_automation] Добавляем связь выписки ID={extract.id} с заявкой ID={zayavka.id}")
                         zayavka.write({
                             'extract_delivery_ids': [(4, extract.id)]  # 4 - добавить связь
                         })
-                        _logger.info("Произошло событие zayavka.write")
+                        _logger.info("[_run_matching_automation] Произошло событие zayavka.write")
                 
                 total_links += len(zayavki)
-                _logger.info(f"Выписка ID={extract.id} связана с {len(zayavki)} заявками: {[z.zayavka_id for z in zayavki]}")
+                _logger.info(f"[_run_matching_automation] Выписка ID={extract.id} связана с {len(zayavki)} заявками: {[z.zayavka_id for z in zayavki]}")
         
-        _logger.info(f"Процесс сопоставления завершен. Обработано выписок: {len(extract_to_zayavki)}, создано связей: {total_links}")
+        _logger.info(f"[_run_matching_automation] Процесс сопоставления завершен. Обработано выписок: {len(extract_to_zayavki)}, создано связей: {total_links}")
         
         # Дополнительно ищем комбинации выписок для частичного покрытия
         self._run_partial_matching_automation()
         
         return True
+    
+    def _find_matching_applications(self):
+        """
+        Находит заявки, подходящие для текущей записи выписки по критериям:
+        - плательщик и получатель выписки должны быть среди плательщиков заявки  
+        - сумма должна совпадать с допуском ±1 рубль
+        - заявка должна быть взята в работу
+        """
+        self.ensure_one()
+        
+        if not self.payer or not self.recipient or not self.amount:
+            return self.env['amanat.zayavka']
+        
+        # Получаем плательщиков выписки
+        extract_payers = [self.payer.id, self.recipient.id]
+        extract_sum = self.amount
+        
+        # Ищем заявки с заполненной датой "Взята в работу"
+        all_zayavki = self.env['amanat.zayavka'].search(DOMAIN_SEARCH_ZAYAVKA)
+        
+        matching_zayavki = []
+        
+        for zayavka in all_zayavki:
+            # Собираем плательщиков заявки через контрагентов
+            candidate_payers = []
+            
+            if zayavka.agent_id and zayavka.agent_id.payer_ids:
+                candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
+                
+            if zayavka.client_id and zayavka.client_id.payer_ids:
+                candidate_payers.extend(zayavka.client_id.payer_ids.ids)
+            
+            if not candidate_payers:
+                continue
+            
+            # Проверяем, что все плательщики выписки есть среди кандидатов
+            all_matched = all(payer_id in candidate_payers for payer_id in extract_payers)
+            
+            if not all_matched:
+                continue
+
+            # Проверяем суммы заявки (в порядке приоритета)
+            zayavka_sums = [
+                getattr(zayavka, 'application_amount_rub_contract', None),  # Заявка по курсу в рублях по договору
+                getattr(zayavka, 'total_fact', None),                      # Итого факт
+                getattr(zayavka, 'contract_reward', None),                 # Вознаграждение по договору
+                getattr(zayavka, 'total_client', None),                    # Итого Клиент
+                getattr(zayavka, 'total_sber', None),                      # Итого Сбербанк
+                getattr(zayavka, 'total_sovok', None)                      # Итого Совкомбанк
+            ]
+            
+            # Находим первую непустую сумму
+            zayavka_sum = None
+            for sum_val in zayavka_sums:
+                if isinstance(sum_val, (int, float)) and sum_val is not None:
+                    zayavka_sum = sum_val
+                    break
+            
+            if zayavka_sum is None:
+                continue
+
+            # Проверяем сумму с допуском
+            if abs(zayavka_sum - extract_sum) <= TOLERANCE:
+                matching_zayavki.append(zayavka)
+                _logger.info(f"[_find_matching_applications] Найдено совпадение: выписка {self.id} (сумма {extract_sum}) с заявкой {zayavka.zayavka_id} (сумма {zayavka_sum})")
+        
+        return self.env['amanat.zayavka'].browse([z.id for z in matching_zayavki])
     
     @api.model
     def _run_partial_matching_automation(self):
@@ -916,7 +930,6 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         Вызывается после основного сопоставления для обработки оставшихся случаев.
         """
         _logger.info("Запуск автоматического сопоставления с частичным покрытием")
-        TOLERANCE = 1.0
 
         # Получаем заявки, которые еще не полностью покрыты выписками
         all_zayavki = self.env['amanat.zayavka'].search([('taken_in_work_date', '!=', False)])
@@ -1111,7 +1124,6 @@ class Extract_delivery(models.Model, AmanatBaseModel):
             
         extract_payers = [self.payer.id, self.recipient.id]
         extract_sum = self.amount
-        TOLERANCE = 1.0
         
         # Ищем заявки с заполненной датой "Взята в работу"
         all_zayavki = self.env['amanat.zayavka'].search([('taken_in_work_date', '!=', False)])

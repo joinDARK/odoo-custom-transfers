@@ -152,7 +152,7 @@ class AmanatBaseModel(models.AbstractModel):
         user = self.env.user
         
         for vals in vals_list:
-            if user.has_group('amanat.group_amanat_manager'):
+            if user.has_group('amanat.group_amanat_manager') or user.has_group('amanat.group_amanat_senior_manager'):
                 # Для модели заявки используем manager_ids (Many2many)
                 if self._name == 'amanat.zayavka' and 'manager_ids' in self._fields:
                     # Находим или создаем менеджера для текущего пользователя

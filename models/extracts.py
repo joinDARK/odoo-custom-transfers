@@ -133,6 +133,9 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
             skipped_inn_count = 0
             skipped_parsing_count = 0
             skipped_duplicate_count = 0
+            duplicate_file_messages = []
+            duplicate_db_messages = []
+            created_messages = []
 
             for doc in extracted_docs:
                 payer_inn = self._extract_inn_string(doc.get('payerINN'))
@@ -200,26 +203,6 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
                         new_record_data['date']
                     )
 
-                # Check 1: Duplicate within this file (already processed in this run)
-                if key1 in processed_keys or (key2 and key2 in processed_keys):
-                    _logger.warning(
-                        "ДУБЛИКАТ В ФАЙЛЕ: Пропускаем запись. Плательщик: %s (ИНН: %s), Получатель: %s (ИНН: %s), "
-                        "Сумма: %s, Дата: %s, Номер документа: %s, Назначение: %s",
-                        doc.get('payer', 'Не указан'),
-                        payer_inn,
-                        doc.get('receiver', 'Не указан'), 
-                        receiver_inn,
-                        parsed_amount,
-                        parsed_date,
-                        doc.get('number', 'Не указан'),
-                        (doc.get('paymentPurpose') or '').replace('\n', ' ').strip()[:100]
-                    )
-                    skipped_duplicate_count += 1
-                    continue
-
-                # Check 2: Duplicate in the database (from a previous run)
-                _logger.info("DEBUG: Перед проверкой дубликата в БД для документа %s", doc.get('number', 'Не указан'))
-                _logger.info("DEBUG: new_record_data: %s", new_record_data)
                 is_duplicate = self._is_duplicate_record(new_record_data)
                 _logger.info("DEBUG: Результат проверки дубликата: %s", is_duplicate)
 
@@ -237,6 +220,13 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
                         (doc.get('paymentPurpose') or '').replace('\n', ' ').strip()[:100]
                     )
                     skipped_duplicate_count += 1
+                    
+                    # Добавляем сообщение о дубликате в БД (не больше 10)
+                    if len(duplicate_db_messages) < 10:
+                        duplicate_db_messages.append(
+                            f"{doc.get('payer', 'Не указан')} → {doc.get('receiver', 'Не указан')}, "
+                            f"сумма: {parsed_amount}, дата: {parsed_date}, №: {doc.get('number', 'Не указан')}"
+                        )
                     continue
                 # --- End Duplicate Check ---
 
@@ -244,6 +234,13 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
                 processed_keys.add(key1)
                 if key2:
                     processed_keys.add(key2)
+                
+                # Добавляем сообщение о новой записи (не больше 10)
+                if len(created_messages) < 10:
+                    created_messages.append(
+                        f"✅ СОЗДАНО: {doc.get('payer', 'Не указан')} → {doc.get('receiver', 'Не указан')}, "
+                        f"сумма: {parsed_amount}, дата: {parsed_date}, №: {doc.get('number', 'Не указан')}"
+                    )
             
             created_count = 0
             if records_to_create_vals:
@@ -260,15 +257,35 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
                     _logger.error("DEBUG: records_to_create_vals: %s", records_to_create_vals)
                     raise
 
-            summary_message = (
-                f"Обработка завершена.<br/>"
-                f"<b>Создано новых записей: {created_count}</b><br/>"
-                f"Пропущено дубликатов: {skipped_duplicate_count}<br/>"
-                f"Пропущено из-за проблем с ИНН: {skipped_inn_count}<br/>"
-                f"Пропущено из-за ошибок парсинга (дата/сумма): {skipped_parsing_count}<br/>"
-                f"<i>Автоматическое сопоставление с заявками происходит при создании каждой записи</i>"
-            )
+            summary_message = f"""
+                Обработка завершена — 
+                Создано новых записей: {created_count} ;
+                Пропущено дубликатов: {skipped_duplicate_count} ;
+                Пропущено из-за проблем с ИНН: {skipped_inn_count} ;
+                Пропущено из-за ошибок парсинга (дата/сумма): {skipped_parsing_count} .
+                Автоматическое сопоставление с заявками происходит при создании каждой записи
+            """
             self.message_post(body=summary_message)
+            
+            # Отправляем сообщения о дубликатах (не больше 5)
+            if duplicate_file_messages:
+                duplicate_msg = duplicate_file_messages[:5]  # Ограничиваем 5 сообщениями
+                if len(duplicate_file_messages) > 5:
+                    duplicate_msg.append(f"... и еще {len(duplicate_file_messages) - 5} дубликатов")
+                self.message_post(body=f"Найденные дубликаты в файле: {'; '.join(duplicate_msg)}")
+
+            if duplicate_db_messages:
+                duplicate_msg = duplicate_db_messages[:5]  # Ограничиваем 5 сообщениями
+                if len(duplicate_db_messages) > 5:
+                    duplicate_msg.append(f"... и еще {len(duplicate_db_messages) - 5} дубликатов")
+                self.message_post(body=f"Найденные дубликаты в БД: {'; '.join(duplicate_msg)}")
+
+            # Отправляем сообщения о созданных записях (не больше 5)
+            if created_messages:
+                created_msg = created_messages[:5]  # Ограничиваем 5 сообщениями
+                if created_count > 5:
+                    created_msg.append(f"... и еще {created_count - 5} записей")
+                self.message_post(body=f"Созданные записи: {'; '.join(created_msg)}")
 
             # Автоматический запуск обработки СТЕЛЛАР/ТДК/ИНДОТРЕЙД РФ
             self.env['amanat.extract_delivery']._run_stellar_tdk_logic()
@@ -400,8 +417,7 @@ class AmanatExtracts(models.Model, AmanatBaseModel):
         if count1 > 0:
             existing_records = ExtractDelivery.search(domain1, limit=5)
             for rec in existing_records:
-                _logger.info("  Найденная запись ID %s: payer=%s, recipient=%s, amount=%s, date=%s, serial_number=%s",
-                           rec.id, rec.payer.name, rec.recipient.name, rec.amount, rec.date, rec.serial_number)
+                _logger.info("  Найденная запись ID %s: payer=%s, recipient=%s, amount=%s, date=%s, serial_number=%s", rec.id, rec.payer.name, rec.recipient.name, rec.amount, rec.date, rec.serial_number)
             return True
 
         # if new_record_vals.get('serial_number'):

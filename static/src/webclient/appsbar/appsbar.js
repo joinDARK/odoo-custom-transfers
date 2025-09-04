@@ -266,7 +266,7 @@ export class AppsBar extends Component {
         // Проверка для пользователей с ролью "Транзитные переводы"
         if (this.state.userGroups.is_transit_only) {
             // Если пользователь также является менеджером, показываем расширенное меню
-            if (this.state.userGroups.is_manager) {
+            if (this.state.userGroups.is_manager || this.state.userGroups.is_senior_manager) {
                 return [
                     {
                         name: "Валютные операции",
@@ -583,7 +583,7 @@ export class AppsBar extends Component {
             ];
         }
         
-        if (this.state.userGroups.is_manager && !this.state.userGroups.is_senior_manager && !this.state.userGroups.is_admin && !this.state.userGroups.is_transit_only) {
+        if ((this.state.userGroups.is_manager || this.state.userGroups.is_senior_manager) && !this.state.userGroups.is_admin && !this.state.userGroups.is_transit_only) {
             return [
                 {
                     name: "Справочники",
@@ -599,6 +599,12 @@ export class AppsBar extends Component {
                     name: "Заявки",
                     action: "amanat.zayavka_action",
                     actionMethod: "openZayvaki",
+                },
+                {
+                    name: "Анализ",
+                    items: [
+                        { name: "Фикс заявка", action: "amanat.zayavka_fiks_dashboard_action_menu" },
+                    ],
                 },
                 {
                     name: "Калькуляторы",

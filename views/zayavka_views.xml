@@ -160,18 +160,18 @@
                   </group>
                 </div>
               </group>
-              <group string="Курс Джесс" groups="!amanat.group_amanat_manager">
+              <group string="Курс Джесс" groups="!amanat.group_amanat_manager,!amanat.group_amanat_senior_manager">
                 <div class="o-form-group-2">
                   <group>
-                    <field name="jess_rate_id" groups="!amanat.group_amanat_manager" />
+                    <field name="jess_rate_id" groups="!amanat.group_amanat_manager,!amanat.group_amanat_senior_manager" />
                   </group>
                   <group>
-                    <field name="jess_rate" groups="!amanat.group_amanat_manager" />
+                    <field name="jess_rate" groups="!amanat.group_amanat_manager,!amanat.group_amanat_senior_manager" />
                   </group>
                 </div>
               </group>
               <group>
-                <field name="link_jess_rate" groups="!amanat.group_amanat_manager"/>
+                <field name="link_jess_rate" groups="!amanat.group_amanat_manager,!amanat.group_amanat_senior_manager"/>
               </group>
               <group invisible="is_sovcombank_contragent or is_sberbank_contragent">
                 <div class="o-form-group-2">
@@ -245,7 +245,7 @@
                     <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
-                    <field name="jess_rate" groups="!amanat.group_amanat_manager" />
+                    <field name="jess_rate" groups="!amanat.group_amanat_manager,!amanat.group_amanat_senior_manager" />
                   </group>
                 </div>
               </group>
@@ -321,7 +321,7 @@
                     <field name="reward_percent_in_contract" widget="percentage" />
                     <field name="hidden_hadge" />
                     <field name="dollar_cross_rate" />
-                    <field name="jess_rate" groups="!amanat.group_amanat_manager" />
+                    <field name="jess_rate" groups="!amanat.group_amanat_manager,!amanat.group_amanat_senior_manager" />
                   </group>
                 </div>
               </group>
@@ -678,7 +678,7 @@
                     <field name="is_money_stuck" />
                   </group>
                   <group>
-                    <field name="hide_in_dashboard" groups="!amanat.group_amanat_manager" />
+                    <field name="hide_in_dashboard" groups="!amanat.group_amanat_manager,!amanat.group_amanat_senior_manager" />
                   </group>
                   <group>
                     <field name="problem_stage" />
@@ -1665,7 +1665,7 @@
             </page>
           </notebook>
         </sheet>
-        <chatter groups="!amanat.group_amanat_manager">
+        <chatter groups="!amanat.group_amanat_manager,!amanat.group_amanat_senior_manager">
           <field name="message_follower_ids" />
           <field name="activity_ids" />
           <field name="message_ids" />
