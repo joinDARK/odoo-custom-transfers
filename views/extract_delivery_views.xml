@@ -5,13 +5,6 @@
         <field name="model">amanat.extract_delivery</field>
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
-                <header>
-                    <button name="mass_match_applications" 
-                            string="🚀 Массовая автоматизация 'РАЗНЕСТИ'" 
-                            type="object" 
-                            class="btn-primary"
-                            confirm="Запустить автоматическое сопоставление для всех выбранных выписок разнос? Это найдет и свяжет подходящие заявки для каждой выписки."/>
-                </header>
                 <!-- Поле для Ильзиры с красным индикатором -->
                 <field name="show_red_stripe_for_ilzira" string="" 
                        widget="badge" 
@@ -286,14 +279,6 @@
         <field name="priority">15</field>
         <field name="arch" type="xml">
             <list editable="top" multi_edit="1">
-                <header>
-                    <button name="mass_match_applications" 
-                            string="🚀 Массовая автоматизация 'РАЗНЕСТИ'" 
-                            type="object" 
-                            class="btn-primary"
-                            confirm="Запустить автоматическое сопоставление для всех выбранных выписок разнос? Это найдет и свяжет подходящие заявки для каждой выписки."/>
-                </header>
-
                 <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
                 <!-- <button width="30" title="Принудительное сопоставление" type="object" name="force_application_matching" icon="fa-link" class="btn-secondary"/>
                 <button width="30" title="Диагностика" type="object" name="show_diagnosis_result" icon="fa-search" class="btn-info"/> -->
