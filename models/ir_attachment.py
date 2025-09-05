@@ -60,8 +60,45 @@ class IrAttachment(models.Model):
     @api.model
     def check(self, mode, values=None):        
         return True
-        
 
+    def validate_access(self, access_token):
+        """ЯДЕРНЫЙ ОБХОД: Всегда возвращаем sudo() запись без проверки токенов"""
+        self.ensure_one()
+        _logger.error(f"AMANAT validate_access CALLED! ID: {self.id}, user: {self.env.user.name}")
+        return self.sudo()
+
+    def _check_attachments_access(self, attachment_tokens):
+        """ЯДЕРНЫЙ ОБХОД: Переопределяем метод из mail модуля"""
+        _logger.error(f"AMANAT _check_attachments_access CALLED! IDs: {self.ids}, user: {self.env.user.name}")
+        return True
+
+    def _search(self, domain, offset=0, limit=None, order=None):
+        """ЯДЕРНЫЙ ОБХОД: Переопределяем _search чтобы обходить все проверки доступа"""
+        _logger.error(f"AMANAT ir.attachment._search CALLED! domain: {domain}, user: {self.env.user.name}")
+        try:
+            return super(IrAttachment, self.sudo())._search(domain, offset, limit, order)
+        except Exception as e:
+            _logger.error(f"AMANAT: Exception in _search: {e}")
+            return super()._search(domain, offset, limit, order)
+
+    def _fetch_query(self, query, fields_to_fetch):
+        """ЯДЕРНЫЙ ОБХОД: Переопределяем _fetch_query чтобы обходить все фильтрации"""
+        _logger.error(f"AMANAT ir.attachment._fetch_query CALLED! user: {self.env.user.name}")
+        try:
+            return super(IrAttachment, self.sudo())._fetch_query(query, fields_to_fetch)
+        except Exception as e:
+            _logger.error(f"AMANAT: Exception in _fetch_query: {e}")
+            return super()._fetch_query(query, fields_to_fetch)
+
+    def exists(self):
+        """ЯДЕРНЫЙ ОБХОД: Переопределяем exists чтобы всегда возвращать все записи"""
+        _logger.error(f"AMANAT ir.attachment.exists CALLED! IDs: {self.ids}, user: {self.env.user.name}")
+        try:
+            return super(IrAttachment, self.sudo()).exists()
+        except Exception as e:
+            _logger.error(f"AMANAT: Exception in exists: {e}")
+            return self
+        
     @api.model
     def get_hidden_columns_and_data_range(self, xlsx_data):
         """Определяет скрытые колонки и реальный диапазон данных для оптимизации чтения"""

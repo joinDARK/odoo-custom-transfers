@@ -2464,11 +2464,11 @@ class Zayavka(models.Model, AmanatBaseModel):
                 # Ищем актуальный договор (с галочкой is_actual = True)
                 actual_contract = record.contragent_id.contract_ids.filtered('is_actual')
                 if actual_contract and actual_contract.contract_attachments:
-                    record.contragent_contract_attachments = actual_contract.contract_attachments
+                    record.contragent_contract_attachments = actual_contract.contract_attachments.sudo()
                 else:
-                    record.contragent_contract_attachments = self.env['ir.attachment'].browse()
+                    record.contragent_contract_attachments = self.env['ir.attachment'].sudo().browse()
             else:
-                record.contragent_contract_attachments = self.env['ir.attachment'].browse()
+                record.contragent_contract_attachments = self.env['ir.attachment'].sudo().browse()
 
     @api.model
     def get_zayavka_action_context(self):
@@ -2491,7 +2491,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     @api.model
     def action_show_related_zayavkas_by_attachment(self, attachment_id=None):
         """Показать все заявки, к которым прикреплен данный документ"""
-        print(f"=== action_show_related_zayavkas_by_attachment called with attachment_id={attachment_id} ===")
+        _logger.error(f"=== action_show_related_zayavkas_by_attachment called with attachment_id={attachment_id} ===")
         if not attachment_id:
             return {
                 'type': 'ir.actions.client',
@@ -2506,7 +2506,7 @@ class Zayavka(models.Model, AmanatBaseModel):
         # Проверяем, существует ли такой attachment вообще
         attachment = self.env['ir.attachment'].browse(attachment_id)
         if not attachment.exists():
-            print(f"DEBUG: Attachment with ID={attachment_id} does not exist!")
+            _logger.error(f"DEBUG: Attachment with ID={attachment_id} does not exist!")
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',

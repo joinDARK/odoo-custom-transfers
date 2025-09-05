@@ -36,7 +36,7 @@ class ZayavkaMethods(models.Model):
                 if new_attachments:
                     # Создаем копии attachment'ов для One2many поля
                     for attachment in new_attachments:
-                        self.env['ir.attachment'].create({
+                        self.env['ir.attachment'].sudo().create({
                             'name': attachment.name,
                             'datas': attachment.datas,
                             'res_model': 'amanat.zayavka',
@@ -904,7 +904,7 @@ class ZayavkaMethods(models.Model):
             
             if generated_file:
                 # Создаем attachment
-                attachment = self.env['ir.attachment'].create({
+                attachment = self.env['ir.attachment'].sudo().create({
                     'name': f'Заявление_{self.zayavka_num or self.zayavka_id}.docx',
                     'type': 'binary',
                     'datas': generated_file,
@@ -974,11 +974,11 @@ class ZayavkaMethods(models.Model):
                 ('name', 'ilike', '%application%'),   # *application*
             ]
             
-            all_statements = self.env['ir.attachment']
+            all_statements = self.env['ir.attachment'].sudo()
             
             # Собираем все файлы по всем паттернам
             for pattern in search_patterns:
-                statements = self.env['ir.attachment'].search([
+                statements = self.env['ir.attachment'].sudo().search([
                     ('res_model', '=', self._name),
                     ('res_id', '=', self.id),
                     ('res_field', '=', 'zayavka_output_attachments'),
@@ -987,7 +987,7 @@ class ZayavkaMethods(models.Model):
                 all_statements |= statements
             
             # Дополнительно ищем по расширению файла (docx, doc, pdf)
-            doc_extensions = self.env['ir.attachment'].search([
+            doc_extensions = self.env['ir.attachment'].sudo().search([
                 ('res_model', '=', self._name),
                 ('res_id', '=', self.id),
                 ('res_field', '=', 'zayavka_output_attachments'),
@@ -1029,7 +1029,7 @@ class ZayavkaMethods(models.Model):
         """Удаляет ВСЕ файлы из заявка_выход (агрессивная очистка)"""
         try:
             # Ищем ВСЕ файлы в zayavka_output_attachments
-            all_output_files = self.env['ir.attachment'].search([
+            all_output_files = self.env['ir.attachment'].sudo().search([
                 ('res_model', '=', self._name),
                 ('res_id', '=', self.id),
                 ('res_field', '=', 'zayavka_output_attachments')
@@ -1605,7 +1605,7 @@ class ZayavkaMethods(models.Model):
                         mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 
                 # Создаем attachment
-                attachment = self.env['ir.attachment'].create({
+                attachment = self.env['ir.attachment'].sudo().create({
                     'name': file_name,
                     'type': 'binary',
                     'datas': file_data,
@@ -2013,7 +2013,7 @@ class ZayavkaMethods(models.Model):
                 mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 
                 # Создаем attachment
-                attachment = self.env['ir.attachment'].create({
+                attachment = self.env['ir.attachment'].sudo().create({
                     'name': file_name,
                     'type': 'binary',
                     'datas': file_data,

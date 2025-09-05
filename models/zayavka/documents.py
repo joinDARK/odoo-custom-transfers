@@ -752,7 +752,7 @@ class AmanatZayavkaDocuments(models.Model):
                     
                     # Создаем подписанный PDF файл
                     pdf_signed_name = f"signed_{base_name}_{idx+1}.pdf"
-                    pdf_attachment = self.env['ir.attachment'].create({
+                    pdf_attachment = self.env['ir.attachment'].sudo().create({
                         'name': pdf_signed_name,
                         'datas': base64.b64encode(signed_document_data['pdf']),
                 'res_model': self._name,
