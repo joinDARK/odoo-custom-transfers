@@ -271,6 +271,18 @@
         </field>
     </record>
 
+    <record id="extract_delivery_search_view" model="ir.ui.view">
+        <field name="name">extract_delivery.search</field>
+        <field name="model">amanat.extract_delivery</field>
+        <field name="arch" type="xml">
+            <search>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_amount" string="Сумма" context="{'group_by':'amount'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
     <!-- Ограниченное представление для Ильзиры (казначей) -->
     <record id="extract_delivery_list_view_ilzira" model="ir.ui.view">
         <field name="name">extract_delivery.list.ilzira</field>
