@@ -24,6 +24,9 @@ DOMAIN_SEARCH_EXTRACT_DELIVERY = [
 
 TOLERANCE = 1.0
 
+# Константа для отладки - вписывайте сюда ID заявки для проверки
+CHECK_ZAYAVKA_ID = 40199  # Например: 12345
+
 class Extract_delivery(models.Model, AmanatBaseModel):
     _name = 'amanat.extract_delivery'
     _inherit = ['amanat.base.model', "mail.thread", "mail.activity.mixin"]
@@ -1191,3 +1194,420 @@ class Extract_delivery(models.Model, AmanatBaseModel):
         
         _logger.info(f"Диагностика завершена: {summary}")
         return summary
+
+    def debug_matching_automation(self):
+        """
+        Отладочный метод, который повторяет логику _run_matching_automation,
+        но только выводит информацию без создания связей.
+        Используется для диагностики проблем с сопоставлением.
+        """
+        self.ensure_one()
+        
+        _logger.info(f"[DEBUG] Начало отладки сопоставления для выписки ID={self.id}")
+        
+        debug_info = {
+            'extract_id': self.id,
+            'extract_name': self.name,
+            'extract_amount': self.amount,
+            'extract_date': str(self.date) if self.date else None,
+            'extract_payer': self.payer.name if self.payer else None,
+            'extract_recipient': self.recipient.name if self.recipient else None,
+            'has_existing_applications': bool(self.applications),
+            'has_other_deals': bool(self.currency_reserve or self.transfer_ids or 
+                                  self.conversion or self.investment or self.gold_deal),
+            'matching_results': []
+        }
+        
+        # Проверяем базовые условия
+        if debug_info['has_existing_applications']:
+            message = f"Выписка {self.id} пропущена: уже имеет заявки {self.applications.mapped('zayavka_id')}"
+            _logger.info(f"[DEBUG] {message}")
+            self.message_post(body=f"Отладка сопоставления: {message}")
+            return debug_info
+            
+        if debug_info['has_other_deals']:
+            message = f"Выписка {self.id} пропущена: имеет другие сделки"
+            _logger.info(f"[DEBUG] {message}")
+            self.message_post(body=f"Отладка сопоставления: {message}")
+            return debug_info
+
+        # Получаем плательщиков выписки
+        extract_payers = []
+        if self.payer:
+            extract_payers.append(self.payer.id)
+        if self.recipient:
+            extract_payers.append(self.recipient.id)
+
+        if not extract_payers:
+            message = f"Выписка {self.id} пропущена: нет плательщиков"
+            _logger.info(f"[DEBUG] {message}")
+            self.message_post(body=f"Отладка сопоставления: {message}")
+            return debug_info
+
+        extract_sum = self.amount or 0.0
+        debug_info['extract_payer_ids'] = extract_payers
+        debug_info['extract_sum'] = extract_sum
+        
+        # Получаем все заявки с заполненной датой "Взята в работу"
+        all_zayavki = self.env['amanat.zayavka'].search(DOMAIN_SEARCH_ZAYAVKA)
+        debug_info['total_zayavki_to_check'] = len(all_zayavki)
+        
+        _logger.info(f"[DEBUG] Выписка {self.id}: плательщики {extract_payers}, сумма {extract_sum}")
+        _logger.info(f"[DEBUG] Найдено {len(all_zayavki)} заявок для проверки")
+        
+        perfect_matches = []
+        partial_matches = []
+        
+        # Проверяем каждую заявку (ограничиваем для производительности)
+        for zayavka in all_zayavki[:50]:  # Проверяем первые 50 заявок
+            match_result = {
+                'zayavka_id': zayavka.zayavka_id,
+                'zayavka_db_id': zayavka.id,
+                'agent_name': zayavka.agent_id.name if zayavka.agent_id else None,
+                'client_name': zayavka.client_id.name if zayavka.client_id else None,
+                'checks': {}
+            }
+            
+            _logger.debug(f"[DEBUG] Проверка заявки {zayavka.zayavka_id} (ID={zayavka.id})")
+
+            # Собираем плательщиков заявки через контрагентов
+            candidate_payers = []
+
+            if zayavka.agent_id and zayavka.agent_id.payer_ids:
+                candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
+                match_result['agent_payers'] = [p.name for p in zayavka.agent_id.payer_ids]
+
+            if zayavka.client_id and zayavka.client_id.payer_ids:
+                candidate_payers.extend(zayavka.client_id.payer_ids.ids)
+                match_result['client_payers'] = [p.name for p in zayavka.client_id.payer_ids]
+
+            match_result['all_candidate_payer_ids'] = candidate_payers
+            match_result['checks']['has_payers'] = bool(candidate_payers)
+            
+            if not candidate_payers:
+                match_result['checks']['payers_match'] = False
+                match_result['fail_reason'] = "Нет плательщиков в контрагентах"
+                continue
+
+            # Проверяем совпадение плательщиков
+            all_matched = all(payer_id in candidate_payers for payer_id in extract_payers)
+            match_result['checks']['payers_match'] = all_matched
+            
+            if not all_matched:
+                match_result['fail_reason'] = "Несовпадение плательщиков"
+                partial_matches.append(match_result)
+                continue
+
+            # Проверяем суммы
+            zayavka_sums = [
+                ('application_amount_rub_contract', getattr(zayavka, 'application_amount_rub_contract', None)),
+                ('total_fact', getattr(zayavka, 'total_fact', None)),
+                ('contract_reward', getattr(zayavka, 'contract_reward', None)),
+                ('total_client', getattr(zayavka, 'total_client', None)),
+                ('total_sber', getattr(zayavka, 'total_sber', None)),
+                ('total_sovok', getattr(zayavka, 'total_sovok', None))
+            ]
+            
+            match_result['available_sums'] = {name: val for name, val in zayavka_sums if val is not None}
+            
+            # Ищем совпадение по сумме
+            found_match = False
+            for field_name, sum_val in zayavka_sums:
+                if isinstance(sum_val, (int, float)) and sum_val is not None:
+                    rounded_sum_val = round(sum_val, 2)
+                    rounded_extract_sum = round(extract_sum, 2)
+                    
+                    sum_matched = rounded_sum_val == rounded_extract_sum
+                    
+                    if sum_matched:
+                        match_result['checks']['sum_match'] = True
+                        match_result['matched_field'] = field_name
+                        match_result['matched_sum'] = sum_val
+                        match_result['is_perfect_match'] = True
+                        perfect_matches.append(match_result)
+                        found_match = True
+                        _logger.info(f"[DEBUG] СОВПАДЕНИЕ! Заявка {zayavka.zayavka_id}: поле {field_name}={sum_val} == выписка {extract_sum}")
+                        break
+            
+            if not found_match:
+                match_result['checks']['sum_match'] = False
+                # Находим ближайшее совпадение для отладки
+                non_empty_sums = [(name, val) for name, val in zayavka_sums if isinstance(val, (int, float)) and val is not None]
+                if non_empty_sums:
+                    best_match = min(non_empty_sums, key=lambda x: abs(x[1] - extract_sum))
+                    match_result['closest_match'] = {
+                        'field': best_match[0],
+                        'value': best_match[1],
+                        'difference': abs(best_match[1] - extract_sum)
+                    }
+                    match_result['fail_reason'] = f"Нет точного совпадения по сумме. Ближайшее: {best_match[0]}={best_match[1]} (разница {abs(best_match[1] - extract_sum)})"
+                else:
+                    match_result['fail_reason'] = "Нет подходящих сумм для сравнения"
+                
+                partial_matches.append(match_result)
+
+        # Формируем результат
+        debug_info['perfect_matches'] = perfect_matches
+        debug_info['partial_matches'] = partial_matches[:10]  # Показываем только первые 10
+        debug_info['perfect_matches_count'] = len(perfect_matches)
+        debug_info['total_checked'] = len(all_zayavki[:50])
+        
+        _logger.info(f"[DEBUG] Результат для выписки {self.id}: проверено {debug_info['total_checked']} заявок, найдено {debug_info['perfect_matches_count']} идеальных совпадений")
+        
+        # Создаем сообщение для пользователя
+        message_lines = [
+            f"<h4>Отладка сопоставления для выписки {self.name}</h4>",
+            f"<b>Сумма выписки:</b> {extract_sum}",
+            f"<b>Плательщик:</b> {self.payer.name if self.payer else 'не указан'}",
+            f"<b>Получатель:</b> {self.recipient.name if self.recipient else 'не указан'}",
+            f"<b>Проверено заявок:</b> {debug_info['total_checked']}",
+            "<br/>"
+        ]
+        
+        if perfect_matches:
+            message_lines.append(f"<b style='color: green;'>✅ Найдено {len(perfect_matches)} идеальных совпадений:</b>")
+            for match in perfect_matches[:5]:  # Показываем первые 5
+                message_lines.append(f"• Заявка {match['zayavka_id']} (ID: {match['zayavka_db_id']}) - поле {match['matched_field']} = {match['matched_sum']}")
+        else:
+            message_lines.append("<b style='color: red;'>❌ Идеальных совпадений не найдено</b>")
+            
+            if partial_matches:
+                message_lines.append("<br/><b>Частичные совпадения (первые 5):</b>")
+                for match in partial_matches[:5]:
+                    reason = match.get('fail_reason', 'Неизвестная причина')
+                    message_lines.append(f"• Заявка {match['zayavka_id']} - {reason}")
+        
+        message = "<br/>".join(message_lines)
+        
+        self.message_post(
+            body=message,
+            subject="Результат отладки сопоставления"
+        )
+        
+        return debug_info
+
+    def check_specific_zayavka_matching(self):
+        """
+        Проверяет сопоставление с конкретной заявкой, ID которой указан в константе CHECK_ZAYAVKA_ID.
+        """
+        self.ensure_one()
+        
+        if not CHECK_ZAYAVKA_ID:
+            message = "Не указан ID заявки для проверки. Установите значение константы CHECK_ZAYAVKA_ID в коде."
+            self.message_post(body=f"Ошибка проверки: {message}")
+            _logger.warning(f"[CHECK_ZAYAVKA] {message}")
+            return False
+        
+        # Ищем заявку по ID
+        try:
+            zayavka = self.env['amanat.zayavka'].browse(CHECK_ZAYAVKA_ID)
+            if not zayavka.exists():
+                message = f"Заявка с ID {CHECK_ZAYAVKA_ID} не найдена"
+                self.message_post(body=f"Ошибка проверки: {message}")
+                _logger.warning(f"[CHECK_ZAYAVKA] {message}")
+                return False
+        except Exception as e:
+            message = f"Ошибка при поиске заявки с ID {CHECK_ZAYAVKA_ID}: {str(e)}"
+            self.message_post(body=f"Ошибка проверки: {message}")
+            _logger.error(f"[CHECK_ZAYAVKA] {message}")
+            return False
+        
+        _logger.info(f"[CHECK_ZAYAVKA] Проверка сопоставления выписки {self.id} с заявкой {zayavka.zayavka_id} (ID={zayavka.id})")
+        
+        # Собираем информацию для проверки
+        check_result = {
+            'extract_info': {
+                'id': self.id,
+                'name': self.name,
+                'amount': self.amount,
+                'payer': self.payer.name if self.payer else None,
+                'recipient': self.recipient.name if self.recipient else None,
+                'date': str(self.date) if self.date else None,
+            },
+            'zayavka_info': {
+                'id': zayavka.id,
+                'zayavka_id': zayavka.zayavka_id,
+                'agent': zayavka.agent_id.name if zayavka.agent_id else None,
+                'client': zayavka.client_id.name if zayavka.client_id else None,
+                'taken_in_work_date': str(zayavka.taken_in_work_date) if zayavka.taken_in_work_date else None,
+            },
+            'checks': {},
+            'result': 'unknown'
+        }
+        
+        message_lines = [
+            f"<h4>Проверка сопоставления с заявкой {zayavka.zayavka_id}</h4>",
+            f"<b>Выписка:</b> {self.name} (ID: {self.id})",
+            f"<b>Сумма выписки:</b> {self.amount}",
+            f"<b>Плательщик:</b> {self.payer.name if self.payer else 'не указан'}",
+            f"<b>Получатель:</b> {self.recipient.name if self.recipient else 'не указан'}",
+            "<br/>",
+            f"<b>Заявка:</b> {zayavka.zayavka_id} (DB ID: {zayavka.id})",
+            f"<b>Агент:</b> {zayavka.agent_id.name if zayavka.agent_id else 'не указан'}",
+            f"<b>Клиент:</b> {zayavka.client_id.name if zayavka.client_id else 'не указан'}",
+            f"<b>Дата взятия в работу:</b> {zayavka.taken_in_work_date or 'не указана'}",
+            "<br/>",
+        ]
+        
+        # Проверка 1: Заявка взята в работу
+        check_result['checks']['has_work_date'] = bool(zayavka.taken_in_work_date)
+        if not zayavka.taken_in_work_date:
+            check_result['result'] = 'fail'
+            check_result['fail_reason'] = "Заявка не взята в работу"
+            message_lines.extend([
+                "<b style='color: red;'>❌ ЗАЯВКА НЕ ПОДХОДИТ</b>",
+                "<b>Причина:</b> Заявка не взята в работу (нет даты 'Взята в работу')"
+            ])
+            self._post_check_result(message_lines, zayavka)
+            return check_result
+        
+        # Проверка 2: У выписки есть плательщики
+        extract_payers = []
+        if self.payer:
+            extract_payers.append(self.payer.id)
+        if self.recipient:
+            extract_payers.append(self.recipient.id)
+            
+        check_result['checks']['extract_has_payers'] = bool(extract_payers)
+        
+        if not extract_payers:
+            check_result['result'] = 'fail'
+            check_result['fail_reason'] = "У выписки не заполнены плательщик и получатель"
+            message_lines.extend([
+                "<b style='color: red;'>❌ ЗАЯВКА НЕ ПОДХОДИТ</b>",
+                "<b>Причина:</b> У выписки не заполнены плательщик и получатель"
+            ])
+            self._post_check_result(message_lines, zayavka)
+            return check_result
+        
+        # Проверка 3: У заявки есть плательщики через контрагентов
+        candidate_payers = []
+        agent_payers = []
+        client_payers = []
+        
+        if zayavka.agent_id and zayavka.agent_id.payer_ids:
+            agent_payers = [p.name for p in zayavka.agent_id.payer_ids]
+            candidate_payers.extend(zayavka.agent_id.payer_ids.ids)
+            
+        if zayavka.client_id and zayavka.client_id.payer_ids:
+            client_payers = [p.name for p in zayavka.client_id.payer_ids]
+            candidate_payers.extend(zayavka.client_id.payer_ids.ids)
+        
+        check_result['checks']['zayavka_has_payers'] = bool(candidate_payers)
+        
+        if not candidate_payers:
+            check_result['result'] = 'fail'
+            check_result['fail_reason'] = "У заявки нет плательщиков"
+            message_lines.extend([
+                "<b style='color: red;'>❌ ЗАЯВКА НЕ ПОДХОДИТ</b>",
+                "<b>Причина:</b> У заявки нет плательщиков (ни у агента, ни у клиента)"
+            ])
+            self._post_check_result(message_lines, zayavka)
+            return check_result
+        
+        # Проверка 4: Совпадение плательщиков
+        matched_payers = [p for p in extract_payers if p in candidate_payers]
+        all_matched = len(matched_payers) == len(extract_payers)
+        
+        check_result['checks']['payers_match'] = all_matched
+        
+        if not all_matched:
+            check_result['result'] = 'fail'
+            check_result['fail_reason'] = "Не все плательщики выписки найдены среди плательщиков заявки"
+            message_lines.extend([
+                "<b style='color: red;'>❌ ЗАЯВКА НЕ ПОДХОДИТ</b>",
+                f"<b>Причина:</b> Несовпадение плательщиков. Совпало: {len(matched_payers)} из {len(extract_payers)}",
+                f"<b>Плательщики агента:</b> {', '.join(agent_payers) if agent_payers else 'нет'}",
+                f"<b>Плательщики клиента:</b> {', '.join(client_payers) if client_payers else 'нет'}"
+            ])
+            self._post_check_result(message_lines, zayavka)
+            return check_result
+        
+        # Проверка 5: Совпадение сумм
+        extract_sum = self.amount or 0.0
+        zayavka_sums = [
+            ('application_amount_rub_contract', getattr(zayavka, 'application_amount_rub_contract', None)),
+            ('total_fact', getattr(zayavka, 'total_fact', None)),
+            ('contract_reward', getattr(zayavka, 'contract_reward', None)),
+            ('total_client', getattr(zayavka, 'total_client', None)),
+            ('total_sber', getattr(zayavka, 'total_sber', None)),
+            ('total_sovok', getattr(zayavka, 'total_sovok', None))
+        ]
+        
+        # Ищем точное совпадение по сумме
+        found_match = False
+        for field_name, sum_val in zayavka_sums:
+            if isinstance(sum_val, (int, float)) and sum_val is not None:
+                rounded_sum_val = round(sum_val, 2)
+                rounded_extract_sum = round(extract_sum, 2)
+                
+                if rounded_sum_val == rounded_extract_sum:
+                    check_result['result'] = 'success'
+                    check_result['matched_field'] = field_name
+                    check_result['matched_sum'] = sum_val
+                    check_result['checks']['sum_match'] = True
+                    found_match = True
+                    
+                    message_lines.extend([
+                        "<b style='color: green;'>✅ ЗАЯВКА ПОДХОДИТ!</b>",
+                        f"<b>Совпадение по полю:</b> {field_name}",
+                        f"<b>Совпадающая сумма:</b> {sum_val}",
+                    ])
+                    break
+        
+        if not found_match:
+            check_result['result'] = 'fail'
+            check_result['checks']['sum_match'] = False
+            
+            # Находим ближайшее совпадение
+            non_empty_sums = [(name, val) for name, val in zayavka_sums if isinstance(val, (int, float)) and val is not None]
+            if non_empty_sums:
+                best_match = min(non_empty_sums, key=lambda x: abs(x[1] - extract_sum))
+                check_result['fail_reason'] = "Нет точного совпадения по сумме"
+                
+                message_lines.extend([
+                    "<b style='color: red;'>❌ ЗАЯВКА НЕ ПОДХОДИТ</b>",
+                    "<b>Причина:</b> Нет точного совпадения по сумме",
+                    f"<b>Ближайшее совпадение:</b> {best_match[0]} = {best_match[1]} (разница: {abs(best_match[1] - extract_sum)})"
+                ])
+            else:
+                check_result['fail_reason'] = "У заявки нет подходящих сумм для сравнения"
+                message_lines.extend([
+                    "<b style='color: red;'>❌ ЗАЯВКА НЕ ПОДХОДИТ</b>",
+                    "<b>Причина:</b> У заявки нет подходящих сумм для сравнения"
+                ])
+        
+        # Добавляем детали проверок
+        message_lines.append("<br/><b>Детали проверок:</b>")
+        checks = check_result['checks']
+        
+        check_names = {
+            'has_work_date': 'Заявка взята в работу',
+            'extract_has_payers': 'У выписки есть плательщики',
+            'zayavka_has_payers': 'У заявки есть плательщики',
+            'payers_match': 'Плательщики совпадают',
+            'sum_match': 'Суммы совпадают'
+        }
+        
+        for check_name, passed in checks.items():
+            status = "✅" if passed else "❌"
+            readable_name = check_names.get(check_name, check_name)
+            message_lines.append(f"{status} {readable_name}")
+        
+        # Добавляем информацию о суммах
+        available_sums = {name: val for name, val in zayavka_sums if val is not None}
+        if available_sums:
+            message_lines.append("<br/><b>Суммы в заявке:</b>")
+            for field, value in available_sums.items():
+                message_lines.append(f"• {field}: {value}")
+        
+        self._post_check_result(message_lines, zayavka)
+        return check_result
+    
+    def _post_check_result(self, message_lines, zayavka):
+        """Вспомогательный метод для отправки результата проверки"""
+        message = "<br/>".join(message_lines)
+        self.message_post(
+            body=message,
+            subject=f"Проверка сопоставления с заявкой {zayavka.zayavka_id}"
+        )

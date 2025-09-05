@@ -76,21 +76,16 @@
         <field name="arch" type="xml">
             <form>
                 <!-- <header>
-                    <button name="manual_match_applications" 
-                            string="Найти заявки" 
+                    <button name="debug_matching_automation" 
+                            string="Отладка сопоставления" 
                             type="object" 
                             class="btn-primary"
-                            confirm="Найти и связать подходящие заявки для этой выписки?"/>
-                    <button name="force_application_matching" 
-                            string="Принудительное сопоставление" 
+                            confirm="Запустить отладку сопоставления заявок для этой выписки?"/>
+                    <button name="check_specific_zayavka_matching" 
+                            string="Проверить заявку" 
                             type="object" 
                             class="btn-secondary"
-                            confirm="Запустить принудительное сопоставление с детальной диагностикой?"/>
-                    <button name="show_diagnosis_result" 
-                            string="Диагностика" 
-                            type="object" 
-                            class="btn-info"
-                            confirm="Провести диагностику проблем с сопоставлением заявок?"/>
+                            confirm="Проверить сопоставление с заявкой из константы CHECK_ZAYAVKA_ID?"/>
                     <h1><field name="name" readonly="1"/></h1>
                 </header> -->
                 <sheet>

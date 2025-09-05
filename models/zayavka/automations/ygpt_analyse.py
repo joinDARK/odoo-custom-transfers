@@ -6,6 +6,9 @@ import os
 from dotenv import load_dotenv  # отключено: используем конфиг Odoo/ENV напрямую
 from odoo import models
 
+# PDF библиотеки импортируются динамически в методах _extract_text_from_pdf()
+# Требуются: PyPDF2 и/или pdfplumber для извлечения текста из многостраничных PDF
+
 _logger = logging.getLogger(__name__)
 
 # Загружаем переменные окружения из .env (если файл присутствует)
@@ -461,47 +464,80 @@ class ZayavkaYandexGPTAnalyse(models.Model):
 
     def analyze_pdf_attachments_with_yandex_gpt(self, attachment, prompt_type="zayavka"):
         """
-        Анализирует PDF-файлы из zayavka_attachments с помощью Yandex Vision OCR API и выводит распознанный текст.
-        Дополнительно отправляет распознанный текст в YandexGPT для структурного анализа.
+        Анализирует PDF-файлы из zayavka_attachments с автоматическим выбором метода:
+        - 1 страница: использует Yandex Vision OCR (обратная совместимость)
+        - >1 страницы: прямое извлечение текста (обход ограничения OCR)
+        Отправляет полученный текст в YandexGPT для анализа.
         """
         try:
-            pdfs_data = self._get_pdf_attachments_base64(attachment)
-
-            if not pdfs_data:
-                _logger.warning("[analyze_pdf_attachments_with_yandex_gpt] Нет PDF-файлов для анализа в zayavka_attachments")
+            if not attachment:
+                _logger.warning("[analyze_pdf_attachments_with_yandex_gpt] Нет вложения для анализа")
                 return None
 
-            all_results = []
+            _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] Анализируем PDF: {attachment.name}")
 
-            for i, pdf_info in enumerate(pdfs_data, 1):
-                _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] Анализируем PDF {i}/{len(pdfs_data)}: {pdf_info['name']}")
-
-                recognized_text = self._send_image_to_yandex_gpt_vision(pdf_info)
-                if recognized_text:
-                    all_results.append({
-                        'pdf_name': pdf_info['name'],
-                        'recognized_text': recognized_text,
-                    })
-
-                    # Отправляем распознанный текст в YandexGPT для структурного анализа
-                    try:
-                        self.analyze_document_with_yandex_gpt(recognized_text, prompt_type)
-                    except Exception as gpt_err:
-                        _logger.warning(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось отправить распознанный PDF-текст в YandexGPT: {gpt_err}")
+            # ===== ПРОВЕРКА КОЛИЧЕСТВА СТРАНИЦ ДЛЯ ВЫБОРА МЕТОДА ОБРАБОТКИ =====
+            page_count = self._get_pdf_page_count(attachment)
+            
+            if page_count is None:
+                _logger.warning(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось определить количество страниц в {attachment.name}")
+                return None
+            
+            extracted_text = None
+            processing_method = ""
+            
+            if page_count == 1:
+                # ===== ОДНОСТРОЧНЫЙ PDF: ИСПОЛЬЗУЕМ YANDEX VISION OCR (ОБРАТНАЯ СОВМЕСТИМОСТЬ) =====
+                _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] PDF {attachment.name} содержит 1 страницу - используем Yandex Vision OCR")
+                processing_method = "Yandex Vision OCR"
+                
+                # Получаем PDF в формате base64 для OCR
+                pdfs_data = self._get_pdf_attachments_base64(attachment)
+                if pdfs_data:
+                    pdf_data = pdfs_data[0]
+                    extracted_text = self._send_image_to_yandex_gpt_vision(pdf_data)
+                    if not extracted_text:
+                        _logger.warning(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось распознать текст из {attachment.name} через OCR")
+                        return None
                 else:
-                    _logger.warning(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось распознать текст из {pdf_info['name']}")
-
-            if all_results:
-                _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] Успешно обработано PDF: {len(all_results)}")
-                for result in all_results:
-                    _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] {result['pdf_name']}:\n{result['recognized_text']}\n" + "="*50)
+                    _logger.warning(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось подготовить PDF {attachment.name} для OCR")
+                    return None
+                    
             else:
-                _logger.warning("[analyze_pdf_attachments_with_yandex_gpt] Не удалось распознать текст ни из одного PDF")
+                # ===== МНОГОСТРАНИЧНЫЙ PDF: ИСПОЛЬЗУЕМ ПРЯМОЕ ИЗВЛЕЧЕНИЕ ТЕКСТА =====
+                _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] PDF {attachment.name} содержит {page_count} страниц - используем прямое извлечение текста")
+                processing_method = "Прямое извлечение текста"
+                
+                extracted_text = self._extract_text_from_pdf(attachment)
+                if not extracted_text:
+                    _logger.warning(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось извлечь текст из {attachment.name}")
+                    return None
 
-            return all_results
+            _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] Успешно получен текст из {attachment.name} ({len(extracted_text)} символов) методом: {processing_method}")
+            
+            # Отправляем полученный текст в YandexGPT для структурного анализа
+            try:
+                _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] Отправляем текст из {attachment.name} в YandexGPT для анализа...")
+                self.analyze_document_with_yandex_gpt(extracted_text, prompt_type)
+                
+                result = {
+                    'pdf_name': attachment.name,
+                    'extracted_text': extracted_text,
+                    'processing_method': processing_method,
+                    'page_count': page_count
+                }
+                
+                _logger.info(f"[analyze_pdf_attachments_with_yandex_gpt] Успешно обработан PDF: {attachment.name} ({processing_method})")
+                _logger.debug(f"[analyze_pdf_attachments_with_yandex_gpt] Полученный текст:\n{extracted_text}\n" + "="*50)
+                
+                return [result]  # Возвращаем список для совместимости с предыдущей версией
+                
+            except Exception as gpt_err:
+                _logger.error(f"[analyze_pdf_attachments_with_yandex_gpt] Не удалось отправить полученный PDF-текст в YandexGPT: {gpt_err}")
+                return None
 
         except Exception as e:
-            _logger.error(f"[analyze_pdf_attachments_with_yandex_gpt] Ошибка при анализе PDF-файлов с Yandex Vision OCR: {str(e)}")
+            _logger.error(f"[analyze_pdf_attachments_with_yandex_gpt] Ошибка при анализе PDF-файла: {str(e)}")
             return None
 
     # Внутренние методы
@@ -974,6 +1010,166 @@ class ZayavkaYandexGPTAnalyse(models.Model):
         except Exception as e:
             _logger.error(f"[_get_screen_sber_images_base64] Ошибка при получении изображений screen_sber: {str(e)}")
             return []
+
+    def _get_pdf_page_count(self, attachment):
+        """
+        Определяет количество страниц в PDF файле.
+        Возвращает количество страниц или None в случае ошибки.
+        """
+        try:
+            if not attachment or not attachment.datas:
+                return None
+                
+            # Проверяем, что это PDF файл
+            is_pdf = (attachment.mimetype == 'application/pdf') or ((attachment.name or '').lower().endswith('.pdf'))
+            if not is_pdf:
+                return None
+            
+            # Декодируем base64 данные в байты
+            import base64
+            import io
+            
+            pdf_bytes = base64.b64decode(attachment.datas)
+            pdf_file = io.BytesIO(pdf_bytes)
+            
+            # Пробуем определить количество страниц с помощью PyPDF2
+            try:
+                import PyPDF2
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+                page_count = len(pdf_reader.pages)
+                _logger.info(f"[_get_pdf_page_count] PDF {attachment.name} содержит {page_count} страниц (PyPDF2)")
+                return page_count
+                
+            except ImportError:
+                pass
+            except Exception as pypdf_err:
+                _logger.warning(f"[_get_pdf_page_count] Ошибка PyPDF2 при определении страниц в {attachment.name}: {pypdf_err}")
+            
+            # Если PyPDF2 не сработал, пробуем pdfplumber
+            try:
+                import pdfplumber
+                pdf_file.seek(0)  # Возвращаемся к началу файла
+                
+                with pdfplumber.open(pdf_file) as pdf:
+                    page_count = len(pdf.pages)
+                    _logger.info(f"[_get_pdf_page_count] PDF {attachment.name} содержит {page_count} страниц (pdfplumber)")
+                    return page_count
+                    
+            except ImportError:
+                pass
+            except Exception as pdfplumber_err:
+                _logger.warning(f"[_get_pdf_page_count] Ошибка pdfplumber при определении страниц в {attachment.name}: {pdfplumber_err}")
+            
+            _logger.error(f"[_get_pdf_page_count] Не удалось определить количество страниц в {attachment.name}")
+            return None
+            
+        except Exception as e:
+            _logger.error(f"[_get_pdf_page_count] Общая ошибка при определении страниц в PDF {getattr(attachment, 'name', 'unknown')}: {str(e)}")
+            return None
+
+    def _extract_text_from_pdf(self, attachment):
+        """
+        Извлекает текст из всех страниц PDF файла напрямую, без конвертации в изображение.
+        Возвращает извлеченный текст или None в случае ошибки.
+        """
+        try:
+            if not attachment:
+                _logger.warning("[_extract_text_from_pdf] Нет вложения")
+                return None
+                
+            # Проверяем, что это PDF файл
+            is_pdf = (attachment.mimetype == 'application/pdf') or ((attachment.name or '').lower().endswith('.pdf'))
+            if not is_pdf:
+                _logger.warning(f"[_extract_text_from_pdf] Файл {attachment.name} не является PDF")
+                return None
+                
+            if not attachment.datas:
+                _logger.warning(f"[_extract_text_from_pdf] У вложения {attachment.name} отсутствуют данные")
+                return None
+            
+            # Декодируем base64 данные в байты
+            import base64
+            import io
+            
+            pdf_bytes = base64.b64decode(attachment.datas)
+            pdf_file = io.BytesIO(pdf_bytes)
+            
+            # Пробуем использовать PyPDF2 для извлечения текста
+            try:
+                import PyPDF2
+                
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+                extracted_text = ""
+                
+                _logger.info(f"[_extract_text_from_pdf] PDF {attachment.name} содержит {len(pdf_reader.pages)} страниц")
+                
+                # Извлекаем текст со всех страниц
+                for page_num, page in enumerate(pdf_reader.pages, 1):
+                    try:
+                        page_text = page.extract_text()
+                        if page_text.strip():
+                            extracted_text += f"\n--- Страница {page_num} ---\n"
+                            extracted_text += page_text.strip() + "\n"
+                            _logger.info(f"[_extract_text_from_pdf] Извлечен текст со страницы {page_num} ({len(page_text)} символов)")
+                        else:
+                            _logger.warning(f"[_extract_text_from_pdf] Страница {page_num} не содержит извлекаемого текста")
+                    except Exception as page_err:
+                        _logger.error(f"[_extract_text_from_pdf] Ошибка при извлечении текста со страницы {page_num}: {page_err}")
+                        continue
+                
+                if extracted_text.strip():
+                    _logger.info(f"[_extract_text_from_pdf] Успешно извлечен текст из {attachment.name} ({len(extracted_text)} символов)")
+                    return extracted_text.strip()
+                else:
+                    _logger.warning(f"[_extract_text_from_pdf] Не удалось извлечь текст из {attachment.name} с помощью PyPDF2")
+                    
+            except ImportError:
+                _logger.error("[_extract_text_from_pdf] PyPDF2 не установлен. Попробуйте: pip install PyPDF2")
+                return None
+            except Exception as pypdf_err:
+                _logger.error(f"[_extract_text_from_pdf] Ошибка PyPDF2 при обработке {attachment.name}: {pypdf_err}")
+                
+            # Если PyPDF2 не сработал, пробуем pdfplumber
+            try:
+                import pdfplumber
+                
+                pdf_file.seek(0)  # Возвращаемся к началу файла
+                
+                with pdfplumber.open(pdf_file) as pdf:
+                    extracted_text = ""
+                    
+                    _logger.info(f"[_extract_text_from_pdf] PDF {attachment.name} содержит {len(pdf.pages)} страниц (pdfplumber)")
+                    
+                    for page_num, page in enumerate(pdf.pages, 1):
+                        try:
+                            page_text = page.extract_text()
+                            if page_text and page_text.strip():
+                                extracted_text += f"\n--- Страница {page_num} ---\n"
+                                extracted_text += page_text.strip() + "\n"
+                                _logger.info(f"[_extract_text_from_pdf] Извлечен текст со страницы {page_num} ({len(page_text)} символов)")
+                            else:
+                                _logger.warning(f"[_extract_text_from_pdf] Страница {page_num} не содержит извлекаемого текста")
+                        except Exception as page_err:
+                            _logger.error(f"[_extract_text_from_pdf] Ошибка при извлечении текста со страницы {page_num}: {page_err}")
+                            continue
+                    
+                    if extracted_text.strip():
+                        _logger.info(f"[_extract_text_from_pdf] Успешно извлечен текст из {attachment.name} с помощью pdfplumber ({len(extracted_text)} символов)")
+                        return extracted_text.strip()
+                    else:
+                        _logger.warning(f"[_extract_text_from_pdf] Не удалось извлечь текст из {attachment.name} с помощью pdfplumber")
+                        
+            except ImportError:
+                _logger.error("[_extract_text_from_pdf] pdfplumber не установлен. Попробуйте: pip install pdfplumber")
+            except Exception as pdfplumber_err:
+                _logger.error(f"[_extract_text_from_pdf] Ошибка pdfplumber при обработке {attachment.name}: {pdfplumber_err}")
+            
+            _logger.error(f"[_extract_text_from_pdf] Не удалось извлечь текст из {attachment.name} ни одним из методов")
+            return None
+            
+        except Exception as e:
+            _logger.error(f"[_extract_text_from_pdf] Общая ошибка при извлечении текста из PDF {getattr(attachment, 'name', 'unknown')}: {str(e)}")
+            return None
 
     def _get_pdf_attachments_base64(self, attachment):
         """
@@ -1784,26 +1980,49 @@ class ZayavkaYandexGPTAnalyse(models.Model):
 
     def _analyze_pdf_with_custom_prompt(self, attachment, custom_prompt):
         """
-        Анализирует PDF документ с кастомным промптом
+        Анализирует PDF документ с кастомным промптом с автоматическим выбором метода:
+        - 1 страница: использует Yandex Vision OCR (обратная совместимость)
+        - >1 страницы: прямое извлечение текста (обход ограничения OCR)
         """
         try:
-            # Получаем PDF в base64
-            pdfs_data = self._get_pdf_attachments_base64(attachment)
-            if not pdfs_data:
+            # ===== ПРОВЕРКА КОЛИЧЕСТВА СТРАНИЦ ДЛЯ ВЫБОРА МЕТОДА ОБРАБОТКИ =====
+            page_count = self._get_pdf_page_count(attachment)
+            
+            if page_count is None:
+                _logger.warning(f"[_analyze_pdf_with_custom_prompt] Не удалось определить количество страниц в {attachment.name}")
                 return None
             
-            pdf_data = pdfs_data[0]  # Берем первый PDF
+            extracted_text = None
             
-            # Отправляем в Yandex Vision OCR для распознавания текста
-            recognized_text = self._send_image_to_yandex_gpt_vision(pdf_data)
-            if not recognized_text:
-                _logger.warning(f"[_analyze_pdf_with_custom_prompt] Не удалось распознать текст из PDF: {attachment.name}")
-                return None
+            if page_count == 1:
+                # ===== ОДНОСТРОЧНЫЙ PDF: ИСПОЛЬЗУЕМ YANDEX VISION OCR (ОБРАТНАЯ СОВМЕСТИМОСТЬ) =====
+                _logger.info(f"[_analyze_pdf_with_custom_prompt] PDF {attachment.name} содержит 1 страницу - используем Yandex Vision OCR")
+                
+                # Получаем PDF в формате base64 для OCR
+                pdfs_data = self._get_pdf_attachments_base64(attachment)
+                if pdfs_data:
+                    pdf_data = pdfs_data[0]
+                    extracted_text = self._send_image_to_yandex_gpt_vision(pdf_data)
+                    if not extracted_text:
+                        _logger.warning(f"[_analyze_pdf_with_custom_prompt] Не удалось распознать текст из {attachment.name} через OCR")
+                        return None
+                else:
+                    _logger.warning(f"[_analyze_pdf_with_custom_prompt] Не удалось подготовить PDF {attachment.name} для OCR")
+                    return None
+                    
+            else:
+                # ===== МНОГОСТРАНИЧНЫЙ PDF: ИСПОЛЬЗУЕМ ПРЯМОЕ ИЗВЛЕЧЕНИЕ ТЕКСТА =====
+                _logger.info(f"[_analyze_pdf_with_custom_prompt] PDF {attachment.name} содержит {page_count} страниц - используем прямое извлечение текста")
+                
+                extracted_text = self._extract_text_from_pdf(attachment)
+                if not extracted_text:
+                    _logger.warning(f"[_analyze_pdf_with_custom_prompt] Не удалось извлечь текст из {attachment.name}")
+                    return None
             
-            _logger.info(f"[_analyze_pdf_with_custom_prompt] Распознанный текст из PDF ({len(recognized_text)} символов): {recognized_text[:200]}...")
+            _logger.info(f"[_analyze_pdf_with_custom_prompt] Получен текст из PDF ({len(extracted_text)} символов): {extracted_text[:200]}...")
             
-            # Отправляем распознанный текст в YandexGPT с кастомным промптом
-            return self._send_text_to_yandex_gpt_with_prompt(recognized_text, custom_prompt)
+            # Отправляем полученный текст в YandexGPT с кастомным промптом
+            return self._send_text_to_yandex_gpt_with_prompt(extracted_text, custom_prompt)
             
         except Exception as e:
             _logger.error(f"[_analyze_pdf_with_custom_prompt] Ошибка: {str(e)}")
