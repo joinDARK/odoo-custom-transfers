@@ -182,6 +182,11 @@ class ZayavkaMethods(models.Model):
             for rec in self:
                 rec.zayavka_analyse_with_yandex_gpt()
                 rec._duplicate_attachments_to_output()
+        
+        if 'payment_date' in vals:
+            for rec in self:
+                _logger.info(f"Изменено поле 'payment_date' для заявки {rec.id}")
+                rec.status = '6'
 
         if 'screen_sber_attachments' in vals:
             for rec in self:
@@ -404,6 +409,10 @@ class ZayavkaMethods(models.Model):
 
         if vals.get('assignment_individual_attachments'):
             res.analyze_assignment_individual_with_yandex_gpt()
+
+        if vals.get('payment_date'):
+            _logger.info(f"Изменено поле 'payment_date' для заявки {res.id}")
+            res.status = '6'
         
         # Изменение статуса при создании с подписанным поручением
         if vals.get('assignment_end_attachments'):
