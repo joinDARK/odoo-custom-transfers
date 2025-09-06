@@ -2449,11 +2449,16 @@ class Zayavka(models.Model, AmanatBaseModel):
     def _compute_show_red_stripe_for_ilzira_zayavka(self):
         """Показывать красный индикатор только для пользователя Ильзира, если выписки разнос не заполнены"""
         for record in self:
-            # Проверяем имя пользователя и пустое поле выписок разнос
-            if not record.extract_delivery_ids:
-                record.show_red_stripe_for_ilzira_zayavka = "❌ НЕТ ВЫПИСОК"
-            else:
+            # НЕ показываем индикатор если:
+            # 1. Есть вид сделки import_export или export_import
+            # 2. Валюта usdt  
+            # 3. Есть выписка разнос
+            if (record.deal_type in ['import_export', 'export_import'] or 
+                record.currency == 'usdt' or 
+                record.extract_delivery_ids):
                 record.show_red_stripe_for_ilzira_zayavka = False
+            else:
+                record.show_red_stripe_for_ilzira_zayavka = "❌ НЕТ ВЫПИСОК"
 
     @api.depends('contragent_id', 'contragent_id.contract_ids', 'contragent_id.contract_ids.contract_attachments', 'contragent_id.contract_ids.is_actual')
     def _compute_contragent_contract_attachments(self):
