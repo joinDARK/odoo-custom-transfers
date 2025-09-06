@@ -2448,10 +2448,9 @@ class Zayavka(models.Model, AmanatBaseModel):
     @api.depends('extract_delivery_ids')
     def _compute_show_red_stripe_for_ilzira_zayavka(self):
         """Показывать красный индикатор только для пользователя Ильзира, если выписки разнос не заполнены"""
-        current_user = self.env.user
         for record in self:
             # Проверяем имя пользователя и пустое поле выписок разнос
-            if current_user.name == 'Ильзира' and not record.extract_delivery_ids:
+            if not record.extract_delivery_ids:
                 record.show_red_stripe_for_ilzira_zayavka = "❌ НЕТ ВЫПИСОК"
             else:
                 record.show_red_stripe_for_ilzira_zayavka = False
