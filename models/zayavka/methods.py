@@ -61,6 +61,13 @@ class ZayavkaMethods(models.Model):
 
         res = super().write(vals)  # <-- Исправлено!
 
+        # Инвалидируем кэш дашборда при изменении заявок
+        try:
+            dashboard_model = self.env['amanat.zayavka_fiks_dashboard']
+            dashboard_model.invalidate_dashboard_cache()
+        except Exception as e:
+            _logger.warning(f"Не удалось очистить кэш дашборда при изменении заявки: {e}")
+
         if 'rate_field' in vals:
             for rec in self:
                 rec.status = '3'
@@ -321,6 +328,13 @@ class ZayavkaMethods(models.Model):
             send_to_reconciliation = vals.get('send_to_reconciliation', False) or send_to_reconciliation
         
         res = super().create(vals_list)
+        
+        # Инвалидируем кэш дашборда при создании новых заявок
+        try:
+            dashboard_model = self.env['amanat.zayavka_fiks_dashboard']
+            dashboard_model.invalidate_dashboard_cache()
+        except Exception as e:
+            _logger.warning(f"Не удалось очистить кэш дашборда при создании заявки: {e}")
         
         # Для работы с одиночными записями берем первый vals
         vals = vals_list[0] if vals_list else {}

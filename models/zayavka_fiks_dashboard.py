@@ -459,6 +459,18 @@ class ZayavkaFiksDashboard(models.Model):
                 'data': [0, 0, 0, 0, 0],
                 'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0', '#ff6b35']
             }]
-        } 
+        }
+    
+    @api.model
+    def invalidate_dashboard_cache(self):
+        """
+        Инвалидация кэша дашборда при изменении данных заявок
+        """
+        try:
+            # Очищаем кэш метода _get_cached_dashboard_metrics
+            self.env.registry.clear_cache()
+            _logger.info("Кэш дашборда фикс заявок успешно очищен")
+        except Exception as e:
+            _logger.error(f"Ошибка очистки кэша дашборда фикс заявок: {e}")
     
  
