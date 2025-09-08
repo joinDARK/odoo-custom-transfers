@@ -102,7 +102,7 @@ class ZayavkaFiksDashboard(models.Model):
         try:
             # Группируем по валютам и получаем суммы и средние курсы
             currency_groups = self.env['amanat.zayavka'].read_group(
-                domain + [('currency', '!=', False)],
+                domain + [('currency', '!=', False), ('hidden_hadge', '=', False)],
                 ['currency', 'amount:sum', 'effective_rate:avg'],
                 ['currency']
             )
@@ -114,7 +114,7 @@ class ZayavkaFiksDashboard(models.Model):
             average_rates = {'usd': "0", 'cny': "0", 'euro': "0", 'aed': "0", 'usdt': "0"}
             
             # Общее количество заявок
-            total_count = self.env['amanat.zayavka'].search_count(domain)
+            total_count = self.env['amanat.zayavka'].search_count(domain + [('hidden_hadge', '=', False)])
             
             # Обрабатываем группы валют
             for group in currency_groups:
@@ -214,7 +214,7 @@ class ZayavkaFiksDashboard(models.Model):
             domain = [('rate_fixation_date', '=', today)]
             
             # Получаем ВСЕ заявки за сегодня, отсортированные по времени создания (новые сначала)
-            orders = self.env['amanat.zayavka'].search(domain, order='create_date desc')
+            orders = self.env['amanat.zayavka'].search(domain + [('hidden_hadge', '=', False)], order='create_date desc')
             
             orders_list = []
             for order in orders:
