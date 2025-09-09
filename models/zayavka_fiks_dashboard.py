@@ -341,7 +341,7 @@ class ZayavkaFiksDashboard(models.Model):
                     'id': order.id,
                     'zayavka_num': order.zayavka_num or '',
                     'contragent_name': order.contragent_id.name if order.contragent_id else '',
-                    'agent_name': order.agent_id.name if order.agent_id else '',
+                    'agent_name': ', '.join(order.manager_ids.mapped('name')) if order.manager_ids else '',
                     'amount': f"{order.amount:,.0f}".replace(',', ' ') if order.amount else "0",
                     'currency_display': currency_display,
                     'rate_field': f"{order.rate_field:,.4f}".replace('.', ',') if order.rate_field else "0,0000",
