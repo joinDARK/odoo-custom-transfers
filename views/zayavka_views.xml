@@ -709,9 +709,8 @@
             </page>
             
             <!-- Вкладка калькуляторов -->
-            <page string="Калькуляторы" groups="!amanat.group_amanat_limited_access">
+            <!-- <page string="Калькуляторы" groups="!amanat.group_amanat_limited_access">
               <div class="calculator-tab-background">
-              <!-- Выбор типа калькулятора -->
               <group>
                 <div class="o-form-group-2">
                   <group>
@@ -724,14 +723,12 @@
                 </div>
               </group>
               
-              <!-- Калькулятор 50 USD -->
               <group string="Калькулятор сделок (50 USD)" invisible="calculator_type != 'calc_50_usd'">
                 <group>
                   <field name="calc_50_deal_variant" widget="selection"/>
                   <field name="calc_50_auto_markup_percent"/>
                 </group>
                 
-                <!-- EUR (кросс) блок -->
                 <group string="EUR (кросс)" invisible="calc_50_deal_variant != 'eur_cross'">
                   <div class="o-form-group-2">
                     <group string="Входные данные">
@@ -750,7 +747,6 @@
                   </div>
                 </group>
                 
-                <!-- CNY (кросс) блок -->
                 <group string="CNY (кросс)" invisible="calc_50_deal_variant != 'cny_cross'">
                   <div class="o-form-group-3">
                     <group string="Входные данные" col="2">
@@ -767,12 +763,10 @@
                       <field name="calc_50_cny_to_rub_rate"/>
                     </group>
                     <group>
-                      <!-- Пустая группа для выравнивания -->
                     </group>
                   </div>
                 </group>
                 
-                <!-- USD (обычный) блок -->
                 <group string="USD (обычный)" invisible="calc_50_deal_variant != 'usd_addon'">
                   <div class="o-form-group-2">
                     <group string="Входные данные">
@@ -791,7 +785,6 @@
                   </div>
                 </group>
                 
-                <!-- CNY (обычный) блок -->
                 <group string="CNY (обычный)" invisible="calc_50_deal_variant != 'cny_addon'">
                   <div class="o-form-group-2">
                     <group string="Входные данные">
@@ -811,7 +804,6 @@
                   </div>
                 </group>
                 
-                <!-- EUR (обычный) блок -->
                 <group string="EUR (обычный)" invisible="calc_50_deal_variant != 'eur_addon'">
                   <div class="o-form-group-2">
                     <group string="Входные данные">
@@ -832,7 +824,6 @@
                 </group>
               </group>
               
-              <!-- Калькулятор спреда CNY-USD -->
               <group string="Спред CNY-USD" invisible="calculator_type != 'calc_spread'">
                 <div class="o-form-group-2">
                   <group string="Входные курсы">
@@ -848,10 +839,8 @@
                     <field name="calc_spread_profit_rub"/>
                   </group>
                 </div>
-                <!-- <field name="calc_spread_direction"/> -->
               </group>
               
-              <!-- Калькулятор фиксированного вознаграждения -->
               <group string="Фиксированное вознаграждение" invisible="calculator_type != 'calc_fixed_fee'">
                 <group string="Реальный">
                   <div class="o-form-group-2">
@@ -900,7 +889,6 @@
                 </group>
               </group>
               
-              <!-- Калькулятор добавка в $ для всех -->
               <group string="Добавка в $ для всех" invisible="calculator_type != 'calc_usd_all'">
                 <group>
                   <div class="o-form-group-3">
@@ -917,7 +905,6 @@
                   </div>
                 </group>
                 
-                <!-- Режим В % -->
                 <group string="Режим В %" invisible="calc_usd_all_mode != 'percent'">
                   <div class="o-form-group-2">
                     <group string="Входные данные">
@@ -933,7 +920,6 @@
                   </div>
                 </group>
                 
-                <!-- Режим В КУРС -->
                 <group string="Режим В КУРС" invisible="calc_usd_all_mode != 'rate'">
                   <div class="o-form-group-2">
                     <group string="Входные данные">
@@ -948,7 +934,6 @@
                   </div>
                 </group>
                 
-                <!-- Общие результаты -->
                 <group string="Общие результаты" invisible="calc_usd_all_mode == False">
                   <div class="o-form-group-3">
                     <group>
@@ -964,7 +949,7 @@
                 </group>
               </group>
               </div>
-            </page>
+            </page> -->
             
             <page string="Даты" groups="!amanat.group_amanat_limited_access">
               <group>
