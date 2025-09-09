@@ -2274,9 +2274,18 @@ class ZayavkaMethods(models.Model):
                 _logger.warning("num2words не установлен, возвращаем числовое значение")
                 return f"{amount:,.2f} руб.".replace(',', ' ').replace('.', ',')
             
-            # Разделяем на рубли и копейки
-            rubles = int(amount)
-            kopecks = int((amount - rubles) * 100)
+            # Разделяем на рубли и копейки (с защитой от ошибок округления float)
+            from decimal import Decimal, ROUND_HALF_UP
+            
+            # Преобразуем в Decimal для точных вычислений
+            amount_decimal = Decimal(str(amount)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            rubles = int(amount_decimal)
+            kopecks = int((amount_decimal - rubles) * 100)
+            
+            # Отладочная информация
+            _logger.info(f"[_amount_to_russian_text] Исходная сумма: {amount}")
+            _logger.info(f"[_amount_to_russian_text] Decimal сумма: {amount_decimal}")
+            _logger.info(f"[_amount_to_russian_text] Рубли: {rubles}, Копейки: {kopecks}")
             
             # Форматируем числовую сумму
             formatted_amount = f"{amount:,.2f}".replace(',', ' ').replace('.', ',')
