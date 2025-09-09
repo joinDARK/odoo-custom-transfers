@@ -1,5 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+  <!-- Стили для вкладки Калькуляторы -->
+  <template id="calculator_tab_styles" name="Calculator Tab Styles" inherit_id="web.layout" priority="1">
+    <xpath expr="//head" position="inside">
+      <style>
+        /* Фон для вкладки "Калькуляторы" в заявке */
+        .calculator-tab-background {
+          background: linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899) !important;
+          background-image: url('/amanat/static/src/img/calculator_bg_optimized.jpg') !important;
+          background-size: cover !important;
+          background-repeat: no-repeat !important;
+          background-position: center !important;
+          background-attachment: local !important;
+          min-height: 100vh !important;
+          padding: 20px !important;
+          margin: 0 !important;
+          border-radius: 0 !important;
+          width: 100% !important;
+          position: relative !important;
+          z-index: 1 !important;
+        }
+        
+        /* Полупрозрачные блоки внутри вкладки калькуляторов */
+        .calculator-tab-background .o_group {
+          background: rgba(255, 255, 255, 0.95) !important;
+          border-radius: 10px !important;
+          padding: 15px !important;
+          margin: 10px 0 !important;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .calculator-tab-background .o_form_group_2 > .o_group {
+          background: rgba(255, 255, 255, 0.90) !important;
+          border-radius: 8px !important;
+          padding: 10px !important;
+          margin: 5px !important;
+        }
+        
+        /* Заголовки групп */
+        .calculator-tab-background .o_group > .o_form_label {
+          background: rgba(236, 72, 153, 0.8) !important;
+          color: white !important;
+          padding: 5px 10px !important;
+          border-radius: 5px !important;
+          font-weight: bold !important;
+          margin-bottom: 10px !important;
+        }
+        
+        /* Поля ввода в калькуляторах */
+        .calculator-tab-background .o_field_widget input {
+          background: rgba(255, 255, 255, 0.95) !important;
+          border: 1px solid rgba(236, 72, 153, 0.3) !important;
+          border-radius: 5px !important;
+        }
+        
+        .calculator-tab-background .o_field_widget input:focus {
+          border: 2px solid #ec4899 !important;
+          box-shadow: 0 0 5px rgba(236, 72, 153, 0.5) !important;
+        }
+        
+        /* Селекты */
+        .calculator-tab-background .o_field_widget select {
+          background: rgba(255, 255, 255, 0.95) !important;
+          border: 1px solid rgba(236, 72, 153, 0.3) !important;
+          border-radius: 5px !important;
+        }
+        
+        /* Readonly поля */
+        .calculator-tab-background .o_field_widget.o_readonly_modifier {
+          background: rgba(249, 168, 212, 0.3) !important;
+          border-radius: 5px !important;
+          padding: 2px 5px !important;
+        }
+      </style>
+      
+      <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+          console.log('Применяю фон для вкладки Калькуляторы...');
+          
+          function applyCalculatorTabBackground() {
+            // Находим вкладку калькуляторов
+            const calculatorTabs = document.querySelectorAll('.calculator-tab-background');
+            
+            calculatorTabs.forEach(function(tab) {
+              tab.style.background = 'linear-gradient(135deg, #fce7f3, #f9a8d4, #ec4899)';
+              tab.style.backgroundImage = 'url("/amanat/static/src/img/calculator_bg_optimized.jpg")';
+              tab.style.backgroundSize = 'cover';
+              tab.style.backgroundRepeat = 'no-repeat';
+              tab.style.backgroundPosition = 'center';
+              tab.style.backgroundAttachment = 'local';
+              tab.style.minHeight = '100vh';
+              tab.style.padding = '20px';
+              tab.style.margin = '0';
+              tab.style.width = '100%';
+              tab.style.position = 'relative';
+              tab.style.zIndex = '1';
+              console.log('Фон применен к вкладке калькуляторов');
+            });
+            
+            // Применяем стили к группам внутри калькуляторов
+            const calculatorGroups = document.querySelectorAll('.calculator-tab-background .o_group');
+            calculatorGroups.forEach(function(group) {
+              if (!group.classList.contains('calculator-styled')) {
+                group.style.background = 'rgba(255, 255, 255, 0.95)';
+                group.style.borderRadius = '10px';
+                group.style.padding = '15px';
+                group.style.margin = '10px 0';
+                group.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+                group.classList.add('calculator-styled');
+              }
+            });
+          }
+          
+          // Применяем несколько раз с задержками для надежности
+          applyCalculatorTabBackground();
+          setTimeout(applyCalculatorTabBackground, 100);
+          setTimeout(applyCalculatorTabBackground, 500);
+          setTimeout(applyCalculatorTabBackground, 1000);
+          setTimeout(applyCalculatorTabBackground, 2000);
+          
+          // Следим за изменениями DOM для динамического применения
+          const observer = new MutationObserver(function() {
+            setTimeout(applyCalculatorTabBackground, 50);
+          });
+          observer.observe(document.body, { childList: true, subtree: true });
+        });
+      </script>
+    </xpath>
+  </template>
   <record id="view_amanat_zayavka_form" model="ir.ui.view">
     <field name="name">amanat.zayavka.form</field>
     <field name="model">amanat.zayavka</field>
@@ -579,6 +707,265 @@
                 </div>
               </group>
             </page>
+            
+            <!-- Вкладка калькуляторов -->
+            <page string="Калькуляторы" groups="!amanat.group_amanat_limited_access">
+              <div class="calculator-tab-background">
+              <!-- Выбор типа калькулятора -->
+              <group>
+                <div class="o-form-group-2">
+                  <group>
+                    <field name="calculator_type" widget="selection"/>
+                  </group>
+                  <group>
+                    <field name="calc_date"/>
+                    <field name="calc_name" readonly="1"/>
+                  </group>
+                </div>
+              </group>
+              
+              <!-- Калькулятор 50 USD -->
+              <group string="Калькулятор сделок (50 USD)" invisible="calculator_type != 'calc_50_usd'">
+                <group>
+                  <field name="calc_50_deal_variant" widget="selection"/>
+                  <field name="calc_50_auto_markup_percent"/>
+                </group>
+                
+                <!-- EUR (кросс) блок -->
+                <group string="EUR (кросс)" invisible="calc_50_deal_variant != 'eur_cross'">
+                  <div class="o-form-group-2">
+                    <group string="Входные данные">
+                      <field name="calc_50_eur_invoice_amount"/>
+                      <field name="calc_50_usd_rate_cbr"/>
+                      <field name="calc_50_eur_xe_rate"/>
+                      <field name="calc_50_eur_commission_percent"/>
+                    </group>
+                    <group string="Результаты">
+                      <field name="calc_50_eur_cross_client"/>
+                      <field name="calc_50_eur_amount_rub"/>
+                      <field name="calc_50_eur_commission_amount"/>
+                      <field name="calc_50_eur_total_rub"/>
+                      <field name="calc_50_eur_to_rub_rate"/>
+                    </group>
+                  </div>
+                </group>
+                
+                <!-- CNY (кросс) блок -->
+                <group string="CNY (кросс)" invisible="calc_50_deal_variant != 'cny_cross'">
+                  <div class="o-form-group-3">
+                    <group string="Входные данные" col="2">
+                      <field name="calc_50_cny_invoice_amount"/>
+                      <field name="calc_50_usd_rate_investing_cny_cross"/>
+                      <field name="calc_50_cny_cross"/>
+                      <field name="calc_50_cny_commission_percent"/>
+                    </group>
+                    <group string="Результаты">
+                      <field name="calc_50_cny_cross_client"/>
+                      <field name="calc_50_cny_amount_rub"/>
+                      <field name="calc_50_cny_commission_amount"/>
+                      <field name="calc_50_cny_total_rub"/>
+                      <field name="calc_50_cny_to_rub_rate"/>
+                    </group>
+                    <group>
+                      <!-- Пустая группа для выравнивания -->
+                    </group>
+                  </div>
+                </group>
+                
+                <!-- USD (обычный) блок -->
+                <group string="USD (обычный)" invisible="calc_50_deal_variant != 'usd_addon'">
+                  <div class="o-form-group-2">
+                    <group string="Входные данные">
+                      <field name="calc_50_usd_invoice_amount"/>
+                      <field name="calc_50_usd_investing_rate"/>
+                      <field name="calc_50_usd_commission_percent"/>
+                      <field name="calc_50_usd_addon_usd"/>
+                    </group>
+                    <group string="Результаты">
+                      <field name="calc_50_usd_final_rate_for_payment"/>
+                      <field name="calc_50_usd_payment_amount_rub"/>
+                      <field name="calc_50_usd_addon_amount_rub"/>
+                      <field name="calc_50_usd_total_rub"/>
+                      <field name="calc_50_usd_final_rate_incl_addon"/>
+                    </group>
+                  </div>
+                </group>
+                
+                <!-- CNY (обычный) блок -->
+                <group string="CNY (обычный)" invisible="calc_50_deal_variant != 'cny_addon'">
+                  <div class="o-form-group-2">
+                    <group string="Входные данные">
+                      <field name="calc_50_cny2_invoice_amount"/>
+                      <field name="calc_50_cny2_rate"/>
+                      <field name="calc_50_cny2_usd_rate"/>
+                      <field name="calc_50_cny2_commission_percent"/>
+                      <field name="calc_50_cny2_addon_usd"/>
+                    </group>
+                    <group string="Результаты">
+                      <field name="calc_50_cny2_final_rate_for_payment"/>
+                      <field name="calc_50_cny2_payment_amount_rub"/>
+                      <field name="calc_50_cny2_addon_amount_rub"/>
+                      <field name="calc_50_cny2_total_rub"/>
+                      <field name="calc_50_cny2_final_rate_incl_addon"/>
+                    </group>
+                  </div>
+                </group>
+                
+                <!-- EUR (обычный) блок -->
+                <group string="EUR (обычный)" invisible="calc_50_deal_variant != 'eur_addon'">
+                  <div class="o-form-group-2">
+                    <group string="Входные данные">
+                      <field name="calc_50_eur2_invoice_amount"/>
+                      <field name="calc_50_eur2_rate"/>
+                      <field name="calc_50_eur2_usd_rate"/>
+                      <field name="calc_50_eur2_commission_percent"/>
+                      <field name="calc_50_eur2_addon_usd"/>
+                    </group>
+                    <group string="Результаты">
+                      <field name="calc_50_eur2_final_rate_for_payment"/>
+                      <field name="calc_50_eur2_payment_amount_rub"/>
+                      <field name="calc_50_eur2_addon_amount_rub"/>
+                      <field name="calc_50_eur2_total_rub"/>
+                      <field name="calc_50_eur2_final_rate_incl_addon"/>
+                    </group>
+                  </div>
+                </group>
+              </group>
+              
+              <!-- Калькулятор спреда CNY-USD -->
+              <group string="Спред CNY-USD" invisible="calculator_type != 'calc_spread'">
+                <div class="o-form-group-2">
+                  <group string="Входные курсы">
+                    <field name="calc_spread_cbr_usd_rub"/>
+                    <field name="calc_spread_cbr_cny_rub"/>
+                    <field name="calc_spread_xe_usd_cny"/>
+                    <field name="calc_spread_amount_usd"/>
+                  </group>
+                  <group string="Результаты расчета">
+                    <field name="calc_spread_calculated_usd_rub"/>
+                    <field name="calc_spread_absolute"/>
+                    <field name="calc_spread_percent" widget="percentage"/>
+                    <field name="calc_spread_profit_rub"/>
+                  </group>
+                </div>
+                <!-- <field name="calc_spread_direction"/> -->
+              </group>
+              
+              <!-- Калькулятор фиксированного вознаграждения -->
+              <group string="Фиксированное вознаграждение" invisible="calculator_type != 'calc_fixed_fee'">
+                <group string="Реальный">
+                  <div class="o-form-group-2">
+                    <group>
+                      <field name="calc_fixed_real_currency"/>
+                      <field name="calc_fixed_real_amount"/>
+                      <field name="calc_fixed_real_cb_rate"/>
+                      <field name="calc_fixed_general_percent_rate"/>
+                      <field name="calc_fixed_our_percent_rate"/>
+                    </group>
+                    <group>
+                      <field name="calc_fixed_real_rub_amount"/>
+                      <field name="calc_fixed_general_percent_amount"/>
+                      <field name="calc_fixed_real_rub_total"/>
+                      <field name="calc_fixed_our_percent_amount"/>
+                    </group>
+                  </div>
+                </group>
+                
+                <group string="Клиенту">
+                  <div class="o-form-group-2">
+                    <group>
+                      <field name="calc_fixed_client_currency"/>
+                      <field name="calc_fixed_client_amount"/>
+                      <field name="calc_fixed_client_total_rate"/>
+                      <field name="calc_fixed_client_percent_amount"/>
+                    </group>
+                    <group>
+                      <field name="calc_fixed_client_rub_amount"/>
+                      <field name="calc_fixed_client_rub_total"/>
+                    </group>
+                  </div>
+                </group>
+                
+                <group string="Итого">
+                  <div class="o-form-group-2">
+                    <group>
+                      <field name="calc_fixed_reward_difference"/>
+                      <field name="calc_fixed_add_to_payment"/>
+                    </group>
+                    <group>
+                      <field name="calc_fixed_final_rate"/>
+                      <field name="calc_fixed_embed_percent" widget="percentage"/>
+                    </group>
+                  </div>
+                </group>
+              </group>
+              
+              <!-- Калькулятор добавка в $ для всех -->
+              <group string="Добавка в $ для всех" invisible="calculator_type != 'calc_usd_all'">
+                <group>
+                  <div class="o-form-group-3">
+                    <group>
+                      <field name="calc_usd_all_mode" widget="selection"/>
+                      <field name="calc_usd_all_currency_code"/>
+                    </group>
+                    <group>
+                      <field name="calc_usd_all_amount"/>
+                      <field name="calc_usd_all_reward_percent"/>
+                    </group>
+                    <group>
+                    </group>
+                  </div>
+                </group>
+                
+                <!-- Режим В % -->
+                <group string="Режим В %" invisible="calc_usd_all_mode != 'percent'">
+                  <div class="o-form-group-2">
+                    <group string="Входные данные">
+                      <field name="calc_usd_all_rate"/>
+                      <field name="calc_usd_all_xe"/>
+                      <field name="calc_usd_all_addition"/>
+                    </group>
+                    <group string="Результаты">
+                      <field name="calc_usd_all_usd_equivalent"/>
+                      <field name="calc_usd_all_addition_percent" widget="percentage"/>
+                      <field name="calc_usd_all_total_percent" widget="percentage"/>
+                    </group>
+                  </div>
+                </group>
+                
+                <!-- Режим В КУРС -->
+                <group string="Режим В КУРС" invisible="calc_usd_all_mode != 'rate'">
+                  <div class="o-form-group-2">
+                    <group string="Входные данные">
+                      <field name="calc_usd_all_real_rate"/>
+                      <field name="calc_usd_all_usd_rate"/>
+                      <field name="calc_usd_all_addition_usd"/>
+                    </group>
+                    <group string="Результаты">
+                      <field name="calc_usd_all_surcharge_sum_rub"/>
+                      <field name="calc_usd_all_total_rate"/>
+                    </group>
+                  </div>
+                </group>
+                
+                <!-- Общие результаты -->
+                <group string="Общие результаты" invisible="calc_usd_all_mode == False">
+                  <div class="o-form-group-3">
+                    <group>
+                      <field name="calc_usd_all_request_amount_rub"/>
+                    </group>
+                    <group>
+                      <field name="calc_usd_all_reward_rub"/>
+                    </group>
+                    <group>
+                      <field name="calc_usd_all_total_rub"/>
+                    </group>
+                  </div>
+                </group>
+              </group>
+              </div>
+            </page>
+            
             <page string="Даты" groups="!amanat.group_amanat_limited_access">
               <group>
                 <div class="o-form-group-2">

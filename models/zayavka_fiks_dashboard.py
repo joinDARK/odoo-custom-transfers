@@ -100,9 +100,21 @@ class ZayavkaFiksDashboard(models.Model):
         Получение агрегированных данных за период используя SQL
         """
         try:
-            # Группируем по валютам и получаем суммы и средние курсы
+            # Фильтры для исключения кэш валют
+            exclude_currencies = [
+                'aed_cashe', 'cny_cashe', 'euro_cashe', 
+                'rub_cashe', 'thb_cashe', 'usd_cashe', 'usdt_cashe'
+            ]
+            
+            # Группируем по валютам и получаем суммы и средние курсы с применением всех фильтров
             currency_groups = self.env['amanat.zayavka'].read_group(
-                domain + [('currency', '!=', False), ('hidden_hadge', '=', False)],
+                domain + [
+                    ('currency', '!=', False), 
+                    ('hidden_hadge', '=', False),
+                    ('currency', 'not in', exclude_currencies),
+                    ('prefix', '=', False),
+                    ('hide_in_dashboard', '!=', True),
+                ],
                 ['currency', 'amount:sum', 'effective_rate:avg'],
                 ['currency']
             )
@@ -110,11 +122,18 @@ class ZayavkaFiksDashboard(models.Model):
             _logger.info(f"Получено {len(currency_groups)} групп валют")
             
             # Инициализируем результаты
-            currency_sums = {'usd': 0, 'cny': 0, 'euro': 0, 'aed': 0, 'usdt': 0}
-            average_rates = {'usd': "0", 'cny': "0", 'euro': "0", 'aed': "0", 'usdt': "0"}
+            currency_sums = {'usd': 0, 'cny': 0, 'euro': 0, 'aed': 0, 'usdt': 0, 'rub': 0, 'thb': 0}
+            average_rates = {'usd': "0", 'cny': "0", 'euro': "0", 'aed': "0", 'usdt': "0", 'rub': "0", 'thb': "0"}
             
-            # Общее количество заявок
-            total_count = self.env['amanat.zayavka'].search_count(domain + [('hidden_hadge', '=', False)])
+            # Общее количество заявок с применением всех фильтров
+            total_count = self.env['amanat.zayavka'].search_count(
+                domain + [
+                    ('hidden_hadge', '=', False),
+                    ('currency', 'not in', exclude_currencies),
+                    ('prefix', '=', False),
+                    ('hide_in_dashboard', '!=', True),
+                ]
+            )
             
             # Обрабатываем группы валют
             for group in currency_groups:
@@ -122,27 +141,35 @@ class ZayavkaFiksDashboard(models.Model):
                 amount_sum = group['amount'] or 0
                 rate_avg = group['effective_rate'] or 0
                 
-                # Маппинг валют (включая кэш варианты)
-                if currency in ['usd', 'usd_cashe']:
+                # Маппинг валют (исключая кэш варианты, которые уже отфильтрованы)
+                if currency == 'usd':
                     currency_sums['usd'] += amount_sum
                     if rate_avg > 0:
                         average_rates['usd'] = f"{rate_avg:,.4f}".replace('.', ',')
-                elif currency in ['cny', 'cny_cashe']:
+                elif currency == 'cny':
                     currency_sums['cny'] += amount_sum
                     if rate_avg > 0:
                         average_rates['cny'] = f"{rate_avg:,.4f}".replace('.', ',')
-                elif currency in ['euro', 'euro_cashe']:
+                elif currency == 'euro':
                     currency_sums['euro'] += amount_sum
                     if rate_avg > 0:
                         average_rates['euro'] = f"{rate_avg:,.4f}".replace('.', ',')
-                elif currency in ['aed', 'aed_cashe']:
+                elif currency == 'aed':
                     currency_sums['aed'] += amount_sum
                     if rate_avg > 0:
                         average_rates['aed'] = f"{rate_avg:,.4f}".replace('.', ',')
-                elif currency in ['usdt', 'usdt_cashe']:
+                elif currency == 'usdt':
                     currency_sums['usdt'] += amount_sum
                     if rate_avg > 0:
                         average_rates['usdt'] = f"{rate_avg:,.4f}".replace('.', ',')
+                elif currency == 'rub':
+                    currency_sums['rub'] += amount_sum
+                    if rate_avg > 0:
+                        average_rates['rub'] = f"{rate_avg:,.4f}".replace('.', ',')
+                elif currency == 'thb':
+                    currency_sums['thb'] += amount_sum
+                    if rate_avg > 0:
+                        average_rates['thb'] = f"{rate_avg:,.4f}".replace('.', ',')
             
             # Вычисляем эквиваленты в долларах
             usd_equivalents = self._calculate_usd_equivalents_optimized(currency_sums)
@@ -163,6 +190,8 @@ class ZayavkaFiksDashboard(models.Model):
                 'euro_sum': f"{currency_sums['euro']:,.0f}",
                 'aed_sum': f"{currency_sums['aed']:,.0f}",
                 'usdt_sum': f"{currency_sums['usdt']:,.0f}",
+                'rub_sum': f"{currency_sums['rub']:,.0f}",
+                'thb_sum': f"{currency_sums['thb']:,.0f}",
                 'chart_data': chart_data
             }
                 
@@ -191,7 +220,9 @@ class ZayavkaFiksDashboard(models.Model):
                 'cny': float(today_metrics['cny_sum'].replace(',', '')),
                 'euro': float(today_metrics['euro_sum'].replace(',', '')),
                 'aed': float(today_metrics['aed_sum'].replace(',', '')),
-                'usdt': float(today_metrics['usdt_sum'].replace(',', ''))
+                'usdt': float(today_metrics['usdt_sum'].replace(',', '')),
+                'rub': float(today_metrics['rub_sum'].replace(',', '')),
+                'thb': float(today_metrics['thb_sum'].replace(',', ''))
             }
             
             today_chart_data = self._prepare_today_chart_data(currency_sums)
@@ -213,25 +244,41 @@ class ZayavkaFiksDashboard(models.Model):
             today = date.today()
             domain = [('rate_fixation_date', '=', today)]
             
-            # Получаем ВСЕ заявки за сегодня, отсортированные по времени создания (новые сначала)
-            orders = self.env['amanat.zayavka'].search(domain + [('hidden_hadge', '=', False)], order='create_date desc')
+            # Фильтры для исключения кэш валют и других условий
+            exclude_currencies = [
+                'aed_cashe', 'cny_cashe', 'euro_cashe', 
+                'rub_cashe', 'thb_cashe', 'usd_cashe', 'usdt_cashe'
+            ]
+            
+            # Получаем заявки за сегодня с фильтрами, отсортированные по времени создания (новые сначала)
+            orders = self.env['amanat.zayavka'].search(
+                domain + [
+                    ('hidden_hadge', '=', False),           # Скрытый хэдж = False
+                    ('currency', 'not in', exclude_currencies), # Исключить кэш валюты
+                    ('prefix', '=', False),                 # Перефикс = False
+                    ('hide_in_dashboard', '!=', True),      # Не отображать в дашборде != True
+                ], 
+                order='create_date desc'
+            )
             
             orders_list = []
             for order in orders:
                 # Валюта - преобразуем техническое значение в читаемое
                 currency_map = {
-                    'usd': 'USD КЭШ',
+                    'usd': 'USD',
                     'cny': 'CNY',
                     'euro': 'EURO',
                     'aed': 'AED',
                     'usdt': 'USDT',
                     'rub': 'RUB',
+                    'thb': 'THB',
                     'usd_cashe': 'USD КЭШ',
                     'cny_cashe': 'CNY КЭШ',
                     'euro_cashe': 'EURO КЭШ',
                     'aed_cashe': 'AED КЭШ',
                     'usdt_cashe': 'USDT КЭШ',
                     'rub_cashe': 'RUB КЭШ',
+                    'thb_cashe': 'THB КЭШ',
                 }
                 currency_display = currency_map.get(order.currency, order.currency or 'Не указана')
                 
@@ -292,29 +339,16 @@ class ZayavkaFiksDashboard(models.Model):
 
                 orders_list.append({
                     'id': order.id,
-                    'date_placement': order.date_placement.strftime('%d.%m.%Y') if order.date_placement else '',
                     'zayavka_num': order.zayavka_num or '',
-                    'status_display': status_map.get(order.status, order.status or ''),
-                    'status_class': status_class,
                     'contragent_name': order.contragent_id.name if order.contragent_id else '',
                     'agent_name': order.agent_id.name if order.agent_id else '',
-                    'client_name': order.client_id.name if order.client_id else '',
-                    'deal_type_display': deal_type_display,
                     'amount': f"{order.amount:,.0f}".replace(',', ' ') if order.amount else "0",
-                    'application_amount_rub_contract': f"{order.application_amount_rub_contract:,.2f}".replace(',', ' ') if order.application_amount_rub_contract else "0,00",
-                    'payment_conditions_display': payment_conditions_map.get(order.payment_conditions, order.payment_conditions or ''),
-                    'usd_equivalent': f"{order.usd_equivalent:,.4f}".replace('.', ',').replace(',', ' ') if order.usd_equivalent else "0,0000",
-                    'xe_rate': f"{order.xe_rate:,.4f}".replace('.', ',').replace(',', ' ') if order.xe_rate else "0,0000",
                     'currency_display': currency_display,
-                    'rate_field': f"{order.rate_field:,.4f}".replace('.', ',').replace(',', ' ') if order.rate_field else "0,0000",
-                    'reward_percent': f"{order.reward_percent:.1f}%".replace('.', ',') if order.reward_percent else "0,0%",
-                    'rate_fixation_date': order.rate_fixation_date.strftime('%d.%m.%Y') if order.rate_fixation_date else '',
-                    'agent_reward': f"{order.agent_reward:,.2f}".replace(',', ' ') if order.agent_reward else "0,00",
-                    'total_amount': f"{order.total_amount:,.2f}".replace(',', ' ') if order.total_amount else "0,00",
-                    'best_rate': f"{order.best_rate:,.4f}".replace('.', ',').replace(',', ' ') if order.best_rate else "0,0000",
-                    'comment_hedge': order.comment_hedge or '',
-                    'best_rate_name': order.best_rate_name or '',
-                    'hidden_hadge': order.hidden_hadge or ''
+                    'rate_field': f"{order.rate_field:,.4f}".replace('.', ',') if order.rate_field else "0,0000",
+                    'payment_conditions_display': payment_conditions_map.get(order.payment_conditions, order.payment_conditions or ''),
+                    'comment': order.comment or '',
+                    'status_display': status_map.get(order.status, order.status or ''),
+                    'status_class': status_class
                 })
             
             _logger.info(f"Получено {len(orders_list)} заявок за сегодня")
@@ -333,18 +367,22 @@ class ZayavkaFiksDashboard(models.Model):
             cny_to_usd = currency_sums['cny'] / 7.2  # Примерный курс CNY к USD
             euro_to_usd = currency_sums['euro'] * 1.1  # Примерный курс EUR к USD
             aed_to_usd = currency_sums['aed'] / 3.67  # Примерный курс AED к USD
+            rub_to_usd = currency_sums['rub'] / 92.0  # Примерный курс RUB к USD
+            thb_to_usd = currency_sums['thb'] / 34.5  # Примерный курс THB к USD
             
-            total_usd = currency_sums['usd'] + cny_to_usd + euro_to_usd + aed_to_usd
+            total_usd = currency_sums['usd'] + cny_to_usd + euro_to_usd + aed_to_usd + rub_to_usd + thb_to_usd
             # USDT не включается в эквивалент USD
             
             return {
                 'total': total_usd,
                 'cny': cny_to_usd,
-                'euro': euro_to_usd
+                'euro': euro_to_usd,
+                'rub': rub_to_usd,
+                'thb': thb_to_usd
             }
         except Exception as e:
             _logger.error(f"Ошибка подсчета эквивалентов в долларах: {e}")
-            return {'total': 0, 'cny': 0, 'euro': 0}
+            return {'total': 0, 'cny': 0, 'euro': 0, 'rub': 0, 'thb': 0}
     
     def _prepare_chart_data(self, currency_sums):
         """
@@ -352,7 +390,7 @@ class ZayavkaFiksDashboard(models.Model):
         """
         try:
             return {
-                'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT'],
+                'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT', 'RUB', 'THB'],
                 'datasets': [{
                     'label': 'Сумма по валютам',
                     'data': [
@@ -360,21 +398,27 @@ class ZayavkaFiksDashboard(models.Model):
                         currency_sums['cny'],
                         currency_sums['euro'],
                         currency_sums['aed'],
-                        currency_sums['usdt']
+                        currency_sums['usdt'],
+                        currency_sums['rub'],
+                        currency_sums['thb']
                     ],
                     'backgroundColor': [
                         '#5b9bd5',  # USD - голубой
                         '#70ad47',  # CNY - зеленый  
                         '#ffc000',  # EURO - желтый
                         '#7030a0',  # AED - фиолетовый
-                        '#ff6b35'   # USDT - оранжевый
+                        '#ff6b35',  # USDT - оранжевый
+                        '#c55a5a',  # RUB - красный
+                        '#6fa8dc'   # THB - светло-синий
                     ],
                     'borderColor': [
                         '#4472c4',
                         '#548235',
                         '#d99694',
                         '#5b2c87',
-                        '#e85a2b'
+                        '#e85a2b',
+                        '#a64444',
+                        '#5b8ab3'
                     ],
                     'borderWidth': 1,
                     'borderRadius': 4,
@@ -391,7 +435,7 @@ class ZayavkaFiksDashboard(models.Model):
         """
         try:
             return {
-                'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT'],
+                'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT', 'RUB', 'THB'],
                 'datasets': [{
                     'label': 'Сумма по валютам сегодня',
                     'data': [
@@ -399,21 +443,27 @@ class ZayavkaFiksDashboard(models.Model):
                         currency_sums['cny'],
                         currency_sums['euro'],
                         currency_sums['aed'],
-                        currency_sums['usdt']
+                        currency_sums['usdt'],
+                        currency_sums['rub'],
+                        currency_sums['thb']
                     ],
                     'backgroundColor': [
                         '#5b9bd5',  # USD - голубой
                         '#70ad47',  # CNY - зеленый  
                         '#ffc000',  # EURO - желтый
                         '#7030a0',  # AED - фиолетовый
-                        '#ff6b35'   # USDT - оранжевый
+                        '#ff6b35',  # USDT - оранжевый
+                        '#c55a5a',  # RUB - красный
+                        '#6fa8dc'   # THB - светло-синий
                     ],
                     'borderColor': [
                         '#4472c4',
                         '#548235',
                         '#d99694',
                         '#5b2c87',
-                        '#e85a2b'
+                        '#e85a2b',
+                        '#a64444',
+                        '#5b8ab3'
                     ],
                     'borderWidth': 1,
                     'borderRadius': 4,
@@ -434,7 +484,9 @@ class ZayavkaFiksDashboard(models.Model):
                 'cny': "0",
                 'euro': "0",
                 'aed': "0",
-                'usdt': "0"
+                'usdt': "0",
+                'rub': "0",
+                'thb': "0"
             },
             'total_count': 0,
             'equivalent_usd': "0,00",
@@ -445,6 +497,8 @@ class ZayavkaFiksDashboard(models.Model):
             'euro_sum': "0",
             'aed_sum': "0",
             'usdt_sum': "0",
+            'rub_sum': "0",
+            'thb_sum': "0",
             'chart_data': self._get_empty_chart_data()
         }
     
@@ -453,11 +507,11 @@ class ZayavkaFiksDashboard(models.Model):
         Возвращает пустые данные для графика
         """
         return {
-            'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT'],
+            'labels': ['USD', 'CNY', 'EURO', 'AED', 'USDT', 'RUB', 'THB'],
             'datasets': [{
                 'label': 'Сумма по валютам',
-                'data': [0, 0, 0, 0, 0],
-                'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0', '#ff6b35']
+                'data': [0, 0, 0, 0, 0, 0, 0],
+                'backgroundColor': ['#5b9bd5', '#70ad47', '#ffc000', '#7030a0', '#ff6b35', '#c55a5a', '#6fa8dc']
             }]
         }
     

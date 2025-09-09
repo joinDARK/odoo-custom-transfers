@@ -2869,3 +2869,674 @@ class Zayavka(models.Model, AmanatBaseModel):
         compute='_compute_can_generate_individual',
         help='Показывает, может ли текущий агент генерировать документ "Индивидуал"'
     )
+
+    # ====================================
+    # GROUP: Калькуляторы
+    # ====================================
+    
+    # Выбор типа калькулятора
+    calculator_type = fields.Selection([
+        ('calc_50_usd', 'Калькулятор сделок (50 USD)'),
+        ('calc_spread', 'Спред CNY-USD'),
+        ('calc_fixed_fee', 'Фиксированное вознаграждение'),
+        ('calc_usd_all', 'Добавка в $ для всех')
+    ], string='Тип калькулятора', tracking=True)
+
+    # Общие поля калькуляторов
+    calc_date = fields.Date(string='Дата калькулятора', default=fields.Date.context_today, tracking=True)
+    calc_name = fields.Char(string='Название расчета', compute='_compute_calc_name', store=True)
+
+    # ====================================
+    # CALCULATOR 50 USD - Калькулятор сделок
+    # ====================================
+    
+    # Основные поля
+    calc_50_deal_variant = fields.Selection([
+        ('eur_cross', 'EUR (кросс)'),
+        ('cny_cross', 'CNY (кросс)'),
+        ('usd_addon', 'USD (обычный)'),
+        ('cny_addon', 'CNY (обычный)'),
+        ('eur_addon', 'EUR (обычный)'),
+    ], string='Тип расчета', default='usd_addon')
+
+    # Общие настройки/параметры
+    calc_50_auto_markup_percent = fields.Float(
+        string='% надбавки (авто)',
+        help='Процент надбавки для расчета клиентского кросс-курса (используется в вариантах EUR/CNY кросс). '
+             'Например, 2 означает +2% к курсу.',
+        default=0.0,
+    )
+
+    # EUR (кросс к USD) блок
+    calc_50_eur_invoice_amount = fields.Float(string='Сумма инвойса в EUR')
+    calc_50_usd_rate_cbr = fields.Float(string='Курс $ ЦБ (USD/RUB)', digits=(16, 6),
+                                help='Используется для конвертации USD в RUB.')
+    calc_50_eur_xe_rate = fields.Float(string='Курс XE EUR (EUR/USD)', digits=(16, 6),
+                               help='Кросс EUR→USD по XE.')
+    calc_50_eur_cross_client = fields.Float(string='Кросскурс EUR→USD (для клиента)', digits=(16, 6),
+                                    compute='_compute_calc_50_eur_cross', store=False, readonly=True)
+    calc_50_eur_amount_rub = fields.Float(string='Сумма к оплате в RUB', digits=(16, 2),
+                                  compute='_compute_calc_50_eur_cross', store=False, readonly=True)
+    calc_50_eur_commission_percent = fields.Float(string='% Агентского вознаграждения')
+    calc_50_eur_commission_amount = fields.Float(string='Сумма агентского вознаграждения', digits=(16, 2),
+                                         compute='_compute_calc_50_eur_cross', store=False, readonly=True)
+    calc_50_eur_total_rub = fields.Float(string='Общая сумма к оплате (RUB)', digits=(16, 2),
+                                 compute='_compute_calc_50_eur_cross', store=False, readonly=True)
+    calc_50_eur_to_rub_rate = fields.Float(string='Эффективный курс EUR→RUB', digits=(16, 6),
+                                   compute='_compute_calc_50_eur_cross', store=False, readonly=True,
+                                   help='Сумма к оплате в рублях / Сумма инвойса в евро (без учета агентского).')
+
+    # CNY (кросс к USD) блок
+    calc_50_cny_invoice_amount = fields.Float(string='Сумма инвойса в CNY')
+    calc_50_usd_rate_investing_cny_cross = fields.Float(string='Курс $ (USD/RUB)', digits=(16, 6))
+    calc_50_cny_cross = fields.Float(string='Кросс курс юаня (USD/CNY)', digits=(16, 6),
+                             help='Кросс CNY→USD. Для клиента увеличивается на % надбавки (авто).')
+    calc_50_cny_cross_client = fields.Float(string='Кросскурс USD→CNY (для клиента)', digits=(16, 6),
+                                    compute='_compute_calc_50_cny_cross', store=False, readonly=True)
+    calc_50_cny_amount_rub = fields.Float(string='Сумма к оплате в RUB', digits=(16, 2),
+                                  compute='_compute_calc_50_cny_cross', store=False, readonly=True)
+    calc_50_cny_commission_percent = fields.Float(string='% Агентского вознаграждения')
+    calc_50_cny_commission_amount = fields.Float(string='Сумма агентского вознаграждения', digits=(16, 2),
+                                         compute='_compute_calc_50_cny_cross', store=False, readonly=True)
+    calc_50_cny_total_rub = fields.Float(string='Общая сумма к оплате (RUB)', digits=(16, 2),
+                                 compute='_compute_calc_50_cny_cross', store=False, readonly=True)
+    calc_50_cny_to_rub_rate = fields.Float(string='Эффективный курс CNY→RUB', digits=(16, 6),
+                                   compute='_compute_calc_50_cny_cross', store=False, readonly=True,
+                                   help='Сумма к оплате в рублях / Сумма инвойса в юанях (без учета агентского).')
+
+    # USD (обычный) блок — с добавкой $
+    calc_50_usd_invoice_amount = fields.Float(string='Сумма инвойса в USD')
+    calc_50_usd_investing_rate = fields.Float(string='Курс $ (USD/RUB)', digits=(16, 6))
+    calc_50_usd_commission_percent = fields.Float(string='% Агентского вознаграждения')
+    calc_50_usd_final_rate_for_payment = fields.Float(string='Итоговый курс для суммы платежа (RUB/USD)', digits=(16, 6),
+                                              compute='_compute_calc_50_usd_addon', store=False, readonly=True,
+                                              help='Курс $ с учетом процента агентского.')
+    calc_50_usd_payment_amount_rub = fields.Float(string='Сумма платежа (RUB)', digits=(16, 2),
+                                          compute='_compute_calc_50_usd_addon', store=False, readonly=True)
+    calc_50_usd_addon_usd = fields.Float(string='Добавка $')
+    calc_50_usd_addon_amount_rub = fields.Float(string='Добавка сумма (RUB)', digits=(16, 2),
+                                        compute='_compute_calc_50_usd_addon', store=False, readonly=True)
+    calc_50_usd_total_rub = fields.Float(string='Итого в рублях (RUB)', digits=(16, 2),
+                                 compute='_compute_calc_50_usd_addon', store=False, readonly=True)
+    calc_50_usd_final_rate_incl_addon = fields.Float(string='Курс (включая добавку $) (RUB/USD)', digits=(16, 6),
+                                             compute='_compute_calc_50_usd_addon', store=False, readonly=True,
+                                             help='Итого в рублях / Сумма инвойса в долларах.')
+
+    # CNY (обычный) блок — с добавкой $
+    calc_50_cny2_invoice_amount = fields.Float(string='Сумма инвойса в CNY')
+    calc_50_cny2_rate = fields.Float(string='Курс юаня (CNY/RUB)', digits=(16, 6),
+                             help='Прямой курс конверсии CNY→RUB.')
+    calc_50_cny2_usd_rate = fields.Float(string='Курс $ (USD/RUB)', digits=(16, 6),
+                                 help='Используется для конвертации добавки $ в рубли.')
+    calc_50_cny2_commission_percent = fields.Float(string='% Агентского вознаграждения')
+    calc_50_cny2_final_rate_for_payment = fields.Float(string='Итоговый курс для суммы платежа (RUB/CNY)', digits=(16, 6),
+                                               compute='_compute_calc_50_cny2_addon', store=False, readonly=True,
+                                               help='Курс юаня с учетом процента агентского.')
+    calc_50_cny2_payment_amount_rub = fields.Float(string='Сумма платежа (RUB)', digits=(16, 2),
+                                           compute='_compute_calc_50_cny2_addon', store=False, readonly=True)
+    calc_50_cny2_addon_usd = fields.Float(string='Добавка $')
+    calc_50_cny2_addon_amount_rub = fields.Float(string='Добавка сумма (RUB)', digits=(16, 2),
+                                         compute='_compute_calc_50_cny2_addon', store=False, readonly=True)
+    calc_50_cny2_total_rub = fields.Float(string='Итого в рублях (RUB)', digits=(16, 2),
+                                  compute='_compute_calc_50_cny2_addon', store=False, readonly=True)
+    calc_50_cny2_final_rate_incl_addon = fields.Float(string='Курс (включая добавку $) (RUB/CNY)', digits=(16, 6),
+                                              compute='_compute_calc_50_cny2_addon', store=False, readonly=True,
+                                              help='Итого в рублях / Сумма инвойса в CNY.')
+
+    # EUR (обычный) блок — с добавкой $
+    calc_50_eur2_invoice_amount = fields.Float(string='Сумма инвойса в EUR')
+    calc_50_eur2_rate = fields.Float(string='Курс евро (EUR/RUB)', digits=(16, 6),
+                             help='Прямой курс конверсии EUR→RUB.')
+    calc_50_eur2_usd_rate = fields.Float(string='Курс $ (USD/RUB)', digits=(16, 6),
+                                 help='Курс для пересчета добавки $ в RUB.')
+    calc_50_eur2_commission_percent = fields.Float(string='% Агентского вознаграждения')
+    calc_50_eur2_final_rate_for_payment = fields.Float(string='Итоговый курс для суммы платежа (RUB/EUR)', digits=(16, 6),
+                                               compute='_compute_calc_50_eur2_addon', store=False, readonly=True,
+                                               help='Курс EUR с учетом процента агентского.')
+    calc_50_eur2_payment_amount_rub = fields.Float(string='Сумма платежа (RUB)', digits=(16, 2),
+                                           compute='_compute_calc_50_eur2_addon', store=False, readonly=True)
+    calc_50_eur2_addon_usd = fields.Float(string='Добавка $')
+    calc_50_eur2_addon_amount_rub = fields.Float(string='Добавка сумма (RUB)', digits=(16, 2),
+                                         compute='_compute_calc_50_eur2_addon', store=False, readonly=True)
+    calc_50_eur2_total_rub = fields.Float(string='Итого в рублях (RUB)', digits=(16, 2),
+                                  compute='_compute_calc_50_eur2_addon', store=False, readonly=True)
+    calc_50_eur2_final_rate_incl_addon = fields.Float(string='Курс (включая добавку $) (RUB/EUR)', digits=(16, 6),
+                                              compute='_compute_calc_50_eur2_addon', store=False, readonly=True,
+                                              help='Итого в рублях / Сумма инвойса в EUR.')
+
+    # ====================================
+    # CALCULATOR SPREAD - Спред между юанем и долларом
+    # ====================================
+    
+    # Входные параметры (курсы)
+    calc_spread_cbr_usd_rub = fields.Float(string='CBR USD/RUB (today)', digits=(16, 4),
+                               help='Курс доллара к рублю по ЦБ РФ на сегодня')
+    calc_spread_cbr_cny_rub = fields.Float(string='CBR CNY/RUB (today)', digits=(16, 4),
+                               help='Курс юаня к рублю по ЦБ РФ на сегодня')
+    calc_spread_xe_usd_cny = fields.Float(string='XE USD/CNY (1$ -> ¥)', digits=(16, 10),
+                              help='Курс доллара к юаню по XE.com')
+    
+    # Расчетные поля
+    calc_spread_calculated_usd_rub = fields.Float(string='Рассчитанный USD/RUB через юань', digits=(16, 4),
+                                     compute='_compute_calc_spread', store=False, readonly=True,
+                                     help='CBR CNY/RUB * XE USD/CNY')
+    calc_spread_absolute = fields.Float(string='Спред (разница)', digits=(16, 4),
+                                  compute='_compute_calc_spread', store=False, readonly=True,
+                                  help='Разность между CBR USD/RUB и рассчитанным USD/RUB')
+    calc_spread_percent = fields.Float(string='Спред (%)', digits=(16, 4),
+                                 compute='_compute_calc_spread', store=False, readonly=True,
+                                 help='Спред в процентах от курса CBR USD/RUB')
+    calc_spread_amount_usd = fields.Float(string='Сумма операции (USD)', digits=(16, 2), default=0.0,
+                             help='Сумма в долларах для расчета прибыли')
+    calc_spread_profit_rub = fields.Float(string='Прибыль от спреда (RUB)', digits=(16, 2),
+                             compute='_compute_calc_spread', store=False, readonly=True,
+                             help='Прибыль от спреда при заданной сумме операции')
+    calc_spread_direction = fields.Char(string='Направление спреда', compute='_compute_calc_spread', 
+                                  store=True, readonly=True,
+                                  help='Показывает, какой курс выгоднее')
+
+    # ====================================
+    # CALCULATOR FIXED FEE - Фиксированное вознаграждение
+    # ====================================
+    
+    # Реальный блок
+    calc_fixed_real_currency = fields.Selection([
+        ('usd', 'USD'),
+        ('eur', 'EUR'),
+        ('rub', 'RUB'),
+        ('kzt', 'KZT'),
+        ('cny', 'CNY'),
+    ], string='Валюта реальный', default='usd')
+    calc_fixed_real_amount = fields.Float(string='Сумма реальный', digits=(16, 4))
+    calc_fixed_real_cb_rate = fields.Float(string='Курс ЦБ реальный', digits=(16, 4))
+    calc_fixed_real_rub_amount = fields.Float(
+        string='Сумма руб реальный', 
+        compute='_compute_calc_fixed_real_fields', 
+        store=True, 
+        digits=(16, 4)
+    )
+    calc_fixed_general_percent_rate = fields.Float(string='Общий %', digits=(16, 4))
+    calc_fixed_general_percent_amount = fields.Float(
+        string='Общий % (сумма)', 
+        compute='_compute_calc_fixed_real_fields', 
+        store=True, 
+        digits=(16, 4)
+    )
+    calc_fixed_real_rub_total = fields.Float(
+        string='Сумма руб итог реальный', 
+        compute='_compute_calc_fixed_real_fields', 
+        store=True, 
+        digits=(16, 4)
+    )
+    calc_fixed_our_percent_rate = fields.Float(string='Наш %', digits=(16, 4))
+    calc_fixed_our_percent_amount = fields.Float(
+        string='Наш % (сумма)', 
+        compute='_compute_calc_fixed_real_fields', 
+        store=True, 
+        digits=(16, 4)
+    )
+    
+    # Клиенту блок
+    calc_fixed_client_currency = fields.Selection([
+        ('usd', 'USD'),
+        ('eur', 'EUR'),
+        ('rub', 'RUB'),
+        ('kzt', 'KZT'),
+        ('cny', 'CNY'),
+    ], string='Валюта клиент', default='usd')
+    calc_fixed_client_amount = fields.Float(string='Сумма клиент', digits=(16, 4))
+    calc_fixed_client_total_rate = fields.Float(string='Курс итог реальный', digits=(16, 4))
+    calc_fixed_client_rub_amount = fields.Float(
+        string='Сумма руб клиенту', 
+        compute='_compute_calc_fixed_client_fields', 
+        store=True, 
+        digits=(16, 4)
+    )
+    calc_fixed_client_percent_amount = fields.Float(string='Вознаграждение руб', digits=(16, 4))
+    calc_fixed_client_rub_total = fields.Float(
+        string='Сумма руб итог клиенту', 
+        compute='_compute_calc_fixed_client_fields', 
+        store=True, 
+        digits=(16, 4)
+    )
+    
+    # Итого блок
+    calc_fixed_reward_difference = fields.Float(
+        string='Разница между вознагр', 
+        compute='_compute_calc_fixed_totals', 
+        store=True, 
+        digits=(16, 4)
+    )
+    calc_fixed_add_to_payment = fields.Float(
+        string='Добавить её к телу платежа', 
+        compute='_compute_calc_fixed_totals', 
+        store=True, 
+        digits=(16, 4)
+    )
+    calc_fixed_final_rate = fields.Float(
+        string='Итоговый курс', 
+        compute='_compute_calc_fixed_totals', 
+        store=True, 
+        digits=(16, 4)
+    )
+    calc_fixed_embed_percent = fields.Float(
+        string='Зашиваем %', 
+        compute='_compute_calc_fixed_totals', 
+        store=True, 
+        digits=(16, 4)
+    )
+
+    # ====================================
+    # CALCULATOR USD ALL - Добавка в $ для всех
+    # ====================================
+    
+    # Управляющие поля
+    calc_usd_all_mode = fields.Selection([
+        ("percent", "В %"),
+        ("rate", "В КУРС"),
+    ], string="Режим расчёта")
+
+    calc_usd_all_currency_code = fields.Selection([
+        ("USD", "USD"),
+        ("CNY", "CNY"),
+        ("EUR", "EUR"),
+    ], string="Валюта", default="USD")
+
+    # Общие вводимые поля
+    calc_usd_all_amount = fields.Float(string="Сумма", digits=(16, 2))
+    calc_usd_all_reward_percent = fields.Float(string="Вознаграждение в %", help="Процент вознаграждения менеджера")
+
+    # Режим В %
+    calc_usd_all_rate = fields.Float(string="Курс", digits=(16, 6), help="Курс к рублю (RUB)")
+    calc_usd_all_xe = fields.Float(string="XE", digits=(16, 10), help="Кросс-курс к USD (до 10 знаков после запятой)")
+    calc_usd_all_usd_equivalent = fields.Float(string="Эквивалент $", digits=(16, 6), compute="_compute_calc_usd_all_percent_mode", store=True)
+    calc_usd_all_addition = fields.Float(string="Надбавка", digits=(16, 2))
+    calc_usd_all_addition_percent = fields.Float(string="Надбавка в %", digits=(16, 4), compute="_compute_calc_usd_all_percent_mode", store=True)
+    calc_usd_all_total_percent = fields.Float(string="Процент итог", digits=(16, 4), compute="_compute_calc_usd_all_percent_mode", store=True)
+
+    # Режим В КУРС
+    calc_usd_all_real_rate = fields.Float(string="Курс реал", digits=(16, 6))
+    calc_usd_all_usd_rate = fields.Float(string="Курс $", digits=(16, 6), help="Текущий курс USD→RUB (нужен для CNY/EUR в режиме 'В КУРС')")
+    calc_usd_all_addition_usd = fields.Float(string="Надбавка $", digits=(16, 4))
+    calc_usd_all_surcharge_sum_rub = fields.Float(string="Сумма надбавки, RUB", digits=(16, 2), compute="_compute_calc_usd_all_rate_mode", store=True)
+    calc_usd_all_total_rate = fields.Float(string="Курс итого", digits=(16, 6), compute="_compute_calc_usd_all_rate_mode", store=True)
+
+    # Вычисляемые общие результаты (для обоих режимов)
+    calc_usd_all_request_amount_rub = fields.Float(string="Сумма заявки в руб", digits=(16, 2), compute="_compute_calc_usd_all_results", store=True)
+    calc_usd_all_reward_rub = fields.Float(string="Вознаграждение руб", digits=(16, 2), compute="_compute_calc_usd_all_results", store=True)
+    calc_usd_all_total_rub = fields.Float(string="Итого", digits=(16, 2), compute="_compute_calc_usd_all_results", store=True)
+
+    # ====================================
+    # COMPUTE METHODS - Калькуляторы
+    # ====================================
+
+    @api.depends('calculator_type', 'calc_50_deal_variant', 'calc_date')
+    def _compute_calc_name(self):
+        """Вычисляет название расчета в зависимости от типа калькулятора"""
+        for rec in self:
+            if rec.calculator_type == 'calc_50_usd':
+                label_map = {
+                    'eur_cross': 'EUR (кросс)',
+                    'cny_cross': 'CNY (кросс)',
+                    'usd_addon': 'USD (обычный)',
+                    'cny_addon': 'CNY (обычный)',
+                    'eur_addon': 'EUR (обычный)',
+                }
+                variant = label_map.get(rec.calc_50_deal_variant or 'usd_addon')
+                dt = rec.calc_date or fields.Date.context_today(rec)
+                rec.calc_name = f'{variant} — {dt}'
+            elif rec.calculator_type == 'calc_spread':
+                dt = rec.calc_date or fields.Date.context_today(rec)
+                rec.calc_name = f'Спред CNY-USD — {dt}'
+            elif rec.calculator_type == 'calc_fixed_fee':
+                if rec.calc_date:
+                    date_str = rec.calc_date.strftime('%d.%m.%Y')
+                    rec.calc_name = f'Фикс. вознаграждение от {date_str}'
+                else:
+                    rec.calc_name = 'Фикс. вознаграждение'
+            elif rec.calculator_type == 'calc_usd_all':
+                mode = "В %" if rec.calc_usd_all_mode == "percent" else "В КУРС"
+                rec.calc_name = f"Расчет добавка в $ для всех — {mode} — {rec.calc_usd_all_currency_code or ''}"
+            else:
+                rec.calc_name = False
+
+    # ====================================
+    # CALCULATOR 50 USD COMPUTE METHODS
+    # ====================================
+
+    # Отдельные compute методы для каждого блока калькулятора 50 USD
+    
+    @api.depends('calculator_type', 'calc_50_deal_variant', 'calc_50_auto_markup_percent', 
+                 'calc_50_eur_invoice_amount', 'calc_50_usd_rate_cbr', 'calc_50_eur_xe_rate', 'calc_50_eur_commission_percent')
+    def _compute_calc_50_eur_cross(self):
+        for rec in self:
+            if rec.calculator_type != 'calc_50_usd' or rec.calc_50_deal_variant != 'eur_cross':
+                rec.calc_50_eur_cross_client = 0.0
+                rec.calc_50_eur_amount_rub = 0.0
+                rec.calc_50_eur_commission_amount = 0.0
+                rec.calc_50_eur_total_rub = 0.0
+                rec.calc_50_eur_to_rub_rate = 0.0
+                continue
+                
+            markup = (rec.calc_50_auto_markup_percent or 0.0) / 100.0
+            eur_xe = rec.calc_50_eur_xe_rate or 0.0
+            rec.calc_50_eur_cross_client = eur_xe * (1.0 + markup) if eur_xe else 0.0
+
+            eur_inv = rec.calc_50_eur_invoice_amount or 0.0
+            usd_cbr = rec.calc_50_usd_rate_cbr or 0.0
+            eur_amount_rub = eur_inv * rec.calc_50_eur_cross_client * usd_cbr
+            rec.calc_50_eur_amount_rub = eur_amount_rub
+
+            eur_comm_pct = (rec.calc_50_eur_commission_percent or 0.0) / 100.0
+            rec.calc_50_eur_commission_amount = eur_amount_rub * eur_comm_pct
+            rec.calc_50_eur_total_rub = eur_amount_rub + rec.calc_50_eur_commission_amount
+            rec.calc_50_eur_to_rub_rate = (eur_amount_rub / eur_inv) if eur_inv else 0.0
+
+    @api.depends('calculator_type', 'calc_50_deal_variant', 'calc_50_auto_markup_percent',
+                 'calc_50_cny_invoice_amount', 'calc_50_usd_rate_investing_cny_cross', 'calc_50_cny_cross', 'calc_50_cny_commission_percent')
+    def _compute_calc_50_cny_cross(self):
+        for rec in self:
+            if rec.calculator_type != 'calc_50_usd' or rec.calc_50_deal_variant != 'cny_cross':
+                rec.calc_50_cny_cross_client = 0.0
+                rec.calc_50_cny_amount_rub = 0.0
+                rec.calc_50_cny_commission_amount = 0.0
+                rec.calc_50_cny_total_rub = 0.0
+                rec.calc_50_cny_to_rub_rate = 0.0
+                continue
+                
+            markup = (rec.calc_50_auto_markup_percent or 0.0) / 100.0
+            cny_cross = rec.calc_50_cny_cross or 0.0
+            rec.calc_50_cny_cross_client = cny_cross * (1.0 + markup) if cny_cross else 0.0
+
+            cny_inv = rec.calc_50_cny_invoice_amount or 0.0
+            usd_inv_rate = rec.calc_50_usd_rate_investing_cny_cross or 0.0
+            if rec.calc_50_cny_cross_client:
+                usd_amount_from_cny = cny_inv / rec.calc_50_cny_cross_client
+            else:
+                usd_amount_from_cny = 0.0
+            cny_amount_rub = usd_amount_from_cny * usd_inv_rate
+            rec.calc_50_cny_amount_rub = cny_amount_rub
+
+            cny_comm_pct = (rec.calc_50_cny_commission_percent or 0.0) / 100.0
+            rec.calc_50_cny_commission_amount = cny_amount_rub * cny_comm_pct
+            rec.calc_50_cny_total_rub = cny_amount_rub + rec.calc_50_cny_commission_amount
+            rec.calc_50_cny_to_rub_rate = (cny_amount_rub / cny_inv) if cny_inv else 0.0
+
+    @api.depends('calculator_type', 'calc_50_deal_variant',
+                 'calc_50_usd_invoice_amount', 'calc_50_usd_investing_rate', 'calc_50_usd_commission_percent', 'calc_50_usd_addon_usd')
+    def _compute_calc_50_usd_addon(self):
+        for rec in self:
+            if rec.calculator_type != 'calc_50_usd' or rec.calc_50_deal_variant != 'usd_addon':
+                rec.calc_50_usd_final_rate_for_payment = 0.0
+                rec.calc_50_usd_payment_amount_rub = 0.0
+                rec.calc_50_usd_addon_amount_rub = 0.0
+                rec.calc_50_usd_total_rub = 0.0
+                rec.calc_50_usd_final_rate_incl_addon = 0.0
+                continue
+                
+            usd_inv = rec.calc_50_usd_invoice_amount or 0.0
+            usd_rate_investing = rec.calc_50_usd_investing_rate or 0.0
+            usd_comm_pct = (rec.calc_50_usd_commission_percent or 0.0) / 100.0
+
+            rec.calc_50_usd_final_rate_for_payment = usd_rate_investing * (1.0 + usd_comm_pct) if usd_rate_investing else 0.0
+            usd_payment_rub = usd_inv * rec.calc_50_usd_final_rate_for_payment
+            rec.calc_50_usd_payment_amount_rub = usd_payment_rub
+
+            usd_addon = rec.calc_50_usd_addon_usd or 0.0
+            rec.calc_50_usd_addon_amount_rub = usd_addon * usd_rate_investing
+            rec.calc_50_usd_total_rub = usd_payment_rub + rec.calc_50_usd_addon_amount_rub
+            rec.calc_50_usd_final_rate_incl_addon = (rec.calc_50_usd_total_rub / usd_inv) if usd_inv else 0.0
+
+    @api.depends('calculator_type', 'calc_50_deal_variant', 
+                 'calc_50_cny2_invoice_amount', 'calc_50_cny2_rate', 'calc_50_cny2_usd_rate', 'calc_50_cny2_commission_percent', 'calc_50_cny2_addon_usd')
+    def _compute_calc_50_cny2_addon(self):
+        for rec in self:
+            if rec.calculator_type != 'calc_50_usd' or rec.calc_50_deal_variant != 'cny_addon':
+                rec.calc_50_cny2_final_rate_for_payment = 0.0
+                rec.calc_50_cny2_payment_amount_rub = 0.0
+                rec.calc_50_cny2_addon_amount_rub = 0.0
+                rec.calc_50_cny2_total_rub = 0.0
+                rec.calc_50_cny2_final_rate_incl_addon = 0.0
+                continue
+                
+            cny2_inv = rec.calc_50_cny2_invoice_amount or 0.0
+            cny2_rate = rec.calc_50_cny2_rate or 0.0
+            cny2_comm_pct = (rec.calc_50_cny2_commission_percent or 0.0) / 100.0
+
+            rec.calc_50_cny2_final_rate_for_payment = cny2_rate * (1.0 + cny2_comm_pct) if cny2_rate else 0.0
+            cny2_payment_rub = cny2_inv * rec.calc_50_cny2_final_rate_for_payment
+            rec.calc_50_cny2_payment_amount_rub = cny2_payment_rub
+
+            cny2_addon_usd = rec.calc_50_cny2_addon_usd or 0.0
+            cny2_usd_rate = rec.calc_50_cny2_usd_rate or 0.0
+            rec.calc_50_cny2_addon_amount_rub = cny2_addon_usd * cny2_usd_rate
+            rec.calc_50_cny2_total_rub = cny2_payment_rub + rec.calc_50_cny2_addon_amount_rub
+            rec.calc_50_cny2_final_rate_incl_addon = (rec.calc_50_cny2_total_rub / cny2_inv) if cny2_inv else 0.0
+
+    @api.depends('calculator_type', 'calc_50_deal_variant',
+                 'calc_50_eur2_invoice_amount', 'calc_50_eur2_rate', 'calc_50_eur2_usd_rate', 'calc_50_eur2_commission_percent', 'calc_50_eur2_addon_usd')
+    def _compute_calc_50_eur2_addon(self):
+        for rec in self:
+            if rec.calculator_type != 'calc_50_usd' or rec.calc_50_deal_variant != 'eur_addon':
+                rec.calc_50_eur2_final_rate_for_payment = 0.0
+                rec.calc_50_eur2_payment_amount_rub = 0.0
+                rec.calc_50_eur2_addon_amount_rub = 0.0
+                rec.calc_50_eur2_total_rub = 0.0
+                rec.calc_50_eur2_final_rate_incl_addon = 0.0
+                continue
+                
+            eur2_inv = rec.calc_50_eur2_invoice_amount or 0.0
+            eur2_rate = rec.calc_50_eur2_rate or 0.0
+            eur2_comm_pct = (rec.calc_50_eur2_commission_percent or 0.0) / 100.0
+
+            rec.calc_50_eur2_final_rate_for_payment = eur2_rate * (1.0 + eur2_comm_pct) if eur2_rate else 0.0
+            eur2_payment_rub = eur2_inv * rec.calc_50_eur2_final_rate_for_payment
+            rec.calc_50_eur2_payment_amount_rub = eur2_payment_rub
+
+            eur2_addon_usd = rec.calc_50_eur2_addon_usd or 0.0
+            eur2_usd_rate = rec.calc_50_eur2_usd_rate or 0.0
+            rec.calc_50_eur2_addon_amount_rub = eur2_addon_usd * eur2_usd_rate
+            rec.calc_50_eur2_total_rub = eur2_payment_rub + rec.calc_50_eur2_addon_amount_rub
+            rec.calc_50_eur2_final_rate_incl_addon = (rec.calc_50_eur2_total_rub / eur2_inv) if eur2_inv else 0.0
+
+    # ====================================
+    # CALCULATOR SPREAD COMPUTE METHODS
+    # ====================================
+
+    @api.depends('calculator_type', 'calc_spread_cbr_usd_rub', 'calc_spread_cbr_cny_rub', 'calc_spread_xe_usd_cny', 'calc_spread_amount_usd')
+    def _compute_calc_spread(self):
+        for rec in self:
+            if rec.calculator_type != 'calc_spread':
+                # Сбрасываем все поля если калькулятор не выбран
+                rec.calc_spread_calculated_usd_rub = 0.0
+                rec.calc_spread_absolute = 0.0
+                rec.calc_spread_percent = 0.0
+                rec.calc_spread_profit_rub = 0.0
+                rec.calc_spread_direction = False
+                continue
+                
+            cbr_usd = rec.calc_spread_cbr_usd_rub or 0.0
+            cbr_cny = rec.calc_spread_cbr_cny_rub or 0.0
+            xe_usd_cny = rec.calc_spread_xe_usd_cny or 0.0
+            amount_usd = rec.calc_spread_amount_usd or 0.0
+            
+            # Рассчитываем USD/RUB через юань: CBR CNY/RUB * XE USD/CNY
+            rec.calc_spread_calculated_usd_rub = cbr_cny * xe_usd_cny
+            
+            # Спред по новой формуле: CBR(USD/RUB) - CBR(CNY/RUB) * XE
+            rec.calc_spread_absolute = cbr_usd - (cbr_cny * xe_usd_cny)
+            
+            # Спред в процентах от CBR USD/RUB (widget="percentage" умножит на 100 автоматически)
+            rec.calc_spread_percent = (rec.calc_spread_absolute / cbr_usd) if cbr_usd else 0.0
+            
+            # Прибыль от спреда при заданной сумме операции
+            rec.calc_spread_profit_rub = rec.calc_spread_absolute * amount_usd
+            
+            # Направление спреда
+            if rec.calc_spread_absolute > 0:
+                rec.calc_spread_direction = 'CBR USD выгоднее (положительный спред)'
+            elif rec.calc_spread_absolute < 0:
+                rec.calc_spread_direction = 'Через юань выгоднее (отрицательный спред)'
+            else:
+                rec.calc_spread_direction = 'Курсы равны'
+
+    # ====================================
+    # CALCULATOR FIXED FEE COMPUTE METHODS
+    # ====================================
+
+    @api.depends('calculator_type', 'calc_fixed_real_amount', 'calc_fixed_real_cb_rate', 'calc_fixed_general_percent_rate', 'calc_fixed_our_percent_rate')
+    def _compute_calc_fixed_real_fields(self):
+        for record in self:
+            if record.calculator_type != 'calc_fixed_fee':
+                record.calc_fixed_real_rub_amount = 0
+                record.calc_fixed_general_percent_amount = 0
+                record.calc_fixed_real_rub_total = 0
+                record.calc_fixed_our_percent_amount = 0
+                continue
+                
+            # Сумма руб реальный = "Сумма реальный" * "Курс ЦБ реальный"
+            if record.calc_fixed_real_amount and record.calc_fixed_real_cb_rate:
+                record.calc_fixed_real_rub_amount = record.calc_fixed_real_amount * record.calc_fixed_real_cb_rate
+            else:
+                record.calc_fixed_real_rub_amount = 0
+            
+            # Общий % (сумма) = "Сумма руб реальный" * "Общий %"
+            if record.calc_fixed_real_rub_amount and record.calc_fixed_general_percent_rate:
+                record.calc_fixed_general_percent_amount = record.calc_fixed_real_rub_amount * (record.calc_fixed_general_percent_rate / 100)
+            else:
+                record.calc_fixed_general_percent_amount = 0
+                
+            # Сумма руб итог реальный = "Сумма руб реальный" + "Общий %"
+            record.calc_fixed_real_rub_total = record.calc_fixed_real_rub_amount + record.calc_fixed_general_percent_amount
+            
+            # Наш % (сумма) = "Сумма руб реальный" * "Наш %"
+            if record.calc_fixed_real_rub_amount and record.calc_fixed_our_percent_rate:
+                record.calc_fixed_our_percent_amount = record.calc_fixed_real_rub_amount * (record.calc_fixed_our_percent_rate / 100)
+            else:
+                record.calc_fixed_our_percent_amount = 0
+
+    @api.depends('calculator_type', 'calc_fixed_client_amount', 'calc_fixed_client_total_rate', 'calc_fixed_client_percent_amount')
+    def _compute_calc_fixed_client_fields(self):
+        for record in self:
+            if record.calculator_type != 'calc_fixed_fee':
+                record.calc_fixed_client_rub_amount = 0
+                record.calc_fixed_client_rub_total = 0
+                continue
+                
+            # Сумма руб клиенту = "Сумма клиент" * "Курс итог реальный"
+            if record.calc_fixed_client_amount and record.calc_fixed_client_total_rate:
+                record.calc_fixed_client_rub_amount = record.calc_fixed_client_amount * record.calc_fixed_client_total_rate
+            else:
+                record.calc_fixed_client_rub_amount = 0
+                
+            # Сумма руб итог клиенту = "Сумма руб клиенту" + "Процент"
+            record.calc_fixed_client_rub_total = record.calc_fixed_client_rub_amount + record.calc_fixed_client_percent_amount
+
+    @api.depends('calculator_type', 'calc_fixed_general_percent_amount', 'calc_fixed_client_percent_amount', 'calc_fixed_real_rub_amount', 'calc_fixed_real_amount')
+    def _compute_calc_fixed_totals(self):
+        for record in self:
+            if record.calculator_type != 'calc_fixed_fee':
+                record.calc_fixed_reward_difference = 0
+                record.calc_fixed_add_to_payment = 0
+                record.calc_fixed_final_rate = 0
+                record.calc_fixed_embed_percent = 0
+                continue
+                
+            # Разница между вознагр = "Общий %" - "Процент"
+            record.calc_fixed_reward_difference = record.calc_fixed_general_percent_amount - record.calc_fixed_client_percent_amount
+            
+            # Добавить её к телу платежа = "Сумма руб реальный" + "Разница между вознагр"
+            record.calc_fixed_add_to_payment = record.calc_fixed_real_rub_amount + record.calc_fixed_reward_difference
+            
+            # Итоговый курс = "Добавить её к телу платежа" / "Сумма реальный"
+            if record.calc_fixed_real_amount and record.calc_fixed_add_to_payment:
+                record.calc_fixed_final_rate = record.calc_fixed_add_to_payment / record.calc_fixed_real_amount
+            else:
+                record.calc_fixed_final_rate = 0
+                
+            # Зашиваем % = "Разница между вознагр" / "Сумма руб реальный"
+            if record.calc_fixed_real_rub_amount and record.calc_fixed_reward_difference:
+                record.calc_fixed_embed_percent = (record.calc_fixed_reward_difference / record.calc_fixed_real_rub_amount) * 100
+            else:
+                record.calc_fixed_embed_percent = 0
+
+    # ====================================
+    # CALCULATOR USD ALL COMPUTE METHODS
+    # ====================================
+
+    @api.depends('calculator_type', 'calc_usd_all_mode', 'calc_usd_all_currency_code', 'calc_usd_all_amount', 'calc_usd_all_xe', 'calc_usd_all_addition', 'calc_usd_all_reward_percent')
+    def _compute_calc_usd_all_percent_mode(self):
+        for rec in self:
+            if rec.calculator_type != 'calc_usd_all':
+                rec.calc_usd_all_usd_equivalent = 0.0
+                rec.calc_usd_all_addition_percent = 0.0
+                rec.calc_usd_all_total_percent = 0.0
+                continue
+                
+            usd_equivalent = 0.0
+            addition_percent = 0.0
+            total_percent = 0.0
+
+            if rec.calc_usd_all_mode == "percent":
+                # Эквивалент $ нужен лишь для CNY/EUR; для USD оставим 0
+                if rec.calc_usd_all_currency_code in ("CNY", "EUR"):
+                    usd_equivalent = (rec.calc_usd_all_amount or 0.0) * (rec.calc_usd_all_xe or 0.0)
+                # База для надбавки в %
+                base = rec.calc_usd_all_amount if rec.calc_usd_all_currency_code == "USD" else usd_equivalent
+                if base:
+                    addition_percent = (rec.calc_usd_all_addition or 0.0) / base * 100.0
+                total_percent = (rec.calc_usd_all_reward_percent or 0.0) + addition_percent
+
+            rec.calc_usd_all_usd_equivalent = usd_equivalent
+            rec.calc_usd_all_addition_percent = addition_percent
+            rec.calc_usd_all_total_percent = total_percent
+
+    @api.depends('calculator_type', 'calc_usd_all_mode', 'calc_usd_all_currency_code', 'calc_usd_all_real_rate', 'calc_usd_all_usd_rate', 'calc_usd_all_addition_usd', 'calc_usd_all_amount')
+    def _compute_calc_usd_all_rate_mode(self):
+        for rec in self:
+            if rec.calculator_type != 'calc_usd_all':
+                rec.calc_usd_all_surcharge_sum_rub = 0.0
+                rec.calc_usd_all_total_rate = 0.0
+                continue
+                
+            surcharge_sum_rub = 0.0
+            total_rate = 0.0
+            if rec.calc_usd_all_mode == "rate":
+                if rec.calc_usd_all_currency_code == "USD":
+                    surcharge_sum_rub = (rec.calc_usd_all_real_rate or 0.0) * (rec.calc_usd_all_addition_usd or 0.0)
+                else:
+                    # Для CNY/EUR используем курс USD → RUB
+                    surcharge_sum_rub = (rec.calc_usd_all_usd_rate or 0.0) * (rec.calc_usd_all_addition_usd or 0.0)
+                # Итоговый курс: реал + надбавка в рублях на единицу товара
+                if rec.calc_usd_all_amount:
+                    total_rate = (rec.calc_usd_all_real_rate or 0.0) + (surcharge_sum_rub / rec.calc_usd_all_amount)
+                else:
+                    total_rate = rec.calc_usd_all_real_rate or 0.0
+            rec.calc_usd_all_surcharge_sum_rub = surcharge_sum_rub
+            rec.calc_usd_all_total_rate = total_rate
+
+    @api.depends('calculator_type', 'calc_usd_all_mode', 'calc_usd_all_amount', 'calc_usd_all_rate', 'calc_usd_all_total_rate', 'calc_usd_all_total_percent', 'calc_usd_all_reward_percent')
+    def _compute_calc_usd_all_results(self):
+        for rec in self:
+            if rec.calculator_type != 'calc_usd_all':
+                rec.calc_usd_all_request_amount_rub = 0.0
+                rec.calc_usd_all_reward_rub = 0.0
+                rec.calc_usd_all_total_rub = 0.0
+                continue
+                
+            request_amount_rub = 0.0
+            reward_rub = 0.0
+            total_rub = 0.0
+
+            if rec.calc_usd_all_mode == "percent":
+                request_amount_rub = (rec.calc_usd_all_amount or 0.0) * (rec.calc_usd_all_rate or 0.0)
+                reward_rub = request_amount_rub * ((rec.calc_usd_all_total_percent or 0.0) / 100.0)
+            else:
+                request_amount_rub = (rec.calc_usd_all_amount or 0.0) * (rec.calc_usd_all_total_rate or 0.0)
+                reward_rub = request_amount_rub * ((rec.calc_usd_all_reward_percent or 0.0) / 100.0)
+
+            total_rub = request_amount_rub + reward_rub
+
+            rec.calc_usd_all_request_amount_rub = request_amount_rub
+            rec.calc_usd_all_reward_rub = reward_rub
+            rec.calc_usd_all_total_rub = total_rub
