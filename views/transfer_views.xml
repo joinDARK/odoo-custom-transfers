@@ -90,13 +90,13 @@
                             <group>
                                 <div class="o-form-group-2">
                                     <group>
-                                        <field name="sender_id" />
-                                        <field name="sender_payer_id" />
+                                        <field name="sender_id" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="sender_payer_id" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                         <field name="sender_wallet_id" />
                                     </group>
                                     <group>
-                                        <field name="receiver_id" />
-                                        <field name="receiver_payer_id" />
+                                        <field name="receiver_id" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="receiver_payer_id" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                         <field name="receiver_wallet_id" />
                                     </group>
                                     <group>
@@ -122,9 +122,8 @@
                             <group>
                                 <div class="o-form-group-2">
                                     <group>
-                                        <field name="intermediary_1_id" invisible="not is_complex" />
-                                        <field name="intermediary_1_payer_id"
-                                            invisible="not is_complex" />
+                                        <field name="intermediary_1_id" invisible="not is_complex" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="intermediary_1_payer_id" invisible="not is_complex" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                         <field name="intermediary_1_wallet_id"
                                             invisible="not is_complex" />
                                         <field name="intermediary_1_commission_percent"
@@ -133,9 +132,8 @@
                                         <field name="intermediary_1_sum" invisible="not is_complex" />
                                     </group>
                                     <group>
-                                        <field name="intermediary_2_id" invisible="not is_complex" />
-                                        <field name="intermediary_2_payer_id"
-                                            invisible="not is_complex" />
+                                        <field name="intermediary_2_id" invisible="not is_complex" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="intermediary_2_payer_id" invisible="not is_complex" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                         <field name="intermediary_2_wallet_id"
                                             invisible="not is_complex" />
                                         <field name="intermediary_2_commission_percent"
@@ -156,11 +154,11 @@
                             <group>
                                 <div class="o-form-group-2">
                                     <group>
-                                        <field name="royalty_recipient_1" />
-                                        <field name="royalty_recipient_2" />
-                                        <field name="royalty_recipient_3" />
-                                        <field name="royalty_recipient_4" />
-                                        <field name="royalty_recipient_5" />
+                                        <field name="royalty_recipient_1" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_2" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_3" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_4" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_5" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                     </group>
                                     <group>
                                         <field name="royalty_percent_1" widget="percentage"/>
@@ -188,8 +186,8 @@
                         
                                 <!-- Правая колонка: получатель -->
                                 <group col="1">
-                                    <field name="receiver_id_accrual"/>
-                                    <field name="receiver_payer_id_accrual"/>
+                                    <field name="receiver_id_accrual" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                    <field name="receiver_payer_id_accrual" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                     <field name="receiver_wallet_id_accrual"/>
                                 </group>
                             </group>
