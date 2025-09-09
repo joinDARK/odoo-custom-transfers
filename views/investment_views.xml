@@ -97,12 +97,12 @@
                             <group>
                                 <div class="o-form-group-2">
                                     <group>
-                                        <field name="sender"/>
-                                        <field name="payer_sender"/>
+                                        <field name="sender" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="payer_sender" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                     </group>
                                     <group>
-                                        <field name="receiver"/>
-                                        <field name="payer_receiver"/>
+                                        <field name="receiver" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="payer_receiver" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                     </group>
                                 </div>
                             </group>
@@ -176,11 +176,11 @@
                             <group>
                                 <div class="o-form-group">
                                     <group>
-                                        <field name="royalty_recipient_1"/>
-                                        <field name="royalty_recipient_2"/>
-                                        <field name="royalty_recipient_3"/>
-                                        <field name="royalty_recipient_4"/>
-                                        <field name="royalty_recipient_5"/>
+                                        <field name="royalty_recipient_1" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_2" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_3" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_4" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_5" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                     </group>
                                     <group>
                                         <field name="percent_1"/>

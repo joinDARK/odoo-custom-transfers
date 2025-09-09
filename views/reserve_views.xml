@@ -33,14 +33,14 @@
                             <group>
                                 <div class="o-form-group-2">
                                     <group string="Отправитель">
-                                        <field name="sender_id"/>
-                                        <field name="sender_payer_id" domain="[('contragents_ids', 'in', sender_id)]"/>
+                                        <field name="sender_id" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="sender_payer_id" domain="[('contragents_ids', 'in', sender_id)]" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                         <field name="commision_percent_1" widget="percentage" options="{'rounding': 2}"/>
                                         <field name="commision_amount_1" readonly="1"/>
                                     </group>
                                     <group string="Получатель">
-                                        <field name="receiver_id"/>
-                                        <field name="receiver_payer_id" domain="[('contragents_ids', 'in', receiver_id)]"/>
+                                        <field name="receiver_id" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="receiver_payer_id" domain="[('contragents_ids', 'in', receiver_id)]" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                         <field name="commision_percent_2" widget="percentage" options="{'rounding': 2}"/>
                                         <field name="commision_amount_2" readonly="1"/>
                                     </group>
@@ -84,11 +84,11 @@
                                 <div class="o-form-group">
                                     <group>        
                                     <!-- Прячем поля роялти, если галка has_royalti не стоит -->
-                                        <field name="royalty_recipient_1"/>
-                                        <field name="royalty_recipient_2"/>
-                                        <field name="royalty_recipient_3"/>
-                                        <field name="royalty_recipient_4"/>
-                                        <field name="royalty_recipient_5"/>
+                                        <field name="royalty_recipient_1" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_2" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_3" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_4" options="{'no_quick_create': true, 'no_create_edit': false}"/>
+                                        <field name="royalty_recipient_5" options="{'no_quick_create': true, 'no_create_edit': false}"/>
                                     </group>
                                     <group>
                                         <field name="royalty_percent_1" widget="percentage"/>
