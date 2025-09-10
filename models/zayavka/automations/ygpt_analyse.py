@@ -114,6 +114,8 @@ FIELD_MAPPING = {
     'rate_fixation_date': 'rate_fixation_date', # Дата фиксации курса
 }
 
+TIMEOUT = 120
+
 def _get_yandex_gpt_config(env, prompt_type=None):
     """Возвращает конфиг YandexGPT из системных параметров с фолбэком к ENV."""
     try:
@@ -211,7 +213,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
             }
 
             headers = _make_headers(cfg['api_key'], cfg['folder_id'])
-            response = requests.post(URL, headers=headers, json=data, timeout=30)
+            response = requests.post(URL, headers=headers, json=data, timeout=TIMEOUT)
             
             if response.status_code == 200:
                 result = response.json()
@@ -1222,7 +1224,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 "content": image_info['base64']
             }
 
-            response = requests.post(url=OCR_URL, headers=headers, data=json.dumps(data), timeout=60)
+            response = requests.post(url=OCR_URL, headers=headers, data=json.dumps(data), timeout=TIMEOUT)
             
             if response.status_code == 200:
                 result = response.json()
@@ -2077,7 +2079,7 @@ class ZayavkaYandexGPTAnalyse(models.Model):
                 'Content-Type': 'application/json'
             }
 
-            response = requests.post(URL, headers=headers, json=data, timeout=60)
+            response = requests.post(URL, headers=headers, json=data, timeout=TIMEOUT)
             
             if response.status_code == 200:
                 result = response.json()
