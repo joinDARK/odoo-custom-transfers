@@ -1741,3 +1741,29 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.subagent_payer_ids = False
                 rec.domain_return_payer_subagent = []
+
+    @api.depends('client_currency_bought_real', 'kupili_valyutu_sber_real', 'kupili_valyutu_sovok_real','fin_res_client_real', 'fin_res_sovok_real', 'fin_res_sber_real', 'is_sberbank_contragent', 'is_sovcombank_contragent', 'agent_id', 'currency', 'amount')
+    def _compute_percent_profitability(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                fin_res = rec.fin_res_sber_real
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                fin_res = rec.fin_res_sovok_real
+            else:
+                fin_res = rec.fin_res_client_real
+
+            if rec.agent_id and rec.agent_id.name == 'Тезер' or rec.currency == 'usdt':
+                num2 = rec.amount
+            else:
+                if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                    num2 = rec.kupili_valyutu_sber_real
+                elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                    num2 = rec.kupili_valyutu_sovok_real
+                else:
+                    fin_res = rec.client_currency_bought_real
+
+            # Проверка на деление на ноль
+            if num2 and num2 != 0:
+                rec.percent_profitability = fin_res / num2
+            else:
+                rec.percent_profitability = 0.0

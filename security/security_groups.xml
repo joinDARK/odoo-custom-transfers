@@ -85,4 +85,39 @@
         <field name="comment">Группа для Алины: права менеджера + расширенный доступ к файлам всех заявок</field>
     </record>
 
+    <!-- Группа для Веры финдир: доступ к аналитике -->
+    <record id="group_amanat_vera_findir" model="res.groups">
+        <field name="name">Вера финдир - аналитика</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="category_id" ref="base.module_category_amanat"/>
+        <field name="comment">Группа для Веры финдир: полный доступ к вкладке Анализ</field>
+    </record>
+
+    <!-- Группа для Венеры: доступ к аналитике -->
+    <record id="group_amanat_venera_analytics" model="res.groups">
+        <field name="name">Венера - аналитика</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="category_id" ref="base.module_category_amanat"/>
+        <field name="comment">Группа для Венеры: полный доступ к вкладке Анализ</field>
+    </record>
+
+    <!-- Группа для Халиды: доступ к аналитике -->
+    <record id="group_amanat_khalida_analytics" model="res.groups">
+        <field name="name">Халида - аналитика</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="category_id" ref="base.module_category_amanat"/>
+        <field name="comment">Группа для Халиды: полный доступ к вкладке Анализ</field>
+    </record>
+
+    <!-- Группа для Элины: менеджер с доступом к дашборду фикс заявок -->
+    <record id="group_amanat_elina_manager_dashboard" model="res.groups">
+        <field name="name">Элина - менеджер дашборд</field>
+        <field name="implied_ids" eval="[(4, ref('amanat.group_amanat_manager'))]"/>
+        <field name="category_id" ref="base.module_category_amanat"/>
+        <field name="comment">Группа для Элины: права менеджера + доступ к дашборду Заявки фикс</field>
+    </record>
+
+    <!-- Обновляем группу для Алины для доступа к дашборду фикс заявок -->
+    <!-- Алина уже имеет группу group_amanat_alina_manager_files с правами менеджера -->
+
 </odoo>

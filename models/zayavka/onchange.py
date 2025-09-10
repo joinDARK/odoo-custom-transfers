@@ -7,6 +7,38 @@ _logger = logging.getLogger(__name__)
 class ZayavkaOnchange(models.Model):
     _inherit = 'amanat.zayavka'
 
+    @api.onchange('manager_ids')
+    def _onchange_manager_ids(self):
+        if self.manager_ids:
+            similar_managers = self.search([
+                ('manager_ids', 'in', self.manager_ids.ids),
+                ('checker_ids', '!=', False)
+            ])
+
+            _logger.info(f"Найдено {len(similar_managers)} заявок с менеджером {self.manager_ids.name}")
+
+            if similar_managers:
+                # Получаем все checker_ids из похожих заявок
+                all_checkers = []
+                for manager in similar_managers:
+                    if manager.checker_ids:
+                        all_checkers.extend(manager.checker_ids.ids)
+
+                if all_checkers:
+                    checker_counter = Counter(all_checkers)
+                    most_common_checker_id, frequency = checker_counter.most_common(1)[0]
+
+                    # Присваиваем значение Many2many полю с помощью команды (6, 0, [ids])
+                    self.checker_ids = [(6, 0, [most_common_checker_id])]
+
+                    most_common_checker = self.env['amanat.manager'].browse(most_common_checker_id)
+                    _logger.info(f"Автоматически установлен проверяющий '{most_common_checker.name}' "
+                                f"(встречается в {frequency} из {len(similar_managers)} заявок)")
+                else:
+                    _logger.info("Не найдено проверяющих менеджеров в похожих заявках")
+            else:
+                _logger.info(f"Не найдено заявок с менеджером {self.manager_ids.name}")
+
     @api.onchange('contragent_id')
     def _onchange_contragent_id(self):
         """

@@ -2088,7 +2088,7 @@ class Zayavka(models.Model, AmanatBaseModel):
     export_agent_flag = fields.Boolean(string="Экспорт/Убираем агентское", tracking=True, default=False)
 
     fin_entry_check = fields.Boolean(
-        string="Галочка вход фин",
+        string="Обновить оплачено валюта поставщику",
         tracking=True,
         default=False,
     )
@@ -3540,3 +3540,9 @@ class Zayavka(models.Model, AmanatBaseModel):
             rec.calc_usd_all_request_amount_rub = request_amount_rub
             rec.calc_usd_all_reward_rub = reward_rub
             rec.calc_usd_all_total_rub = total_rub
+
+    percent_profitability = fields.Float(
+        string='% рентабельности', 
+        digits=(16, 6), 
+        compute='_compute_percent_profitability'
+    )

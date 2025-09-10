@@ -19,14 +19,14 @@
     /> -->
 
     <!-- Меню для аналитического дашборда -->
-    <!-- <menuitem 
+    <menuitem 
         id="amanat_menu_analytics_dashboard" 
-        name="Аналитика"
+        name="Анализ"
         parent="amanat_menu_root"
         action="action_amanat_analytics_dashboard_js"
         sequence="1"
-        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager"
-    /> -->
+        groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_vera_findir,amanat.group_amanat_venera_analytics,amanat.group_amanat_khalida_analytics"
+    />
 
     <!-- Группировака "Основное"-->
     <menuitem 

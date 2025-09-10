@@ -188,12 +188,7 @@ class ZayavkaMethods(models.Model):
         if 'zayavka_attachments' in vals:
             for rec in self:
                 rec.zayavka_analyse_with_yandex_gpt()
-                rec._duplicate_attachments_to_output()
-        
-        if 'payment_date' in vals:
-            for rec in self:
-                _logger.info(f"Изменено поле 'payment_date' для заявки {rec.id}")
-                rec.status = '6'
+                # rec._duplicate_attachments_to_output()  # Отключено дублирование файлов
 
         if 'screen_sber_attachments' in vals:
             for rec in self:
@@ -406,7 +401,7 @@ class ZayavkaMethods(models.Model):
 
         if vals.get('zayavka_attachments'):
             res.zayavka_analyse_with_yandex_gpt()
-            res._duplicate_attachments_to_output()
+            # res._duplicate_attachments_to_output()  # Отключено дублирование файлов
 
         if vals.get('screen_sber_attachments'):
             res.analyze_screen_sber_images_with_yandex_gpt()
@@ -423,10 +418,6 @@ class ZayavkaMethods(models.Model):
 
         if vals.get('assignment_individual_attachments'):
             res.analyze_assignment_individual_with_yandex_gpt()
-
-        if vals.get('payment_date'):
-            _logger.info(f"Изменено поле 'payment_date' для заявки {res.id}")
-            res.status = '6'
         
         # Изменение статуса при создании с подписанным поручением
         if vals.get('assignment_end_attachments'):
@@ -942,6 +933,10 @@ class ZayavkaMethods(models.Model):
                 
                 # Обновляем запись для автообновления интерфейса
                 self.env['amanat.zayavka'].browse(self.id).invalidate_recordset()
+
+                self.status = '6'
+                if not self.payment_date:
+                    self.payment_date = fields.Date.today()
                 
                 _logger.info(f"[ЗАЯВЛЕНИЕ] ✅ Документ успешно сгенерирован: {attachment.name}")
                 

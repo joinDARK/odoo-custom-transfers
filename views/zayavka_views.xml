@@ -1453,6 +1453,9 @@
                   </group>
                 </div>
               </group>
+              <group string="% рентабельности">
+                <field name="percent_profitability" widget="percentage" />
+              </group>
             </page>
             <page string="Финансовый расчет" invisible="not is_sberbank_contragent"
               groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer">
@@ -1680,6 +1683,9 @@
                     <field name="fin_res_sber_real_rub" />
                   </group>
                 </div>
+              </group>
+              <group string="% рентабельности">
+                <field name="percent_profitability" widget="percentage" />
               </group>
             </page>
             <page string="Финансовый расчет"
@@ -1910,6 +1916,9 @@
                   </group>
                 </div>
               </group>
+              <group string="% рентабельности">
+                <field name="percent_profitability" widget="percentage" />
+              </group>
             </page>
             <page string="Нераспределенные"
               groups="!amanat.group_amanat_manager,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director,!amanat.group_amanat_treasurer">
@@ -2090,6 +2099,23 @@
                decoration-danger="1"
                invisible="not show_red_stripe_for_ilzira_zayavka"
                readonly="1" width="150"/>
+        <field name="id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="for_khalida_temp" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="fin_entry_check" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="send_to_reconciliation" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="subagent_ids" widget="many2many_tags" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="subagent_payer_ids" widget="many2many_tags" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="hand_reward_percent" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="hidden_commission" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="jess_rate_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="deal_closed_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="conversion_expenses_currency" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="payment_order_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="money_cost_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="expense_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="price_list_carrying_out_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="price_list_profit_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="price_list_partners_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field width="200" name="date_placement" groups="!amanat.group_amanat_treasurer" />
         <field width="200" name="zayavka_num" />
         <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer"/>
