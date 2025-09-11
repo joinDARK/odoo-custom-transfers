@@ -3546,3 +3546,35 @@ class Zayavka(models.Model, AmanatBaseModel):
         digits=(16, 6), 
         compute='_compute_percent_profitability'
     )
+
+    tmp_order_rf = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Расход платежа по РФ',
+        compute='_compute_tmp_order_rf'
+    )
+
+    tmp_sebestoimost_denej = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Себестоимость денег в валюте заявки',
+        compute='_compute_tmp_sebestoimost_denej'
+    )
+
+    tmp_operating_expenses = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Расход на операционную деятельность в валюте заявки',
+        compute='_compute_tmp_operating_expenses'
+    )
+
+    tmp_payment_cost = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Расход за проведение платежа',
+        compute='_compute_tmp_payment_cost'
+    )
+
+    tmp_kupili_valyutu = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Купили валюту в валюте заявки',
+        compute='_compute_tmp_kupili_valyutu'
+    )
+
+    tmp_fin_res = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Фин рез в валюте заявки',
+        compute='_compute_tmp_fin_res'
+    )
+
+    

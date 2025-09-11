@@ -1767,3 +1767,63 @@ class ZayavkaComputes(models.Model):
                 rec.percent_profitability = fin_res / num2
             else:
                 rec.percent_profitability = 0.0
+
+    @api.depends('payment_order_rf_client', 'payment_order_rf_sovok', 'payment_order_rf_sber', 'is_sberbank_contragent', 'is_sovcombank_contragent')
+    def _compute_tmp_order_rf(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_order_rf = rec.payment_order_rf_sber
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_order_rf = rec.payment_order_rf_sovok
+            else:
+                rec.tmp_order_rf = rec.payment_order_rf_client
+
+    @api.depends('sebestoimost_denej_sber_real', 'sebestoimost_denej_sovok_real', 'cost_of_money_client_real', 'is_sberbank_contragent', 'is_sovcombank_contragent')
+    def _compute_tmp_sebestoimost_denej(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_sebestoimost_denej = rec.sebestoimost_denej_sber_real
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_sebestoimost_denej = rec.sebestoimost_denej_sovok_real
+            else:
+                rec.tmp_sebestoimost_denej = rec.cost_of_money_client_real
+
+    @api.depends('operating_expenses_sovok_real', 'sber_operating_expenses_real', 'client_real_operating_expenses', 'is_sberbank_contragent', 'is_sovcombank_contragent')
+    def _compute_tmp_operating_expenses(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_operating_expenses = rec.sber_operating_expenses_real
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_operating_expenses = rec.operating_expenses_sovok_real
+            else:
+                rec.tmp_operating_expenses = rec.client_real_operating_expenses
+
+    @api.depends('payment_cost_sovok', 'sber_payment_cost', 'client_payment_cost', 'is_sberbank_contragent', 'is_sovcombank_contragent')
+    def _compute_tmp_payment_cost(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_payment_cost = rec.sber_payment_cost
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_payment_cost = rec.payment_cost_sovok
+            else:
+                rec.tmp_payment_cost = rec.client_payment_cost
+
+    @api.depends('kupili_valyutu_sber_real', 'kupili_valyutu_sovok_real', 'client_currency_bought_real', 'is_sberbank_contragent', 'is_sovcombank_contragent')
+    def _compute_tmp_kupili_valyutu(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_kupili_valyutu = rec.kupili_valyutu_sber_real
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_kupili_valyutu = rec.kupili_valyutu_sovok_real
+            else:
+                rec.tmp_kupili_valyutu = rec.client_currency_bought_real
+
+    @api.depends('fin_res_sber_real', 'fin_res_sovok_real', 'fin_res_client_real', 'is_sberbank_contragent', 'is_sovcombank_contragent')
+    def _compute_tmp_fin_res(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_fin_res = rec.fin_res_sber_real
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_fin_res = rec.fin_res_sovok_real
+            else:
+                rec.tmp_fin_res = rec.fin_res_client_real

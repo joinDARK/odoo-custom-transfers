@@ -2107,18 +2107,29 @@
         <field name="subagent_payer_ids" widget="many2many_tags" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="hand_reward_percent" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="hidden_commission" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="jess_rate_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="deal_closed_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="conversion_expenses_currency" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="payment_order_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_order_rf" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="money_cost_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_sebestoimost_denej" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="expense_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_operating_expenses" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="price_list_carrying_out_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_payment_cost" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="price_list_profit_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="payer_profit_currency" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="price_list_partners_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="hidden_partner_commission_real" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_kupili_valyutu" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_fin_res" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="percent_profitability" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="kassa_name" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="received_on_our_pc" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="supplier_currency_paid_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="supplier_currency_received_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field width="200" name="date_placement" groups="!amanat.group_amanat_treasurer" />
         <field width="200" name="zayavka_num" />
-        <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="date_agent_on_pc" />
         <field width="200" name="contragent_id" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="agent_id" />
@@ -2131,7 +2142,7 @@
         <field width="200" name="application_amount_rub_contract" />
         <field width="200" name="contract_reward" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="total_fact" groups="amanat.group_amanat_treasurer"/>
-        <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer"/>
+        <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field width="200" name="bank_vypiska" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="extract_delivery_ids" widget="many2many_tags" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="payment_conditions" groups="!amanat.group_amanat_treasurer"/>
