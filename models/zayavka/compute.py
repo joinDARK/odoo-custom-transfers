@@ -1760,7 +1760,7 @@ class ZayavkaComputes(models.Model):
                 elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
                     num2 = rec.kupili_valyutu_sovok_real
                 else:
-                    fin_res = rec.client_currency_bought_real
+                    num2 = rec.client_currency_bought_real
 
             # Проверка на деление на ноль
             if num2 and num2 != 0:
