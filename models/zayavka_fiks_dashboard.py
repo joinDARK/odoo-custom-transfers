@@ -150,16 +150,15 @@ class ZayavkaFiksDashboard(models.Model):
             if 'amount' in model_fields:
                 available_read_fields.append('amount:sum')
             
-            # Приоритет курса: hidden_rate -> effective_rate -> rate_field
+            # Временно добавляем все поля курса для диагностики
             if 'hidden_rate' in model_fields:
                 available_read_fields.append('hidden_rate:avg')
-                _logger.info("Используется hidden_rate для средних курсов")
-            elif 'effective_rate' in model_fields:
+            if 'effective_rate' in model_fields:
                 available_read_fields.append('effective_rate:avg')
-                _logger.info("Используется effective_rate для средних курсов")
-            elif 'rate_field' in model_fields:
+            if 'rate_field' in model_fields:
                 available_read_fields.append('rate_field:avg')
-                _logger.info("Используется rate_field для средних курсов")
+                
+            _logger.info(f"Используемые поля для агрегации: {available_read_fields}")
             
             # Фильтры для исключения кэш валют
             exclude_currencies = [
@@ -209,14 +208,24 @@ class ZayavkaFiksDashboard(models.Model):
                         
                     amount_sum = group.get('amount', 0) or 0
                     
-                    # Пробуем получить hidden_rate, потом effective_rate, потом rate_field
-                    rate_avg = 0
-                    if 'hidden_rate' in group:
-                        rate_avg = group.get('hidden_rate', 0) or 0
-                    elif 'effective_rate' in group:
-                        rate_avg = group.get('effective_rate', 0) or 0
-                    elif 'rate_field' in group:
-                        rate_avg = group.get('rate_field', 0) or 0
+                    # Получаем курс с приоритетом hidden_rate, но с fallback
+                    hidden_rate_val = group.get('hidden_rate', 0) or 0
+                    effective_rate_val = group.get('effective_rate', 0) or 0  
+                    rate_field_val = group.get('rate_field', 0) or 0
+                    
+                    # Приоритет: hidden_rate > 0, иначе другие поля
+                    if hidden_rate_val and hidden_rate_val > 0:
+                        rate_avg = hidden_rate_val
+                        _logger.info(f"Валюта {currency}: используется hidden_rate = {rate_avg}")
+                    elif effective_rate_val and effective_rate_val > 0:
+                        rate_avg = effective_rate_val
+                        _logger.info(f"Валюта {currency}: используется effective_rate = {rate_avg}")
+                    elif rate_field_val and rate_field_val > 0:
+                        rate_avg = rate_field_val
+                        _logger.info(f"Валюта {currency}: используется rate_field = {rate_avg}")
+                    else:
+                        rate_avg = 0
+                        _logger.warning(f"Валюта {currency}: все поля курса пустые или равны 0")
                     
                     # Проверяем на валидность числовых значений
                     if not isinstance(amount_sum, (int, float)):
@@ -389,7 +398,24 @@ class ZayavkaFiksDashboard(models.Model):
                     # Безопасное получение атрибутов заказа
                     order_currency = getattr(order, 'currency', None)
                     order_amount = getattr(order, 'amount', 0)
-                    order_rate_field = getattr(order, 'hidden_rate', 0) or getattr(order, 'rate_field', 0) or getattr(order, 'effective_rate', 0)
+                    # Получаем поля курса для заявки
+                    hidden_rate = getattr(order, 'hidden_rate', 0) or 0
+                    effective_rate = getattr(order, 'effective_rate', 0) or 0
+                    rate_field = getattr(order, 'rate_field', 0) or 0
+                    
+                    # Приоритет: hidden_rate > 0, иначе другие поля
+                    if hidden_rate and hidden_rate > 0:
+                        order_rate_field = hidden_rate
+                        _logger.info(f"Заявка {getattr(order, 'id', '?')}: используется hidden_rate = {order_rate_field}")
+                    elif effective_rate and effective_rate > 0:
+                        order_rate_field = effective_rate  
+                        _logger.info(f"Заявка {getattr(order, 'id', '?')}: используется effective_rate = {order_rate_field}")
+                    elif rate_field and rate_field > 0:
+                        order_rate_field = rate_field
+                        _logger.info(f"Заявка {getattr(order, 'id', '?')}: используется rate_field = {order_rate_field}")
+                    else:
+                        order_rate_field = 0
+                        _logger.warning(f"Заявка {getattr(order, 'id', '?')}: все поля курса пустые или равны 0")
                     order_status = getattr(order, 'status', '')
                     order_deal_type = getattr(order, 'deal_type', '')
                     order_payment_conditions = getattr(order, 'payment_conditions', '')
