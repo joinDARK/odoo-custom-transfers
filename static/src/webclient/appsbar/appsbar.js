@@ -454,6 +454,7 @@ export class AppsBar extends Component {
             ];
         }
 
+
         if (this.state.userGroups.is_fin_manager_jess) {
             return [
                 {
@@ -563,7 +564,14 @@ export class AppsBar extends Component {
                 {
                     name: "Анализ",
                     items: [
-                        { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
+                        // Если есть права на аналитику - показать все три дашборда
+                        ...(this.state.userGroups.is_vera_findir || this.state.userGroups.is_venera_analytics || this.state.userGroups.is_khalida_analytics ? [
+                            { name: "Аналитический дашборд", action: "amanat.action_amanat_analytics_dashboard_js" },
+                            { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
+                            { name: "Фикс заявка", action: "amanat.zayavka_fiks_dashboard_action_menu" },
+                        ] : [
+                            { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
+                        ])
                     ],
                 },
                 {
@@ -578,6 +586,23 @@ export class AppsBar extends Component {
                         { name: "Расчет добавка в $ Совком", action: "amanat.action_amanat_calculator_50_usd" },
                         { name: "Расчет добавка в $ для всех", action: "amanat.action_amanat_calculator_wizard" },
                         { name: "Калькулятор для фиксированного вознаграждения", action: "amanat.action_amanat_calculator_fixed_fee" },
+                    ],
+                },
+            ];
+        }
+
+        // Пользователи с ТОЛЬКО аналитическими правами (без других ролей)
+        if ((this.state.userGroups.is_vera_findir || this.state.userGroups.is_venera_analytics || this.state.userGroups.is_khalida_analytics) && 
+            !this.state.userGroups.is_fin_manager && !this.state.userGroups.is_manager && 
+            !this.state.userGroups.is_admin && !this.state.userGroups.is_director && 
+            !this.state.userGroups.is_fin_manager_jess) {
+            return [
+                {
+                    name: "Анализ", 
+                    items: [
+                        { name: "Аналитический дашборд", action: "amanat.action_amanat_analytics_dashboard_js" },
+                        { name: "Дашборд", action: "amanat.action_amanat_dashboard_js" },
+                        { name: "Фикс заявка", action: "amanat.zayavka_fiks_dashboard_action_menu" },
                     ],
                 },
             ];

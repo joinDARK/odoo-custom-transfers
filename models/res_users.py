@@ -56,6 +56,12 @@ class ResUsers(models.Model):
             'is_treasurer': user.has_group('amanat.group_amanat_treasurer'),
             'is_dilara': user.name == 'Диляра',  # Добавляем проверку имени пользователя
             'user_name': user.name,  # Добавляем имя пользователя для отладки
+            # Новые группы для аналитики
+            'is_vera_findir': user.has_group('amanat.group_amanat_vera_findir'),
+            'is_venera_analytics': user.has_group('amanat.group_amanat_venera_analytics'),
+            'is_khalida_analytics': user.has_group('amanat.group_amanat_khalida_analytics'),
+            'is_elina_manager': user.has_group('amanat.group_amanat_elina_manager_dashboard'),
+            'is_alina_manager': user.has_group('amanat.group_amanat_alina_manager_files'),
         }
 
     def write(self, vals):

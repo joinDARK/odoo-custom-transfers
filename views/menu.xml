@@ -33,7 +33,7 @@
         id="amanat_menu_main_group" 
         name="Основные" 
         parent="amanat_menu_root"
-        sequence="1"
+        sequence="10"
         groups="base.group_system,amanat.group_amanat_admin,amanat.group_amanat_senior_manager,amanat.group_amanat_inspector,amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager"
     />
 
