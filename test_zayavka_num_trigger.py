@@ -60,3 +60,4 @@ if __name__ == '__main__':
         print("Пример: python3 odoo-bin shell -d your_database")
         print(">>> exec(open('/path/to/test_zayavka_num_trigger.py').read())")
 
+

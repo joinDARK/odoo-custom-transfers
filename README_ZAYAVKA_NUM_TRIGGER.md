@@ -82,3 +82,4 @@ zayavka.write({'zayavka_num': '2'})
 - **Методы**: переопределены `create()` и `write()`
 - **Логгер**: `logging.getLogger(__name__)`
 
+
