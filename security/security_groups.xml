@@ -117,6 +117,14 @@
         <field name="comment">Группа для Элины: права менеджера + доступ к дашборду Заявки фикс</field>
     </record>
 
+    <!-- Группа для Диляры: менеджер с видимым chatter -->
+    <record id="group_amanat_manager_chatter_visible" model="res.groups">
+        <field name="name">Менеджер с видимым chatter (Диляра)</field>
+        <field name="implied_ids" eval="[(4, ref('amanat.group_amanat_manager'))]"/>
+        <field name="category_id" ref="base.module_category_amanat"/>
+        <field name="comment">Группа для Диляры: права менеджера + видимый chatter (логи)</field>
+    </record>
+
     <!-- Обновляем группу для Алины для доступа к дашборду фикс заявок -->
     <!-- Алина уже имеет группу group_amanat_alina_manager_files с правами менеджера -->
 

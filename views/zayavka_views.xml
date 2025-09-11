@@ -2046,7 +2046,14 @@
             </page>
           </notebook>
         </sheet>
+        <!-- Chatter для всех, кроме менеджеров и старших менеджеров -->
         <chatter groups="!amanat.group_amanat_manager,!amanat.group_amanat_senior_manager">
+          <field name="message_follower_ids" />
+          <field name="activity_ids" />
+          <field name="message_ids" />
+        </chatter>
+        <!-- Chatter для специальной группы менеджеров с видимым chatter -->
+        <chatter groups="amanat.group_amanat_manager_chatter_visible">
           <field name="message_follower_ids" />
           <field name="activity_ids" />
           <field name="message_ids" />
