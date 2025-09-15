@@ -557,6 +557,10 @@
                           options="{'no_create': False, 'no_open': False}" />
                       </group>
                       <group>
+                        <div class="o_inner_group d-flex">
+                          <button name="action_generate_act_report_document" type="object"
+                            string="Генерировать акт-отчет" class="btn-primary" />
+                        </div>
                         <field name="act_report_attachments" widget="amanat_attachment"
                           options="{'no_create': False, 'no_open': False} " />
                       </group>
@@ -2107,6 +2111,8 @@
                invisible="not show_red_stripe_for_ilzira_zayavka"
                readonly="1" width="150"/>
         <field name="id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="zayavka_num" />
+        <field name="manager_ids" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="for_khalida_temp" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="fin_entry_check" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="send_to_reconciliation" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
@@ -2136,7 +2142,7 @@
         <field name="supplier_currency_paid_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="supplier_currency_received_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field width="200" name="date_placement" groups="!amanat.group_amanat_treasurer" />
-        <field width="200" name="zayavka_num" />
+        
         <field width="200" name="date_agent_on_pc" />
         <field width="200" name="contragent_id" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="agent_id" />

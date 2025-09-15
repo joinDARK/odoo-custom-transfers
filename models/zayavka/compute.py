@@ -118,30 +118,30 @@ class ZayavkaComputes(models.Model):
             else:
                 record.effective_rate = 0
 
-    # @api.depends('reward_percent', 'rate_field', 'amount')
-    # def _compute_client_reward(self):
-    #     for rec in self:
-    #         rec.client_reward = rec.reward_percent * rec.rate_field * rec.amount
-    
-    @api.depends('reward_percent_in_contract', 'rate_field', 'amount')
+    @api.depends('reward_percent_in_contract', 'rate_field', 'amount', 'plus_currency')
     def _compute_client_reward(self):
         for rec in self:
-            rec.client_reward = rec.reward_percent_in_contract * rec.rate_field * rec.amount
+            reward = rec.plus_currency * rec.rate_field
+            rec.client_reward = (rec.reward_percent_in_contract * rec.rate_field * rec.amount) + reward
 
-    @api.depends('best_rate', 'hidden_commission', 'amount', 'plus_currency', 'total_client', 'rate_real')
+    @api.depends('best_rate', 'hidden_commission', 'amount', 'plus_currency', 'total_client', 'rate_real', 'hand_reward_percent', 'rate_field')
     def _compute_our_client_reward(self):
         for rec in self:
-            our_client_reward = rec.best_rate * rec.hidden_commission * (rec.amount + rec.plus_currency)
+            # Используем hidden_commission, если она > 0, иначе берем reward_percent
+            commission_to_use = rec.hidden_commission if rec.hidden_commission else (rec.hand_reward_percent or 0.0)
+            our_client_reward = rec.best_rate * commission_to_use * rec.amount
+            reward = rec.plus_currency * rec.rate_field
             _logger.info(f'our_client_reward: {our_client_reward}')
-            if rec.hidden_commission:
-                # ! Вознаграждение наше Клиент = (Курс * Скрытая комиссия * (Сумма заявки + Плюс валюта))
+
+            if rec.hidden_commission or rec.reward_percent:
+                # ! Вознаграждение наше Клиент = (Курс * (Скрытая комиссия ИЛИ % Вознаграждения) * (Сумма заявки + Плюс валюта))
                 _logger.info(f'rec.our_client_reward: {our_client_reward}')
-                rec.our_client_reward = our_client_reward
+                rec.our_client_reward = our_client_reward + reward
             else:
                 # ! Вознаграждение наше Клиент = Итого Клиент - (Курс реал * Сумма заявки + Вознаграждение наше Клиент)
                 # Считаем также, как вознаграждение не наше
                 _logger.info(f'rec.our_client_reward: {rec.total_client} - ({rec.rate_real} + {our_client_reward}) = {rec.total_client - (rec.rate_real + our_client_reward)}')
-                rec.our_client_reward = rec.total_client - (rec.rate_real + our_client_reward)
+                rec.our_client_reward = rec.total_client - (rec.rate_real + our_client_reward) + reward
 
     # Добавляем вычисляемое поле типа Json для списка ID
     @api.depends('subagent_ids')
@@ -449,7 +449,9 @@ class ZayavkaComputes(models.Model):
                         _logger.info(f"[_compute_fin_res_client_real] (Контрагент А7) ({rec.amount} * {rec.reward_percent}) - {rec.client_real_operating_expenses} - {rec.client_payment_cost} + {cross_return_delta} = {rec.fin_res_client_real}")
                     else:
                         # ! Фин рез Клиент реал = (Сумма заявки * % Вознаграждения) - Расход на операционную деятельность Клиент Реал - Расход платежа Клиент
-                        rec.fin_res_client_real = (rec.amount * rec.hidden_commission) - rec.client_real_operating_expenses - rec.client_payment_cost + cross_return_delta
+                        # Используем hidden_commission, если она > 0, иначе берем reward_percent
+                        commission_to_use = rec.hidden_commission if rec.hidden_commission else (rec.reward_percent or 0.0)
+                        rec.fin_res_client_real = (rec.amount * commission_to_use) - rec.client_real_operating_expenses - rec.client_payment_cost + cross_return_delta
                 else:
                     # ! Фин рез Клиент реал = Итого Клиент - Расход платежа Клиент - Себестоимость денег Клиент Реал - Скрытая комиссия Клиент Реал - Расход на операционную деятельность Клиент Реал - Сумма заявки - Финансовый результат клиента
                     rec.fin_res_client_real = (
@@ -474,20 +476,17 @@ class ZayavkaComputes(models.Model):
         for rec in self:
             rec.fin_res_client_real_rub = (rec.fin_res_client_real_usd or 0.0) * (rec.payer_cross_rate_rub or 0.0)
 
-    # @api.depends('reward_percent', 'rate_field', 'amount')
-    # def _compute_sber_reward(self):
-    #     for rec in self:
-    #         rec.sber_reward = rec.reward_percent * rec.rate_field * rec.amount
-
-    @api.depends('reward_percent_in_contract', 'rate_field', 'amount')
+    @api.depends('reward_percent_in_contract', 'rate_field', 'amount', 'application_amount_rub_contract', 'plus_currency')
     def _compute_sber_reward(self):
         for rec in self:
-            rec.sber_reward = rec.reward_percent_in_contract * rec.rate_field * rec.amount
+            reward = rec.plus_currency * rec.rate_field
+            rec.sber_reward = rec.reward_percent_in_contract * rec.rate_field * rec.amount + reward
 
-    @api.depends('rate_field', 'best_rate', 'amount', 'plus_currency', 'sber_reward')
+    @api.depends('rate_field', 'best_rate', 'amount', 'plus_currency', 'sber_reward', 'rate_real', 'deal_type')
     def _compute_our_sber_reward(self):
         for rec in self:
-            rec.our_sber_reward = (rec.rate_field - rec.best_rate) * (rec.amount + rec.plus_currency) + rec.sber_reward
+            reward = rec.plus_currency * rec.rate_field
+            rec.our_sber_reward = (rec.rate_field - rec.best_rate) * rec.amount + rec.sber_reward + reward
 
     @api.depends('total_sber', 'our_sber_reward', 'rate_real')
     def _compute_non_our_sber_reward(self):
@@ -744,7 +743,9 @@ class ZayavkaComputes(models.Model):
                         rec.fin_res_sber_real = (amount * rec.reward_percent) - sber_operating_expenses_real - sber_payment_cost + cross_return_delta
                     else:
                         # ! Фин рез Сбер реал = (Сумма * Скрытая комиссия) - Расход на операционную деятельность Сбер Реал - Расход платежа Сбер
-                        rec.fin_res_sber_real = (amount * rec.hidden_commission) - sber_operating_expenses_real - sber_payment_cost + cross_return_delta
+                        # Используем hidden_commission, если она > 0, иначе берем reward_percent
+                        commission_to_use = rec.hidden_commission if rec.hidden_commission else (rec.reward_percent or 0.0)
+                        rec.fin_res_sber_real = (amount * commission_to_use) - sber_operating_expenses_real - sber_payment_cost + cross_return_delta
                 else:
                     # ! Фин рез Сбер реал = Итого Сбер - Расход платежа Сбер - Себестоимость денег Сбер Реал - Скрытая комиссия Сбер Реал - Расход на операционную деятельность Сбер Реал - Сумма заявки - Финансовый результат Сбер
                     rec.fin_res_sber_real = (
@@ -768,18 +769,19 @@ class ZayavkaComputes(models.Model):
         for rec in self:
             rec.fin_res_sber_real_rub = (rec.fin_res_sber_real_usd or 0.0) * (rec.payer_cross_rate_rub or 0.0)
 
-    @api.depends('rate_field', 'amount', 'deal_type', 'best_rate')
+    @api.depends('rate_field', 'amount', 'deal_type', 'best_rate', 'plus_currency')
     def _compute_our_sovok_reward(self):
         for rec in self:
+            reward = rec.plus_currency * rec.rate_field
             if rec.deal_type == 'export':
                 _logger.info(f'rec.our_sovok_reward: ({rec.rate_field} * {rec.amount}) - ({rec.amount} * {rec.best_rate}) = {rec.rate_field * rec.amount - (rec.amount * rec.best_rate)}')
-                rec.our_sovok_reward = (rec.rate_field * rec.amount) - (rec.amount * rec.best_rate)
+                rec.our_sovok_reward = (rec.rate_field * rec.amount) - (rec.amount * rec.best_rate) + reward
             else:
                 # rec.our_sovok_reward = (rec.rate_field - rec.hand_reward_percent) - (rec.best_rate * rec.amount)
-                rec.our_sovok_reward = (rec.rate_field - rec.best_rate) * rec.amount
+                rec.our_sovok_reward = (rec.rate_field - rec.best_rate) * rec.amount + reward
 
     @api.depends('deal_type', 'our_sovok_reward')
-    def _compute_sovok_reward(self): # Здесь все нормально
+    def _compute_sovok_reward(self):
         for rec in self:
             if rec.deal_type == 'export':
                 # ! Вознаграждение по договору Совок = Вознаграждение наше Совок
@@ -1049,7 +1051,9 @@ class ZayavkaComputes(models.Model):
                         rec.fin_res_sovok_real = (amount * rec.reward_percent) - operating_expenses_sovok_real - payment_cost_sovok + cross_return_delta
                     else:
                         # ! Фин рез Совок реал = (Сумма * Скрытая комиссия) - Расход на операционную деятельность Совок Реал - Расход платежа Совок
-                        rec.fin_res_sovok_real = (amount * rec.hidden_commission) - operating_expenses_sovok_real - payment_cost_sovok + cross_return_delta
+                        # Используем hidden_commission, если она > 0, иначе берем reward_percent
+                        commission_to_use = rec.hidden_commission if rec.hidden_commission else (rec.reward_percent or 0.0)
+                        rec.fin_res_sovok_real = (amount * commission_to_use) - operating_expenses_sovok_real - payment_cost_sovok + cross_return_delta
                 else:
                     # ! Фин рез Совок реал = Итого Совок - Расход платежа Совок - Себестоимость денег Совок Реал - Скрытая комиссия Совок Реал - Расход на операционную деятельность Совок Реал - Сумма заявки - Финансовый результат Совок
                     rec.fin_res_sovok_real = (
@@ -1446,27 +1450,6 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.status_range = 'no'
 
-    # @api.depends('export_agent_flag', 'is_sovcombank_contragent', 'is_sberbank_contragent', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate', 'hand_reward_percent')
-    # def _compute_application_amount_rub_contract(self):
-    #     for record in self:
-    #         if record.deal_type == 'export':
-    #             if record.export_agent_flag:
-    #                 comp_amount_rub = record.amount * record.best_rate
-    #             else:
-    #                 comp_amount_rub = record.amount * (record.rate_field - (record.rate_field * record.hand_reward_percent))
-    #         else:
-    #             comp_amount_rub = record.amount * record.rate_field
-
-    #         if record.export_agent_flag:
-    #             if record.is_sberbank_contragent and not record.is_sovcombank_contragent:
-    #                 record.application_amount_rub_contract = comp_amount_rub - record.sber_reward
-    #             elif record.is_sovcombank_contragent and not record.is_sberbank_contragent:
-    #                 record.application_amount_rub_contract = comp_amount_rub - record.sovok_reward
-    #             else:
-    #                 record.application_amount_rub_contract = comp_amount_rub - record.client_reward
-    #         else:
-    #             record.application_amount_rub_contract = comp_amount_rub
-
     @api.depends('export_agent_flag', 'is_sovcombank_contragent', 'is_sberbank_contragent', 'amount', 'rate_field', 'sber_reward', 'sovok_reward', 'client_reward', 'deal_type', 'best_rate', 'reward_percent_in_contract')
     def _compute_application_amount_rub_contract(self):
         for record in self:
@@ -1682,10 +1665,12 @@ class ZayavkaComputes(models.Model):
 
             rec.agent_reward = amount * commission_percent * rate
 
-    @api.depends('best_rate', 'amount', 'hidden_commission')
+    @api.depends('best_rate', 'amount', 'hidden_commission', 'reward_percent')
     def _compute_actual_reward(self):
         for rec in self:
-            rec.actual_reward = (rec.best_rate or 0.0) * (rec.amount or 0.0) * ((rec.hidden_commission or 0.0) / 100)
+            # Используем hidden_commission, если она > 0, иначе берем reward_percent
+            commission_to_use = rec.hidden_commission if rec.hidden_commission else (rec.reward_percent or 0.0)
+            rec.actual_reward = (rec.best_rate or 0.0) * (rec.amount or 0.0) * (commission_to_use / 100)
 
     @api.depends('total_reward', 'actual_reward')
     def _compute_non_agent_reward(self):
@@ -1762,8 +1747,12 @@ class ZayavkaComputes(models.Model):
                 else:
                     num2 = rec.client_currency_bought_real
 
-            # Проверка на деление на ноль
-            if num2 and num2 != 0:
+            # Специальная логика для случая когда client_currency_bought_real = 0
+            if (not rec.is_sberbank_contragent and not rec.is_sovcombank_contragent and 
+                rec.client_currency_bought_real == 0 and rec.amount and rec.amount != 0):
+                rec.percent_profitability = rec.fin_res_client_real / rec.amount
+            # Проверка на деление на ноль для обычных случаев
+            elif num2 and num2 != 0:
                 rec.percent_profitability = fin_res / num2
             else:
                 rec.percent_profitability = 0.0

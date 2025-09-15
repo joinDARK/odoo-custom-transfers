@@ -119,7 +119,7 @@ class ZayavkaRuleForManagement(models.Model):
         })
 
         # Получаем дату и сумму
-        rate_fixation_date = self.rate_fixation_date
+        rate_fixation_date = self.deal_closed_date
         equivalent_sum = self.equivalent_amount_usd
         contragent = self.contragent_id
         agent = self.agent_id

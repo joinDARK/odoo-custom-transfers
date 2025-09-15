@@ -16,6 +16,17 @@ class Zayavka(models.Model, AmanatBaseModel):
         copy=False
     )
 
+    zayavka_num = fields.Char(string='№ заявки', tracking=True)
+
+    manager_ids = fields.Many2many(
+        'amanat.manager',
+        'amanat_zayavka_manager_rel',
+        'zayavka_id',
+        'manager_id',
+        string='Менеджер',
+        tracking=True
+    )
+
     status = fields.Selection(
         [
             ('1', '1. В работе'),
@@ -47,17 +58,6 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Статус',
         default='1',
         tracking=True,
-    )
-
-    zayavka_num = fields.Char(string='№ заявки', tracking=True)
-
-    manager_ids = fields.Many2many(
-        'amanat.manager',
-        'amanat_zayavka_manager_rel',
-        'zayavka_id',
-        'manager_id',
-        string='Менеджер',
-        tracking=True
     )
 
     checker_ids = fields.Many2many(
@@ -3576,5 +3576,3 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Фин рез в валюте заявки',
         compute='_compute_tmp_fin_res'
     )
-
-    
