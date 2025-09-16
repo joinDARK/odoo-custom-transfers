@@ -96,11 +96,13 @@ class Zayavka(models.Model, AmanatBaseModel):
     # GROUP: Сравнение курса
     investing_rate = fields.Float(
         string='Курс Инвестинг',
+        tracking=True,
         digits=(16, 4),
     )
 
     cb_rate = fields.Float(
         string='Курс ЦБ',
+        tracking=True,
         digits=(16, 4),
     )
 
@@ -114,16 +116,19 @@ class Zayavka(models.Model, AmanatBaseModel):
 
     exchange_rate_1 = fields.Float(
         string='Курс Биржи 1',
+        tracking=True,
         digits=(16, 4),
     )
 
     exchange_rate_2 = fields.Float(
         string='Курс Биржи 2',
+        tracking=True,
         digits=(16, 4),
     )
 
     exchange_rate_3 = fields.Float(
         string='Курс Биржи 3',
+        tracking=True,
         digits=(16, 4),
     )
 
