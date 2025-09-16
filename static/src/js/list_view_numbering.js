@@ -72,6 +72,17 @@ class ListViewNumbering {
                 vertical-align: middle !important;
             }
             
+            .amanat_row_number_footer {
+                width: 50px !important;
+                min-width: 50px !important;
+                max-width: 50px !important;
+                background-color: #f8f9fa !important;
+                border-right: 1px solid #dee2e6 !important;
+                position: sticky;
+                left: 0;
+                z-index: 9;
+            }
+            
             /* Для темной темы */
             body.o_dark .amanat_row_number_header {
                 background-color: #2f3349 !important;
@@ -82,6 +93,11 @@ class ListViewNumbering {
             body.o_dark .amanat_row_number_cell {
                 background-color: #363b4d !important;
                 color: #adb5bd !important;
+                border-color: #495057 !important;
+            }
+            
+            body.o_dark .amanat_row_number_footer {
+                background-color: #363b4d !important;
                 border-color: #495057 !important;
             }
             
@@ -125,6 +141,7 @@ class ListViewNumbering {
 
     processMutations(mutations) {
         const tablesToProcess = new Set();
+        const tablesToUpdateFooter = new Set();
         
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
@@ -138,6 +155,14 @@ class ListViewNumbering {
                         node.querySelectorAll('.o_list_table:not([data-amanat-numbered]), table.o_list_view:not([data-amanat-numbered])') : [];
                     
                     tables.forEach(table => tablesToProcess.add(table));
+                    
+                    // Проверяем, не появился ли footer для уже обработанных таблиц
+                    if (node.matches && (node.matches('tfoot') || node.matches('.o_list_footer') || node.matches('.o_list_table_footer'))) {
+                        const parentTable = node.closest('table') || node.closest('.o_list_view')?.querySelector('table');
+                        if (parentTable && parentTable.hasAttribute('data-amanat-numbered')) {
+                            tablesToUpdateFooter.add(parentTable);
+                        }
+                    }
                 }
             });
         });
@@ -147,6 +172,11 @@ class ListViewNumbering {
             if (!this.processedTables.has(table)) {
                 this.addNumberingToTable(table);
             }
+        });
+        
+        // Обновляем footer для уже обработанных таблиц
+        tablesToUpdateFooter.forEach(table => {
+            this.addFooterColumn(table);
         });
     }
 
@@ -171,6 +201,9 @@ class ListViewNumbering {
             
             // Добавляем нумерацию строк
             this.addRowNumbers(tbody);
+            
+            // Добавляем пустую ячейку в footer для правильного выравнивания сумм
+            this.addFooterColumn(table);
             
             // Отмечаем таблицу как обработанную
             table.setAttribute('data-amanat-numbered', 'true');
@@ -210,24 +243,58 @@ class ListViewNumbering {
         });
     }
 
+    addFooterColumn(table) {
+        // Ищем footer в разных возможных местах
+        const tfoot = table.querySelector('tfoot');
+        const footerRow = tfoot ? tfoot.querySelector('tr') : null;
+        
+        // Также ищем footer в виде div (в некоторых версиях Odoo)
+        const tableContainer = table.closest('.o_list_view') || table.parentElement;
+        const footerDiv = tableContainer ? tableContainer.querySelector('.o_list_footer, .o_list_table_footer') : null;
+        
+        if (footerRow && !footerRow.querySelector('.amanat_row_number_footer')) {
+            const footerTd = document.createElement('td');
+            footerTd.className = 'amanat_row_number_footer';
+            footerTd.innerHTML = '&nbsp;'; // Пустая ячейка
+            
+            footerRow.insertBefore(footerTd, footerRow.firstChild);
+        }
+        
+        if (footerDiv && !footerDiv.querySelector('.amanat_row_number_footer')) {
+            const footerCell = document.createElement('div');
+            footerCell.className = 'amanat_row_number_footer';
+            footerCell.style.display = 'inline-block';
+            footerCell.innerHTML = '&nbsp;';
+            
+            footerDiv.insertBefore(footerCell, footerDiv.firstChild);
+        }
+    }
+
     setupTableObserver(table, tbody) {
         // Отключаем предыдущий наблюдатель для этой таблицы
         if (this.tableObservers.has(table)) {
             this.tableObservers.get(table).disconnect();
         }
 
-        // Создаем новый наблюдатель только для tbody
+        // Создаем новый наблюдатель для tbody и всей таблицы (для footer)
         const tableObserver = new MutationObserver((mutations) => {
             if (this.isUpdating) return;
             
-            // Проверяем, добавились ли новые строки
+            // Проверяем, добавились ли новые строки или footer
             let hasNewRows = false;
+            let hasNewFooter = false;
+            
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === Node.ELEMENT_NODE && 
-                        node.tagName === 'TR' && 
-                        !node.hasAttribute('data-amanat-row-numbered')) {
-                        hasNewRows = true;
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        if (node.tagName === 'TR' && !node.hasAttribute('data-amanat-row-numbered')) {
+                            hasNewRows = true;
+                        }
+                        if (node.tagName === 'TFOOT' || 
+                            node.classList.contains('o_list_footer') || 
+                            node.classList.contains('o_list_table_footer')) {
+                            hasNewFooter = true;
+                        }
                     }
                 });
             });
@@ -235,11 +302,20 @@ class ListViewNumbering {
             if (hasNewRows) {
                 this.updateTableNumbers(tbody);
             }
+            if (hasNewFooter) {
+                this.addFooterColumn(table);
+            }
         });
 
+        // Наблюдаем за tbody и всей таблицей
         tableObserver.observe(tbody, {
             childList: true,
-            subtree: false // Не наблюдаем за вложенными элементами
+            subtree: false
+        });
+        
+        tableObserver.observe(table, {
+            childList: true,
+            subtree: true
         });
 
         this.tableObservers.set(table, tableObserver);

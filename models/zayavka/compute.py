@@ -1253,7 +1253,7 @@ class ZayavkaComputes(models.Model):
             else:
                 rec.payer_cross_rate_usd_auto = xe or 0.0
 
-    @api.depends('jess_rate', 'payer_cross_rate_usd_auto')
+    @api.depends('jess_rate')
     def _compute_real_post_conversion_rate(self):
         for rec in self:
             rec.real_post_conversion_rate = (rec.jess_rate or 0.0)

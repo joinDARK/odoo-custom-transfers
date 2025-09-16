@@ -117,30 +117,22 @@ class ForKhalidaAutomations(models.Model):
         
         # Подготавливаем значения для гибкого поиска
         if self.contragent_id:
-            domain.append('|')  # OR operator
             domain.append(('contragent_zayavka_id', '=', self.contragent_id.id))
-            domain.append(('contragent_zayavka_id', '=', False))
         else:
             domain.append(('contragent_zayavka_id', '=', False))
             
         if self.agent_id:
-            domain.append('|')  # OR operator
             domain.append(('agent_zayavka_id', '=', self.agent_id.id))
-            domain.append(('agent_zayavka_id', '=', False))
         else:
             domain.append(('agent_zayavka_id', '=', False))
             
         if self.client_id:
-            domain.append('|')  # OR operator
             domain.append(('client_zayavka_id', '=', self.client_id.id))
-            domain.append(('client_zayavka_id', '=', False))
         else:
             domain.append(('client_zayavka_id', '=', False))
             
         if self.currency:
-            domain.append('|')  # OR operator
             domain.append(('currency_zayavka', '=', self.currency))
-            domain.append(('currency_zayavka', '=', False))
         else:
             domain.append(('currency_zayavka', '=', False))
 
@@ -225,30 +217,22 @@ class ForKhalidaAutomations(models.Model):
         ]
 
         if self.contragent_id:
-            domain.append('|')  # OR operator
             domain.append(('contragent_zayavka_id', '=', self.contragent_id.id))
-            domain.append(('contragent_zayavka_id', '=', False))
         else:
             domain.append(('contragent_zayavka_id', '=', False))
             
         if self.agent_id:
-            domain.append('|')  # OR operator
             domain.append(('agent_zayavka_id', '=', self.agent_id.id))
-            domain.append(('agent_zayavka_id', '=', False))
         else:
             domain.append(('agent_zayavka_id', '=', False))
             
         if self.client_id:
-            domain.append('|')  # OR operator
             domain.append(('client_zayavka_id', '=', self.client_id.id))
-            domain.append(('client_zayavka_id', '=', False))
         else:
             domain.append(('client_zayavka_id', '=', False))
 
         if self.currency:
-            domain.append('|')  # OR operator
             domain.append(('currency_zayavka', '=', self.currency))
-            domain.append(('currency_zayavka', '=', False))
         else:
             domain.append(('currency_zayavka', '=', False))
 
@@ -322,30 +306,22 @@ class ForKhalidaAutomations(models.Model):
         ]
 
         if self.contragent_id:
-            domain.append('|')  # OR operator
             domain.append(('contragent_zayavka_id', '=', self.contragent_id.id))
-            domain.append(('contragent_zayavka_id', '=', False))
         else:
             domain.append(('contragent_zayavka_id', '=', False))
         
         if self.agent_id:
-            domain.append('|')  # OR operator
             domain.append(('agent_zayavka_id', '=', self.agent_id.id))
-            domain.append(('agent_zayavka_id', '=', False))
         else:
             domain.append(('agent_zayavka_id', '=', False))
             
         if self.client_id:
-            domain.append('|')  # OR operator
             domain.append(('client_zayavka_id', '=', self.client_id.id))
-            domain.append(('client_zayavka_id', '=', False))
         else:
             domain.append(('client_zayavka_id', '=', False))
             
         if self.currency:
-            domain.append('|')  # OR operator
             domain.append(('currency_zayavka', '=', self.currency))
-            domain.append(('currency_zayavka', '=', False))
         else:
             domain.append(('currency_zayavka', '=', False))
 

@@ -2104,7 +2104,6 @@
             help="Выгружает данные касс для выбранных заявок" />
         </header>
         <button type="object" name="open_form_new_tab" icon="fa-external-link" title="Открыть в новой вкладке"/>
-        <!-- Поле для Ильзиры с красным индикатором -->
         <field name="show_red_stripe_for_ilzira_zayavka" string="" 
                widget="badge" 
                decoration-danger="1"
@@ -2112,7 +2111,7 @@
                readonly="1" width="150"/>
         <field name="id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field width="200" name="zayavka_num" />
-        <field name="manager_ids" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="manager_ids" widget="many2many_tags" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="for_khalida_temp" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="fin_entry_check" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="send_to_reconciliation" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
@@ -2149,24 +2148,24 @@
         <field width="200" name="client_id" />
         <field width="200" name="inn" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="deal_type" />
-        <field width="200" name="amount"/>
+        <field width="200" name="amount" sum="Итоговая сумма"/>
         <field width="140" name="sum_from_extracts" groups="amanat.group_amanat_treasurer"/>
         <field width="140" name="waiting_for_replenishment" groups="amanat.group_amanat_treasurer"/>
-        <field width="200" name="application_amount_rub_contract" />
+        <field width="200" name="application_amount_rub_contract" sum="Итоговая сумма по курсу в рублях по договору"/>
         <field width="200" name="contract_reward" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="total_fact" groups="amanat.group_amanat_treasurer"/>
         <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field width="200" name="bank_vypiska" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="extract_delivery_ids" widget="many2many_tags" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="payment_conditions" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="usd_equivalent" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="usd_equivalent" groups="!amanat.group_amanat_treasurer" sum="Итоговая сумма в USD"/>
         <field width="200" name="xe_rate" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="currency" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="rate_field" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="reward_percent" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="rate_fixation_date" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="agent_reward" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="total_amount" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="agent_reward" groups="!amanat.group_amanat_treasurer" sum="Итоговая сумма агентского вознаграждения"/>
+        <field width="200" name="total_amount" groups="!amanat.group_amanat_treasurer" />
         <field width="200" name="best_rate" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="comment_hedge" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="best_rate_name" groups="!amanat.group_amanat_treasurer"/>

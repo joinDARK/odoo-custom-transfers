@@ -43,30 +43,22 @@ class ZayavkaRuleForManagement(models.Model):
             
             # ИСПРАВЛЕНА ЛОГИКА ДОМЕНА: ищем правила ИЛИ с конкретным значением ИЛИ с пустым полем
             if contragent:
-                domain.append('|')  # OR operator
                 domain.append(('contragent_zayavka_id', '=', contragent.id))
-                domain.append(('contragent_zayavka_id', '=', False))
             else:
                 domain.append(('contragent_zayavka_id', '=', False))
                 
             if agent:
-                domain.append('|')  # OR operator
                 domain.append(('agent_zayavka_id', '=', agent.id))
-                domain.append(('agent_zayavka_id', '=', False))
             else:
                 domain.append(('agent_zayavka_id', '=', False))
             
             if client:
-                domain.append('|')  # OR operator
                 domain.append(('client_zayavka_id', '=', client.id))
-                domain.append(('client_zayavka_id', '=', False))
             else:
                 domain.append(('client_zayavka_id', '=', False))
 
             if currency:
-                domain.append('|')  # OR operator
                 domain.append(('currency_zayavka', '=', currency))
-                domain.append(('currency_zayavka', '=', False))
             else:
                 domain.append(('currency_zayavka', '=', False))
 
