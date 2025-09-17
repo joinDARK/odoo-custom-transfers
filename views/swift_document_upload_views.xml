@@ -15,6 +15,7 @@
                 <field name="payer_subagent"/>
                 <field name="payment_date"/>
                 <field name="swift_code"/>
+                <field name="application_sequence"/>
                 <field name="zayavka_id" readonly="1"/>
             </list>
         </field>
@@ -27,6 +28,10 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <form string="SWIFT Документы">
+                <header>
+                    <button name="action_reprocess_document" type="object" string="Переобработать" class="btn-primary"/>
+                    <button name="action_test_strict_matching" type="object" string="Тест строгого поиска" class="btn-secondary"/>
+                </header>
                 <sheet>
                     <group>
                         <group string="Основная информация">
@@ -40,7 +45,10 @@
                         <group string="Дополнительная информация">
                             <field name="payment_date"/>
                             <field name="swift_code"/>
+                            <field name="application_sequence"/>
                             <field name="zayavka_id" readonly="1"/>
+                            <field name="processing_status"/>
+                            <field name="processing_notes"/>
                             <field name="create_date" readonly="1"/>
                         </group>
                     </group>
