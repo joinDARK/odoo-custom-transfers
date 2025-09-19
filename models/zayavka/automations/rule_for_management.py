@@ -1,5 +1,4 @@
-from odoo import models, fields, api
-from datetime import datetime
+from odoo import models, api
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -34,55 +33,77 @@ class ZayavkaRuleForManagement(models.Model):
 
         # 5. Поиск подходящих записей с учетом даты и суммы
         def find_matching_rule(model, date_field_start, date_field_end):
-            domain = [
+            # Сначала получаем все записи, подходящие по базовым условиям (дата и сумма)
+            base_domain = [
                 (date_field_start, '<=', deal_closed_date),
                 (date_field_end, '>=', deal_closed_date),
                 ('min_application_amount', '<=', equivalent_sum),
                 ('max_application_amount', '>=', equivalent_sum),
             ]
             
-            # ИСПРАВЛЕНА ЛОГИКА ДОМЕНА: ищем правила ИЛИ с конкретным значением ИЛИ с пустым полем
-            if contragent:
-                domain.append(('contragent_zayavka_id', '=', contragent.id))
-            else:
-                domain.append(('contragent_zayavka_id', '=', False))
+            candidate_rules = self.env[model].search(base_domain)
+            _logger.info(f"[find_matching_rule] Найдено {len(candidate_rules)} кандидатов в модели {model} по базовым условиям")
+            
+            if not candidate_rules:
+                _logger.warning(f"[find_matching_rule] В модели {model} нет записей, подходящих по дате и сумме!")
+                return None
+            
+            # Фильтруем кандидатов и вычисляем вес специфичности
+            matching_rules = []
+            
+            for rule in candidate_rules:
+                _logger.info(f"[find_matching_rule] Проверяем правило {model} ID={rule.id}: {getattr(rule, 'name', 'без названия')}")
                 
-            if agent:
-                domain.append(('agent_zayavka_id', '=', agent.id))
-            else:
-                domain.append(('agent_zayavka_id', '=', False))
+                # Получаем значения полей правила
+                contragent_rule = getattr(rule, 'contragent_zayavka_id', None)
+                agent_rule = getattr(rule, 'agent_zayavka_id', None)
+                client_rule = getattr(rule, 'client_zayavka_id', None)
+                currency_rule = getattr(rule, 'currency_zayavka', None)
+                
+                # Проверяем совместимость: пустое поле в правиле = подходит ЛЮБОЕ значение в заявке
+                contragent_ok = (not contragent_rule) or (contragent_rule and contragent and contragent_rule.id == contragent.id)
+                agent_ok = (not agent_rule) or (agent_rule and agent and agent_rule.id == agent.id)
+                client_ok = (not client_rule) or (client_rule and client and client_rule.id == client.id)
+                currency_ok = (not currency_rule) or (currency_rule and currency and currency_rule == currency)
+                
+                # Если все условия выполнены, добавляем в список подходящих
+                if contragent_ok and agent_ok and client_ok and currency_ok:
+                    # Вычисляем вес специфичности = количество непустых полей в правиле, которые совпадают с заявкой
+                    specificity_weight = 0
+                    
+                    if contragent_rule and contragent and contragent_rule.id == contragent.id:
+                        specificity_weight += 1
+                    if agent_rule and agent and agent_rule.id == agent.id:
+                        specificity_weight += 1
+                    if client_rule and client and client_rule.id == client.id:
+                        specificity_weight += 1
+                    if currency_rule and currency and currency_rule == currency:
+                        specificity_weight += 1
+                    
+                    matching_rules.append((rule, specificity_weight))
+                    _logger.info(f"  ✅ Правило подходит! Вес специфичности: {specificity_weight}")
+                else:
+                    _logger.info("  ❌ Правило не подходит")
             
-            if client:
-                domain.append(('client_zayavka_id', '=', client.id))
-            else:
-                domain.append(('client_zayavka_id', '=', False))
-
-            if currency:
-                domain.append(('currency_zayavka', '=', currency))
-            else:
-                domain.append(('currency_zayavka', '=', False))
-
-            softDomain = [
-                (date_field_start, '<=', deal_closed_date),
-                (date_field_end, '>=', deal_closed_date),
-                ('min_application_amount', '<=', equivalent_sum),
-                ('max_application_amount', '>=', equivalent_sum),
-                ('contragent_zayavka_id', '=', False),
-                ('agent_zayavka_id', '=', False),
-                ('client_zayavka_id', '=', False),
-                ('currency_zayavka', '=', False),
-            ]
-
-            rule = self.env[model].search(domain, limit=1)
-            if not rule:
-                _logger.info(f"[find_matching_rule] не найдена запись {model} для заявки {self.id}, ищем по общим условиям")
-                rule = self.env[model].search(softDomain, limit=1)
-                if not rule:
-                    _logger.info(f"[find_matching_rule] не найдена запись {model} для заявки {self.id}, ищем по общим условиям")
-                    return
-
-            _logger.info(f"[find_matching_rule] найдена запись {rule.id} для заявки {self.id}")
-            return rule
+            if not matching_rules:
+                _logger.warning(f"[find_matching_rule] Не найдено подходящих правил в модели {model}")
+                return None
+            
+            # Сортируем по убыванию веса специфичности (наиболее специфичные первыми)
+            matching_rules.sort(key=lambda x: x[1], reverse=True)
+            
+            # Выбираем наиболее специфичное правило
+            best_rule, best_weight = matching_rules[0]
+            
+            _logger.info(f"[find_matching_rule] ✅ Выбрано наиболее специфичное правило {model}: ID={best_rule.id} (название: {getattr(best_rule, 'name', 'без названия')}), вес: {best_weight}")
+            
+            # Логируем все найденные правила для понимания выбора
+            if len(matching_rules) > 1:
+                _logger.info("[find_matching_rule] Другие подходящие правила:")
+                for rule, weight in matching_rules[1:]:
+                    _logger.info(f"  - ID={rule.id} (название: {getattr(rule, 'name', 'без названия')}), вес: {weight}")
+            
+            return best_rule
 
         payment_rule = find_matching_rule('amanat.payment_order_rule', 'date_start', 'date_end')
         expense_rule = find_matching_rule('amanat.expense_rule', 'date_start', 'date_end')
@@ -134,110 +155,84 @@ class ZayavkaRuleForManagement(models.Model):
 
         # Поиск подходящих записей с учетом даты и суммы
         def find_matching_rule(model, date_field_start, date_field_end):
-            # Сначала получаем все записи для детального анализа
-            all_rules = self.env[model].search([])
-            _logger.info(f"[RULE_AUTOMATION] Всего записей в модели {model}: {len(all_rules)}")
+            # Сначала получаем все записи, подходящие по базовым условиям (дата и сумма)
+            base_domain = [
+                (date_field_start, '<=', rate_fixation_date),
+                (date_field_end, '>=', rate_fixation_date),
+                ('min_application_amount', '<=', equivalent_sum),
+                ('max_application_amount', '>=', equivalent_sum),
+            ]
             
-            if not all_rules:
-                _logger.warning(f"[RULE_AUTOMATION] В модели {model} нет записей!")
+            candidate_rules = self.env[model].search(base_domain)
+            _logger.info(f"[RULE_AUTOMATION] Найдено {len(candidate_rules)} кандидатов в модели {model} по базовым условиям")
+            
+            if not candidate_rules:
+                _logger.warning(f"[RULE_AUTOMATION] В модели {model} нет записей, подходящих по дате и сумме!")
                 return None
             
-            # Логируем все записи для анализа
-            for rule in all_rules:
-                _logger.info(f"[RULE_AUTOMATION] Запись {model} ID={rule.id}: {rule.name}")
-                _logger.info(f"  Дата начала: {getattr(rule, date_field_start, 'НЕТ ПОЛЯ')}")
-                _logger.info(f"  Дата конца: {getattr(rule, date_field_end, 'НЕТ ПОЛЯ')}")
-                _logger.info(f"  Мин сумма: {getattr(rule, 'min_application_amount', 'НЕТ ПОЛЯ')}")
-                _logger.info(f"  Макс сумма: {getattr(rule, 'max_application_amount', 'НЕТ ПОЛЯ')}")
-                _logger.info(f"  Контрагент: {getattr(rule, 'contragent_zayavka_id', 'НЕТ ПОЛЯ')}")
-                _logger.info(f"  Агент: {getattr(rule, 'agent_zayavka_id', 'НЕТ ПОЛЯ')}")
-                _logger.info(f"  Клиент: {getattr(rule, 'client_zayavka_id', 'НЕТ ПОЛЯ')}")
-                _logger.info(f"  Валюта: {getattr(rule, 'currency_zayavka', 'НЕТ ПОЛЯ')}")
+            # Фильтруем кандидатов и вычисляем вес специфичности
+            matching_rules = []
+            
+            for rule in candidate_rules:
+                _logger.info(f"[RULE_AUTOMATION] Проверяем правило {model} ID={rule.id}: {getattr(rule, 'name', 'без названия')}")
                 
-                # Проверяем каждое условие отдельно
-                date_start_ok = getattr(rule, date_field_start, None) and getattr(rule, date_field_start) <= rate_fixation_date
-                date_end_ok = getattr(rule, date_field_end, None) and getattr(rule, date_field_end) >= rate_fixation_date
-                min_amount_ok = getattr(rule, 'min_application_amount', None) is not None and getattr(rule, 'min_application_amount') <= equivalent_sum
-                max_amount_ok = getattr(rule, 'max_application_amount', None) is not None and getattr(rule, 'max_application_amount') >= equivalent_sum
-                
-                _logger.info(f"  ✓ Проверка условий для записи {rule.id}:")
-                _logger.info(f"    Дата начала ({getattr(rule, date_field_start, None)} <= {rate_fixation_date}): {'✓' if date_start_ok else '✗'}")
-                _logger.info(f"    Дата конца ({getattr(rule, date_field_end, None)} >= {rate_fixation_date}): {'✓' if date_end_ok else '✗'}")
-                _logger.info(f"    Мин сумма ({getattr(rule, 'min_application_amount', None)} <= {equivalent_sum}): {'✓' if min_amount_ok else '✗'}")
-                _logger.info(f"    Макс сумма ({getattr(rule, 'max_application_amount', None)} >= {equivalent_sum}): {'✓' if max_amount_ok else '✗'}")
-                
-                # Проверяем дополнительные условия
+                # Получаем значения полей правила
                 contragent_rule = getattr(rule, 'contragent_zayavka_id', None)
                 agent_rule = getattr(rule, 'agent_zayavka_id', None)
                 client_rule = getattr(rule, 'client_zayavka_id', None)
                 currency_rule = getattr(rule, 'currency_zayavka', None)
                 
-                # ИСПРАВЛЕНА ЛОГИКА: пустое поле в правиле = подходит ЛЮБОЕ значение в заявке
+                # Проверяем совместимость: пустое поле в правиле = подходит ЛЮБОЕ значение в заявке
                 contragent_ok = (not contragent_rule) or (contragent_rule and contragent and contragent_rule.id == contragent.id)
                 agent_ok = (not agent_rule) or (agent_rule and agent and agent_rule.id == agent.id)
                 client_ok = (not client_rule) or (client_rule and client and client_rule.id == client.id)
                 currency_ok = (not currency_rule) or (currency_rule and currency and currency_rule == currency)
                 
-                _logger.info(f"    Контрагент ({contragent_rule} vs {contragent}): {'✓' if contragent_ok else '✗'}")
-                _logger.info(f"    Агент ({agent_rule} vs {agent}): {'✓' if agent_ok else '✗'}")
-                _logger.info(f"    Клиент ({client_rule} vs {client}): {'✓' if client_ok else '✗'}")
-                _logger.info(f"    Валюта ({currency_rule} vs {currency}): {'✓' if currency_ok else '✗'}")
+                _logger.info(f"  Контрагент ({contragent_rule} vs {contragent}): {'✓' if contragent_ok else '✗'}")
+                _logger.info(f"  Агент ({agent_rule} vs {agent}): {'✓' if agent_ok else '✗'}")
+                _logger.info(f"  Клиент ({client_rule} vs {client}): {'✓' if client_ok else '✗'}")
+                _logger.info(f"  Валюта ({currency_rule} vs {currency}): {'✓' if currency_ok else '✗'}")
                 
-                all_conditions_ok = date_start_ok and date_end_ok and min_amount_ok and max_amount_ok and contragent_ok and agent_ok and client_ok and currency_ok
-                _logger.info(f"  🎯 Все условия выполнены: {'✓ ДА' if all_conditions_ok else '✗ НЕТ'}")
+                # Если все условия выполнены, добавляем в список подходящих
+                if contragent_ok and agent_ok and client_ok and currency_ok:
+                    # Вычисляем вес специфичности = количество непустых полей в правиле, которые совпадают с заявкой
+                    specificity_weight = 0
+                    
+                    if contragent_rule and contragent and contragent_rule.id == contragent.id:
+                        specificity_weight += 1
+                    if agent_rule and agent and agent_rule.id == agent.id:
+                        specificity_weight += 1
+                    if client_rule and client and client_rule.id == client.id:
+                        specificity_weight += 1
+                    if currency_rule and currency and currency_rule == currency:
+                        specificity_weight += 1
+                    
+                    matching_rules.append((rule, specificity_weight))
+                    _logger.info(f"  ✅ Правило подходит! Вес специфичности: {specificity_weight}")
+                else:
+                    _logger.info("  ❌ Правило не подходит")
+                    
                 _logger.info("  " + "-" * 50)
-
-            domain = [
-                (date_field_start, '<=', rate_fixation_date),
-                (date_field_end, '>=', rate_fixation_date),
-                ('min_application_amount', '<=', equivalent_sum),
-                ('max_application_amount', '>=', equivalent_sum),
-            ]
             
-            # ИСПРАВЛЕНА ЛОГИКА ДОМЕНА: ищем правила ИЛИ с конкретным значением ИЛИ с пустым полем
-            if contragent:
-                domain.append(('contragent_zayavka_id', '=', contragent.id))
-            else:
-                domain.append(('contragent_zayavka_id', '=', False))
-                
-            if agent:
-                domain.append(('agent_zayavka_id', '=', agent.id))
-            else:
-                domain.append(('agent_zayavka_id', '=', False))
+            if not matching_rules:
+                _logger.warning(f"[RULE_AUTOMATION] Не найдено подходящих правил в модели {model}")
+                return None
             
-            if client:
-                domain.append(('client_zayavka_id', '=', client.id))
-            else:
-                domain.append(('client_zayavka_id', '=', False))
-
-            if currency:
-                domain.append(('currency_zayavka', '=', currency))
-            else:
-                domain.append(('currency_zayavka', '=', False))
-
-            softDomain = [
-                (date_field_start, '<=', rate_fixation_date),
-                (date_field_end, '>=', rate_fixation_date),
-                ('min_application_amount', '<=', equivalent_sum),
-                ('max_application_amount', '>=', equivalent_sum),
-                ('contragent_zayavka_id', '=', False),
-                ('agent_zayavka_id', '=', False),
-                ('client_zayavka_id', '=', False),
-                ('currency_zayavka', '=', False),
-            ]
-
-            _logger.info(f"[RULE_AUTOMATION] Поиск в модели {model} с точным доменом: {domain}")
-            rule = self.env[model].search(domain, limit=1)
-            if not rule:
-                _logger.info(f"[RULE_AUTOMATION] Не найдена запись {model} для заявки {self.id}, ищем по общим условиям")
-                _logger.info(f"[RULE_AUTOMATION] Поиск в модели {model} с общим доменом: {softDomain}")
-                rule = self.env[model].search(softDomain, limit=1)
-                if not rule:
-                    _logger.warning(f"[RULE_AUTOMATION] Не найдена запись {model} для заявки {self.id} даже по общим условиям")
-                    return None
-
-            _logger.info(f"[RULE_AUTOMATION] ✅ Найдена запись {model}: {rule.id} (название: {rule.name})")
-            return rule
+            # Сортируем по убыванию веса специфичности (наиболее специфичные первыми)
+            matching_rules.sort(key=lambda x: x[1], reverse=True)
+            
+            # Выбираем наиболее специфичное правило
+            best_rule, best_weight = matching_rules[0]
+            
+            _logger.info(f"[RULE_AUTOMATION] ✅ Выбрано наиболее специфичное правило {model}: ID={best_rule.id} (название: {getattr(best_rule, 'name', 'без названия')}), вес: {best_weight}")
+            
+            # Логируем все найденные правила для понимания выбора
+            if len(matching_rules) > 1:
+                _logger.info("[RULE_AUTOMATION] Другие подходящие правила:")
+                for rule, weight in matching_rules[1:]:
+                    _logger.info(f"  - ID={rule.id} (название: {getattr(rule, 'name', 'без названия')}), вес: {weight}")
+            
+            return best_rule
 
         payment_rule = find_matching_rule('amanat.payment_order_rule', 'date_start', 'date_end')
         expense_rule = find_matching_rule('amanat.expense_rule', 'date_start', 'date_end')

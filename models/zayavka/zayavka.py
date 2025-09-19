@@ -3581,3 +3581,8 @@ class Zayavka(models.Model, AmanatBaseModel):
         string='Фин рез в валюте заявки',
         compute='_compute_tmp_fin_res'
     )
+
+    dollar_rate = fields.Float(
+        string='Курс $',
+        digits=(16, 6),
+    )

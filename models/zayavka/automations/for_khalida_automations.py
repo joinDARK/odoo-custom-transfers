@@ -58,7 +58,7 @@ class ForKhalidaAutomations(models.Model):
 
         # 6. Поиск подходящей записи в "Прайс лист Партнеры"
         matched_partners = self._find_matching_partners_record(
-            subagent_payers, equivalent_sum, reward_percent
+            equivalent_sum, reward_percent
         )
 
         # 6. Обновляем заявку ссылками на найденные записи
@@ -104,8 +104,8 @@ class ForKhalidaAutomations(models.Model):
         
         _logger.info(f"[PriceList Carrying Out] Ищем прайс-лист для заявки {self.id} с датой={payment_date}, плательщики={subagent_payers.ids}, сумма={equivalent_sum}, процент={reward_percent}")
 
-        # Строим домен для поиска
-        domain = [
+        # Сначала получаем все записи, подходящие по базовым условиям
+        base_domain = [
             ('payer_partners', 'in', subagent_payers.ids),
             ('date_start', '<=', payment_date),
             ('date_end', '>=', payment_date),
@@ -115,57 +115,76 @@ class ForKhalidaAutomations(models.Model):
             ('max_percent_accrual', '>=', reward_percent),
         ]
         
-        # Подготавливаем значения для гибкого поиска
-        if self.contragent_id:
-            domain.append(('contragent_zayavka_id', '=', self.contragent_id.id))
-        else:
-            domain.append(('contragent_zayavka_id', '=', False))
-            
-        if self.agent_id:
-            domain.append(('agent_zayavka_id', '=', self.agent_id.id))
-        else:
-            domain.append(('agent_zayavka_id', '=', False))
-            
-        if self.client_id:
-            domain.append(('client_zayavka_id', '=', self.client_id.id))
-        else:
-            domain.append(('client_zayavka_id', '=', False))
-            
-        if self.currency:
-            domain.append(('currency_zayavka', '=', self.currency))
-        else:
-            domain.append(('currency_zayavka', '=', False))
-
-        softDomain = [
-            ('payer_partners', 'in', subagent_payers.ids),
-            ('date_start', '<=', payment_date),
-            ('date_end', '>=', payment_date),
-            ('min_application_amount', '<=', equivalent_sum),
-            ('max_application_amount', '>=', equivalent_sum),
-            ('min_percent_accrual', '<=', reward_percent),
-            ('max_percent_accrual', '>=', reward_percent),
-            ('contragent_zayavka_id', '=', False),
-            ('agent_zayavka_id', '=', False),
-            ('client_zayavka_id', '=', False),
-            ('currency_zayavka', '=', False),
-        ]
-
-        # Ищем первую подходящую запись
-        matched_record = PriceListCarryingOut.search(domain, limit=1)
-
-        if not matched_record:
-            _logger.info(f"[PriceList Carrying Out] Не найден подходящий прайс-лист за проведение для заявки {self.id}, ищем по общим условиям")
-            matched_record = PriceListCarryingOut.search(softDomain, limit=1)
-            
-            if not matched_record:
-                _logger.warning(f"[PriceList Carrying Out] Не найден подходящий общий прайс-лист за проведение для заявки {self.id}")
-                _logger.info(f"[PriceList Carrying Out] Использованный домен: {domain}")
-                _logger.info(f"[PriceList Carrying Out] Использованный softDomain: {softDomain}")
-                return None
+        candidate_records = PriceListCarryingOut.search(base_domain)
+        _logger.info(f"[PriceList Carrying Out] Найдено {len(candidate_records)} кандидатов по базовым условиям")
         
-        _logger.info(f"[PriceList Carrying Out] Найден прайс-лист за проведение: {matched_record.id} (название: {matched_record.name})")
-
-        return matched_record 
+        if not candidate_records:
+            _logger.warning("[PriceList Carrying Out] В модели нет записей, подходящих по базовым условиям!")
+            return None
+        
+        # Фильтруем кандидатов и вычисляем вес специфичности
+        matching_records = []
+        
+        for record in candidate_records:
+            _logger.info(f"[PriceList Carrying Out] Проверяем запись ID={record.id}: {getattr(record, 'name', 'без названия')}")
+            
+            # Получаем значения полей записи
+            contragent_record = getattr(record, 'contragent_zayavka_id', None)
+            agent_record = getattr(record, 'agent_zayavka_id', None)
+            client_record = getattr(record, 'client_zayavka_id', None)
+            currency_record = getattr(record, 'currency_zayavka', None)
+            
+            # Проверяем совместимость: пустое поле в записи = подходит ЛЮБОЕ значение в заявке
+            contragent_ok = (not contragent_record) or (contragent_record and self.contragent_id and contragent_record.id == self.contragent_id.id)
+            agent_ok = (not agent_record) or (agent_record and self.agent_id and agent_record.id == self.agent_id.id)
+            client_ok = (not client_record) or (client_record and self.client_id and client_record.id == self.client_id.id)
+            currency_ok = (not currency_record) or (currency_record and self.currency and currency_record == self.currency)
+            
+            _logger.info(f"  Контрагент ({contragent_record} vs {self.contragent_id}): {'✓' if contragent_ok else '✗'}")
+            _logger.info(f"  Агент ({agent_record} vs {self.agent_id}): {'✓' if agent_ok else '✗'}")
+            _logger.info(f"  Клиент ({client_record} vs {self.client_id}): {'✓' if client_ok else '✗'}")
+            _logger.info(f"  Валюта ({currency_record} vs {self.currency}): {'✓' if currency_ok else '✗'}")
+            
+            # Если все условия выполнены, добавляем в список подходящих
+            if contragent_ok and agent_ok and client_ok and currency_ok:
+                # Вычисляем вес специфичности = количество непустых полей в записи, которые совпадают с заявкой
+                specificity_weight = 0
+                
+                if contragent_record and self.contragent_id and contragent_record.id == self.contragent_id.id:
+                    specificity_weight += 1
+                if agent_record and self.agent_id and agent_record.id == self.agent_id.id:
+                    specificity_weight += 1
+                if client_record and self.client_id and client_record.id == self.client_id.id:
+                    specificity_weight += 1
+                if currency_record and self.currency and currency_record == self.currency:
+                    specificity_weight += 1
+                
+                matching_records.append((record, specificity_weight))
+                _logger.info(f"  ✅ Запись подходит! Вес специфичности: {specificity_weight}")
+            else:
+                _logger.info("  ❌ Запись не подходит")
+                
+            _logger.info("  " + "-" * 50)
+        
+        if not matching_records:
+            _logger.warning("[PriceList Carrying Out] Не найдено подходящих записей")
+            return None
+        
+        # Сортируем по убыванию веса специфичности (наиболее специфичные первыми)
+        matching_records.sort(key=lambda x: x[1], reverse=True)
+        
+        # Выбираем наиболее специфичную запись
+        best_record, best_weight = matching_records[0]
+        
+        _logger.info(f"[PriceList Carrying Out] ✅ Выбрана наиболее специфичная запись: ID={best_record.id} (название: {getattr(best_record, 'name', 'без названия')}), вес: {best_weight}")
+        
+        # Логируем все найденные записи для понимания выбора
+        if len(matching_records) > 1:
+            _logger.info("[PriceList Carrying Out] Другие подходящие записи:")
+            for record, weight in matching_records[1:]:
+                _logger.info(f"  - ID={record.id} (название: {getattr(record, 'name', 'без названия')}), вес: {weight}")
+        
+        return best_record 
 
     def _find_matching_profit_record(self, subagent_payers, rate_fixation_date, equivalent_sum, reward_percent):
         """
@@ -188,25 +207,8 @@ class ForKhalidaAutomations(models.Model):
         
         _logger.info(f"[PriceList Profit] Ищем прайс-лист для заявки {self.id} с датой={payment_date}, плательщики={subagent_payers.ids}, сумма={equivalent_sum}, процент={reward_percent}")
         
-        # Подготавливаем значения для гибкого поиска
-        contragent_values = [False]
-        if self.contragent_id:
-            contragent_values.append(self.contragent_id.id)
-            
-        agent_values = [False]
-        if self.agent_id:
-            agent_values.append(self.agent_id.id)
-            
-        client_values = [False]
-        if self.client_id:
-            client_values.append(self.client_id.id)
-            
-        currency_values = [False]
-        if self.currency:
-            currency_values.append(self.currency)
-        
-        # Строим домен для поиска
-        domain = [
+        # Сначала получаем все записи, подходящие по базовым условиям
+        base_domain = [
             ('payer_subagent_ids', 'in', subagent_payers.ids),
             ('date_start', '<=', payment_date),
             ('date_end', '>=', payment_date),
@@ -215,59 +217,79 @@ class ForKhalidaAutomations(models.Model):
             ('min_percent_accrual', '<=', reward_percent),
             ('max_percent_accrual', '>=', reward_percent),
         ]
-
-        if self.contragent_id:
-            domain.append(('contragent_zayavka_id', '=', self.contragent_id.id))
-        else:
-            domain.append(('contragent_zayavka_id', '=', False))
-            
-        if self.agent_id:
-            domain.append(('agent_zayavka_id', '=', self.agent_id.id))
-        else:
-            domain.append(('agent_zayavka_id', '=', False))
-            
-        if self.client_id:
-            domain.append(('client_zayavka_id', '=', self.client_id.id))
-        else:
-            domain.append(('client_zayavka_id', '=', False))
-
-        if self.currency:
-            domain.append(('currency_zayavka', '=', self.currency))
-        else:
-            domain.append(('currency_zayavka', '=', False))
-
-        softDomain = [
-            ('payer_subagent_ids', 'in', subagent_payers.ids),
-            ('date_start', '<=', payment_date),
-            ('date_end', '>=', payment_date),
-            ('min_zayavka_amount', '<=', equivalent_sum),
-            ('max_zayavka_amount', '>=', equivalent_sum),
-            ('min_percent_accrual', '<=', reward_percent),
-            ('max_percent_accrual', '>=', reward_percent),
-            ('contragent_zayavka_id', '=', False),
-            ('agent_zayavka_id', '=', False),
-            ('client_zayavka_id', '=', False),
-            ('currency_zayavka', '=', False),
-        ]
-
-        # Ищем первую подходящую запись
-        matched_record = PriceListProfit.search(domain, limit=1)
         
-        if not matched_record:
-            _logger.info(f"[PriceList Profit] Не найден подходящий прайс-лист плательщика прибыль для заявки {self.id}, ищем по общим условиям")
-            matched_record = PriceListProfit.search(softDomain, limit=1)
-            
-            if not matched_record:
-                _logger.warning(f"[PriceList Profit] Не найден подходящий общий прайс-лист плательщика прибыль для заявки {self.id}")
-                _logger.info(f"[PriceList Profit] Использованный домен: {domain}")
-                _logger.info(f"[PriceList Profit] Использованный softDomain: {softDomain}")
-                return None
+        candidate_records = PriceListProfit.search(base_domain)
+        _logger.info(f"[PriceList Profit] Найдено {len(candidate_records)} кандидатов по базовым условиям")
         
-        _logger.info(f"[PriceList Profit] Найден прайс-лист прибыль: {matched_record.id} (название: {matched_record.name})")
+        if not candidate_records:
+            _logger.warning("[PriceList Profit] В модели нет записей, подходящих по базовым условиям!")
+            return None
+        
+        # Фильтруем кандидатов и вычисляем вес специфичности
+        matching_records = []
+        
+        for record in candidate_records:
+            _logger.info(f"[PriceList Profit] Проверяем запись ID={record.id}: {getattr(record, 'name', 'без названия')}")
+            
+            # Получаем значения полей записи
+            contragent_record = getattr(record, 'contragent_zayavka_id', None)
+            agent_record = getattr(record, 'agent_zayavka_id', None)
+            client_record = getattr(record, 'client_zayavka_id', None)
+            currency_record = getattr(record, 'currency_zayavka', None)
+            
+            # Проверяем совместимость: пустое поле в записи = подходит ЛЮБОЕ значение в заявке
+            contragent_ok = (not contragent_record) or (contragent_record and self.contragent_id and contragent_record.id == self.contragent_id.id)
+            agent_ok = (not agent_record) or (agent_record and self.agent_id and agent_record.id == self.agent_id.id)
+            client_ok = (not client_record) or (client_record and self.client_id and client_record.id == self.client_id.id)
+            currency_ok = (not currency_record) or (currency_record and self.currency and currency_record == self.currency)
+            
+            _logger.info(f"  Контрагент ({contragent_record} vs {self.contragent_id}): {'✓' if contragent_ok else '✗'}")
+            _logger.info(f"  Агент ({agent_record} vs {self.agent_id}): {'✓' if agent_ok else '✗'}")
+            _logger.info(f"  Клиент ({client_record} vs {self.client_id}): {'✓' if client_ok else '✗'}")
+            _logger.info(f"  Валюта ({currency_record} vs {self.currency}): {'✓' if currency_ok else '✗'}")
+            
+            # Если все условия выполнены, добавляем в список подходящих
+            if contragent_ok and agent_ok and client_ok and currency_ok:
+                # Вычисляем вес специфичности = количество непустых полей в записи, которые совпадают с заявкой
+                specificity_weight = 0
+                
+                if contragent_record and self.contragent_id and contragent_record.id == self.contragent_id.id:
+                    specificity_weight += 1
+                if agent_record and self.agent_id and agent_record.id == self.agent_id.id:
+                    specificity_weight += 1
+                if client_record and self.client_id and client_record.id == self.client_id.id:
+                    specificity_weight += 1
+                if currency_record and self.currency and currency_record == self.currency:
+                    specificity_weight += 1
+                
+                matching_records.append((record, specificity_weight))
+                _logger.info(f"  ✅ Запись подходит! Вес специфичности: {specificity_weight}")
+            else:
+                _logger.info("  ❌ Запись не подходит")
+                
+            _logger.info("  " + "-" * 50)
+        
+        if not matching_records:
+            _logger.warning("[PriceList Profit] Не найдено подходящих записей")
+            return None
+        
+        # Сортируем по убыванию веса специфичности (наиболее специфичные первыми)
+        matching_records.sort(key=lambda x: x[1], reverse=True)
+        
+        # Выбираем наиболее специфичную запись
+        best_record, best_weight = matching_records[0]
+        
+        _logger.info(f"[PriceList Profit] ✅ Выбрана наиболее специфичная запись: ID={best_record.id} (название: {getattr(best_record, 'name', 'без названия')}), вес: {best_weight}")
+        
+        # Логируем все найденные записи для понимания выбора
+        if len(matching_records) > 1:
+            _logger.info("[PriceList Profit] Другие подходящие записи:")
+            for record, weight in matching_records[1:]:
+                _logger.info(f"  - ID={record.id} (название: {getattr(record, 'name', 'без названия')}), вес: {weight}")
+        
+        return best_record 
 
-        return matched_record 
-
-    def _find_matching_partners_record(self, subagent_payers, equivalent_sum, reward_percent):
+    def _find_matching_partners_record(self, equivalent_sum, reward_percent):
         """
         Поиск подходящей записи в модели amanat.price_list_partners
         """
@@ -277,26 +299,15 @@ class ForKhalidaAutomations(models.Model):
             _logger.warning(f"[PriceList Partners] Пропускаем заявку {self.id}: отсутствует 'Дата фиксации курса'")
             return None
         
-        # Подготавливаем значения для гибкого поиска
-        contragent_values = [False]
-        if self.contragent_id:
-            contragent_values.append(self.contragent_id.id)
-            
-        agent_values = [False]
-        if self.agent_id:
-            agent_values.append(self.agent_id.id)
-            
-        client_values = [False]
-        if self.client_id:
-            client_values.append(self.client_id.id)
-            
-        currency_values = [False]
-        if self.currency:
-            currency_values.append(self.currency)
+        if not self.contragent_id:
+            _logger.warning(f"[PriceList Partners] Пропускаем заявку {self.id}: отсутствует 'Контрагент'")
+            return None
         
-        # Строим домен для поиска
-        domain = [
-            ('payer_partner', 'in', subagent_payers.ids),
+        _logger.info(f"[PriceList Partners] Ищем прайс-лист для заявки {self.id} с датой={self.rate_fixation_date}, контрагент={self.contragent_id.id}, сумма={equivalent_sum}, процент={reward_percent}")
+        
+        # Сначала получаем все записи, подходящие по базовым условиям
+        base_domain = [
+            ('contragents_ids', 'in', [self.contragent_id.id]),
             ('date_start', '<=', self.rate_fixation_date),
             ('date_end', '>=', self.rate_fixation_date),
             ('min_application_amount', '<=', equivalent_sum),
@@ -304,55 +315,74 @@ class ForKhalidaAutomations(models.Model):
             ('min_percent_accrual', '<=', reward_percent),
             ('max_percent_accrual', '>=', reward_percent),
         ]
-
-        if self.contragent_id:
-            domain.append(('contragent_zayavka_id', '=', self.contragent_id.id))
-        else:
-            domain.append(('contragent_zayavka_id', '=', False))
         
-        if self.agent_id:
-            domain.append(('agent_zayavka_id', '=', self.agent_id.id))
-        else:
-            domain.append(('agent_zayavka_id', '=', False))
-            
-        if self.client_id:
-            domain.append(('client_zayavka_id', '=', self.client_id.id))
-        else:
-            domain.append(('client_zayavka_id', '=', False))
-            
-        if self.currency:
-            domain.append(('currency_zayavka', '=', self.currency))
-        else:
-            domain.append(('currency_zayavka', '=', False))
-
-        # Добавляем условия по сумме заявки
-        softDomain = [
-            ('payer_partner', 'in', subagent_payers.ids),
-            ('date_start', '<=', self.rate_fixation_date),
-            ('date_end', '>=', self.rate_fixation_date),
-            ('min_application_amount', '<=', equivalent_sum),
-            ('max_application_amount', '>=', equivalent_sum),
-            ('min_percent_accrual', '<=', reward_percent),
-            ('max_percent_accrual', '>=', reward_percent),
-            ('contragent_zayavka_id', '=', False),
-            ('agent_zayavka_id', '=', False),
-            ('client_zayavka_id', '=', False),
-            ('currency_zayavka', '=', False),
-        ]
-
-        # Ищем первую подходящую запись
-        matched_record = PriceListPartners.search(domain, limit=1)
+        candidate_records = PriceListPartners.search(base_domain)
+        _logger.info(f"[PriceList Partners] Найдено {len(candidate_records)} кандидатов по базовым условиям")
         
-        if not matched_record:
-            _logger.info(f"[PriceList] Не найден подходящий прайс-лист партнера для заявки {self.id}, ищем по общим условиям")
-            matched_record = PriceListPartners.search(softDomain, limit=1)
-            
-            if not matched_record:
-                _logger.info(f"[PriceList] Не найден подходящий общий прайс-лист партнера для заявки {self.id}")
-                return
+        if not candidate_records:
+            _logger.warning("[PriceList Partners] В модели нет записей, подходящих по базовым условиям!")
+            return None
         
-        _logger.info(f"[PriceList] Найден прайс-лист партнера: {matched_record.id}")
-        _logger.info(f"[PriceList zayavka] {subagent_payers.ids} {self.rate_fixation_date} {equivalent_sum} {reward_percent} {self.contragent_id.id} {self.agent_id.id} {self.client_id.id} {self.currency}")
-        _logger.info(f"[PriceList price_list] {matched_record.payer_partner} {matched_record.date_start} {matched_record.date_end} {matched_record.contragent_zayavka_id} {matched_record.agent_zayavka_id} {matched_record.client_zayavka_id} {matched_record.currency_zayavka} {matched_record.min_application_amount} {matched_record.max_application_amount} {matched_record.min_percent_accrual} {matched_record.max_percent_accrual}")
-
-        return matched_record
+        # Фильтруем кандидатов и вычисляем вес специфичности
+        matching_records = []
+        
+        for record in candidate_records:
+            _logger.info(f"[PriceList Partners] Проверяем запись ID={record.id}: {getattr(record, 'name', 'без названия')}")
+            
+            # Получаем значения полей записи
+            contragent_record = getattr(record, 'contragent_zayavka_id', None)
+            agent_record = getattr(record, 'agent_zayavka_id', None)
+            client_record = getattr(record, 'client_zayavka_id', None)
+            currency_record = getattr(record, 'currency_zayavka', None)
+            
+            # Проверяем совместимость: пустое поле в записи = подходит ЛЮБОЕ значение в заявке
+            contragent_ok = (not contragent_record) or (contragent_record and self.contragent_id and contragent_record.id == self.contragent_id.id)
+            agent_ok = (not agent_record) or (agent_record and self.agent_id and agent_record.id == self.agent_id.id)
+            client_ok = (not client_record) or (client_record and self.client_id and client_record.id == self.client_id.id)
+            currency_ok = (not currency_record) or (currency_record and self.currency and currency_record == self.currency)
+            
+            _logger.info(f"  Контрагент ({contragent_record} vs {self.contragent_id}): {'✓' if contragent_ok else '✗'}")
+            _logger.info(f"  Агент ({agent_record} vs {self.agent_id}): {'✓' if agent_ok else '✗'}")
+            _logger.info(f"  Клиент ({client_record} vs {self.client_id}): {'✓' if client_ok else '✗'}")
+            _logger.info(f"  Валюта ({currency_record} vs {self.currency}): {'✓' if currency_ok else '✗'}")
+            
+            # Если все условия выполнены, добавляем в список подходящих
+            if contragent_ok and agent_ok and client_ok and currency_ok:
+                # Вычисляем вес специфичности = количество непустых полей в записи, которые совпадают с заявкой
+                specificity_weight = 0
+                
+                if contragent_record and self.contragent_id and contragent_record.id == self.contragent_id.id:
+                    specificity_weight += 1
+                if agent_record and self.agent_id and agent_record.id == self.agent_id.id:
+                    specificity_weight += 1
+                if client_record and self.client_id and client_record.id == self.client_id.id:
+                    specificity_weight += 1
+                if currency_record and self.currency and currency_record == self.currency:
+                    specificity_weight += 1
+                
+                matching_records.append((record, specificity_weight))
+                _logger.info(f"  ✅ Запись подходит! Вес специфичности: {specificity_weight}")
+            else:
+                _logger.info("  ❌ Запись не подходит")
+                
+            _logger.info("  " + "-" * 50)
+        
+        if not matching_records:
+            _logger.warning("[PriceList Partners] Не найдено подходящих записей")
+            return None
+        
+        # Сортируем по убыванию веса специфичности (наиболее специфичные первыми)
+        matching_records.sort(key=lambda x: x[1], reverse=True)
+        
+        # Выбираем наиболее специфичную запись
+        best_record, best_weight = matching_records[0]
+        
+        _logger.info(f"[PriceList Partners] ✅ Выбрана наиболее специфичная запись: ID={best_record.id} (название: {getattr(best_record, 'name', 'без названия')}), вес: {best_weight}")
+        
+        # Логируем все найденные записи для понимания выбора
+        if len(matching_records) > 1:
+            _logger.info("[PriceList Partners] Другие подходящие записи:")
+            for record, weight in matching_records[1:]:
+                _logger.info(f"  - ID={record.id} (название: {getattr(record, 'name', 'без названия')}), вес: {weight}")
+        
+        return best_record

@@ -118,19 +118,28 @@ class ZayavkaComputes(models.Model):
             else:
                 record.effective_rate = 0
 
-    @api.depends('reward_percent_in_contract', 'rate_field', 'amount', 'plus_currency')
+    @api.depends('reward_percent_in_contract', 'rate_field', 'amount', 'plus_currency', 'deal_type', 'currency', 'application_amount_rub_contract', 'dollar_rate')
     def _compute_client_reward(self):
         for rec in self:
-            reward = rec.plus_currency * rec.rate_field
+            if rec.deal_type == 'import' and (rec.currency not in ['usd', 'usdt']) and rec.application_amount_rub_contract:
+                reward = rec.plus_currency * rec.dollar_rate
+            else:
+                reward = 0
+
             rec.client_reward = (rec.reward_percent_in_contract * rec.rate_field * rec.amount) + reward
 
-    @api.depends('best_rate', 'hidden_commission', 'amount', 'plus_currency', 'total_client', 'rate_real', 'hand_reward_percent', 'rate_field')
+    @api.depends('best_rate', 'hidden_commission', 'amount', 'plus_currency', 'total_client', 'rate_real', 'hand_reward_percent', 'rate_field', 'currency', 'dollar_rate')
     def _compute_our_client_reward(self):
         for rec in self:
             # Используем hidden_commission, если она > 0, иначе берем reward_percent
             commission_to_use = rec.hidden_commission if rec.hidden_commission else (rec.hand_reward_percent or 0.0)
             our_client_reward = rec.best_rate * commission_to_use * rec.amount
-            reward = rec.plus_currency * rec.rate_field
+            
+            if rec.deal_type == 'import' and (rec.currency not in ['usd', 'usdt']) and rec.rate_real:
+                reward = rec.plus_currency * rec.dollar_rate
+            else:
+                reward = 0
+
             _logger.info(f'our_client_reward: {our_client_reward}')
 
             if rec.hidden_commission or rec.reward_percent:
@@ -476,16 +485,23 @@ class ZayavkaComputes(models.Model):
         for rec in self:
             rec.fin_res_client_real_rub = (rec.fin_res_client_real_usd or 0.0) * (rec.payer_cross_rate_rub or 0.0)
 
-    @api.depends('reward_percent_in_contract', 'rate_field', 'amount', 'application_amount_rub_contract', 'plus_currency')
+    @api.depends('reward_percent_in_contract', 'rate_field', 'amount', 'application_amount_rub_contract', 'plus_currency', 'deal_type', 'currency', 'dollar_rate')
     def _compute_sber_reward(self):
         for rec in self:
-            reward = rec.plus_currency * rec.rate_field
+            if rec.deal_type == 'import' and (rec.currency not in ['usd', 'usdt']) and rec.application_amount_rub_contract:
+                reward = rec.plus_currency * rec.dollar_rate
+            else:
+                reward = 0
             rec.sber_reward = rec.reward_percent_in_contract * rec.rate_field * rec.amount + reward
 
-    @api.depends('rate_field', 'best_rate', 'amount', 'plus_currency', 'sber_reward', 'rate_real', 'deal_type')
+    @api.depends('rate_field', 'best_rate', 'amount', 'plus_currency', 'sber_reward', 'rate_real', 'deal_type', 'currency', 'dollar_rate')
     def _compute_our_sber_reward(self):
         for rec in self:
-            reward = rec.plus_currency * rec.rate_field
+            if rec.deal_type == 'import' and (rec.currency not in ['usd', 'usdt']) and rec.rate_real:
+                reward = rec.plus_currency * rec.dollar_rate
+            else:
+                reward = 0
+
             rec.our_sber_reward = (rec.rate_field - rec.best_rate) * rec.amount + rec.sber_reward + reward
 
     @api.depends('total_sber', 'our_sber_reward', 'rate_real')
@@ -769,10 +785,14 @@ class ZayavkaComputes(models.Model):
         for rec in self:
             rec.fin_res_sber_real_rub = (rec.fin_res_sber_real_usd or 0.0) * (rec.payer_cross_rate_rub or 0.0)
 
-    @api.depends('rate_field', 'amount', 'deal_type', 'best_rate', 'plus_currency')
+    @api.depends('rate_field', 'amount', 'deal_type', 'best_rate', 'plus_currency', 'currency', 'rate_real', 'dollar_rate')
     def _compute_our_sovok_reward(self):
         for rec in self:
-            reward = rec.plus_currency * rec.rate_field
+            if rec.deal_type == 'import' and (rec.currency not in ['usd', 'usdt']) and rec.rate_real:
+                reward = rec.plus_currency * rec.dollar_rate
+            else:
+                reward = 0
+
             if rec.deal_type == 'export':
                 _logger.info(f'rec.our_sovok_reward: ({rec.rate_field} * {rec.amount}) - ({rec.amount} * {rec.best_rate}) = {rec.rate_field * rec.amount - (rec.amount * rec.best_rate)}')
                 rec.our_sovok_reward = (rec.rate_field * rec.amount) - (rec.amount * rec.best_rate) + reward
@@ -780,15 +800,20 @@ class ZayavkaComputes(models.Model):
                 # rec.our_sovok_reward = (rec.rate_field - rec.hand_reward_percent) - (rec.best_rate * rec.amount)
                 rec.our_sovok_reward = (rec.rate_field - rec.best_rate) * rec.amount + reward
 
-    @api.depends('deal_type', 'our_sovok_reward')
+    @api.depends('deal_type', 'our_sovok_reward', 'currency', 'application_amount_rub_contract', 'dollar_rate', 'rate_field', 'amount', 'best_rate', 'plus_currency')
     def _compute_sovok_reward(self):
         for rec in self:
+            if rec.deal_type == 'import' and (rec.currency not in ['usd', 'usdt']) and rec.application_amount_rub_contract:
+                reward = rec.plus_currency * rec.dollar_rate
+            else:
+                reward = 0
+
             if rec.deal_type == 'export':
                 # ! Вознаграждение по договору Совок = Вознаграждение наше Совок
-                rec.sovok_reward = rec.our_sovok_reward or 0.0
+                rec.sovok_reward = (rec.rate_field * rec.amount) - (rec.amount * rec.best_rate)
             else:
                 # ! Вознаграждение по договору Совок = 0
-                rec.sovok_reward = 0.0
+                rec.sovok_reward = 0.0 + reward
 
     @api.depends('application_amount_rub_contract', 'deal_type', 'total_sovok_management')
     def _compute_total_sovok(self):

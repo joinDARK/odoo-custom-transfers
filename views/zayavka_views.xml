@@ -269,6 +269,7 @@
                     <field name="instruction_number" />
                     <field name="currency" />
                     <field name="rate_field" />
+                    <field name="dollar_rate" />
                     <field name="rate_fixation_date" />
                     <field name="prefix" />
                     <field name="plus_dollar" />
@@ -357,6 +358,7 @@
                     <field name="instruction_number" />
                     <field name="currency" />
                     <field name="rate_field" />
+                    <field name="dollar_rate" />
                     <field name="rate_fixation_date" />
                     <field name="prefix" />
                     <field name="plus_dollar" />
@@ -433,6 +435,7 @@
                     <field name="instruction_number" />
                     <field name="currency" />
                     <field name="rate_field" />
+                    <field name="dollar_rate" />
                     <field name="rate_fixation_date" />
                     <field name="prefix" />
                     <field name="plus_dollar" />
@@ -2162,7 +2165,7 @@
         <field width="200" name="xe_rate" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="currency" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="rate_field" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="reward_percent" groups="!amanat.group_amanat_treasurer"/>
+        <field width="200" name="reward_percent" widget="percentage" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="rate_fixation_date" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="agent_reward" groups="!amanat.group_amanat_treasurer" sum="Итоговая сумма агентского вознаграждения"/>
         <field width="200" name="total_amount" groups="!amanat.group_amanat_treasurer" />

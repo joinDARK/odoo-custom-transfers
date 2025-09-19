@@ -144,7 +144,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 "wallet_2_id": wallet_agentka.id,
                 "currency": currency,
                 "amount": sum_value,
-                "comment": f"расход по заявке № {num_zayavka}",
+                "comment": f"(ID: {self.id}) расход по заявке № {num_zayavka}",
                 "zayavka_ids": [(6, 0, [record_id])],
             })
 
@@ -286,7 +286,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 "wallet_2_id": wallet_agentka.id,
                 "currency": currency,
                 "amount": sum_value,
-                "comment": f"расход по заявке № {num_zayavka}",
+                "comment": f"(ID: {self.id}) расход по заявке № {num_zayavka}",
                 "zayavka_ids": [(6, 0, [record_id])],
             })
 
@@ -429,7 +429,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 "wallet_2_id": wallet_agentka.id,
                 "currency": currency,
                 "amount": sum_value,
-                "comment": f"расход по заявке № {num_zayavka}",
+                "comment": f"(ID: {self.id}) расход по заявке № {num_zayavka}",
                 "zayavka_ids": [(6, 0, [record_id])],
             })
 
@@ -558,7 +558,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 "wallet_2_id": wallet_agentka.id,
                 "currency": currency,
                 "amount": sum_value,
-                "comment": f"расход по заявке № {num_zayavka}",
+                "comment": f"(ID: {self.id}) расход по заявке № {num_zayavka}",
                 "zayavka_ids": [(6, 0, [record_id])],
             })
 
@@ -685,7 +685,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 "wallet_2_id": wallet_agentka.id,
                 "currency": currency,
                 "amount": sum_value,
-                "comment": f"расход по заявке № {num_zayavka}",
+                "comment": f"(ID: {self.id}) расход по заявке № {num_zayavka}",
                 "zayavka_ids": [(6, 0, [record_id])],
             })
 
@@ -813,7 +813,7 @@ class ZayavkaSendToReconciliationAutomations(models.Model):
                 "wallet_2_id": wallet_agentka.id,
                 "currency": currency,
                 "amount": sum_value,
-                "comment": f"расход по заявке № {num_zayavka}",
+                "comment": f"(ID: {self.id}) расход по заявке № {num_zayavka}",
                 "zayavka_ids": [(6, 0, [record_id])],
             })
 
