@@ -83,7 +83,7 @@ class ZayavkaGetPaymentRequest(models.Model):
                 'wallet_2_id': wallet.id,
                 'currency': 'rub',
                 'amount': amount_to_process,
-                'comment': f'оплата рублей по заявке № {self.zayavka_num} (выписка {extract.id})',
+                'comment': f'(ID: {self.id}) оплата рублей по заявке № {self.zayavka_num} (выписка {extract.id})',
                 'zayavka_ids': [(4, self.id)],
             }
             order = self._create_order(order_vals)

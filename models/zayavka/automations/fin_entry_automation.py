@@ -128,7 +128,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
+                'comment': f"(ID: {self.id}) Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -167,7 +167,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -226,7 +226,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -265,7 +265,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата валюты по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата валюты по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -303,7 +303,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -418,7 +418,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
+                'comment': f"(ID: {self.id}) Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -457,7 +457,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -517,7 +517,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -555,7 +555,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение не наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение не наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -594,7 +594,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата валюты по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата валюты по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -632,7 +632,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -744,7 +744,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
+                'comment': f"(ID: {self.id}) Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -783,7 +783,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -843,7 +843,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -881,7 +881,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение не наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение не наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -920,7 +920,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата валюты по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата валюты по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -958,7 +958,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -1072,7 +1072,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
+                'comment': f"(ID: {self.id}) Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1111,7 +1111,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1170,7 +1170,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1209,7 +1209,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата валюты по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата валюты по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -1247,7 +1247,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -1363,7 +1363,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
+                'comment': f"(ID: {self.id}) Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1402,7 +1402,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1462,7 +1462,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1500,7 +1500,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение не наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение не наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1539,7 +1539,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата валюты по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата валюты по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -1577,7 +1577,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -1689,7 +1689,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
+                'comment': f"(ID: {self.id}) Формируем долг в валюте на Сумма заявки по заявке {record_id} для конвертации",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1728,7 +1728,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Проводим конвертацию Суммы заявки по курсу {best_rate} в рубли по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1788,7 +1788,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1826,7 +1826,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': 'rub',
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
-                'comment': f"Вознаграждение не наше по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Вознаграждение не наше по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             self._create_money({
@@ -1865,7 +1865,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата валюты по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата валюты по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -1903,7 +1903,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'wallet_1_id': agentka_wallet.id,
                 'wallet_2_id': agentka_wallet.id,
                 'zayavka_ids': [(6, 0, [record_id])],
-                'comment': f"Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
+                'comment': f"(ID: {self.id}) Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
             })
             self._create_money({
                 'date': date,
@@ -2007,7 +2007,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': unmarked_wallet.id,
                 'wallet_2_id': unmarked_wallet.id,
-                'comment': f"[IMPORT_EXPORT_AUTO] Оплата валюты по заявке {record_id}",
+                'comment': f"[IMPORT_EXPORT_AUTO] (ID: {self.id}) Оплата валюты по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             
@@ -2049,7 +2049,7 @@ class ZayavkaFinEntryAutomations(models.Model):
                 'currency': currency,
                 'wallet_1_id': unmarked_wallet.id,
                 'wallet_2_id': unmarked_wallet.id,
-                'comment': f"[IMPORT_EXPORT_AUTO] Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
+                'comment': f"[IMPORT_EXPORT_AUTO] (ID: {self.id}) Оплата вознаграждения субагента за провод платежа по заявке {record_id}",
                 'zayavka_ids': [(6, 0, [record_id])]
             })
             
