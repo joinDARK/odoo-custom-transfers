@@ -2171,14 +2171,36 @@
         <field width="200" class="pin" name="zayavka_num" />
         <field name="manager_ids" class="pin" widget="many2many_tags" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="status" class="pin" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="date_placement" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director" />
+        <field width="200" name="contragent_id" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="agent_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="client_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="payment_conditions" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="usd_equivalent" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director" sum="Итоговая сумма в USD"/>
+        <field width="200" name="xe_rate" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="amount" sum="Итоговая сумма" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="currency" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="comment" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="best_rate" string="Скрытый курс" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="best_rate" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="rate_field" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="jess_rate_id" groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="rate_fixation_date" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="application_amount_rub_contract" sum="Итоговая сумма по курсу в рублях по договору" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_reward" sum="Итого вознаграждение по договору" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_total" sum="Итого" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_our_reward" sum="Итого вознаграждение наше" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_non_our_reward" sum="Итого вознаграждение не наше" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_total_management" sum="Итого упр" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="deal_type" groups="!amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="deal_closed_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" name="link_jess_rate" groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer"/>
         <field name="for_khalida_temp" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="fin_entry_check" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="send_to_reconciliation" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="subagent_ids" widget="many2many_tags" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="subagent_payer_ids" widget="many2many_tags" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="hand_reward_percent" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="hidden_commission" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="deal_closed_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="conversion_expenses_currency" sum="Расходы на конвертацию" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="payment_order_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="tmp_order_rf" sum="Расход платежа по РФ" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
@@ -2196,47 +2218,42 @@
         <field name="tmp_fin_res" sum="Фин рез в валюте заявки" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="percent_profitability" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="kassa_name" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="date_received_on_pc_payment" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="date_agent_on_pc" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="received_on_our_pc" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="supplier_currency_paid_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="supplier_currency_received_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field width="200" name="date_placement" groups="!amanat.group_amanat_treasurer" />
+        <field width="200" name="date_placement" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" />
         
-        <field width="200" name="date_agent_on_pc" />
-        <field width="200" name="contragent_id" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="agent_id" />
-        <field width="200" name="client_id" />
-        <field width="200" name="inn" groups="amanat.group_amanat_treasurer"/>
-        <field width="200" name="deal_type" />
-        <field width="200" name="amount" sum="Итоговая сумма"/>
-        <field width="140" name="sum_from_extracts" groups="amanat.group_amanat_treasurer"/>
-        <field width="140" name="waiting_for_replenishment" groups="amanat.group_amanat_treasurer"/>
+        <field width="200" name="date_agent_on_pc" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="contragent_id" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="agent_id" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="client_id" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="inn" groups="amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="deal_type" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="amount" sum="Итоговая сумма" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="140" name="sum_from_extracts" groups="amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="140" name="waiting_for_replenishment" groups="amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
         <field width="200" name="application_amount_rub_contract" sum="Итоговая сумма по курсу в рублях по договору" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
-        <field width="200" name="contract_reward" groups="amanat.group_amanat_treasurer"/>
-        <field width="200" name="total_fact" groups="amanat.group_amanat_treasurer"/>
-        <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field width="200" name="bank_vypiska" groups="amanat.group_amanat_treasurer"/>
-        <field width="200" name="extract_delivery_ids" widget="many2many_tags" groups="amanat.group_amanat_treasurer"/>
-        <field width="200" name="payment_conditions" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="usd_equivalent" groups="!amanat.group_amanat_treasurer" sum="Итоговая сумма в USD"/>
-        <field width="200" name="xe_rate" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="currency" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="rate_field" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="reward_percent" widget="percentage" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="rate_fixation_date" groups="!amanat.group_amanat_treasurer"/>
-        <field name="application_amount_rub_contract" sum="Итоговая сумма по курсу в рублях по договору" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_reward" sum="Итого вознаграждение по договору" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_total" sum="Итого" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_our_reward" sum="Итого вознаграждение наше" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_non_our_reward" sum="Итого вознаграждение не наше" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_total_management" sum="Итого упр" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field width="200" name="agent_reward" groups="!amanat.group_amanat_treasurer" sum="Итоговая сумма агентского вознаграждения"/>
-        <field width="200" name="total_amount" groups="!amanat.group_amanat_treasurer" />
-        <field width="200" name="best_rate" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="comment_hedge" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="best_rate_name" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="hidden_hadge" groups="!amanat.group_amanat_treasurer"/>
-        <field width="200" name="jess_rate_id" groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer"/>
-        <field width="200" name="link_jess_rate" groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer"/>
+        <field width="200" name="contract_reward" groups="amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="total_fact" groups="amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="bank_vypiska" groups="amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="extract_delivery_ids" widget="many2many_tags" groups="amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="payment_conditions" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="usd_equivalent" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" sum="Итоговая сумма в USD"/>
+        <field width="200" name="xe_rate" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="currency" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="rate_field" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="reward_percent" widget="percentage" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="rate_fixation_date" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="agent_reward" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" sum="Итоговая сумма агентского вознаграждения"/>
+        <field width="200" name="total_amount" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" />
+        <field width="200" name="best_rate" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="comment_hedge" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="best_rate_name" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="hidden_hadge" groups="!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
+        <field width="200" name="jess_rate_id" groups="!amanat.group_amanat_manager,!amanat.group_amanat_treasurer,!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
       </list>
     </field>
   </record>
