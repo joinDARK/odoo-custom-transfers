@@ -1841,3 +1841,51 @@ class ZayavkaComputes(models.Model):
                 rec.tmp_fin_res = rec.fin_res_sovok_real
             else:
                 rec.tmp_fin_res = rec.fin_res_client_real
+    
+    @api.depends('is_sberbank_contragent', 'is_sovcombank_contragent', 'total_client', 'total_sber', 'total_sovok')
+    def _compute_tmp_total(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_total = rec.total_sber
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_total = rec.total_sovok
+            else:
+                rec.tmp_total = rec.total_client
+    
+    @api.depends('is_sberbank_contragent', 'is_sovcombank_contragent', 'total_client_management', 'total_sber_management', 'total_sovok_management')
+    def _compute_tmp_total_management(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_total_management = rec.total_sber_management
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_total_management = rec.total_sovok_management
+            else:
+                rec.tmp_total_management = rec.total_client_management
+
+    @api.depends('is_sberbank_contragent', 'is_sovcombank_contragent', 'client_reward', 'sber_reward', 'sovok_reward')
+    def _compute_tmp_reward(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_reward = rec.sber_reward
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_reward = rec.sovok_reward
+            else:
+                rec.tmp_reward = rec.client_reward
+
+    @api.depends('is_sberbank_contragent', 'is_sovcombank_contragent', 'our_sber_reward', 'our_sovok_reward', 'our_client_reward')
+    def _compute_tmp_our_reward(self):
+        for rec in self:
+            if rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_our_reward = rec.our_sber_reward
+            elif rec.is_sovcombank_contragent and not rec.is_sberbank_contragent:
+                rec.tmp_our_reward = rec.our_sovok_reward
+            else:
+                rec.tmp_our_reward = rec.our_client_reward
+
+    @api.depends('is_sberbank_contragent', 'is_sovcombank_contragent', 'non_our_client_reward')
+    def _compute_tmp_non_our_reward(self):
+        for rec in self:
+            if not rec.is_sberbank_contragent and not rec.is_sovcombank_contragent:
+                rec.tmp_non_our_reward = rec.non_our_client_reward
+            else:
+                rec.tmp_non_our_reward = 0.0

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from odoo import models, fields, api
-from dateutil.relativedelta import relativedelta
 import logging
+
+from dateutil.relativedelta import relativedelta
+from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
 
@@ -507,9 +508,9 @@ class AnalyticsDashboard(models.Model):
         """Получение курсов валют через HTTP API"""
         try:
             import json
-            from urllib.request import urlopen
-            from urllib.error import URLError, HTTPError
             import socket
+            from urllib.error import HTTPError, URLError
+            from urllib.request import urlopen
             
             # URL для получения курсов валют
             url = "http://localhost:8081/api/currency/rates"
@@ -766,8 +767,8 @@ class AnalyticsDashboard(models.Model):
         """Тестовый метод для отладки - показывает RAW ответ API без обработки"""
         try:
             import json
+            from urllib.error import HTTPError, URLError
             from urllib.request import urlopen
-            from urllib.error import URLError, HTTPError
             
             url = "http://localhost:8081/api/currency/rates"
             _logger.info(f"ТЕСТ: Запрашиваю RAW ответ от API: {url}")

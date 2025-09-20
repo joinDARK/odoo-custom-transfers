@@ -1662,13 +1662,6 @@ class Zayavka(models.Model, AmanatBaseModel):
         tracking=True
     )
 
-    sum_from_extracts = fields.Float(
-        string='Сумма (from Выписка разнос)', 
-        compute='_compute_sum_from_extracts', 
-        store=True, 
-        tracking=True
-    )
-
     error_sovok = fields.Float(
         string='Ошибка Совок',
         compute='_compute_error_sovok',
@@ -3585,4 +3578,29 @@ class Zayavka(models.Model, AmanatBaseModel):
     dollar_rate = fields.Float(
         string='Курс $',
         digits=(16, 6),
+    )
+
+    tmp_total = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Итого',
+        compute='_compute_tmp_total'
+    )
+
+    tmp_total_management = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Итого упр',
+        compute='_compute_tmp_total_management'
+    )
+
+    tmp_reward = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Вознаграждение по договору',
+        compute='_compute_tmp_reward'
+    )
+
+    tmp_our_reward = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Вознаграждение наше',
+        compute='_compute_tmp_our_reward'
+    )
+
+    tmp_non_our_reward = fields.Float( # TODO: Временное поле до рефакторинга
+        string='Вознаграждение не наше',
+        compute='_compute_tmp_non_our_reward'
     )

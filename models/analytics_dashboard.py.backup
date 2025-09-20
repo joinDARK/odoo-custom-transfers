@@ -551,7 +551,7 @@ class AnalyticsDashboard(models.Model):
                         
                         # Маппинг кодов валют от API к внутренним названиям системы
                         currency_mapping = {
-                            'eur': 'euro',
+                            'eur': 'eur',
                             'rub': 'rub', 
                             'cny': 'cny',
                             'aed': 'aed',

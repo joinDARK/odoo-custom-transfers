@@ -323,7 +323,7 @@
                 </div>
                 <field name="hidden_commission" widget="percentage" />
               </group>
-              <group string="Клиент" invisible="is_sovcombank_contragent or is_sberbank_contragent">
+              <group string="Клиент" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" invisible="is_sovcombank_contragent or is_sberbank_contragent">
                 <div class="o-form-group">
                   <group>
                     <field name="application_amount_rub_contract" />
@@ -336,8 +336,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Управленка Клиент"
-                invisible="is_sovcombank_contragent or is_sberbank_contragent">
+              <group string="Управленка Клиент" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" invisible="is_sovcombank_contragent or is_sberbank_contragent">
                 <div class="o-form-group">
                   <group>
                     <field name="rate_real" />
@@ -402,7 +401,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Клиент Сбербанк" invisible="not is_sberbank_contragent">
+              <group string="Клиент Сбербанк" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" invisible="not is_sberbank_contragent">
                 <div class="o-form-group">
                   <group>
                     <field name="application_amount_rub_contract" />
@@ -415,7 +414,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Управленка Сбербанк" invisible="not is_sberbank_contragent">
+              <group string="Управленка Сбербанк" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" invisible="not is_sberbank_contragent">
                 <div class="o-form-group">
                   <group>
                     <field name="rate_real" />
@@ -486,7 +485,7 @@
                 </div>
                 <field name="error_in_rate" />
               </group>
-              <group string="Клиент Совкомбанк" invisible="not is_sovcombank_contragent">
+              <group string="Клиент Совкомбанк" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" invisible="not is_sovcombank_contragent">
                 <div class="o-form-group">
                   <group>
                     <field name="application_amount_rub_contract" />
@@ -499,7 +498,7 @@
                   </group>
                 </div>
               </group>
-              <group string="Управленка Совкомбанк" invisible="not is_sovcombank_contragent">
+              <group string="Управленка Совкомбанк" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director" invisible="not is_sovcombank_contragent">
                 <div class="o-form-group">
                   <group>
                     <field name="rate_real" />
@@ -511,6 +510,33 @@
                     <field name="total_sovok_management" />
                   </group>
                 </div>
+              </group>
+              <group string="Клиент" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director">
+                <div class="o-form-group">
+                  <group>
+                    <field name="application_amount_rub_contract" />
+                  </group>
+                  <group>
+                    <field name="tmp_reward" />
+                  </group>
+                  <group>
+                    <field name="tmp_total" />
+                  </group>
+                </div>
+              </group>
+              <group string="Управленка" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director">
+                <div class="o-form-group">
+                  <group>
+                    <field name="rate_real" />
+                  </group>
+                  <group>
+                    <field name="tmp_our_reward" />
+                  </group>
+                  <group>
+                    <field name="tmp_non_our_reward" />
+                  </group>
+                </div>
+                <field name="tmp_total_management" />
               </group>
               <notebook>
               </notebook>
@@ -1385,6 +1411,19 @@
                   </group>
                 </div>
               </group>
+              <group string="Скрытые комиссии партнера">
+                <div class="o-form-group">
+                  <group>
+                    <field name="hidden_partner_commission_real" />
+                  </group>
+                  <group>
+                    <field name="hidden_partner_commission_real_usd" />
+                  </group>
+                  <group>
+                    <field name="hidden_partner_commission_real_rub" />
+                  </group>
+                </div>
+              </group>
               <group string="Курсы">
                 <div class="o-form-group-2">
                   <group>
@@ -1418,19 +1457,6 @@
                   </group>
                   <group>
                     <field name="kupili_valyutu_sovok_real_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Скрытые комиссии партнера">
-                <div class="o-form-group">
-                  <group>
-                    <field name="hidden_partner_commission_real" />
-                  </group>
-                  <group>
-                    <field name="hidden_partner_commission_real_usd" />
-                  </group>
-                  <group>
-                    <field name="hidden_partner_commission_real_rub" />
                   </group>
                 </div>
               </group>
@@ -1616,6 +1642,19 @@
                   </group>
                 </div>
               </group>
+              <group string="Скрытые комиссии партнера">
+                <div class="o-form-group">
+                  <group>
+                    <field name="hidden_partner_commission_real" />
+                  </group>
+                  <group>
+                    <field name="hidden_partner_commission_real_usd" />
+                  </group>
+                  <group>
+                    <field name="hidden_partner_commission_real_rub" />
+                  </group>
+                </div>
+              </group>
               <group string="Курсы">
                 <div class="o-form-group-2">
                   <group>
@@ -1652,19 +1691,6 @@
                   </group>
                 </div>
               </group>
-              <group string="Скрытые комиссии партнера">
-                <div class="o-form-group">
-                  <group>
-                    <field name="hidden_partner_commission_real" />
-                  </group>
-                  <group>
-                    <field name="hidden_partner_commission_real_usd" />
-                  </group>
-                  <group>
-                    <field name="hidden_partner_commission_real_rub" />
-                  </group>
-                </div>
-              </group>
               <group string="Прочие поля">
                 <div class="o-form-group">
                   <group>
@@ -1693,6 +1719,13 @@
               </group>
               <group string="% рентабельности">
                 <field name="percent_profitability" widget="percentage" />
+              </group>
+            </page>
+            <page string="Рублевая часть" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director">
+              <group>
+                <field name="waiting_for_replenishment" />
+                <field name="sum_from_extracts" />
+                <field name="extract_delivery_ids" />
               </group>
             </page>
             <page string="Финансовый расчет"
@@ -1848,6 +1881,19 @@
                   </group>
                 </div>
               </group>
+              <group string="Скрытые комиссии партнера">
+                <div class="o-form-group">
+                  <group>
+                    <field name="hidden_partner_commission_real" />
+                  </group>
+                  <group>
+                    <field name="hidden_partner_commission_real_usd" />
+                  </group>
+                  <group>
+                    <field name="hidden_partner_commission_real_rub" />
+                  </group>
+                </div>
+              </group>
               <group string="Курсы">
                 <div class="o-form-group-2">
                   <group>
@@ -1881,19 +1927,6 @@
                   </group>
                   <group>
                     <field name="client_currency_bought_real_rub" />
-                  </group>
-                </div>
-              </group>
-              <group string="Скрытые комиссии партнера">
-                <div class="o-form-group">
-                  <group>
-                    <field name="hidden_partner_commission_real" />
-                  </group>
-                  <group>
-                    <field name="hidden_partner_commission_real_usd" />
-                  </group>
-                  <group>
-                    <field name="hidden_partner_commission_real_rub" />
                   </group>
                 </div>
               </group>
@@ -2123,21 +2156,21 @@
         <field name="hand_reward_percent" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="hidden_commission" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="deal_closed_date" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="conversion_expenses_currency" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="conversion_expenses_currency" sum="Расходы на конвертацию" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="payment_order_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_order_rf" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_order_rf" sum="Расход платежа по РФ" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="money_cost_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_sebestoimost_denej" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_sebestoimost_denej" sum="Себестоимость денег в валюте заявки" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="expense_rule_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_operating_expenses" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_operating_expenses" sum="Расход на операционную деятельность в валюте заявки" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="price_list_carrying_out_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_payment_cost" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_payment_cost" sum="Расход за проведение платежа" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="price_list_profit_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="payer_profit_currency" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="payer_profit_currency" sum="Прибыль Плательщика по валюте заявки" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="price_list_partners_id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="hidden_partner_commission_real" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_kupili_valyutu" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field name="tmp_fin_res" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="hidden_partner_commission_real" sum="Скрытая комиссия Партнера в валюте заявки" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_kupili_valyutu" sum="Купили валюту в валюте заявки" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_fin_res" sum="Фин рез в валюте заявки" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="percent_profitability" widget="percentage" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="kassa_name" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="received_on_our_pc" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
