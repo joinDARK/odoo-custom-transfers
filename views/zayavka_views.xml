@@ -72,6 +72,28 @@
           border-radius: 5px !important;
           padding: 2px 5px !important;
         }
+
+        /* Стили для закрепленных полей с синей чертой */
+        .pin-field-indicator {
+          position: relative !important;
+        }
+
+        .o_list_renderer .o_list_table thead {
+          z-index: 16 !important;
+        }
+
+        .pin-field-indicator::after {
+          content: '' !important;
+          position: absolute !important;
+          top: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 3px !important;
+          background-color: #007bff !important;
+          opacity: 0.5 !important;
+          z-index: 1 !important;
+          pointer-events: none !important;
+        }
       </style>
       
       <script type="text/javascript">
@@ -2145,9 +2167,10 @@
                decoration-danger="1"
                invisible="not show_red_stripe_for_ilzira_zayavka"
                readonly="1" width="150"/>
-        <field name="id" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
-        <field width="200" name="zayavka_num" />
-        <field name="manager_ids" widget="many2many_tags" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="id" class="pin" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field width="200" class="pin" name="zayavka_num" />
+        <field name="manager_ids" class="pin" widget="many2many_tags" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="status" class="pin" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="for_khalida_temp" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="fin_entry_check" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field name="send_to_reconciliation" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
@@ -2187,7 +2210,7 @@
         <field width="200" name="amount" sum="Итоговая сумма"/>
         <field width="140" name="sum_from_extracts" groups="amanat.group_amanat_treasurer"/>
         <field width="140" name="waiting_for_replenishment" groups="amanat.group_amanat_treasurer"/>
-        <field width="200" name="application_amount_rub_contract" sum="Итоговая сумма по курсу в рублях по договору"/>
+        <field width="200" name="application_amount_rub_contract" sum="Итоговая сумма по курсу в рублях по договору" groups="!amanat.group_amanat_fin_manager,!amanat.group_amanat_director"/>
         <field width="200" name="contract_reward" groups="amanat.group_amanat_treasurer"/>
         <field width="200" name="total_fact" groups="amanat.group_amanat_treasurer"/>
         <field width="180" name="date_received_on_pc_payment" groups="amanat.group_amanat_treasurer,amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
@@ -2200,6 +2223,12 @@
         <field width="200" name="rate_field" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="reward_percent" widget="percentage" groups="!amanat.group_amanat_treasurer"/>
         <field width="200" name="rate_fixation_date" groups="!amanat.group_amanat_treasurer"/>
+        <field name="application_amount_rub_contract" sum="Итоговая сумма по курсу в рублях по договору" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_reward" sum="Итого вознаграждение по договору" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_total" sum="Итого" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_our_reward" sum="Итого вознаграждение наше" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_non_our_reward" sum="Итого вознаграждение не наше" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
+        <field name="tmp_total_management" sum="Итого упр" groups="amanat.group_amanat_fin_manager,amanat.group_amanat_director"/>
         <field width="200" name="agent_reward" groups="!amanat.group_amanat_treasurer" sum="Итоговая сумма агентского вознаграждения"/>
         <field width="200" name="total_amount" groups="!amanat.group_amanat_treasurer" />
         <field width="200" name="best_rate" groups="!amanat.group_amanat_treasurer"/>
